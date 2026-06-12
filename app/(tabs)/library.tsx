@@ -1,6 +1,9 @@
+import { useState, useCallback } from 'react';
 import { View, Text, FlatList } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Card, CardRow, CardIcon, EmptyState, PageHeader, Button } from '../../src/components';
+import { NewProject } from '../../src/components/NewProject';
+import type { GenreTemplate } from '../../src/lib/projectTemplates';
 
 const mockProjects = [
   { id: 'musica-1', title: 'Meu Hit de Verão', updated: '2 dias atrás', stemCount: 4 },
@@ -9,6 +12,19 @@ const mockProjects = [
 
 export default function Library() {
   const router = useRouter();
+  const [showNewProject, setShowNewProject] = useState(false);
+
+  const handleCreate = useCallback((config: { name: string; genre: GenreTemplate; key: string; bpm: number }) => {
+    const projectId = `proj-${Date.now()}`;
+    const params = new URLSearchParams({
+      title: config.name,
+      genre: config.genre.id,
+      key: config.key,
+      bpm: String(config.bpm),
+    });
+    setShowNewProject(false);
+    router.push(`/studio/${projectId}?${params.toString()}`);
+  }, [router]);
 
   return (
     <View className="flex-1 bg-dark-bg pt-12">
@@ -18,7 +34,7 @@ export default function Library() {
         <Button
           title="Novo Projeto"
           icon="+"
-          onPress={() => alert('Criando nova sessão no banco...')}
+          onPress={() => setShowNewProject(true)}
         />
         <Button
           title="Separar Stems"
@@ -53,6 +69,12 @@ export default function Library() {
             <Text className="text-brand-accent text-sm">Abrir →</Text>
           </CardRow>
         )}
+      />
+
+      <NewProject
+        visible={showNewProject}
+        onClose={() => setShowNewProject(false)}
+        onCreate={handleCreate}
       />
     </View>
   );
