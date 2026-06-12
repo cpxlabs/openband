@@ -47,7 +47,37 @@ Then edit `eas.json` — for the profile you'll use, add:
 }
 ```
 
-### 3. Build the APK
+### 3. Set up the Android Keystore
+
+EAS needs a keystore to sign the APK. You have three options:
+
+**Option A — Let EAS auto-generate one (recommended)**
+
+```bash
+npx eas credentials --platform android
+```
+
+Choose **"Let EAS manage"** when prompted. EAS generates and stores the keystore securely.
+
+**Option B — Upload the generated keystore**
+
+A keystore was pre-generated at `.secrets/android-keystore.p12` (password: `openband123`, alias: `openband-android`). Upload it via:
+
+```bash
+npx eas credentials --platform android
+```
+
+Choose **"Upload my own"** and provide the file path.
+
+**Option C — Upload via EAS Dashboard**
+
+1. Go to your project on [expo.dev](https://expo.dev)
+2. Navigate to **Build → Credentials → Android**
+3. Click **Add Credentials** and upload `.secrets/android-keystore.p12`
+
+> The `.secrets/` directory is gitignored. Keep the password (`openband123`) handy for future builds.
+
+### 4. Build the APK
 
 ```bash
 npx eas build --platform android --profile preview
@@ -57,7 +87,7 @@ npx eas build --platform android --profile preview
 - Build takes 5–15 minutes
 - You'll get a download link when it's done
 
-### 4. Download to `dist/`
+### 5. Download to `dist/`
 
 After the build completes, you'll see a URL like:
 
