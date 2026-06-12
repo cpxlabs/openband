@@ -87,10 +87,6 @@ export default function Studio() {
     <View className="flex-1 bg-dark-bg select-none">
 
       <View className="h-14 bg-dark-surface border-b border-dark-border flex-row items-center justify-between px-4">
-        <Pressable onPress={() => router.back()} className="p-2 bg-dark-border rounded-lg active:opacity-70">
-          <Text className="text-gray-400 font-bold">← Sair</Text>
-        </Pressable>
-
         <View className="flex-row items-center gap-3">
           <Pressable
             onPress={togglePlay}

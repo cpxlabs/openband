@@ -1,4 +1,4 @@
-import { Slot, useRouter, useSegments } from "expo-router";
+import { Stack, useRouter, useSegments } from "expo-router";
 import Head from "expo-router/head";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
@@ -33,7 +33,20 @@ function RootLayoutProtected() {
     );
   }
 
-  return <Slot />;
+  return (
+    <Stack
+      screenOptions={{
+        headerStyle: { backgroundColor: '#18181c' },
+        headerTintColor: '#fff',
+        headerShadowVisible: false,
+      }}
+    >
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+      <Stack.Screen name="extractor" options={{ title: 'Separar Stems' }} />
+      <Stack.Screen name="studio/[id]" options={{ title: 'Studio' }} />
+    </Stack>
+  );
 }
 
 export default function RootLayout() {

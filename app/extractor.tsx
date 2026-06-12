@@ -154,17 +154,14 @@ export default function Extractor() {
   }, []);
 
   return (
-    <View className="flex-1 bg-dark-bg pt-12">
-      <View className="px-4 flex-row items-center justify-between mb-2">
-        <Pressable onPress={() => router.back()} className="p-2 -ml-2 active:opacity-60">
-          <Text className="text-gray-400 text-lg">← Voltar</Text>
-        </Pressable>
-        {phase === 'done' && (
+    <View className="flex-1 bg-dark-bg">
+      {phase === 'done' && (
+        <View className="px-4 pt-12 flex-row justify-end">
           <Pressable onPress={handleReset} className="p-2 active:opacity-60">
             <Text className="text-brand-accent text-sm font-medium">Nova extração</Text>
           </Pressable>
-        )}
-      </View>
+        </View>
+      )}
 
       <PageHeader
         title="Separar Stems"
