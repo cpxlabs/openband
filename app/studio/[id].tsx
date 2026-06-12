@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { View, Text, Pressable, ScrollView, Platform, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
+import { useAudioPlayer, useAudioPlayerStatus, useAudioRecorder, useAudioRecorderState, AudioModule, setAudioModeAsync, RecordingPresets } from 'expo-audio';
 import { DEMO_AUDIO_URL } from '../../src/lib/constants';
 import {
   Metronome,
@@ -83,6 +83,22 @@ export default function Studio() {
   const player = useAudioPlayer(null);
   const status = useAudioPlayerStatus(player);
 
+  const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const recorderState = useAudioRecorderState(audioRecorder);
+
+  useEffect(() => {
+    (async () => {
+      const { granted } = await AudioModule.requestRecordingPermissionsAsync();
+      if (!granted) {
+        Alert.alert('Permissão', 'Permissão para usar o microfone foi negada.');
+      }
+      await setAudioModeAsync({
+        playsInSilentMode: true,
+        allowsRecording: true,
+      });
+    })();
+  }, []);
+
   const resp = useResponsive();
 
   const [isRecording, setIsRecording] = useState(false);
@@ -124,6 +140,8 @@ export default function Studio() {
     countInBars: 2,
   });
 
+  const [playbackRate, setPlaybackRate] = useState(1.0);
+
   const [recordSettings, setRecordSettings] = useState<RecordSettings>({
     armed: false,
     inputSource: 'mic',
@@ -132,6 +150,10 @@ export default function Studio() {
     mono: false,
     preRoll: 2,
   });
+
+  useEffect(() => {
+    player.playbackRate = playbackRate;
+  }, [playbackRate, player]);
 
   useEffect(() => {
     const saved = loadProject(id);
@@ -185,10 +207,49 @@ export default function Studio() {
     else { player.replace(DEMO_AUDIO_URL); player.play(); }
   }, [isPlaying, player]);
 
-  const toggleRecording = useCallback(() => {
+  const toggleRecording = useCallback(async () => {
     if (!recordSettings.armed) { setShowRecordOptions(true); return; }
-    setIsRecording(prev => !prev);
-  }, [recordSettings.armed]);
+
+    if (isRecording) {
+      await audioRecorder.stop();
+      const uri = audioRecorder.uri;
+      if (uri) {
+        const trackId = `rec-${Date.now()}`;
+        const colors = ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-amber-500', 'bg-pink-500', 'bg-cyan-500'];
+        const newTrack: TrackDef = {
+          id: trackId,
+          name: `Recording ${tracks.length + 1}`,
+          color: colors[tracks.length % colors.length],
+          muted: false,
+          solo: false,
+          volume: 80,
+          pan: 0,
+          sends: {},
+          regions: [{ id: `region-${Date.now()}`, start: 0, duration: Math.max(recorderState.durationMillis / 1000, 1) }],
+          plugins: [],
+          automation: {},
+        };
+        setTracks([...tracks, newTrack]);
+        setSelectedTrackId(trackId);
+      }
+      setIsRecording(false);
+    } else {
+      const bitRateMap: Record<string, number> = {
+        low: 64000,
+        medium: 128000,
+        high: 192000,
+        lossless: 1411000,
+      };
+      await audioRecorder.prepareToRecordAsync({
+        sampleRate: recordSettings.sampleRate,
+        numberOfChannels: recordSettings.mono ? 1 : 2,
+        bitRate: bitRateMap[recordSettings.quality] || 128000,
+        extension: recordSettings.quality === 'lossless' ? '.wav' : '.m4a',
+      });
+      audioRecorder.record();
+      setIsRecording(true);
+    }
+  }, [recordSettings.armed, isRecording, audioRecorder, recorderState.durationMillis, tracks, setTracks, recordSettings.sampleRate, recordSettings.mono, recordSettings.quality]);
 
   const toggleMute = useCallback((trackId: string) => {
     setTracks(tracks.map(t => t.id === trackId ? { ...t, muted: !t.muted } : t));
@@ -544,6 +605,16 @@ export default function Studio() {
           <TimeDisplay seconds={currentTime} />
           <Text className="text-gray-600">/</Text>
           <TimeDisplay seconds={duration} />
+        </View>
+
+        <View className="flex-row items-center gap-0.5 bg-dark-bg/40 rounded-lg px-1.5 py-1 border border-dark-border/30">
+          <Text className="text-gray-600 text-[9px] font-bold mr-0.5">⟳</Text>
+          {[0.5, 0.75, 1, 1.25, 1.5, 2].map(rate => (
+            <Pressable key={rate} onPress={() => setPlaybackRate(rate)}
+              className={`px-1.5 py-0.5 rounded ${Math.abs(playbackRate - rate) < 0.01 ? 'bg-brand-accent/20 border border-brand-accent/40' : 'bg-dark-muted/30'}`}>
+              <Text className={`text-[10px] font-mono ${Math.abs(playbackRate - rate) < 0.01 ? 'text-brand-accent font-semibold' : 'text-gray-500'}`}>{rate}x</Text>
+            </Pressable>
+          ))}
         </View>
 
         {projectKey && genreParam && (
