@@ -18,7 +18,7 @@ function ensureDir(dir: string) {
 
 function execPython(args: string[]): Promise<string> {
   return new Promise((resolve, reject) => {
-    execFile('python3', ['-u', ...args], {
+    execFile(process.env.PYTHON_PATH || '/home/az1nn/projetos/openband/backend/.venv/bin/python3', ['-u', ...args], {
       maxBuffer: 1024 * 1024 * 100,
       timeout: 1000 * 60 * 30,
     }, (err, stdout, stderr) => {
