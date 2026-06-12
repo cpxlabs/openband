@@ -2,8 +2,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
-
-const DEMO_AUDIO_URL = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+import { DEMO_AUDIO_URL } from '../../src/lib/constants';
 
 interface Track {
   id: string;

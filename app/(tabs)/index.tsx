@@ -2,8 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { FlatList, View, Text } from 'react-native';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { Card, Badge, ProgressBar, PageHeader } from '../../src/components';
-
-const DEMO_AUDIO_URL = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+import { DEMO_AUDIO_URL } from '../../src/lib/constants';
 
 const MOCK_POSTS = [
   { id: '1', title: 'Solo de Guitarra Pesado', author: '@joaomusico99', plays: 234 },

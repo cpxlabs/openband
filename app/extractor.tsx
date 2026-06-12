@@ -1,10 +1,8 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { PageHeader, Card, Button, Badge, ProgressBar, Loading } from '../src/components';
-
-const DEMO_URL = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+import { DEMO_AUDIO_URL } from '../src/lib/constants';
 
 type StemType = 'drums' | 'bass' | 'vocals' | 'other';
 
@@ -86,13 +84,14 @@ function StemPlayer({ stem, onAddToProject }: { stem: StemResult; onAddToProject
 }
 
 export default function Extractor() {
-  const router = useRouter();
   const [phase, setPhase] = useState<Phase>('select');
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState('');
   const [selectedTrack, setSelectedTrack] = useState<string | null>(null);
   const [results, setResults] = useState<StemResult[]>([]);
+  const [animTick, setAnimTick] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const animRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const statusMessages = [
     'Analisando espectro de frequências...',
@@ -119,16 +118,27 @@ export default function Extractor() {
         if (timerRef.current) clearInterval(timerRef.current);
 
         const stems: StemResult[] = [
-          { type: 'drums',  label: 'Bateria', icon: '🥁', color: 'bg-green-600',  url: DEMO_URL, duration: 30 },
-          { type: 'bass',   label: 'Baixo',   icon: '🎸', color: 'bg-blue-600',   url: DEMO_URL, duration: 28 },
-          { type: 'vocals', label: 'Vocal',   icon: '🎤', color: 'bg-purple-600', url: DEMO_URL, duration: 25 },
-          { type: 'other',  label: 'Outros',  icon: '🎹', color: 'bg-amber-600',  url: DEMO_URL, duration: 32 },
+          { type: 'drums',  label: 'Bateria', icon: '🥁', color: 'bg-green-600',  url: DEMO_AUDIO_URL, duration: 30 },
+          { type: 'bass',   label: 'Baixo',   icon: '🎸', color: 'bg-blue-600',   url: DEMO_AUDIO_URL, duration: 28 },
+          { type: 'vocals', label: 'Vocal',   icon: '🎤', color: 'bg-purple-600', url: DEMO_AUDIO_URL, duration: 25 },
+          { type: 'other',  label: 'Outros',  icon: '🎹', color: 'bg-amber-600',  url: DEMO_AUDIO_URL, duration: 32 },
         ];
         setResults(stems);
         setPhase('done');
       }
     }, 600);
   }, []);
+
+  useEffect(() => {
+    if (phase === 'processing') {
+      animRef.current = setInterval(() => {
+        setAnimTick((t) => t + 1);
+      }, 50);
+    }
+    return () => {
+      if (animRef.current) clearInterval(animRef.current);
+    };
+  }, [phase]);
 
   useEffect(() => {
     return () => {
@@ -141,11 +151,12 @@ export default function Extractor() {
   }, []);
 
   const handleAddToProject = useCallback((stem: StemResult) => {
-    router.push(`/studio/new?stem=${stem.type}`);
-  }, [router]);
+    alert(`Stem "${stem.label}" adicionada ao projeto (demo)`);
+  }, []);
 
   const handleReset = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
+    if (animRef.current) clearInterval(animRef.current);
     setPhase('select');
     setProgress(0);
     setSelectedTrack(null);
@@ -230,7 +241,7 @@ export default function Extractor() {
                   key={i}
                   className="w-2 bg-brand-primary/60 rounded-full"
                   style={{
-                    height: 16 + Math.sin(Date.now() * 0.01 + i * 1.2) * 10,
+                    height: 16 + Math.sin(animTick * 0.5 + i * 1.2) * 10,
                     opacity: progress > i * 15 ? 1 : 0.2,
                   }}
                 />
@@ -286,7 +297,7 @@ export default function Extractor() {
               <Button
                 title="Adicionar todos ao estúdio"
                 icon="+"
-                onPress={() => router.push('/studio/new')}
+                onPress={() => alert('Stems adicionadas ao estúdio (demo)')}
               />
               <Button
                 title="Exportar stems"
