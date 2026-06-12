@@ -15,6 +15,7 @@ Before starting any task:
 - [ ] Read `tailwind.config.js` for design tokens (colors, spacing, radii)
 - [ ] Check `package.json` for available dependencies — **do not add new ones without approval**
 - [ ] Read the exact Expo SDK docs at https://docs.expo.dev/versions/v56.0.0/ before using any Expo API
+- [ ] Check `docs/supabase.md` when setting up or modifying Supabase integration
 - [ ] Check git log (`git log --oneline -10`) to understand recent context
 
 ---
@@ -91,6 +92,15 @@ CSS component classes (from `global.css`):
 - `player.volume = 0.0...1.0`
 - Sources can be `require(...)` or URL string
 
+### Backend
+
+- Express server at `backend/src/index.ts`, port 3001
+- POST `/api/extract` — upload audio for Demucs stem separation
+- GET `/api/stems/:filename` — download processed stems
+- Python Demucs path: `backend/.venv/bin/python3` (or `$PYTHON_PATH` env var)
+- Mock fallback generates silent WAVs when Demucs unavailable
+- Run: `cd backend && npm run dev`
+
 ---
 
 ## Phase 3: Check
@@ -112,6 +122,8 @@ npm run build
 - **UI changes:** After building, verify the output
 - **Audio changes:** Test play/pause/seek behavior
 - **Auth changes:** Test with both real Supabase env vars and mock fallback (no .env)
+- **Android build:** `cd android && ./gradlew assembleRelease`
+- **Dependency changes:** Check `package.json` before adding any new package
 
 ### If a check fails:
 
@@ -147,22 +159,39 @@ Types: `fix`, `feat`, `chore`, `refactor`, `docs`
 ```
 app/
   _layout.tsx          — Root: SafeAreaProvider + AuthProvider + redirect logic
-  (auth)/login.tsx    — Login screen
+  (auth)/login.tsx    — Login screen (Supabase auth, mock fallback)
   (tabs)/
     _layout.tsx       — Tab navigator (Feed, Biblioteca)
     index.tsx         — Feed screen with audio playback
-    library.tsx       — Library screen with project list
-  studio/[id].tsx     — DAW-style studio with multi-track mixer
+    library.tsx       — Library screen with project list + "Separar Stems" button
+  extractor.tsx       — Stem separation (select → process → results)
+  studio/[id].tsx     — DAW-style multi-track mixer with waveform + transport
 
 src/
   lib/supabase.ts     — Supabase client with mock fallback for dev
   context/
     AuthContext.tsx    — Auth state context (session, user, loading, signOut)
-  components/         — Design system components (see table above)
+  components/         — Design system (12 components, see table above)
+
+backend/
+  src/
+    index.ts          — Express server entry (port 3001)
+    routes/extract.ts — POST /api/extract + GET /api/stems/:filename
+    services/
+      demucs.ts       — Python Demucs subprocess (htdemucs, 4 stems)
+      mock.ts         — Silent WAV fallback generator
+    middleware/upload.ts — Multer config (200MB, audio formats)
+    types.ts          — Shared types
+
+supabase/
+  schema.sql          — DB tables: profiles, projects, tracks, stems, posts
 
 Config:
-  tailwind.config.js  — Design tokens (colors, spacing, fonts)
-  global.css          — Tailwind directives + component layer utilities
+  tailwind.config.js  — Design tokens (colors, spacing, fonts, radii)
+  global.css          — Tailwind v3 directives + component layer
   babel.config.js     — Babel with expo preset + nativewind/babel + reanimated
   metro.config.js     — Metro with NativeWind + nativewind node_modules paths
+  tsconfig.json       — Strict TS, @/ path alias
+  .env.example        — Supabase env vars template
+  docs/supabase.md    — Complete Supabase setup guide
 ```
