@@ -1,6 +1,6 @@
 import 'react-native-url-polyfill/auto';
 import * as SecureStore from 'expo-secure-store';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type Session } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
 
 const ExpoSecureStoreAdapter = {
@@ -26,20 +26,70 @@ const ExpoSecureStoreAdapter = {
   },
 };
 
+function createMockClient() {
+  let mockSession: Session | null = null;
+  type AuthListener = (event: string, session: Session | null) => void;
+  const listeners = new Set<AuthListener>();
+
+  function notify(event: string, session: Session | null) {
+    listeners.forEach((cb) => cb(event, session));
+  }
+
+  function makeMockSession(email: string): Session {
+    return {
+      access_token: 'mock-token',
+      refresh_token: 'mock-refresh',
+      expires_in: 86400,
+      expires_at: Math.floor(Date.now() / 1000) + 86400,
+      token_type: 'bearer',
+      user: {
+        id: 'mock-user-id',
+        aud: 'authenticated',
+        role: 'authenticated',
+        email: email,
+        app_metadata: {},
+        user_metadata: {},
+        identities: [],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    };
+  }
+
+  return {
+    auth: {
+      getSession: async () => ({ data: { session: mockSession }, error: null }),
+      onAuthStateChange: (callback: AuthListener) => {
+        listeners.add(callback);
+        return {
+          data: { subscription: { unsubscribe: () => listeners.delete(callback) } },
+        };
+      },
+      signOut: async () => {
+        mockSession = null;
+        notify('SIGNED_OUT', null);
+        return { error: null };
+      },
+      signInWithPassword: async ({ email }: { email: string }) => {
+        const session = makeMockSession(email);
+        mockSession = session;
+        notify('SIGNED_IN', session);
+        return { data: { user: session.user, session }, error: null };
+      },
+    },
+  };
+}
+
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
-    'Missing Supabase environment variables. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY in your .env file.'
-  );
-}
-
-export const supabase = createClient(supabaseUrl as string, supabaseAnonKey as string, {
-  auth: {
-    storage: ExpoSecureStoreAdapter,
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false,
-  },
-});
+export const supabase = supabaseUrl && supabaseAnonKey
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        storage: ExpoSecureStoreAdapter,
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false,
+      },
+    })
+  : (createMockClient() as unknown as ReturnType<typeof createClient>);
