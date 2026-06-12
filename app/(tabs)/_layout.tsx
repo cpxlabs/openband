@@ -6,6 +6,7 @@ function TabIcon({ label, focused }: { label: string; focused: boolean }) {
     Feed: '♫',
     Biblioteca: '☰',
     Conta: '●',
+    Ajustes: '⚙',
   };
   return (
     <View className="items-center justify-center gap-0.5">
@@ -53,6 +54,12 @@ export default function TabLayout() {
         name="account"
         options={{
           tabBarIcon: ({ focused }) => <TabIcon label="Conta" focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          tabBarIcon: ({ focused }) => <TabIcon label="Ajustes" focused={focused} />,
         }}
       />
     </Tabs>

@@ -4,6 +4,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { AuthProvider, useAuth } from "../src/context/AuthContext";
+import { ThemeProvider } from "../src/context/ThemeContext";
 import { View, Platform } from "react-native";
 import { Loading } from "../src/components";
 
@@ -68,9 +69,11 @@ export default function RootLayout() {
       </Head>
       <View className="flex-1 bg-dark-bg">
         <StatusBar style="light" />
-        <AuthProvider>
-          <RootLayoutProtected />
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <RootLayoutProtected />
+          </AuthProvider>
+        </ThemeProvider>
       </View>
     </SafeAreaProvider>
   );

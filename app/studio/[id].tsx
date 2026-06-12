@@ -343,7 +343,7 @@ export default function Studio() {
       </View>
 
       <View className="flex-1 flex-row">
-        <View className="w-36 bg-[#131316] border-r border-dark-border">
+        <View className="w-36 bg-dark-bg/80 border-r border-dark-border">
           {tracks.map((track) => {
             const gv = getGroupVolume(groups, track.id);
             return (
@@ -362,25 +362,25 @@ export default function Studio() {
                   {gv && <View className="w-3 h-1.5 rounded-full bg-gray-600" />}
                 </View>
                 <View className="flex-row gap-1.5 mt-1">
-                  <Pressable onPress={() => toggleMute(track.id)}
-                    className={`w-7 h-7 rounded items-center justify-center border ${track.muted ? 'bg-amber-500 border-amber-400' : 'bg-[#222] border-dark-border'}`}>
-                    <Text className={`text-xs font-bold ${track.muted ? 'text-white' : 'text-gray-400'}`}>M</Text>
-                  </Pressable>
-                  <Pressable onPress={() => toggleSolo(track.id)}
-                    className={`w-7 h-7 rounded items-center justify-center border ${track.solo ? 'bg-green-500 border-green-400' : 'bg-[#222] border-dark-border'}`}>
-                    <Text className={`text-xs font-bold ${track.solo ? 'text-white' : 'text-gray-400'}`}>S</Text>
-                  </Pressable>
-                  <Pressable onPress={() => setShowAutomation(prev => ({ ...prev, [track.id]: !prev[track.id] }))}
-                    className={`w-7 h-7 rounded items-center justify-center border ${showAutomation[track.id] ? 'bg-brand-accent/20 border-brand-accent' : 'bg-[#222] border-dark-border'}`}>
-                    <Text className={`text-xs font-bold ${showAutomation[track.id] ? 'text-brand-accent' : 'text-gray-400'}`}>A</Text>
-                  </Pressable>
+                    <Pressable onPress={() => toggleMute(track.id)}
+                            className={`w-7 h-7 rounded items-center justify-center border ${track.muted ? 'bg-amber-500 border-amber-400' : 'bg-dark-muted/40 border-dark-border'}`}>
+                      <Text className={`text-xs font-bold ${track.muted ? 'text-white' : 'text-gray-400'}`}>M</Text>
+                    </Pressable>
+                    <Pressable onPress={() => toggleSolo(track.id)}
+                            className={`w-7 h-7 rounded items-center justify-center border ${track.solo ? 'bg-green-500 border-green-400' : 'bg-dark-muted/40 border-dark-border'}`}>
+                      <Text className={`text-xs font-bold ${track.solo ? 'text-white' : 'text-gray-400'}`}>S</Text>
+                    </Pressable>
+                    <Pressable onPress={() => setShowAutomation(prev => ({ ...prev, [track.id]: !prev[track.id] }))}
+                            className={`w-7 h-7 rounded items-center justify-center border ${showAutomation[track.id] ? 'bg-brand-accent/20 border-brand-accent' : 'bg-dark-muted/40 border-dark-border'}`}>
+                      <Text className={`text-xs font-bold ${showAutomation[track.id] ? 'text-brand-accent' : 'text-gray-400'}`}>A</Text>
+                    </Pressable>
                 </View>
               </Pressable>
             );
           })}
         </View>
 
-        <ScrollView horizontal className="flex-1 bg-[#0b0b0d]">
+        <ScrollView horizontal className="flex-1 bg-dark-bg">
           <View style={{ width: 1200 }}>
             <View className="relative" style={{ height: tracks.length * 80 }}>
               {tracks.map((track) => {
@@ -436,7 +436,7 @@ export default function Studio() {
         </ScrollView>
       </View>
 
-      <View className="bg-[#141417] border-t border-dark-border">
+      <View className="bg-dark-surface border-t border-dark-border">
         <View className="flex-row border-b border-dark-border/50">
           {bottomTabs.map(tab => (
             <Pressable key={tab.key} onPress={() => setBottomTab(tab.key)}
@@ -472,17 +472,17 @@ export default function Studio() {
                     <View key={track.id} className="w-24 bg-dark-surface rounded-xl border border-dark-border p-2.5 items-center gap-2">
                       <Text className="text-[10px] text-gray-400 font-medium truncate w-full text-center">{track.name}</Text>
                       <Pressable onPress={() => setTrackVolume(track.id, Math.min(100, Math.max(0, trackVolume(track.id) - 10)))}
-                        className="w-4 flex-1 bg-[#111] rounded-full relative justify-end overflow-hidden active:opacity-80">
+                        className="w-4 flex-1 bg-dark-bg rounded-full relative justify-end overflow-hidden active:opacity-80">
                         <View style={{ height: `${effVol}%` }} className={`w-full rounded-full ${isAudible(track) ? 'bg-brand-accent' : 'bg-gray-600'}`} />
                       </Pressable>
                       <View className="flex-row items-center gap-1">
                         <Pressable onPress={() => setTrackVolume(track.id, Math.max(0, trackVolume(track.id) - 5))}
-                          className="w-5 h-5 rounded bg-[#222] items-center justify-center active:opacity-70">
+                          className="w-5 h-5 rounded bg-dark-muted/40 items-center justify-center active:opacity-70">
                           <Text className="text-gray-400 text-xs">−</Text>
                         </Pressable>
                         <Text className="text-[9px] font-mono text-gray-500 w-8 text-center">{track.muted ? 'MUT' : `${effVol}%`}</Text>
                         <Pressable onPress={() => setTrackVolume(track.id, Math.min(100, trackVolume(track.id) + 5))}
-                          className="w-5 h-5 rounded bg-[#222] items-center justify-center active:opacity-70">
+                          className="w-5 h-5 rounded bg-dark-muted/40 items-center justify-center active:opacity-70">
                           <Text className="text-gray-400 text-xs">+</Text>
                         </Pressable>
                       </View>

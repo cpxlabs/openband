@@ -6,16 +6,23 @@ module.exports = {
     extend: {
       colors: {
         dark: {
-          bg: "#0f0f11",
-          surface: "#18181c",
-          elevated: "#1e1e24",
-          border: "#26262b",
-          muted: "#2a2a30",
+          bg: "var(--color-dark-bg, #0f0f11)",
+          surface: "var(--color-dark-surface, #18181c)",
+          elevated: "var(--color-dark-elevated, #1e1e24)",
+          border: "var(--color-dark-border, #26262b)",
+          muted: "var(--color-dark-muted, #2a2a30)",
+        },
+        light: {
+          bg: "var(--color-light-bg, #ffffff)",
+          surface: "var(--color-light-surface, #f2f2f7)",
+          elevated: "var(--color-light-elevated, #e5e5ea)",
+          border: "var(--color-light-border, #d1d1d6)",
+          muted: "var(--color-light-muted, #c7c7cc)",
         },
         brand: {
-          primary: "#ff3b30",
+          primary: "var(--color-brand-primary, #ff3b30)",
           primaryDark: "#cc2f26",
-          accent: "#007aff",
+          accent: "var(--color-brand-accent, #007aff)",
           accentDark: "#0062cc",
           green: "#34c759",
           yellow: "#ff9f0a",
