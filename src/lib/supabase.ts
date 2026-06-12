@@ -27,15 +27,19 @@ const ExpoSecureStoreAdapter = {
 };
 
 function createMockClient() {
-  let mockSession: Session | null = makeMockSession('dev@openband.app');
+  let mockSession: Session | null = makeMockSession('dev@openband.app', 'Dev');
   type AuthListener = (event: string, session: Session | null) => void;
   const listeners = new Set<AuthListener>();
+
+  const userStore: Record<string, { email: string; name: string }> = {
+    'dev@openband.app': { email: 'dev@openband.app', name: 'Dev' },
+  };
 
   function notify(event: string, session: Session | null) {
     listeners.forEach((cb) => cb(event, session));
   }
 
-  function makeMockSession(email: string): Session {
+  function makeMockSession(email: string, name?: string): Session {
     return {
       access_token: 'mock-token',
       refresh_token: 'mock-refresh',
@@ -48,7 +52,7 @@ function createMockClient() {
         role: 'authenticated',
         email: email,
         app_metadata: {},
-        user_metadata: {},
+        user_metadata: { name: name ?? email.split('@')[0] },
         identities: [],
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -71,10 +75,33 @@ function createMockClient() {
         return { error: null };
       },
       signInWithPassword: async ({ email }: { email: string }) => {
-        const session = makeMockSession(email);
+        const existing = userStore[email];
+        const name = existing?.name;
+        const session = makeMockSession(email, name);
         mockSession = session;
         notify('SIGNED_IN', session);
         return { data: { user: session.user, session }, error: null };
+      },
+      signUp: async ({ email, password, options }: { email: string; password: string; options?: { data?: Record<string, unknown> } }) => {
+        const name = (options?.data?.name as string) ?? email.split('@')[0];
+        userStore[email] = { email, name };
+        const session = makeMockSession(email, name);
+        mockSession = session;
+        notify('SIGNED_IN', session);
+        return { data: { user: session.user, session }, error: null };
+      },
+      updateUser: async (attributes: { data?: { name?: string } }) => {
+        if (mockSession?.user && attributes.data?.name) {
+          mockSession.user.user_metadata = {
+            ...mockSession.user.user_metadata,
+            name: attributes.data.name,
+          };
+          const email = mockSession.user.email;
+          if (email) {
+            userStore[email] = { ...userStore[email], name: attributes.data.name };
+          }
+        }
+        return { data: { user: mockSession?.user ?? null }, error: null };
       },
     },
   };

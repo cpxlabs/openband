@@ -1,24 +1,35 @@
 import { useState } from 'react';
-import { View, Text, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, KeyboardAvoidingView, Platform, Pressable } from 'react-native';
 import { Button, TextInput } from '../../src/components';
 import { supabase } from '../../src/lib/supabase';
 
 export default function Login() {
+  const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSignIn = async () => {
-    if (!email.trim() || !password.trim()) {
+  const handleSubmit = async () => {
+    if (!email.trim() || !password.trim() || (isSignUp && !name.trim())) {
       setError('Preencha todos os campos.');
       return;
     }
     setLoading(true);
     setError(null);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) setError(error.message);
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { data: { name: name.trim() } },
+        });
+        if (error) setError(error.message);
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) setError(error.message);
+      }
     } catch {
       setError('Ocorreu um erro inesperado. Tente novamente.');
     } finally {
@@ -37,10 +48,22 @@ export default function Login() {
             <Text className="text-white text-4xl">♫</Text>
           </View>
           <Text className="text-white text-4xl font-bold tracking-tight">OpenBand</Text>
-          <Text className="text-gray-500 text-sm mt-2">Entre para criar música</Text>
+          <Text className="text-gray-500 text-sm mt-2">
+            {isSignUp ? 'Crie sua conta' : 'Entre para criar música'}
+          </Text>
         </View>
 
         <View className="gap-4">
+          {isSignUp && (
+            <TextInput
+              label="Nome"
+              placeholder="Seu nome"
+              onChangeText={setName}
+              value={name}
+              autoCapitalize="words"
+              autoComplete="name"
+            />
+          )}
           <TextInput
             label="E-mail"
             placeholder="seu@email.com"
@@ -56,7 +79,7 @@ export default function Login() {
             secureTextEntry
             onChangeText={setPassword}
             value={password}
-            autoComplete="current-password"
+            autoComplete={isSignUp ? 'new-password' : 'current-password'}
           />
         </View>
 
@@ -67,8 +90,14 @@ export default function Login() {
         )}
 
         <View className="mt-6">
-          <Button title="Entrar" onPress={handleSignIn} loading={loading} />
+          <Button title={isSignUp ? 'Criar conta' : 'Entrar'} onPress={handleSubmit} loading={loading} />
         </View>
+
+        <Pressable onPress={() => { setIsSignUp(!isSignUp); setError(null); }} className="mt-4">
+          <Text className="text-gray-500 text-sm text-center">
+            {isSignUp ? 'Já tem uma conta? Entre' : 'Não tem conta? Cadastre-se'}
+          </Text>
+        </Pressable>
       </View>
     </KeyboardAvoidingView>
   );
