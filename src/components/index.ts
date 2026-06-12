@@ -17,3 +17,4 @@ export { NewProject } from './NewProject';
 export { WaveformClip } from './WaveformClip';
 export { AutomationLane } from './AutomationLane';
 export { TrackGroupManager } from './TrackGroup';
+export { LufsMeter } from './LufsMeter';

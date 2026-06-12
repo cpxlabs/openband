@@ -13,6 +13,7 @@ import {
   WaveformClip,
   AutomationLane,
   TrackGroupManager,
+  LufsMeter,
 } from '../../src/components';
 import { useHistory } from '../../src/lib/history';
 import { getGroupVolume } from '../../src/components/TrackGroup';
@@ -514,7 +515,8 @@ export default function Studio() {
         )}
 
         {bottomTab === 'mastering' && (
-          <ScrollView className="flex-1 px-4 py-3" style={{ maxHeight: 260 }}>
+          <ScrollView className="flex-1 px-4 py-3" style={{ maxHeight: 340 }}>
+            <LufsMeter isPlaying={isPlaying} />
             <View className="flex-row items-center justify-between mb-2">
               <View className="flex-row items-center gap-2">
                 <View className="w-1.5 h-1.5 rounded-full bg-rose-500" />
