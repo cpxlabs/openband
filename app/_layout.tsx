@@ -36,11 +36,13 @@ function RootLayoutProtected() {
 
 export default function RootLayout() {
   return (
-    <SafeAreaProvider className="flex-1 bg-dark-bg">
-      <StatusBar style="light" />
-      <AuthProvider>
-        <RootLayoutProtected />
-      </AuthProvider>
+    <SafeAreaProvider>
+      <View className="flex-1 bg-dark-bg">
+        <StatusBar style="light" />
+        <AuthProvider>
+          <RootLayoutProtected />
+        </AuthProvider>
+      </View>
     </SafeAreaProvider>
   );
 }

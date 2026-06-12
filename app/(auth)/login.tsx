@@ -5,12 +5,20 @@ import { supabase } from '../../src/lib/supabase';
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
+
+  const [error, setError] = useState<string | null>(null);
 
   const handleSignIn = async () => {
     setLoading(true);
-    await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
+    setError(null);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) setError(error.message);
+    } catch (e) {
+      setError('Ocorreu um erro inesperado. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -32,6 +40,7 @@ export default function Login() {
       >
         {loading ? <ActivityIndicator color="white" /> : <Text className="text-white font-bold text-lg">Entrar</Text>}
       </Pressable>
+      {error && <Text className="text-red-400 text-sm mt-4 text-center">{error}</Text>}
     </View>
   );
 }

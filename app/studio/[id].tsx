@@ -157,7 +157,7 @@ export default function Studio() {
                 {/* Medidor de Volume Virtual (Fader Vertical) */}
                 <View className="w-3 h-14 bg-[#111] rounded relative justify-end">
                   <View
-                    style={{ height: `${track.volume}%` }}
+                    style={{ height: (track.volume / 100) * 56 }}
                     className={`w-full rounded-b ${track.muted ? 'bg-gray-600' : 'bg-brand-accent'}`}
                   />
                 </View>
