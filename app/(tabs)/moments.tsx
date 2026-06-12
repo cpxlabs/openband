@@ -1,9 +1,10 @@
 import { useState, useCallback } from 'react';
-import { View, Text, Pressable, ScrollView, Alert } from 'react-native';
+import { View, Text, Pressable, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
-import { PageHeader, Card, CardIcon, Button, Avatar, Badge } from '../../src/components';
+import { PageHeader, Card, Button, Avatar, Badge } from '../../src/components';
 import { MomentCard } from '../../src/components/MomentCard';
 import type { MomentData } from '../../src/components/MomentCard';
+import { useResponsive } from '../../src/lib/responsive';
 
 const MOCK_MOMENTS: MomentData[] = [
   {
@@ -63,6 +64,7 @@ const FREE_SAMPLE_PACKS = [
 
 export default function Moments() {
   const router = useRouter();
+  const resp = useResponsive();
   const [tab, setTab] = useState<'moments' | 'packs'>('moments');
   const [credits, setCredits] = useState<{ artist: string; sample: string }[]>([]);
 
@@ -74,11 +76,11 @@ export default function Moments() {
 
   return (
     <View className="flex-1 bg-dark-bg pt-12">
-      <View className="px-4 flex-row items-center justify-between mb-2">
+      <View className={`${resp.isMobile ? 'px-4' : 'px-6'} flex-row items-center justify-between mb-2`}>
         <PageHeader title="Momentos" subtitle="Artistas e criadores" />
       </View>
 
-      <View className="flex-row gap-2 px-4 mb-3">
+      <View className={`flex-row gap-2 ${resp.isMobile ? 'px-4' : 'px-6'} mb-3`}>
         <Pressable onPress={() => setTab('moments')}
           className={`flex-1 py-2 rounded-xl items-center border ${tab === 'moments' ? 'bg-brand-primary/20 border-brand-primary' : 'bg-dark-elevated border-dark-border'}`}>
           <Text className={`text-xs font-bold ${tab === 'moments' ? 'text-brand-primary' : 'text-white'}`}>♫ Momentos</Text>
@@ -90,7 +92,7 @@ export default function Moments() {
       </View>
 
       {credits.length > 0 && (
-        <View className="mx-4 mb-3 p-2.5 rounded-xl bg-brand-accent/10 border border-brand-accent/20">
+        <View className={`${resp.isMobile ? 'mx-4' : 'mx-6'} mb-3 p-2.5 rounded-xl bg-brand-accent/10 border border-brand-accent/20`}>
           <Text className="text-brand-accent text-[10px] font-bold uppercase tracking-wider">Créditos</Text>
           {credits.map((c, i) => (
             <Text key={i} className="text-gray-300 text-[10px] mt-0.5">• {c.sample} por {c.artist}</Text>
@@ -101,20 +103,20 @@ export default function Moments() {
 
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }}>
         {tab === 'moments' ? (
-          <View className="px-4">
+          <View className={`${resp.isMobile ? 'px-4' : 'px-6 max-w-3xl mx-auto'}`}>
             {MOCK_MOMENTS.map(moment => (
               <MomentCard key={moment.id} moment={moment} />
             ))}
           </View>
         ) : (
-          <View className="px-4 gap-3">
-            <View className="card p-3 mb-1">
+          <View className={`${resp.isMobile ? 'px-4' : 'px-6'} ${resp.isDesktop ? 'flex-row flex-wrap gap-4' : 'gap-3'}`}>
+            <View className="card p-3 mb-1 w-full">
               <Text className="text-gray-400 text-xs leading-relaxed">
                 Samples gratuitos feitos por artistas da comunidade. Use nos seus projetos e credite o artista!
               </Text>
             </View>
             {FREE_SAMPLE_PACKS.map(pack => (
-              <View key={pack.id} className="card overflow-hidden">
+              <View key={pack.id} className={`card overflow-hidden ${resp.isDesktop ? 'w-[calc(50%-8px)]' : 'w-full'}`}>
                 <View className="p-4">
                   <View className="flex-row items-start gap-3 mb-3">
                     <View className={`w-12 h-12 rounded-2xl ${pack.color} items-center justify-center shadow-lg`}>

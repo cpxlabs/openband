@@ -1,9 +1,10 @@
 import { useState, useCallback } from 'react';
 import { View, Text, FlatList } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Card, CardRow, CardIcon, EmptyState, PageHeader, Button } from '../../src/components';
+import { CardRow, CardIcon, EmptyState, PageHeader, Button } from '../../src/components';
 import { NewProject } from '../../src/components/NewProject';
 import type { GenreTemplate } from '../../src/lib/projectTemplates';
+import { useResponsive } from '../../src/lib/responsive';
 
 const mockProjects = [
   { id: 'musica-1', title: 'Meu Hit de Verão', updated: '2 dias atrás', stemCount: 4 },
@@ -12,6 +13,7 @@ const mockProjects = [
 
 export default function Library() {
   const router = useRouter();
+  const resp = useResponsive();
   const [showNewProject, setShowNewProject] = useState(false);
 
   const handleCreate = useCallback((config: { name: string; genre: GenreTemplate; key: string; bpm: number }) => {
@@ -28,9 +30,11 @@ export default function Library() {
 
   return (
     <View className="flex-1 bg-dark-bg pt-12">
-      <PageHeader title="Biblioteca" subtitle="Seus projetos musicais" />
+      <View className={`${resp.isMobile ? 'px-4' : 'px-6'}`}>
+        <PageHeader title="Biblioteca" subtitle="Seus projetos musicais" />
+      </View>
 
-      <View className="mx-4 mb-3 gap-3">
+      <View className={`${resp.isMobile ? 'mx-4' : 'mx-6'} mb-3 gap-3 ${resp.isDesktop ? 'max-w-md' : ''}`}>
         <Button
           title="Novo Projeto"
           icon="+"
@@ -47,7 +51,8 @@ export default function Library() {
       <FlatList
         data={mockProjects}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}
+        contentContainerStyle={{ paddingHorizontal: resp.isMobile ? 16 : 24, paddingBottom: 100 }}
+        style={resp.isDesktop ? { maxWidth: 768, alignSelf: 'center', width: '100%' } : undefined}
         ListEmptyComponent={
           <EmptyState
             icon="🎧"

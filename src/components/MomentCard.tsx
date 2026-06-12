@@ -1,10 +1,9 @@
 import { useState, useCallback } from 'react';
-import { View, Text, Pressable, Image, ScrollView } from 'react-native';
+import { View, Text, Pressable, Image } from 'react-native';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { Avatar, Badge, ProgressBar } from '.';
 import { MiniMastering } from './MiniMastering';
 import { DEMO_AUDIO_URL } from '../lib/constants';
-import { MASTERING_CHAIN_PRESETS } from '../lib/mastering';
 
 export interface MomentData {
   id: string;

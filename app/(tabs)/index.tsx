@@ -5,6 +5,7 @@ import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { Card, Badge, ProgressBar, PageHeader, Avatar } from '../../src/components';
 import { DEMO_AUDIO_URL } from '../../src/lib/constants';
 import { GENRES } from '../../src/lib/projectTemplates';
+import { useResponsive } from '../../src/lib/responsive';
 
 interface FeedPost {
   id: string;
@@ -48,6 +49,7 @@ function formatCount(n: number) {
 
 export default function Feed() {
   const router = useRouter();
+  const resp = useResponsive();
   const player = useAudioPlayer(null);
   const status = useAudioPlayerStatus(player);
   const [playingId, setPlayingId] = useState<string | null>(null);
@@ -106,9 +108,11 @@ export default function Feed() {
 
   return (
     <View className="flex-1 bg-dark-bg pt-12">
-      <PageHeader title="Feed" subtitle="Descubra novos sons" />
+      <View className={`${resp.isMobile ? 'px-4' : 'px-6'}`}>
+        <PageHeader title="Feed" subtitle="Descubra novos sons" />
+      </View>
 
-      <View className="px-4 mb-2">
+      <View className={`${resp.isMobile ? 'px-4' : 'px-6'} mb-2`}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-2">
           <View className="flex-row gap-2 py-1">
             {GENRE_FILTERS.map(genre => (
@@ -138,7 +142,7 @@ export default function Feed() {
       </View>
 
       {playingId && (
-        <View className="flex-row items-center gap-2 px-4 py-2 bg-brand-primary/10 border-b border-brand-primary/20">
+        <View className={`flex-row items-center gap-2 ${resp.isMobile ? 'px-4' : 'px-6'} py-2 bg-brand-primary/10 border-b border-brand-primary/20`}>
           <View className="w-2 h-2 rounded-full bg-green-500" />
           <Text className="text-green-400 text-xs font-medium flex-1">
             Tocando: {currentPostRef.current.title}
@@ -149,7 +153,8 @@ export default function Feed() {
       <FlatList
         data={filteredPosts}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: resp.isDesktop ? 24 : 0 }}
+        style={resp.isDesktop ? { maxWidth: 768, alignSelf: 'center', width: '100%' } : undefined}
         ListEmptyComponent={
           <View className="py-16 items-center">
             <Text className="text-4xl mb-3 opacity-50">🎵</Text>

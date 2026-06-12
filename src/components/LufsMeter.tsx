@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { View, Text, Pressable } from 'react-native';
 
 interface LufsMeterProps {
@@ -54,7 +54,7 @@ export function LufsMeter({ isPlaying }: LufsMeterProps) {
           const next = [...prev, -30];
           return next.length > 30 ? next.slice(-30) : next;
         });
-        setAvgLoudness(lerp(avgLoudness, -30, 0.02));
+        setAvgLoudness(prev => lerp(prev, -30, 0.02));
       }, 200);
       return () => clearInterval(decay);
     }
@@ -84,7 +84,7 @@ export function LufsMeter({ isPlaying }: LufsMeterProps) {
         return next.length > 30 ? next.slice(-30) : next;
       });
       const h = integratedRef.current;
-      setAvgLoudness(lerp(avgLoudness, h, 0.1));
+      setAvgLoudness(prev => lerp(prev, h, 0.1));
     }, 200);
 
     return () => clearInterval(tick);

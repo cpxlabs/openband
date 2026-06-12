@@ -52,11 +52,11 @@ function RootLayoutProtected() {
 
 export default function RootLayout() {
   useEffect(() => {
-    if (Platform.OS === "web" && "serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("/sw.js");
-      });
-    }
+    if (Platform.OS !== "web" || !("serviceWorker" in navigator)) return;
+    const handler = () => { navigator.serviceWorker.register("/sw.js"); };
+    if (document.readyState === "complete") { handler(); return; }
+    window.addEventListener("load", handler);
+    return () => window.removeEventListener("load", handler);
   }, []);
 
   return (

@@ -26,6 +26,7 @@ import { saveProject, loadProject } from '../../src/lib/projectStore';
 import { parseMidi, midiToTrackRegions } from '../../src/lib/midiParser';
 import { getGroupVolume } from '../../src/components/TrackGroup';
 import type { Plugin, MixSnapshot, MetronomeSettings, RecordSettings, TrackDef, GroupDef, SendBus, TrackAmpChain } from '../../src/lib/types';
+import { useResponsive } from '../../src/lib/responsive';
 import { MASTERING_CHAIN_PRESETS, buildMasteringChain } from '../../src/lib/mastering';
 import type { AutomationPoint } from '../../src/components/AutomationLane';
 
@@ -81,6 +82,8 @@ export default function Studio() {
   const projectKey = Array.isArray(keyParam) ? keyParam[0] : keyParam;
   const player = useAudioPlayer(null);
   const status = useAudioPlayerStatus(player);
+
+  const resp = useResponsive();
 
   const [isRecording, setIsRecording] = useState(false);
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
@@ -170,7 +173,7 @@ export default function Studio() {
       setTimeout(() => setLastSavedLabel(null), 2000);
     }, 2000);
     return () => clearTimeout(timer);
-  }, [tracks, groups, trackAssignments, masterPlugins, masteringChain, mixSnapshots, activeMixId, metronome, recordSettings, sendBuses, trackAmpChains]);
+  }, [tracks, groups, trackAssignments, masterPlugins, masteringChain, mixSnapshots, activeMixId, metronome, recordSettings, sendBuses, trackAmpChains, id, projectTitle, genreParam, projectKey]);
 
   const isPlaying = player.playing;
   const currentTime = status.currentTime || 0;
@@ -493,7 +496,7 @@ export default function Studio() {
 
   return (
     <View className="flex-1 bg-dark-bg select-none">
-      <View className="h-14 bg-dark-surface border-b border-dark-border flex-row items-center justify-between px-4">
+      <View className={`${resp.isMobile ? 'h-12 px-2' : 'h-14 px-4'} bg-dark-surface border-b border-dark-border flex-row items-center justify-between`}>
         <View className="flex-row items-center gap-2">
           <Pressable onPress={togglePlay}
             className={`w-11 h-11 rounded-full items-center justify-center ${isPlaying ? 'bg-green-600' : 'bg-dark-border'}`}>
@@ -565,7 +568,7 @@ export default function Studio() {
       </View>
 
       <View className="h-10 bg-dark-surface/50 border-b border-dark-border flex-row items-center px-4">
-        <View className="w-36 pr-2">
+        <View style={{ width: resp.tracksSidebarWidth }} className="pr-2">
           <Text className="text-gray-500 text-[10px] font-bold tracking-wider">TRACKS</Text>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-1">
@@ -583,7 +586,7 @@ export default function Studio() {
       </View>
 
       <View className="flex-1 flex-row">
-        <View className="w-36 bg-dark-bg/80 border-r border-dark-border">
+        <View style={{ width: resp.tracksSidebarWidth }} className="bg-dark-bg/80 border-r border-dark-border">
           {tracks.map((track) => {
             const gv = getGroupVolume(groups, track.id);
             return (
@@ -719,7 +722,7 @@ export default function Studio() {
 
         {bottomTab === 'mixer' && (
           <View>
-            <View className="flex-row items-center gap-3 px-4 py-2 border-b border-dark-border/50 bg-dark-surface/20">
+            <View className={`flex-row items-center gap-3 ${resp.isMobile ? 'px-2 py-1.5' : 'px-4 py-2'} border-b border-dark-border/50 bg-dark-surface/20`}>
               <Text className="text-gray-500 text-[10px] font-bold uppercase tracking-wider">Mixer</Text>
               <View className="flex-1 h-1.5 bg-dark-border rounded-full overflow-hidden">
                 <View className="h-full bg-brand-primary rounded-full" style={{ width: `${progressPct}%` }} />
@@ -733,15 +736,15 @@ export default function Studio() {
               )}
               <Pressable onPress={() => { if (sendBuses.length < 20) setSendBuses(prev => [...prev, { id: `bus-${Date.now()}`, name: `Send ${prev.length + 1}`, color: '#5ac8fa', volume: 80, muted: false }]); }}
                 className="ml-auto px-2 py-1 rounded-md bg-dark-muted/40 border border-dark-border active:opacity-70">
-                <Text className="text-[10px] text-gray-400">+Send</Text>
+                <Text className={`${resp.isMobile ? 'text-[9px]' : 'text-[10px]'} text-gray-400`}>+Send</Text>
               </Pressable>
             </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-1 px-4">
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-1 px-2 sm:px-4">
               <View className="flex-row gap-3 py-2">
                 {tracks.map((track) => {
                   const effVol = getEffectiveVolume(track.id);
                   return (
-                    <View key={track.id} className="w-28 bg-dark-surface rounded-xl border border-dark-border p-2.5 items-center gap-1.5">
+                    <View key={track.id} style={{ width: resp.channelWidth }} className="bg-dark-surface rounded-xl border border-dark-border p-2.5 items-center gap-1.5">
                       <Text className="text-[10px] text-gray-400 font-medium truncate w-full text-center">{track.name}</Text>
                       <View className="flex-row gap-1">
                         <Pressable onPress={() => toggleMute(track.id)}
@@ -771,7 +774,7 @@ export default function Studio() {
                       <View className="w-full h-6 flex-row items-center gap-1">
                         <Text className="text-[9px] text-gray-600 w-4 text-center">L</Text>
                         <View className="flex-1 h-1 bg-dark-bg rounded-full overflow-hidden">
-                          <View className="h-full bg-cyan-500 rounded-full" style={{ width: `${Math.abs(track.pan) * (track.pan < 0 ? 0.5 : 0) + 50}%` }} />
+                          <View className="h-full bg-cyan-500 rounded-full" style={{ width: `${(track.pan + 100) / 2}%` }} />
                         </View>
                         <Text className="text-[9px] text-gray-600 w-4 text-center">R</Text>
                       </View>
@@ -821,7 +824,7 @@ export default function Studio() {
         )}
 
         {bottomTab === 'fx' && (
-          <ScrollView className="flex-1 px-4 py-3" style={{ maxHeight: 220 }}>
+          <ScrollView className={`flex-1 ${resp.isMobile ? 'px-2 py-2' : 'px-4 py-3'}`} style={{ maxHeight: resp.isMobile ? 260 : 220 }}>
             {selectedTrack ? (
               <View>
                 <View className="flex-row items-center gap-2 mb-2 px-1">
@@ -846,7 +849,7 @@ export default function Studio() {
         )}
 
         {bottomTab === 'mastering' && (
-          <ScrollView className="flex-1 px-4 py-3" style={{ maxHeight: 340 }}>
+          <ScrollView className={`flex-1 ${resp.isMobile ? 'px-2 py-2' : 'px-4 py-3'}`} style={{ maxHeight: 340 }}>
             <LufsMeter isPlaying={isPlaying} />
             <View className="flex-row items-center justify-between mb-2">
               <View className="flex-row items-center gap-2">

@@ -1,7 +1,9 @@
 import { Tabs } from 'expo-router';
 import { Text, View } from 'react-native';
+import { useResponsive } from '../../src/lib/responsive';
 
 function TabIcon({ label, focused }: { label: string; focused: boolean }) {
+  const { breakpoint } = useResponsive();
   const icons: Record<string, string> = {
     Feed: '♫',
     Momentos: '♡',
@@ -10,11 +12,11 @@ function TabIcon({ label, focused }: { label: string; focused: boolean }) {
     Ajustes: '⚙',
   };
   return (
-    <View className="items-center justify-center gap-0.5">
-      <Text className={`text-xl ${focused ? 'text-brand-primary' : 'text-gray-500'}`}>
+    <View className="items-center justify-center gap-0.5 px-1">
+      <Text className={`${breakpoint === 'mobile' ? 'text-xl' : 'text-2xl'} ${focused ? 'text-brand-primary' : 'text-gray-500'}`}>
         {icons[label] || '●'}
       </Text>
-      <Text className={`text-[10px] font-medium ${focused ? 'text-brand-primary' : 'text-gray-500'}`}>
+      <Text className={`${breakpoint === 'mobile' ? 'text-[10px]' : 'text-xs'} font-medium ${focused ? 'text-brand-primary' : 'text-gray-500'}`}>
         {label}
       </Text>
     </View>
@@ -22,6 +24,9 @@ function TabIcon({ label, focused }: { label: string; focused: boolean }) {
 }
 
 export default function TabLayout() {
+  const { breakpoint, isWeb } = useResponsive();
+  const isDesktop = breakpoint === 'desktop' && isWeb;
+
   return (
     <Tabs
       screenOptions={{
@@ -30,10 +35,13 @@ export default function TabLayout() {
           backgroundColor: '#18181c',
           borderTopWidth: 1,
           borderTopColor: '#26262b',
-          height: 65,
-          paddingBottom: 8,
-          paddingTop: 6,
-        },
+          height: isDesktop ? 80 : breakpoint === 'tablet' ? 72 : 65,
+          paddingBottom: isDesktop ? 12 : 8,
+          paddingTop: isDesktop ? 10 : 6,
+          paddingHorizontal: isDesktop ? 32 : breakpoint === 'tablet' ? 16 : 0,
+          maxWidth: isDesktop ? 600 : undefined,
+          alignSelf: isDesktop ? 'center' : undefined,
+        } as any,
         tabBarActiveTintColor: '#ff3b30',
         tabBarInactiveTintColor: '#888',
         tabBarShowLabel: false,

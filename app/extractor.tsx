@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
-import { PageHeader, Card, Button, Badge, ProgressBar, Loading } from '../src/components';
+import { PageHeader, Card, Button, Badge, ProgressBar } from '../src/components';
 import { DEMO_AUDIO_URL } from '../src/lib/constants';
 
 type StemType = 'drums' | 'bass' | 'vocals' | 'other';
