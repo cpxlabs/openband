@@ -27,7 +27,7 @@ const ExpoSecureStoreAdapter = {
 };
 
 function createMockClient() {
-  let mockSession: Session | null = null;
+  let mockSession: Session | null = makeMockSession('dev@openband.app');
   type AuthListener = (event: string, session: Session | null) => void;
   const listeners = new Set<AuthListener>();
 
