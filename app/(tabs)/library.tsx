@@ -1,38 +1,57 @@
-import { View, Text, Pressable, FlatList } from 'react-native';
+import { View, Text, FlatList } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Card, CardRow, CardIcon, EmptyState, PageHeader, Button } from '../../src/components';
+
+const mockProjects = [
+  { id: 'musica-1', title: 'Meu Hit de Verão', updated: '2 dias atrás', stemCount: 4 },
+  { id: 'musica-2', title: 'Ideia de Riff (C# Menor)', updated: '1 semana atrás', stemCount: 2 },
+];
 
 export default function Library() {
   const router = useRouter();
-  const mockProjects = [
-    { id: 'musica-1', title: 'Meu Hit de Verão' },
-    { id: 'musica-2', title: 'Ideia de Riff (C# Menor)' }
-  ];
 
   return (
-    <View className="flex-1 bg-dark-bg pt-12 px-4">
-      <Text className="text-white text-3xl font-bold mb-6">Minhas Músicas</Text>
+    <View className="flex-1 bg-dark-bg pt-12">
+      <PageHeader title="Biblioteca" subtitle="Seus projetos musicais" />
 
-      <Pressable
-        className="bg-brand-primary p-4 rounded-xl mb-6 items-center active:opacity-90"
-        onPress={() => alert('Criando nova sessão no banco...')}
-      >
-        <Text className="text-white font-bold text-base">🎙️ Começar Novo Projeto</Text>
-      </Pressable>
+      <View className="mx-4 mb-3 gap-3">
+        <Button
+          title="Novo Projeto"
+          icon="+"
+          onPress={() => alert('Criando nova sessão no banco...')}
+        />
+        <Button
+          title="Separar Stems"
+          variant="secondary"
+          icon="🔊"
+          onPress={() => router.push('/extractor')}
+        />
+      </View>
 
       <FlatList
         data={mockProjects}
         keyExtractor={(item) => item.id}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}
+        ListEmptyComponent={
+          <EmptyState
+            icon="🎧"
+            title="Nenhum projeto ainda"
+            subtitle="Crie seu primeiro projeto acima"
+          />
+        }
         renderItem={({ item }) => (
-          <Pressable
-            className="p-4 mb-2 bg-dark-surface rounded-lg border border-dark-border flex-row justify-between items-center active:border-gray-500"
-            onPress={() => router.push(`/studio/${item.id}`)}
-          >
-            <View>
-              <Text className="text-white font-semibold text-lg">{item.title}</Text>
-              <Text className="text-gray-500 text-xs">Modificado recentemente</Text>
+          <CardRow onPress={() => router.push(`/studio/${item.id}`)} className="mb-2">
+            <CardIcon icon="♫" />
+            <View className="flex-1 ml-4">
+              <Text className="text-white font-semibold text-base">{item.title}</Text>
+              <View className="flex-row items-center gap-3 mt-1">
+                <Text className="text-gray-500 text-xs">{item.updated}</Text>
+                <Text className="text-gray-600 text-xs">·</Text>
+                <Text className="text-gray-500 text-xs">{item.stemCount} stems</Text>
+              </View>
             </View>
-            <Text className="text-brand-accent text-sm">Abrir Estúdio →</Text>
-          </Pressable>
+            <Text className="text-brand-accent text-sm">Abrir →</Text>
+          </CardRow>
         )}
       />
     </View>

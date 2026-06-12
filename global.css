@@ -4,6 +4,48 @@
 
 @layer base {
   body {
-    @apply bg-[#0f0f11] text-white;
+    @apply bg-dark-bg text-white;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-dark-surface rounded-2xl border border-dark-border overflow-hidden;
+  }
+
+  .card-elevated {
+    @apply bg-dark-elevated rounded-2xl border border-dark-border shadow-sm;
+  }
+
+  .btn-primary {
+    @apply bg-brand-primary rounded-xl active:opacity-80 disabled:opacity-50;
+  }
+
+  .btn-secondary {
+    @apply bg-dark-muted border border-dark-border rounded-xl active:opacity-80;
+  }
+
+  .btn-ghost {
+    @apply rounded-xl active:bg-dark-muted;
+  }
+
+  .input-field {
+    @apply bg-dark-surface rounded-xl text-white border border-dark-border;
+  }
+
+  .input-field-focused {
+    @apply border-brand-primary;
+  }
+
+  .section-header {
+    @apply text-gray-500 text-xs font-semibold uppercase tracking-widest;
+  }
+
+  .label {
+    @apply text-gray-400 text-xs font-semibold uppercase tracking-wider;
+  }
+
+  .badge {
+    @apply bg-dark-muted px-2.5 py-1 rounded-full flex-row items-center gap-1;
   }
 }

@@ -1,175 +1,278 @@
-import { useState } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 
-// Tipagem básica para simular as tracks da DAW
+const DEMO_AUDIO_URL = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+
 interface Track {
   id: string;
   name: string;
   color: string;
   muted: boolean;
   solo: boolean;
-  volume: number; // 0 a 100
+  volume: number;
   regions: { id: string; start: number; duration: number }[];
+}
+
+function TimeDisplay({ seconds }: { seconds: number }) {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return (
+    <Text className="text-white font-mono text-base tracking-wider">
+      {String(m).padStart(2, '0')}:{String(s).padStart(2, '0')}
+    </Text>
+  );
 }
 
 export default function Studio() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
 
-  const [isPlaying, setIsPlaying] = useState(false);
+  const player = useAudioPlayer(null);
+  const status = useAudioPlayerStatus(player);
+
   const [isRecording, setIsRecording] = useState(false);
   const [bpm] = useState(120);
 
-  // Estado das tracks inspirado no modelo relacional do nosso banco de dados
   const [tracks, setTracks] = useState<Track[]>([
     { id: '1', name: 'Voz Principal', color: 'bg-red-500', muted: false, solo: false, volume: 80, regions: [{ id: 'r1', start: 10, duration: 150 }] },
     { id: '2', name: 'Guitarra Base', color: 'bg-blue-500', muted: false, solo: false, volume: 70, regions: [{ id: 'r2', start: 0, duration: 200 }] },
     { id: '3', name: 'Bateria Loop', color: 'bg-green-500', muted: true, solo: false, volume: 90, regions: [{ id: 'r3', start: 0, duration: 100 }, { id: 'r4', start: 100, duration: 100 }] },
   ]);
 
-  const toggleMute = (trackId: string) => {
-    setTracks(tracks.map(t => t.id === trackId ? { ...t, muted: !t.muted } : t));
+  const isPlaying = player.playing;
+  const currentTime = status.currentTime || 0;
+  const duration = status.duration || 240;
+
+  const anySolo = useMemo(() => tracks.some(t => t.solo), [tracks]);
+
+  const togglePlay = useCallback(() => {
+    if (isPlaying) {
+      player.pause();
+    } else {
+      player.replace(DEMO_AUDIO_URL);
+      player.play();
+    }
+  }, [isPlaying, player]);
+
+  const toggleRecording = useCallback(() => {
+    setIsRecording(prev => !prev);
+  }, []);
+
+  const toggleMute = useCallback((trackId: string) => {
+    setTracks(prev => prev.map(t => t.id === trackId ? { ...t, muted: !t.muted } : t));
+  }, []);
+
+  const toggleSolo = useCallback((trackId: string) => {
+    setTracks(prev => prev.map(t => t.id === trackId ? { ...t, solo: !t.solo } : t));
+  }, []);
+
+  const setTrackVolume = useCallback((trackId: string, vol: number) => {
+    setTracks(prev => prev.map(t => t.id === trackId ? { ...t, volume: vol } : t));
+  }, []);
+
+  const trackVolume = (trackId: string) => {
+    return tracks.find(t => t.id === trackId)?.volume ?? 70;
   };
 
-  const toggleSolo = (trackId: string) => {
-    setTracks(tracks.map(t => t.id === trackId ? { ...t, solo: !t.solo } : t));
+  const isAudible = (track: Track) => {
+    if (anySolo) return track.solo;
+    return !track.muted;
   };
+
+  const progressPct = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
     <View className="flex-1 bg-dark-bg select-none">
 
-      {/* 1. TOP BAR / CONTROLES GLOBAIS (Estilo Logic Pro / GarageBand) */}
       <View className="h-14 bg-dark-surface border-b border-dark-border flex-row items-center justify-between px-4">
-        <Pressable onPress={() => router.back()} className="p-2 bg-dark-border rounded">
+        <Pressable onPress={() => router.back()} className="p-2 bg-dark-border rounded-lg active:opacity-70">
           <Text className="text-gray-400 font-bold">← Sair</Text>
         </Pressable>
 
-        {/* Controles de Transporte (Play, Pause, Rec) */}
-        <View className="flex-row items-center gap-4">
+        <View className="flex-row items-center gap-3">
           <Pressable
-            onPress={() => setIsPlaying(!isPlaying)}
-            className={`w-10 h-10 rounded-full items-center justify-center ${isPlaying ? 'bg-green-500' : 'bg-dark-border'}`}
+            onPress={togglePlay}
+            className={`w-11 h-11 rounded-full items-center justify-center ${isPlaying ? 'bg-green-600' : 'bg-dark-border'}`}
           >
-            <Text className="text-white font-bold">{isPlaying ? '⏸' : '▶'}</Text>
+            <Text className="text-white text-lg">{isPlaying ? '⏸' : '▶'}</Text>
           </Pressable>
 
           <Pressable
-            onPress={() => setIsRecording(!isRecording)}
-            className={`w-10 h-10 rounded-full items-center justify-center ${isRecording ? 'bg-red-600' : 'bg-dark-border'}`}
+            onPress={toggleRecording}
+            className={`w-11 h-11 rounded-full items-center justify-center ${isRecording ? 'bg-red-600' : 'bg-dark-border'}`}
           >
-            <Text className="text-white font-bold">🔴</Text>
+            <View className={`w-4 h-4 rounded-sm ${isRecording ? 'bg-white' : 'bg-red-500'}`} />
           </Pressable>
         </View>
 
-        {/* Display Digital de BPM e Tempo */}
-        <View className="bg-[#0b0b0d] px-4 py-1.5 rounded border border-dark-border items-center">
-          <Text className="text-emerald-400 font-mono text-xs tracking-widest">TEMPO</Text>
-          <Text className="text-white font-mono text-sm">{bpm} BPM | 4/4</Text>
+        <View className="bg-[#0b0b0d] px-3 py-1.5 rounded-lg border border-dark-border items-center">
+          <Text className="text-emerald-400 font-mono text-[10px] tracking-widest">BPM</Text>
+          <Text className="text-white font-mono text-sm">{bpm}</Text>
         </View>
 
-        <Pressable className="bg-brand-primary px-4 py-2 rounded-lg">
-          <Text className="text-white font-bold text-xs">Salvar</Text>
+        <View className="flex-row items-center gap-2">
+          <TimeDisplay seconds={currentTime} />
+          <Text className="text-gray-600">/</Text>
+          <TimeDisplay seconds={duration} />
+        </View>
+
+        <Pressable className="bg-brand-primary px-5 py-2 rounded-xl active:opacity-80">
+          <Text className="text-white font-bold text-sm">Salvar</Text>
         </Pressable>
       </View>
 
-      {/* AREA PRINCIPAL: TIMELINE E TRACKS */}
-      <View className="flex-1 flex-row">
-
-        {/* 2. COLUNA DA ESQUERDA: CONTROLES DE CADA TRACK (Header de Canal) */}
-        <View className="w-36 bg-[#131316] border-r border-dark-border">
-          {/* Cabeçalho vazio para alinhar com a régua de tempo */}
-          <View className="h-8 bg-dark-surface border-b border-dark-border justify-center px-2">
-            <Text className="text-gray-500 text-xs font-bold">TRACKS</Text>
+      <View className="h-10 bg-dark-surface/50 border-b border-dark-border flex-row items-center px-4">
+        <View className="w-36 pr-2">
+          <Text className="text-gray-500 text-[10px] font-bold tracking-wider">TRACKS</Text>
+        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-1">
+          <View className="flex-row items-center" style={{ width: 1200 }}>
+            {Array.from({ length: 25 }, (_, i) => (
+              <View key={i} className="flex-row" style={{ width: 48 }}>
+                <Text className="text-gray-600 font-mono text-[10px]">
+                  {String(Math.floor(i * 2 / 60)).padStart(2, '0')}:{String((i * 2) % 60).padStart(2, '0')}
+                </Text>
+                {i % 4 === 0 && <View className="w-px h-3 bg-gray-700 absolute right-0" />}
+              </View>
+            ))}
           </View>
+        </ScrollView>
+      </View>
 
+      <View className="flex-1 flex-row">
+        <View className="w-36 bg-[#131316] border-r border-dark-border">
           {tracks.map((track) => (
-            <View key={track.id} className="h-20 p-2 border-b border-dark-border justify-between bg-dark-surface/50">
+            <View key={track.id} className="h-20 p-2 border-b border-dark-border justify-between bg-dark-surface/30">
               <Text className="text-gray-200 text-xs font-semibold truncate">{track.name}</Text>
-
-              {/* Botões Mute (M) e Solo (S) estilo Ableton/ProTools */}
-              <View className="flex-row gap-1 mt-1">
+              <View className="flex-row gap-1.5 mt-1">
                 <Pressable
                   onPress={() => toggleMute(track.id)}
-                  className={`w-6 h-6 rounded items-center justify-center border border-dark-border ${track.muted ? 'bg-amber-500' : 'bg-[#222]'}`}
+                  className={`w-7 h-7 rounded items-center justify-center border ${
+                    track.muted ? 'bg-amber-500 border-amber-400' : 'bg-[#222] border-dark-border'
+                  }`}
                 >
-                  <Text className="text-white text-xs font-bold">M</Text>
+                  <Text className={`text-xs font-bold ${track.muted ? 'text-white' : 'text-gray-400'}`}>M</Text>
                 </Pressable>
                 <Pressable
                   onPress={() => toggleSolo(track.id)}
-                  className={`w-6 h-6 rounded items-center justify-center border border-dark-border ${track.solo ? 'bg-green-500' : 'bg-[#222]'}`}
+                  className={`w-7 h-7 rounded items-center justify-center border ${
+                    track.solo ? 'bg-green-500 border-green-400' : 'bg-[#222] border-dark-border'
+                  }`}
                 >
-                  <Text className="text-white text-xs font-bold">S</Text>
+                  <Text className={`text-xs font-bold ${track.solo ? 'text-white' : 'text-gray-400'}`}>S</Text>
                 </Pressable>
               </View>
             </View>
           ))}
         </View>
 
-        {/* 3. ÁREA DA DIREITA: RÉGUA DE TEMPO E BLOCOS DE ÁUDIO (TIMELINE GRID) */}
         <ScrollView horizontal className="flex-1 bg-[#0b0b0d]">
           <View style={{ width: 1200 }}>
+            <View className="relative" style={{ height: tracks.length * 80 }}>
+              {tracks.map((track) => (
+                <View key={track.id} className="absolute w-full" style={{ height: 80, top: tracks.indexOf(track) * 80 }}>
+                  <View className="h-20 border-b border-dark-border/30 relative justify-center bg-dark-bg/10">
+                    {track.regions.map((region) => (
+                      <View
+                        key={region.id}
+                        style={{ left: region.start * 2.4, width: region.duration * 2.4, position: 'absolute' }}
+                        className={`h-14 rounded-lg border border-white/10 px-3 justify-center shadow-sm ${
+                          track.color
+                        } ${isAudible(track) ? 'opacity-90' : 'opacity-25'}`}
+                      >
+                        <Text className="text-white/90 text-[10px] font-bold truncate">audio_clip.wav</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              ))}
 
-            {/* Régua de Compassos (Timeline Ruler) */}
-            <View className="h-8 bg-dark-surface border-b border-dark-border flex-row items-center px-2">
-              {[...Array(12)].map((_, i) => (
-                <Text key={i} style={{ width: 100 }} className="text-gray-600 font-mono text-[10px]">
-                  00:{String(i * 5).padStart(2, '0')}
-                </Text>
+              {isPlaying && (
+                <View
+                  className="absolute top-0 bottom-0 w-0.5 bg-brand-primary z-10 shadow-sm shadow-brand-primary/50"
+                  style={{ left: currentTime * 2.4, height: tracks.length * 80 }}
+                />
+              )}
+            </View>
+          </View>
+        </ScrollView>
+      </View>
+
+      <View className="h-28 bg-[#141417] border-t border-dark-border">
+        <View className="flex-row items-center gap-3 px-4 py-2 border-b border-dark-border/50">
+          <Text className="text-gray-500 text-[10px] font-bold uppercase tracking-wider">Mixer</Text>
+          <View className="flex-1 h-1.5 bg-dark-border rounded-full overflow-hidden">
+            <View
+              className="h-full bg-brand-primary rounded-full"
+              style={{ width: `${progressPct}%` }}
+            />
+          </View>
+          {isPlaying && (
+            <View className="flex-row gap-0.5">
+              {Array.from({ length: 4 }, (_, i) => (
+                <View
+                  key={i}
+                  className="w-1 bg-green-500/60 rounded-full"
+                  style={{
+                    height: 8 + Math.sin(currentTime * 4 + i * 1.5) * 6,
+                    opacity: 0.4 + Math.sin(currentTime * 3 + i) * 0.3,
+                  }}
+                />
               ))}
             </View>
-
-            {/* Linhas das Tracks onde os Stems/Áudios vão morar */}
-            {tracks.map((track) => (
-              <View key={track.id} className="h-20 border-b border-dark-border/40 relative justify-center bg-dark-bg/20">
-
-                {/* Renderização das Regiões de Áudio (Waveform visual) */}
-                {track.regions.map((region) => (
-                  <View
-                    key={region.id}
-                    style={{ left: region.start, width: region.duration, position: 'absolute' }}
-                    className={`h-14 rounded-md border border-white/20 px-2 justify-center shadow-md ${track.color} ${track.muted ? 'opacity-30' : 'opacity-85'}`}
-                  >
-                    {/* Linha fake simulando a onda senoidal (Waveform) do áudio */}
-                    <Text className="text-white/90 text-[10px] font-bold truncate">audio_clip.wav</Text>
-                    <View className="w-full h-[2px] bg-white/40 absolute self-center" />
-                  </View>
-                ))}
-
-              </View>
-            ))}
-          </View>
-        </ScrollView>
-      </View>
-
-      {/* 4. MIXER INFERIOR (Estilo Mesa de Som) */}
-      <View className="h-32 bg-[#141417] border-t border-dark-border flex-row px-4 items-center gap-3">
-        <View className="border-r border-dark-border pr-3 h-full justify-center">
-          <Text className="text-gray-500 text-xs font-bold uppercase tracking-wider">Mixer</Text>
+          )}
         </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-1">
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-1 px-4">
           <View className="flex-row gap-4 py-2">
             {tracks.map((track) => (
-              <View key={track.id} className="w-24 bg-dark-surface rounded-lg border border-dark-border p-2 items-center justify-between">
+              <View key={track.id} className="w-24 bg-dark-surface rounded-xl border border-dark-border p-2.5 items-center gap-2">
                 <Text className="text-[10px] text-gray-400 font-medium truncate w-full text-center">{track.name}</Text>
 
-                {/* Medidor de Volume Virtual (Fader Vertical) */}
-                <View className="w-3 h-14 bg-[#111] rounded relative justify-end">
+                <Pressable
+                  onPress={() => {
+                    const current = trackVolume(track.id);
+                    const next = Math.min(100, Math.max(0, current - 10));
+                    setTrackVolume(track.id, next);
+                  }}
+                  className="w-4 flex-1 bg-[#111] rounded-full relative justify-end overflow-hidden active:opacity-80"
+                >
                   <View
-                    style={{ height: (track.volume / 100) * 56 }}
-                    className={`w-full rounded-b ${track.muted ? 'bg-gray-600' : 'bg-brand-accent'}`}
+                    style={{ height: `${track.volume}%` }}
+                    className={`w-full rounded-full ${isAudible(track) ? 'bg-brand-accent' : 'bg-gray-600'}`}
                   />
-                </View>
+                </Pressable>
 
-                {/* Valor do Volume */}
-                <Text className="text-[9px] font-mono text-gray-500">{track.muted ? 'MUTED' : `${track.volume}dB`}</Text>
+                <View className="flex-row items-center gap-1">
+                  <Pressable
+                    onPress={() => {
+                      const current = trackVolume(track.id);
+                      setTrackVolume(track.id, Math.max(0, current - 5));
+                    }}
+                    className="w-5 h-5 rounded bg-[#222] items-center justify-center active:opacity-70"
+                  >
+                    <Text className="text-gray-400 text-xs">−</Text>
+                  </Pressable>
+                  <Text className="text-[9px] font-mono text-gray-500 w-8 text-center">
+                    {track.muted ? 'MUT' : `${track.volume}%`}
+                  </Text>
+                  <Pressable
+                    onPress={() => {
+                      const current = trackVolume(track.id);
+                      setTrackVolume(track.id, Math.min(100, current + 5));
+                    }}
+                    className="w-5 h-5 rounded bg-[#222] items-center justify-center active:opacity-70"
+                  >
+                    <Text className="text-gray-400 text-xs">+</Text>
+                  </Pressable>
+                </View>
               </View>
             ))}
           </View>
         </ScrollView>
       </View>
-
     </View>
   );
 }

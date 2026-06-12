@@ -3,7 +3,8 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { AuthProvider, useAuth } from "../src/context/AuthContext";
-import { View, ActivityIndicator } from "react-native";
+import { View } from "react-native";
+import { Loading } from "../src/components";
 
 import "../global.css";
 
@@ -25,8 +26,8 @@ function RootLayoutProtected() {
 
   if (loading) {
     return (
-      <View className="flex-1 bg-dark-bg justify-center items-center">
-        <ActivityIndicator size="large" color="#ff3b30" />
+      <View className="flex-1 bg-dark-bg items-center justify-center">
+        <Loading message="Carregando..." />
       </View>
     );
   }

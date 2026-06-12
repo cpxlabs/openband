@@ -40,3 +40,10 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# backend
+backend/node_modules/
+backend/dist/
+backend/.venv/
+backend/uploads/
+backend/stems/
