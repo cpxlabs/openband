@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { View, Text, KeyboardAvoidingView, Platform, Pressable } from 'react-native';
 import { Button, TextInput } from '../../src/components';
 import { supabase } from '../../src/lib/supabase';
+import { useResponsive } from '../../src/lib/responsive';
 
 export default function Login() {
+  const resp = useResponsive();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -42,7 +44,7 @@ export default function Login() {
       className="flex-1 bg-dark-bg"
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View className="flex-1 justify-center px-8">
+      <View className={`flex-1 justify-center ${resp.isDesktop ? 'max-w-md mx-auto w-full px-0' : 'px-8'}`}>
         <View className="items-center mb-12">
           <View className="w-20 h-20 rounded-2xl bg-brand-primary items-center justify-center mb-6 shadow-lg shadow-brand-primary/30">
             <Text className="text-white text-4xl">♫</Text>

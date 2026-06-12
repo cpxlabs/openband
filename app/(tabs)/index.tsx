@@ -107,8 +107,8 @@ export default function Feed() {
   }, []);
 
   return (
-    <View className="flex-1 bg-dark-bg pt-12">
-      <View className={`${resp.isMobile ? 'px-4' : 'px-6'}`}>
+    <View className="flex-1 bg-dark-bg">
+      <View className={`${resp.isMobile ? 'pt-4' : 'pt-12'} ${resp.isMobile ? 'px-4' : 'px-6'}`}>
         <PageHeader title="Feed" subtitle="Descubra novos sons" />
       </View>
 

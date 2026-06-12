@@ -589,13 +589,15 @@ export default function Studio() {
         <View style={{ width: resp.tracksSidebarWidth }} className="bg-dark-bg/80 border-r border-dark-border">
           {tracks.map((track) => {
             const gv = getGroupVolume(groups, track.id);
+            const trackH = resp.isMobile ? 80 : resp.isDesktop ? 104 : 80;
             return (
               <Pressable
                 key={track.id}
                 onPress={() => setSelectedTrackId(track.id === selectedTrackId ? null : track.id)}
-                className={`h-20 p-2 border-b border-dark-border justify-between bg-dark-surface/30 ${
+                className={`p-2 border-b border-dark-border justify-between bg-dark-surface/30 ${
                   selectedTrackId === track.id ? 'border-l-2 border-brand-accent bg-dark-elevated/50' : ''
                 }`}
+                style={{ height: trackH }}
               >
                 <Text className="text-gray-200 text-xs font-semibold truncate">{track.name}</Text>
                 <View className="flex-row items-center gap-1 mt-0.5">
@@ -642,13 +644,14 @@ export default function Studio() {
 
         <ScrollView horizontal className="flex-1 bg-dark-bg">
           <View style={{ width: 1200 }}>
-            <View className="relative" style={{ height: tracks.length * 80 }}>
+            <View className="relative" style={{ height: tracks.length * (resp.isDesktop ? 104 : 80) }}>
               {tracks.map((track) => {
                 const trackIndex = tracks.indexOf(track);
                 const showAuto = showAutomation[track.id];
+                const trackH = resp.isDesktop ? 104 : 80;
                 return (
-                  <View key={track.id} className="absolute w-full" style={{ height: showAuto ? 106 : 80, top: trackIndex * (showAuto ? 106 : 80) }}>
-                    <View className="h-20 border-b border-dark-border/30 relative justify-center bg-dark-bg/10">
+                  <View key={track.id} className="absolute w-full" style={{ height: showAuto ? trackH + 26 : trackH, top: trackIndex * (showAuto ? trackH + 26 : trackH) }}>
+                    <View className="border-b border-dark-border/30 relative justify-center bg-dark-bg/10" style={{ height: trackH }}>
                       {track.regions.map((region) => (
                         <View
                           key={region.id}
@@ -824,7 +827,7 @@ export default function Studio() {
         )}
 
         {bottomTab === 'fx' && (
-          <ScrollView className={`flex-1 ${resp.isMobile ? 'px-2 py-2' : 'px-4 py-3'}`} style={{ maxHeight: resp.isMobile ? 260 : 220 }}>
+          <ScrollView className={`flex-1 ${resp.isMobile ? 'px-2 py-2' : 'px-4 py-3'}`} style={{ maxHeight: resp.isMobile ? 220 : resp.isDesktop ? 320 : 260 }}>
             {selectedTrack ? (
               <View>
                 <View className="flex-row items-center gap-2 mb-2 px-1">

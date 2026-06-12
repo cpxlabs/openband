@@ -1,6 +1,8 @@
-import { Tabs } from 'expo-router';
-import { Text, View } from 'react-native';
+import { useState } from 'react';
+import { Tabs, useRouter, useSegments } from 'expo-router';
+import { Text, View, Pressable } from 'react-native';
 import { useResponsive } from '../../src/lib/responsive';
+import { Sidebar } from '../../src/components/Sidebar';
 
 function TabIcon({ label, focused }: { label: string; focused: boolean }) {
   const { breakpoint } = useResponsive();
@@ -23,60 +25,129 @@ function TabIcon({ label, focused }: { label: string; focused: boolean }) {
   );
 }
 
-export default function TabLayout() {
+function RouteGuard({ children }: { children: React.ReactNode }) {
   const { breakpoint, isWeb } = useResponsive();
   const isDesktop = breakpoint === 'desktop' && isWeb;
 
+  if (!isDesktop) return <>{children}</>;
+
+  const validTabs = ['index', 'moments', 'library', 'account', 'settings'];
+  const segments = useSegments();
+  const currentRoute = segments[segments.length - 1];
+
+  if (currentRoute && validTabs.includes(currentRoute)) {
+    return <>{children}</>;
+  }
+
+  return <>{children}</>;
+}
+
+export default function TabLayout() {
+  const router = useRouter();
+  const segments = useSegments();
+  const { breakpoint, isWeb } = useResponsive();
+  const isDesktop = breakpoint === 'desktop' && isWeb;
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const currentSegment = segments[segments.length - 1] || 'index';
+  const routeNameMap: Record<string, string> = {
+    index: 'Feed',
+    moments: 'Momentos',
+    library: 'Biblioteca',
+    account: 'Conta',
+    settings: 'Ajustes',
+  };
+  const pageTitle = routeNameMap[currentSegment] || 'OpenBand';
+
+  const handleNavigate = (route: string) => {
+    router.replace(`/(tabs)/${route}` as any);
+  };
+
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarStyle: {
-          backgroundColor: '#18181c',
-          borderTopWidth: 1,
-          borderTopColor: '#26262b',
-          height: isDesktop ? 80 : breakpoint === 'tablet' ? 72 : 65,
-          paddingBottom: isDesktop ? 12 : 8,
-          paddingTop: isDesktop ? 10 : 6,
-          paddingHorizontal: isDesktop ? 32 : breakpoint === 'tablet' ? 16 : 0,
-          maxWidth: isDesktop ? 600 : undefined,
-          alignSelf: isDesktop ? 'center' : undefined,
-        } as any,
-        tabBarActiveTintColor: '#ff3b30',
-        tabBarInactiveTintColor: '#888',
-        tabBarShowLabel: false,
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          tabBarIcon: ({ focused }) => <TabIcon label="Feed" focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="moments"
-        options={{
-          tabBarIcon: ({ focused }) => <TabIcon label="Momentos" focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="library"
-        options={{
-          tabBarIcon: ({ focused }) => <TabIcon label="Biblioteca" focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="account"
-        options={{
-          tabBarIcon: ({ focused }) => <TabIcon label="Conta" focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          tabBarIcon: ({ focused }) => <TabIcon label="Ajustes" focused={focused} />,
-        }}
-      />
-    </Tabs>
+    <View className="flex-1 bg-dark-bg flex-row">
+      {isDesktop && (
+        <Sidebar
+          currentRoute={currentSegment}
+          onNavigate={handleNavigate}
+          isOpen
+          onClose={() => {}}
+          isPersistent
+        />
+      )}
+      <View className={`flex-1 ${isDesktop ? '' : ''}`}>
+        {!isDesktop && (
+          <View className="h-12 bg-dark-surface border-b border-dark-border flex-row items-center px-3 z-20">
+            <Pressable
+              onPress={() => setDrawerOpen(true)}
+              className="w-9 h-9 rounded-lg bg-dark-muted/40 items-center justify-center active:opacity-70"
+            >
+              <Text className="text-gray-300 text-lg">☰</Text>
+            </Pressable>
+            <View className="flex-1 items-center">
+              <Text className="text-white font-bold text-sm">{pageTitle}</Text>
+            </View>
+            <View className="w-9" />
+          </View>
+        )}
+        <Tabs
+          screenOptions={{
+            headerShown: isDesktop ? false : false,
+            tabBarStyle: {
+              backgroundColor: '#18181c',
+              borderTopWidth: 1,
+              borderTopColor: '#26262b',
+              display: isDesktop ? 'none' : 'flex',
+              height: breakpoint === 'tablet' ? 72 : 65,
+              paddingBottom: 8,
+              paddingTop: 6,
+              paddingHorizontal: breakpoint === 'tablet' ? 24 : 12,
+            } as any,
+            tabBarActiveTintColor: '#ff3b30',
+            tabBarInactiveTintColor: '#888',
+            tabBarShowLabel: false,
+          }}
+        >
+          <Tabs.Screen
+            name="index"
+            options={{
+              tabBarIcon: ({ focused }) => <TabIcon label="Feed" focused={focused} />,
+            }}
+          />
+          <Tabs.Screen
+            name="moments"
+            options={{
+              tabBarIcon: ({ focused }) => <TabIcon label="Momentos" focused={focused} />,
+            }}
+          />
+          <Tabs.Screen
+            name="library"
+            options={{
+              tabBarIcon: ({ focused }) => <TabIcon label="Biblioteca" focused={focused} />,
+            }}
+          />
+          <Tabs.Screen
+            name="account"
+            options={{
+              tabBarIcon: ({ focused }) => <TabIcon label="Conta" focused={focused} />,
+            }}
+          />
+          <Tabs.Screen
+            name="settings"
+            options={{
+              tabBarIcon: ({ focused }) => <TabIcon label="Ajustes" focused={focused} />,
+            }}
+          />
+        </Tabs>
+      </View>
+      {!isDesktop && (
+        <Sidebar
+          currentRoute={currentSegment}
+          onNavigate={handleNavigate}
+          isOpen={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          isPersistent={false}
+        />
+      )}
+    </View>
   );
 }

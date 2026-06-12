@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { PageHeader, Avatar, Card, Divider } from '../../src/components';
 import { useTheme } from '../../src/context/ThemeContext';
+import { useResponsive } from '../../src/lib/responsive';
 
 const MOCK_PROFILE = {
   name: 'João Produtor',
@@ -12,6 +13,7 @@ const MOCK_PROFILE = {
 };
 
 export default function Settings() {
+  const resp = useResponsive();
   const { theme, setTheme } = useTheme();
   const [profile] = useState(MOCK_PROFILE);
 
@@ -19,7 +21,7 @@ export default function Settings() {
     <ScrollView className="flex-1 bg-dark-bg">
       <PageHeader title="Configurações" subtitle="Personalize sua experiência" />
 
-      <View className="px-4 gap-6 pb-8">
+      <View className={`${resp.isMobile ? 'px-4' : resp.isDesktop ? 'max-w-xl mx-auto w-full px-0' : 'px-6'} gap-6 pb-8`}>
         <View className="items-center py-6 gap-3">
           <Avatar name={profile.name} size="lg" />
           <View className="items-center">

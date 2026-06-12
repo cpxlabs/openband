@@ -25,3 +25,4 @@ export { MomentCard } from './MomentCard';
 export { MiniMastering } from './MiniMastering';
 export { Tuner } from './Tuner';
 export { PedalRack } from './PedalRack';
+export { Sidebar } from './Sidebar';

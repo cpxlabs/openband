@@ -19,8 +19,8 @@ export function useResponsive() {
     isWeb,
     sidebarWidth: breakpoint === 'desktop' ? 64 : 0,
     contentPadding: breakpoint === 'mobile' ? 12 : breakpoint === 'tablet' ? 20 : 32,
-    channelWidth: breakpoint === 'mobile' ? 96 : 112,
-    tracksSidebarWidth: breakpoint === 'mobile' ? 100 : 144,
-    toolbarFontSize: breakpoint === 'mobile' ? 10 : 12,
+    channelWidth: breakpoint === 'mobile' ? 96 : breakpoint === 'tablet' ? 112 : 136,
+    tracksSidebarWidth: breakpoint === 'mobile' ? 100 : breakpoint === 'tablet' ? 144 : 180,
+    toolbarFontSize: breakpoint === 'mobile' ? 10 : breakpoint === 'tablet' ? 12 : 14,
   };
 }

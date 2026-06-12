@@ -3,8 +3,10 @@ import { View, Text, ScrollView, Alert } from 'react-native';
 import { useAuth } from '../../src/context/AuthContext';
 import { supabase } from '../../src/lib/supabase';
 import { PageHeader, Avatar, Button, TextInput, Divider } from '../../src/components';
+import { useResponsive } from '../../src/lib/responsive';
 
 export default function Account() {
+  const resp = useResponsive();
   const { session, user, signOut } = useAuth();
   const currentName = (user?.user_metadata?.name as string) ?? user?.email?.split('@')[0] ?? '';
   const [name, setName] = useState(currentName);
@@ -44,7 +46,7 @@ export default function Account() {
     <ScrollView className="flex-1 bg-dark-bg">
       <PageHeader title="Conta" subtitle="Suas informações de perfil" />
 
-      <View className="px-4 gap-6 pb-8">
+      <View className={`${resp.isMobile ? 'px-4' : resp.isDesktop ? 'max-w-xl mx-auto w-full px-0' : 'px-6'} gap-6 pb-8`}>
         <View className="items-center py-6">
           <Avatar name={currentName} size="lg" />
           <Text className="text-white text-xl font-bold mt-4">{currentName}</Text>

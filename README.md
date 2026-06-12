@@ -1,6 +1,6 @@
 # OpenBand
 
-Open-source BandLab clone — a music production platform with multi-track DAW, stem separation, social feed, and cloud sync.
+Open-source music production platform — multi-track DAW, guitar pedal board, amp/cab modeling, stem separation, social feed, and responsive web-first design.
 
 Built with **Expo Router**, **TypeScript**, **NativeWind v4 (Tailwind CSS v3)**, and **Supabase**. Runs on Web, Android, and iOS.
 
@@ -14,6 +14,7 @@ Built with **Expo Router**, **TypeScript**, **NativeWind v4 (Tailwind CSS v3)**,
 | Auth / DB | [Supabase](https://supabase.com/) (PostgreSQL + Auth) |
 | Audio | [`expo-audio`](https://docs.expo.dev/versions/v56.0.0/sdk/audio/) (SDK 56) |
 | Audio Processing | [Demucs](https://github.com/facebookresearch/demucs) (HTDEMUCS model) via Python subprocess |
+| Testing | Node.js `node:test` runner + `tsx` |
 
 ## Getting Started
 

@@ -75,8 +75,8 @@ export default function Moments() {
   }, [router]);
 
   return (
-    <View className="flex-1 bg-dark-bg pt-12">
-      <View className={`${resp.isMobile ? 'px-4' : 'px-6'} flex-row items-center justify-between mb-2`}>
+    <View className="flex-1 bg-dark-bg">
+      <View className={`${resp.isMobile ? 'pt-4' : 'pt-12'} ${resp.isMobile ? 'px-4' : 'px-6'} flex-row items-center justify-between mb-2`}>
         <PageHeader title="Momentos" subtitle="Artistas e criadores" />
       </View>
 

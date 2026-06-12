@@ -75,6 +75,25 @@ Available in `src/components/`:
 | `EmptyState` | `icon, title, subtitle?, action?` | Centered empty state |
 | `ProgressBar` | `progress, className?` | 0-100 progress fill |
 | `PageHeader` | `title, subtitle?` | Standard page header |
+| `Sidebar` | `currentRoute, onNavigate, isOpen, onClose, isPersistent` | Left drawer nav (persistent on desktop, overlay on mobile) |
+| `PedalRack` | `chain, onChange, trackName, maxHeight` | 6-slot guitar pedalboard with amp + cab selectors |
+| `Tuner` | `visible, onClose` | Chromatic tuner overlay |
+| `CodeSampler` | `visible, onClose, onRender, bpm` | Token-based beat sequencer |
+| `MomentCard` | `moment: MomentData` | Artist moment card for social feed |
+| `MiniMastering` | (internal) | Quick mastering chain presets |
+| `LufsMeter` | `isPlaying` | Loudness meter (LUFS) |
+| `BounceDialog` | `visible, onClose, projectTitle, duration` | Export/stem bounce dialog |
+| `MixManager` | `snapshots, activeMixId, onSave, onLoad, onDelete, onCompare` | A/B mix snapshot manager |
+| `PluginRack` | `plugins, onChange, onEdit, trackName` | Plugin chain per track |
+| `MasterRack` | `plugins, onChange, onEdit` | Master bus plugin chain |
+| `PluginEditor` | `plugin, onParamChange, onToggle, onClose` | Deep plugin parameter editor (all 18 types) |
+| `AutomationLane` | `points, onChange, duration, color, visible, label, minValue, maxValue` | Volume/param automation curve editor |
+| `TrackGroupManager` | `groups, tracks, onCreateGroup, onRemoveGroup, onGroupVolume, onGroupMute, onAssignTrack, trackAssignments` | Track grouping with shared volume/mute |
+| `WaveformClip` | `regionId, duration, color, audible, height` | Waveform visualization for audio clips |
+| `SampleBrowser` | `visible, onAddSample` | Browse and add sample packs |
+| `RecordOptions` | `settings, onChange, visible, onClose` | Recording settings (source, quality, sample rate) |
+| `Metronome` | `settings, onChange, isPlaying` | BPM/tempo click track |
+| `NewProject` | `visible, onClose, onCreate` | New project creation modal |
 
 CSS component classes (from `global.css`):
 - `card`, `card-elevated` — container styles
@@ -112,6 +131,9 @@ CSS component classes (from `global.css`):
 ```
 # TypeScript check — must pass with zero errors
 npx tsc --noEmit
+
+# Unit tests — must pass
+npm test
 
 # Production build — must succeed
 npm run build
@@ -161,7 +183,7 @@ app/
   _layout.tsx          — Root: SafeAreaProvider + AuthProvider + redirect logic
   (auth)/login.tsx    — Login screen (Supabase auth, mock fallback)
   (tabs)/
-    _layout.tsx       — Tab navigator (Feed, Biblioteca)
+    _layout.tsx       — Tab navigator (Feed, Biblioteca) + responsive sidebar drawer
     index.tsx         — Feed screen with audio playback
     library.tsx       — Library screen with project list + "Separar Stems" button
   extractor.tsx       — Stem separation (select → process → results)
@@ -169,9 +191,15 @@ app/
 
 src/
   lib/supabase.ts     — Supabase client with mock fallback for dev
+  lib/responsive.ts   — useResponsive hook (mobile/tablet/desktop breakpoints)
   context/
     AuthContext.tsx    — Auth state context (session, user, loading, signOut)
-  components/         — Design system (12 components, see table above)
+  components/         — Design system (29 components, see table above)
+
+tests/
+  responsive.test.ts  — Breakpoint & dimension tests
+  types.test.ts       — Type structure tests (TrackDef, MixSnapshot, SendBus, etc.)
+  presets.test.ts     — Pedal/amp/cab preset count + structure tests
 
 backend/
   src/

@@ -29,12 +29,12 @@ export default function Library() {
   }, [router]);
 
   return (
-    <View className="flex-1 bg-dark-bg pt-12">
-      <View className={`${resp.isMobile ? 'px-4' : 'px-6'}`}>
+    <View className="flex-1 bg-dark-bg">
+      <View className={`${resp.isMobile ? 'pt-4' : 'pt-12'} ${resp.isMobile ? 'px-4' : 'px-6'}`}>
         <PageHeader title="Biblioteca" subtitle="Seus projetos musicais" />
       </View>
 
-      <View className={`${resp.isMobile ? 'mx-4' : 'mx-6'} mb-3 gap-3 ${resp.isDesktop ? 'max-w-md' : ''}`}>
+      <View className={`${resp.isMobile ? 'mx-4' : 'mx-6'} mb-3 gap-3 ${resp.isDesktop ? 'max-w-3xl mx-auto w-full' : ''}`}>
         <Button
           title="Novo Projeto"
           icon="+"
@@ -51,7 +51,7 @@ export default function Library() {
       <FlatList
         data={mockProjects}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingHorizontal: resp.isMobile ? 16 : 24, paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: resp.isMobile ? 16 : 24 }}
         style={resp.isDesktop ? { maxWidth: 768, alignSelf: 'center', width: '100%' } : undefined}
         ListEmptyComponent={
           <EmptyState
