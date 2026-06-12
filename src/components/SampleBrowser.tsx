@@ -14,6 +14,9 @@ interface SampleEntry {
 const SAMPLE_CATEGORIES = [
   { key: 'all', label: 'Todos', icon: '♫' },
   { key: 'drums', label: 'Bateria', icon: '🥁' },
+  { key: 'xx808', label: '808', icon: '📀' },
+  { key: 'trap', label: 'Trap', icon: '🔥' },
+  { key: 'hiphop', label: 'Hip-Hop', icon: '🎤' },
   { key: 'bass', label: 'Baixo', icon: '🎸' },
   { key: 'synth', label: 'Sintetizador', icon: '🎹' },
   { key: 'melodic', label: 'Melódico', icon: '🎵' },
@@ -42,6 +45,49 @@ const SAMPLES: SampleEntry[] = [
   { id: 'fx_2', name: 'Impacto', category: 'fx', color: 'bg-amber-500', duration: 1 },
   { id: 'fx_3', name: 'Whoosh', category: 'fx', color: 'bg-amber-500', duration: 2 },
   { id: 'fx_4', name: 'Ruído Branco', category: 'fx', color: 'bg-amber-500', duration: 4 },
+
+  { id: 'a808_kick', name: '808 Kick Deep', category: 'xx808', color: 'bg-red-500', duration: 2 },
+  { id: 'a808_kick_long', name: '808 Kick Long', category: 'xx808', color: 'bg-red-500', duration: 4 },
+  { id: 'a808_kick_hard', name: '808 Kick Hard', category: 'xx808', color: 'bg-red-500', duration: 2 },
+  { id: 'a808_snare', name: '808 Snare', category: 'xx808', color: 'bg-red-500', duration: 1.5 },
+  { id: 'a808_clap', name: '808 Clap', category: 'xx808', color: 'bg-red-500', duration: 1 },
+  { id: 'a808_hihat_closed', name: '808 Hi-Hat Closed', category: 'xx808', color: 'bg-red-500', duration: 0.4 },
+  { id: 'a808_hihat_open', name: '808 Hi-Hat Open', category: 'xx808', color: 'bg-red-500', duration: 1.2 },
+  { id: 'a808_rim', name: '808 Rim Shot', category: 'xx808', color: 'bg-red-500', duration: 0.6 },
+  { id: 'a808_tom_low', name: '808 Tom Low', category: 'xx808', color: 'bg-red-500', duration: 1.5 },
+  { id: 'a808_tom_mid', name: '808 Tom Mid', category: 'xx808', color: 'bg-red-500', duration: 1.3 },
+  { id: 'a808_tom_high', name: '808 Tom High', category: 'xx808', color: 'bg-red-500', duration: 1 },
+  { id: 'a808_cowbell', name: '808 Cowbell', category: 'xx808', color: 'bg-red-500', duration: 0.6 },
+  { id: 'a808_crash', name: '808 Crash', category: 'xx808', color: 'bg-red-500', duration: 2 },
+  { id: 'a808_ride', name: '808 Ride', category: 'xx808', color: 'bg-red-500', duration: 2 },
+  { id: 'a808_maracas', name: '808 Maracas', category: 'xx808', color: 'bg-red-500', duration: 0.5 },
+  { id: 'a808_claves', name: '808 Claves', category: 'xx808', color: 'bg-red-500', duration: 0.4 },
+
+  { id: 'trap_kick_1', name: 'Trap Kick 808 Slide', category: 'trap', color: 'bg-red-500', duration: 3 },
+  { id: 'trap_kick_2', name: 'Trap Kick Spinz', category: 'trap', color: 'bg-red-500', duration: 2.5 },
+  { id: 'trap_snare_roll', name: 'Trap Snare Roll', category: 'trap', color: 'bg-red-500', duration: 2 },
+  { id: 'trap_clap', name: 'Trap Clap Layered', category: 'trap', color: 'bg-red-500', duration: 1.2 },
+  { id: 'trap_hihat_roll', name: 'Trap Hi-Hat Roll 16th', category: 'trap', color: 'bg-red-500', duration: 1 },
+  { id: 'trap_hihat_half', name: 'Trap Hi-Hat Half-Time', category: 'trap', color: 'bg-red-500', duration: 2 },
+  { id: 'trap_openhat', name: 'Trap Open Hat', category: 'trap', color: 'bg-red-500', duration: 1 },
+  { id: 'trap_perc_bongo', name: 'Trap Perc Bongo', category: 'trap', color: 'bg-red-500', duration: 1 },
+  { id: 'trap_perc_shaker', name: 'Trap Shaker', category: 'trap', color: 'bg-red-500', duration: 1.5 },
+  { id: 'trap_fx_drop', name: 'Trap Drop FX', category: 'trap', color: 'bg-amber-500', duration: 2 },
+  { id: 'trap_fx_riser', name: 'Trap Riser 4 bars', category: 'trap', color: 'bg-amber-500', duration: 8 },
+
+  { id: 'hh_kick_main', name: 'Hip-Hop Kick Main', category: 'hiphop', color: 'bg-red-500', duration: 2 },
+  { id: 'hh_kick_sub', name: 'Hip-Hop Kick Sub', category: 'hiphop', color: 'bg-red-500', duration: 3 },
+  { id: 'hh_snare_acoustic', name: 'Hip-Hop Snare Acoustic', category: 'hiphop', color: 'bg-red-500', duration: 1.8 },
+  { id: 'hh_snare_electronic', name: 'Hip-Hop Snare Electronic', category: 'hiphop', color: 'bg-red-500', duration: 1.5 },
+  { id: 'hh_clap', name: 'Hip-Hop Clap', category: 'hiphop', color: 'bg-red-500', duration: 1 },
+  { id: 'hh_hihat', name: 'Hip-Hop Hi-Hat', category: 'hiphop', color: 'bg-red-500', duration: 0.5 },
+  { id: 'hh_hihat_pedal', name: 'Hip-Hop Hi-Hat Pedal', category: 'hiphop', color: 'bg-red-500', duration: 0.3 },
+  { id: 'hh_rim', name: 'Hip-Hop Rim', category: 'hiphop', color: 'bg-red-500', duration: 0.6 },
+  { id: 'hh_conga', name: 'Hip-Hop Conga', category: 'hiphop', color: 'bg-red-500', duration: 1.5 },
+  { id: 'hh_bongo', name: 'Hip-Hop Bongo', category: 'hiphop', color: 'bg-red-500', duration: 1.2 },
+  { id: 'hh_scratch', name: 'Hip-Hop Scratch', category: 'hiphop', color: 'bg-amber-500', duration: 1.5 },
+  { id: 'hh_vocal_yeah', name: 'Hip-Hop Vocal "Yeah"', category: 'hiphop', color: 'bg-amber-500', duration: 1 },
+  { id: 'hh_vocal_what', name: 'Hip-Hop Vocal "What"', category: 'hiphop', color: 'bg-amber-500', duration: 1 },
 ];
 
 function SampleCard({ sample, onAddToTrack }: { sample: SampleEntry; onAddToTrack: (s: SampleEntry) => void }) {
@@ -53,7 +99,9 @@ function SampleCard({ sample, onAddToTrack }: { sample: SampleEntry; onAddToTrac
     <View className="bg-dark-surface rounded-xl border border-dark-border overflow-hidden">
       <View className="p-3 gap-2">
         <View className={`w-full h-12 rounded-lg ${sample.color}/20 items-center justify-center`}>
-          <Text className="text-xl">{sample.color === 'bg-red-500' ? '🥁' : sample.color === 'bg-blue-500' ? '🎸' : sample.color === 'bg-purple-600' ? '🎹' : sample.color === 'bg-green-500' ? '🎵' : '✨'}</Text>
+          <Text className="text-xl">
+            {sample.category === 'xx808' ? '📀' : sample.category === 'trap' ? '🔥' : sample.category === 'hiphop' ? '🎤' : sample.color === 'bg-red-500' ? '🥁' : sample.color === 'bg-blue-500' ? '🎸' : sample.color === 'bg-purple-600' ? '🎹' : sample.color === 'bg-green-500' ? '🎵' : '✨'}
+          </Text>
         </View>
         <Text className="text-white text-xs font-semibold truncate">{sample.name}</Text>
         <Text className="text-gray-600 text-[10px]">{sample.duration.toFixed(1)}s</Text>
