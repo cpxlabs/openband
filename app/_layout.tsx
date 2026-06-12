@@ -53,10 +53,16 @@ function RootLayoutProtected() {
 export default function RootLayout() {
   useEffect(() => {
     if (Platform.OS !== "web" || !("serviceWorker" in navigator)) return;
-    const handler = () => { navigator.serviceWorker.register("/sw.js"); };
-    if (document.readyState === "complete") { handler(); return; }
-    window.addEventListener("load", handler);
-    return () => window.removeEventListener("load", handler);
+    const register = async () => {
+      try {
+        const resp = await fetch("/sw.js", { method: "HEAD" });
+        if (!resp.ok) return;
+        await navigator.serviceWorker.register("/sw.js");
+      } catch {}
+    };
+    if (document.readyState === "complete") { register(); return; }
+    window.addEventListener("load", register);
+    return () => window.removeEventListener("load", register);
   }, []);
 
   return (
