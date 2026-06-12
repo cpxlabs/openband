@@ -4,6 +4,7 @@ import { Text, View } from 'react-native';
 function TabIcon({ label, focused }: { label: string; focused: boolean }) {
   const icons: Record<string, string> = {
     Feed: '♫',
+    Momentos: '♡',
     Biblioteca: '☰',
     Conta: '●',
     Ajustes: '⚙',
@@ -42,6 +43,12 @@ export default function TabLayout() {
         name="index"
         options={{
           tabBarIcon: ({ focused }) => <TabIcon label="Feed" focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
+        name="moments"
+        options={{
+          tabBarIcon: ({ focused }) => <TabIcon label="Momentos" focused={focused} />,
         }}
       />
       <Tabs.Screen

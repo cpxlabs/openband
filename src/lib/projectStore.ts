@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import type { Plugin, MixSnapshot, MetronomeSettings, RecordSettings, TrackDef, GroupDef } from './types';
+import type { Plugin, MixSnapshot, MetronomeSettings, RecordSettings, TrackDef, GroupDef, SendBus, TrackAmpChain } from './types';
 
 export interface ProjectData {
   id: string;
@@ -12,6 +12,8 @@ export interface ProjectData {
   trackAssignments: Record<string, string | null>;
   masterPlugins: Plugin[];
   masteringChain: Plugin[];
+  sendBuses: SendBus[];
+  trackAmpChains: Record<string, TrackAmpChain>;
   mixSnapshots: MixSnapshot[];
   activeMixId: string | undefined;
   metronome: MetronomeSettings;

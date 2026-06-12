@@ -13,9 +13,19 @@ export interface TrackDef {
   muted: boolean;
   solo: boolean;
   volume: number;
+  pan: number;
+  sends: Record<string, number>;
   regions: { id: string; start: number; duration: number }[];
   plugins: Plugin[];
   automation: Record<string, AutomationPoint[]>;
+}
+
+export interface SendBus {
+  id: string;
+  name: string;
+  color: string;
+  volume: number;
+  muted: boolean;
 }
 
 export interface GroupDef {
@@ -30,7 +40,8 @@ export interface GroupDef {
 export type PluginType =
   | 'eq' | 'compressor' | 'limiter' | 'distortion' | 'reverb' | 'delay'
   | 'filter' | 'modulation' | 'utility'
-  | 'multibandCompressor' | 'stereoImager' | 'deesser' | 'tapeSaturator' | 'truePeakLimiter';
+  | 'multibandCompressor' | 'stereoImager' | 'deesser' | 'tapeSaturator' | 'truePeakLimiter'
+  | 'noiseGate' | 'autoPitch' | 'bassMono' | 'stereoWidener';
 
 export interface PluginParamSpec {
   id: string;
@@ -61,6 +72,8 @@ export interface MixSnapshot {
   name: string;
   created: number;
   trackVolumes: Record<string, number>;
+  trackPans: Record<string, number>;
+  trackSends: Record<string, Record<string, number>>;
   trackMutes: Record<string, boolean>;
   trackSolos: Record<string, boolean>;
   plugins: Record<string, Plugin[]>;
@@ -356,6 +369,73 @@ export const PLUGIN_SPECS: Record<PluginType, PluginTypeSpec> = {
       { name: 'Broadcast', values: { threshold: -8, ceiling: -2, oversample: 3, lookahead: 3, release: 100 } },
     ],
   },
+  noiseGate: {
+    params: [
+      { id: 'threshold', label: 'Threshold', min: -80, max: 0, step: 0.5, default: -40, unit: 'dB' },
+      { id: 'ratio', label: 'Ratio', min: 2, max: 20, step: 1, default: 10, unit: ':1' },
+      { id: 'attack', label: 'Attack', min: 0.1, max: 50, step: 0.1, default: 1, unit: 'ms' },
+      { id: 'release', label: 'Release', min: 10, max: 1000, step: 10, default: 100, unit: 'ms' },
+      { id: 'range', label: 'Range', min: 0, max: 80, step: 1, default: 60, unit: 'dB' },
+      { id: 'hold', label: 'Hold', min: 0, max: 500, step: 10, default: 20, unit: 'ms' },
+    ],
+    presets: [
+      { name: 'Vocal Clean', values: { threshold: -50, ratio: 8, attack: 1, release: 80, range: 60, hold: 20 } },
+      { name: 'Guitarra', values: { threshold: -40, ratio: 6, attack: 3, release: 150, range: 50, hold: 30 } },
+      { name: 'Bateria Tight', values: { threshold: -35, ratio: 15, attack: 0.3, release: 40, range: 70, hold: 5 } },
+      { name: 'Suave', values: { threshold: -60, ratio: 3, attack: 5, release: 200, range: 30, hold: 50 } },
+      { name: 'Hard Gate', values: { threshold: -30, ratio: 20, attack: 0.1, release: 20, range: 80, hold: 0 } },
+    ],
+  },
+  autoPitch: {
+    params: [
+      { id: 'amount', label: 'Amount', min: 0, max: 100, step: 1, default: 70, unit: '%' },
+      { id: 'speed', label: 'Speed', min: 1, max: 100, step: 1, default: 30, unit: '%' },
+      { id: 'key', label: 'Key', min: 0, max: 11, step: 1, default: 0 },
+      { id: 'scale', label: 'Scale', min: 0, max: 2, step: 1, default: 0 },
+      { id: 'formant', label: 'Formant', min: -12, max: 12, step: 1, default: 0, unit: 'st' },
+      { id: 'vibrato', label: 'Vibrato', min: 0, max: 100, step: 1, default: 15, unit: '%' },
+      { id: 'mix', label: 'Mix', min: 0, max: 100, step: 1, default: 80, unit: '%' },
+    ],
+    presets: [
+      { name: 'T-Pain', values: { amount: 100, speed: 10, key: 0, scale: 0, formant: 0, vibrato: 5, mix: 100 } },
+      { name: 'Suave', values: { amount: 50, speed: 40, key: 0, scale: 0, formant: 0, vibrato: 10, mix: 60 } },
+      { name: 'Natural', values: { amount: 30, speed: 60, key: 0, scale: 0, formant: 0, vibrato: 20, mix: 40 } },
+      { name: 'Robô', values: { amount: 100, speed: 5, key: 0, scale: 0, formant: 4, vibrato: 0, mix: 100 } },
+      { name: 'Hard Tone', values: { amount: 85, speed: 15, key: 0, scale: 0, formant: -2, vibrato: 8, mix: 90 } },
+      { name: 'Cher Effect', values: { amount: 95, speed: 8, key: 0, scale: 0, formant: 3, vibrato: 3, mix: 95 } },
+    ],
+  },
+  bassMono: {
+    params: [
+      { id: 'crossover', label: 'Crossover', min: 40, max: 500, step: 1, default: 150, unit: 'Hz' },
+      { id: 'amount', label: 'Amount', min: 0, max: 100, step: 1, default: 100, unit: '%' },
+      { id: 'phase', label: 'Phase', min: 0, max: 1, step: 1, default: 0 },
+      { id: 'dryWet', label: 'Dry/Wet', min: 0, max: 100, step: 1, default: 100, unit: '%' },
+    ],
+    presets: [
+      { name: 'Mono Bass', values: { crossover: 150, amount: 100, phase: 0, dryWet: 100 } },
+      { name: 'Sub Only', values: { crossover: 80, amount: 100, phase: 0, dryWet: 100 } },
+      { name: 'Subtle Mono', values: { crossover: 200, amount: 30, phase: 0, dryWet: 60 } },
+      { name: 'Phase Flip', values: { crossover: 120, amount: 100, phase: 1, dryWet: 100 } },
+    ],
+  },
+  stereoWidener: {
+    params: [
+      { id: 'width', label: 'Width', min: 0, max: 200, step: 1, default: 120, unit: '%' },
+      { id: 'midGain', label: 'Mid Gain', min: -12, max: 12, step: 0.5, default: 0, unit: 'dB' },
+      { id: 'sideGain', label: 'Side Gain', min: -12, max: 12, step: 0.5, default: 0, unit: 'dB' },
+      { id: 'crossover', label: 'Crossover', min: 20, max: 1000, step: 1, default: 200, unit: 'Hz' },
+      { id: 'stereoize', label: 'Stereoize', min: 0, max: 100, step: 1, default: 30, unit: '%' },
+      { id: 'mix', label: 'Mix', min: 0, max: 100, step: 1, default: 100, unit: '%' },
+    ],
+    presets: [
+      { name: 'Wide', values: { width: 150, midGain: 0, sideGain: 2, crossover: 200, stereoize: 40, mix: 100 } },
+      { name: 'Ultra Wide', values: { width: 200, midGain: -2, sideGain: 4, crossover: 300, stereoize: 70, mix: 100 } },
+      { name: 'Mono Compat', values: { width: 80, midGain: 1, sideGain: -2, crossover: 150, stereoize: 10, mix: 100 } },
+      { name: 'Center Boost', values: { width: 100, midGain: 3, sideGain: -1, crossover: 100, stereoize: 0, mix: 80 } },
+      { name: 'Air Widener', values: { width: 130, midGain: -1, sideGain: 3, crossover: 600, stereoize: 50, mix: 70 } },
+    ],
+  },
 };
 
 export function getDefaultParams(type: PluginType): Record<string, number> {
@@ -382,6 +462,10 @@ export const PLUGIN_PRESETS: Partial<Plugin>[] = [
   { name: 'Filter', type: 'filter', color: '#bf5af2' },
   { name: 'Chorus', type: 'modulation', color: '#ff9f0a' },
   { name: 'Utility', type: 'utility', color: '#aeaeb2' },
+  { name: 'Noise Gate', type: 'noiseGate', color: '#30d158' },
+  { name: 'Auto-Pitch', type: 'autoPitch', color: '#ff6482' },
+  { name: 'Bass Mono', type: 'bassMono', color: '#34c759' },
+  { name: 'Stereo Widener', type: 'stereoWidener', color: '#5ac8fa' },
 ];
 
 export const PLUGIN_ICONS: Record<string, string> = {
@@ -399,4 +483,94 @@ export const PLUGIN_ICONS: Record<string, string> = {
   filter: '◀',
   modulation: '◐',
   utility: '≡',
+  noiseGate: '∅',
+  autoPitch: '↗',
+  bassMono: '⊡',
+  stereoWidener: '⇔',
 };
+
+export interface GuitarPedal {
+  id: string;
+  name: string;
+  type: 'overdrive' | 'distortion' | 'fuzz' | 'chorus' | 'flanger' | 'phaser' | 'tremolo' | 'vibrato' | 'wah' | 'compressor' | 'boost' | 'reverb' | 'delay';
+  brand: string;
+  enabled: boolean;
+  params: Record<string, number>;
+}
+
+export interface AmpModel {
+  id: string;
+  name: string;
+  brand: string;
+  type: 'clean' | 'crunch' | 'highGain' | 'bass';
+  params: { gain: number; bass: number; mid: number; treble: number; presence: number; volume: number; master: number };
+}
+
+export interface CabModel {
+  id: string;
+  name: string;
+  brand: string;
+  speakers: string;
+  params: { micPosition: number; room: number; lowCut: number; highCut: number };
+}
+
+export interface TrackAmpChain {
+  pedals: GuitarPedal[];
+  amp: AmpModel | null;
+  cab: CabModel | null;
+}
+
+export const PEDAL_PRESETS: Omit<GuitarPedal, 'id' | 'enabled'>[] = [
+  { name: 'TS9 Tube Screamer', type: 'overdrive', brand: 'Ibanez', params: { drive: 50, tone: 50, level: 50 } },
+  { name: 'BOSS SD-1', type: 'overdrive', brand: 'BOSS', params: { drive: 60, tone: 40, level: 55 } },
+  { name: 'MXR Distortion+', type: 'distortion', brand: 'MXR', params: { dist: 70, tone: 50, output: 50 } },
+  { name: 'ProCo RAT', type: 'distortion', brand: 'ProCo', params: { dist: 65, tone: 60, output: 55 } },
+  { name: 'BOSS DS-1', type: 'distortion', brand: 'BOSS', params: { dist: 70, tone: 50, level: 50 } },
+  { name: 'Dunlop Fuzz Face', type: 'fuzz', brand: 'Dunlop', params: { fuzz: 70, volume: 60 } },
+  { name: 'Big Muff Pi', type: 'fuzz', brand: 'EHX', params: { sustain: 70, tone: 50, volume: 55 } },
+  { name: 'BOSS CE-2 Chorus', type: 'chorus', brand: 'BOSS', params: { rate: 40, depth: 50, level: 50 } },
+  { name: 'MXR Phase 90', type: 'phaser', brand: 'MXR', params: { rate: 45, depth: 50, feedback: 40 } },
+  { name: 'BOSS BF-3 Flanger', type: 'flanger', brand: 'BOSS', params: { rate: 35, depth: 50, feedback: 45, delay: 30 } },
+  { name: 'BOSS TR-2 Tremolo', type: 'tremolo', brand: 'BOSS', params: { rate: 50, depth: 50, level: 50 } },
+  { name: 'Cry Baby Wah', type: 'wah', brand: 'Dunlop', params: { q: 60, freq: 50, mix: 80 } },
+  { name: 'MXR Dyna Comp', type: 'compressor', brand: 'MXR', params: { sensitivity: 60, output: 50 } },
+  { name: 'TC Electronic Hall', type: 'reverb', brand: 'TC Electronic', params: { decay: 50, mix: 30, tone: 50 } },
+  { name: 'BOSS DD-7 Delay', type: 'delay', brand: 'BOSS', params: { time: 400, feedback: 40, mix: 35 } },
+  { name: 'Klon Centaur', type: 'boost', brand: 'Klon', params: { gain: 40, treble: 50, output: 55 } },
+];
+
+export const AMP_PRESETS: AmpModel[] = [
+  { id: 'fender-twin', name: 'Twin Reverb', brand: 'Fender', type: 'clean', params: { gain: 3, bass: 5, mid: 5, treble: 6, presence: 4, volume: 4, master: 6 } },
+  { id: 'fender-deluxe', name: 'Deluxe Reverb', brand: 'Fender', type: 'clean', params: { gain: 4, bass: 4, mid: 6, treble: 5, presence: 3, volume: 5, master: 5 } },
+  { id: 'fender-bassman', name: 'Bassman 100', brand: 'Fender', type: 'bass', params: { gain: 5, bass: 7, mid: 4, treble: 5, presence: 3, volume: 6, master: 4 } },
+  { id: 'vox-ac30', name: 'AC30', brand: 'Vox', type: 'clean', params: { gain: 4, bass: 4, mid: 7, treble: 6, presence: 5, volume: 4, master: 5 } },
+  { id: 'vox-ac15', name: 'AC15', brand: 'Vox', type: 'crunch', params: { gain: 6, bass: 4, mid: 6, treble: 5, presence: 4, volume: 5, master: 4 } },
+  { id: 'marshall-jcm800', name: 'JCM 800', brand: 'Marshall', type: 'highGain', params: { gain: 7, bass: 5, mid: 6, treble: 7, presence: 6, volume: 5, master: 6 } },
+  { id: 'marshall-plex', name: 'Plexi 1959', brand: 'Marshall', type: 'crunch', params: { gain: 6, bass: 4, mid: 7, treble: 6, presence: 5, volume: 6, master: 5 } },
+  { id: 'marshall-jvm', name: 'JVM 410', brand: 'Marshall', type: 'highGain', params: { gain: 8, bass: 6, mid: 5, treble: 7, presence: 7, volume: 4, master: 6 } },
+  { id: 'orange-rockerverb', name: 'Rockerverb 50', brand: 'Orange', type: 'highGain', params: { gain: 7, bass: 6, mid: 5, treble: 6, presence: 5, volume: 5, master: 6 } },
+  { id: 'orange-th30', name: 'TH30', brand: 'Orange', type: 'crunch', params: { gain: 6, bass: 7, mid: 4, treble: 5, presence: 4, volume: 5, master: 5 } },
+  { id: 'mesa-boogie', name: 'Dual Rectifier', brand: 'Mesa/Boogie', type: 'highGain', params: { gain: 8, bass: 7, mid: 3, treble: 6, presence: 6, volume: 4, master: 7 } },
+  { id: 'mesa-mark', name: 'Mark V', brand: 'Mesa/Boogie', type: 'highGain', params: { gain: 7, bass: 5, mid: 6, treble: 7, presence: 5, volume: 5, master: 6 } },
+  { id: 'ampeg-svt', name: 'SVT Classic', brand: 'Ampeg', type: 'bass', params: { gain: 5, bass: 7, mid: 5, treble: 4, presence: 3, volume: 6, master: 5 } },
+  { id: 'ampeg-b15', name: 'B-15 Portaflex', brand: 'Ampeg', type: 'bass', params: { gain: 4, bass: 6, mid: 6, treble: 5, presence: 3, volume: 5, master: 4 } },
+  { id: 'peavey-5150', name: '5150 III', brand: 'Peavey', type: 'highGain', params: { gain: 9, bass: 6, mid: 4, treble: 7, presence: 7, volume: 4, master: 7 } },
+  { id: 'diezel-vh4', name: 'VH4', brand: 'Diezel', type: 'highGain', params: { gain: 8, bass: 5, mid: 5, treble: 7, presence: 6, volume: 4, master: 6 } },
+  { id: 'engl-fireball', name: 'Fireball 100', brand: 'ENGL', type: 'highGain', params: { gain: 8, bass: 6, mid: 3, treble: 8, presence: 6, volume: 5, master: 7 } },
+  { id: 'friedman-be', name: 'BE-100', brand: 'Friedman', type: 'crunch', params: { gain: 6, bass: 5, mid: 6, treble: 6, presence: 5, volume: 5, master: 5 } },
+  { id: 'soldano-slo', name: 'SLO 100', brand: 'Soldano', type: 'highGain', params: { gain: 7, bass: 5, mid: 5, treble: 7, presence: 6, volume: 5, master: 6 } },
+  { id: 'bogner-uber', name: 'Uberschall', brand: 'Bogner', type: 'highGain', params: { gain: 9, bass: 7, mid: 3, treble: 6, presence: 6, volume: 4, master: 8 } },
+];
+
+export const CAB_PRESETS: CabModel[] = [
+  { id: 'cab-412-v30', name: '4x12 Vintage 30', brand: 'Marshall', speakers: 'Celestion G12T-75', params: { micPosition: 50, room: 20, lowCut: 80, highCut: 8000 } },
+  { id: 'cab-212-twin', name: '2x12 Twin Reverb', brand: 'Fender', speakers: 'Jensen C12N', params: { micPosition: 40, room: 30, lowCut: 100, highCut: 7000 } },
+  { id: 'cab-410-bassman', name: '4x10 Bassman', brand: 'Fender', speakers: 'Jensen P10R', params: { micPosition: 50, room: 25, lowCut: 60, highCut: 6000 } },
+  { id: 'cab-112-ac30', name: '1x12 AC30', brand: 'Vox', speakers: 'Celestion Blue', params: { micPosition: 45, room: 35, lowCut: 100, highCut: 7500 } },
+  { id: 'cab-412-gb', name: '4x12 Greenback', brand: 'Marshall', speakers: 'Celestion G12M-25', params: { micPosition: 55, room: 20, lowCut: 75, highCut: 6500 } },
+  { id: 'cab-212-orange', name: '2x12 PPC212', brand: 'Orange', speakers: 'Celestion V30', params: { micPosition: 50, room: 25, lowCut: 90, highCut: 7000 } },
+  { id: 'cab-115-svt', name: '1x15 SVT', brand: 'Ampeg', speakers: 'Ampeg 15"', params: { micPosition: 40, room: 30, lowCut: 50, highCut: 5000 } },
+  { id: 'cab-810-svt', name: '8x10 SVT', brand: 'Ampeg', speakers: 'Ampeg 10"', params: { micPosition: 60, room: 15, lowCut: 40, highCut: 5500 } },
+  { id: 'cab-412-mesa', name: '4x12 Rectifier', brand: 'Mesa/Boogie', speakers: 'Celestion V30', params: { micPosition: 55, room: 20, lowCut: 80, highCut: 7500 } },
+  { id: 'cab-112-deluxe', name: '1x12 Deluxe', brand: 'Fender', speakers: 'Jensen C12N', params: { micPosition: 45, room: 30, lowCut: 100, highCut: 6500 } },
+];

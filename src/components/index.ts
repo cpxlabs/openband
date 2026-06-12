@@ -20,3 +20,8 @@ export { TrackGroupManager } from './TrackGroup';
 export { LufsMeter } from './LufsMeter';
 export { BounceDialog } from './BounceDialog';
 export { SampleBrowser } from './SampleBrowser';
+export { CodeSampler } from './CodeSampler';
+export { MomentCard } from './MomentCard';
+export { MiniMastering } from './MiniMastering';
+export { Tuner } from './Tuner';
+export { PedalRack } from './PedalRack';

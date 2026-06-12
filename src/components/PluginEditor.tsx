@@ -520,6 +520,95 @@ function TruePeakEditor({ plugin, onParamChange }: { plugin: Plugin; onParamChan
   );
 }
 
+function NoiseGateEditor({ plugin, onParamChange }: { plugin: Plugin; onParamChange: (id: string, v: number) => void }) {
+  return (
+    <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+      <ParamRow param={{ id: 'threshold', label: 'Threshold', min: -80, max: 0, step: 0.5, unit: 'dB' }} value={plugin.params.threshold ?? -40} onChange={v => onParamChange('threshold', v)} />
+      <ParamRow param={{ id: 'ratio', label: 'Ratio', min: 2, max: 20, step: 1, unit: ':1' }} value={plugin.params.ratio ?? 10} onChange={v => onParamChange('ratio', v)} />
+      <ParamRow param={{ id: 'attack', label: 'Attack', min: 0.1, max: 50, step: 0.1, unit: 'ms' }} value={plugin.params.attack ?? 1} onChange={v => onParamChange('attack', v)} />
+      <ParamRow param={{ id: 'release', label: 'Release', min: 10, max: 1000, step: 10, unit: 'ms' }} value={plugin.params.release ?? 100} onChange={v => onParamChange('release', v)} />
+      <ParamRow param={{ id: 'range', label: 'Range', min: 0, max: 80, step: 1, unit: 'dB' }} value={plugin.params.range ?? 60} onChange={v => onParamChange('range', v)} />
+      <ParamRow param={{ id: 'hold', label: 'Hold', min: 0, max: 500, step: 10, unit: 'ms' }} value={plugin.params.hold ?? 20} onChange={v => onParamChange('hold', v)} />
+      <Text className="text-gray-600 text-[10px] mt-2 text-center">Noise Gate reduz ruído de fundo quando o sinal está abaixo do threshold.</Text>
+    </ScrollView>
+  );
+}
+
+function AutoPitchEditor({ plugin, onParamChange }: { plugin: Plugin; onParamChange: (id: string, v: number) => void }) {
+  const keys = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+  const scales = ['Maior', 'Menor', 'Cromático'];
+  return (
+    <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+      <ParamRow param={{ id: 'amount', label: 'Amount', min: 0, max: 100, step: 1, unit: '%' }} value={plugin.params.amount ?? 70} onChange={v => onParamChange('amount', v)} />
+      <ParamRow param={{ id: 'speed', label: 'Speed', min: 1, max: 100, step: 1, unit: '%' }} value={plugin.params.speed ?? 30} onChange={v => onParamChange('speed', v)} />
+      <ParamRow param={{ id: 'formant', label: 'Formant', min: -12, max: 12, step: 1, unit: 'st' }} value={plugin.params.formant ?? 0} onChange={v => onParamChange('formant', v)} />
+      <ParamRow param={{ id: 'vibrato', label: 'Vibrato', min: 0, max: 100, step: 1, unit: '%' }} value={plugin.params.vibrato ?? 15} onChange={v => onParamChange('vibrato', v)} />
+      <ParamRow param={{ id: 'mix', label: 'Mix', min: 0, max: 100, step: 1, unit: '%' }} value={plugin.params.mix ?? 80} onChange={v => onParamChange('mix', v)} />
+      <View className="mb-2">
+        <Text className="text-gray-400 text-xs font-medium mb-1">Key</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View className="flex-row gap-1.5 flex-wrap" style={{ width: 300 }}>
+            {keys.map((k, i) => (
+              <Pressable key={k} onPress={() => onParamChange('key', i)}
+                className={`w-9 h-9 rounded-lg items-center justify-center border ${(plugin.params.key ?? 0) === i ? 'bg-brand-accent/20 border-brand-accent' : 'bg-dark-surface border-dark-border'}`}>
+                <Text className={`text-xs font-semibold ${(plugin.params.key ?? 0) === i ? 'text-brand-accent' : 'text-white'}`}>{k}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </ScrollView>
+      </View>
+      <View className="mb-2">
+        <Text className="text-gray-400 text-xs font-medium mb-1">Scale</Text>
+        <View className="flex-row gap-2">
+          {scales.map((s, i) => (
+            <Pressable key={s} onPress={() => onParamChange('scale', i)}
+              className={`flex-1 py-2.5 rounded-lg items-center border ${(plugin.params.scale ?? 0) === i ? 'bg-dark-muted border-gray-500' : 'bg-dark-surface border-dark-border'}`}>
+              <Text className={`text-xs font-semibold ${(plugin.params.scale ?? 0) === i ? 'text-white' : 'text-gray-400'}`}>{s}</Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+      <Text className="text-gray-600 text-[10px] mt-2 text-center">Auto-Pitch corrige a afinação da voz para a escala selecionada.</Text>
+    </ScrollView>
+  );
+}
+
+function BassMonoEditor({ plugin, onParamChange }: { plugin: Plugin; onParamChange: (id: string, v: number) => void }) {
+  return (
+    <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+      <ParamRow param={{ id: 'crossover', label: 'Crossover', min: 40, max: 500, step: 1, unit: 'Hz' }} value={plugin.params.crossover ?? 150} onChange={v => onParamChange('crossover', v)} />
+      <ParamRow param={{ id: 'amount', label: 'Amount', min: 0, max: 100, step: 1, unit: '%' }} value={plugin.params.amount ?? 100} onChange={v => onParamChange('amount', v)} />
+      <ParamRow param={{ id: 'dryWet', label: 'Dry/Wet', min: 0, max: 100, step: 1, unit: '%' }} value={plugin.params.dryWet ?? 100} onChange={v => onParamChange('dryWet', v)} />
+      <View className="mb-2">
+        <Text className="text-gray-400 text-xs font-medium mb-1">Phase</Text>
+        <View className="flex-row gap-2">
+          {['Normal', 'Invert'].map((label, i) => (
+            <Pressable key={label} onPress={() => onParamChange('phase', i)}
+              className={`flex-1 py-2.5 rounded-lg items-center border ${(plugin.params.phase ?? 0) === i ? 'bg-dark-muted border-gray-500' : 'bg-dark-surface border-dark-border'}`}>
+              <Text className={`text-xs font-semibold ${(plugin.params.phase ?? 0) === i ? 'text-white' : 'text-gray-400'}`}>{label}</Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+      <Text className="text-gray-600 text-[10px] mt-2 text-center">Bass Mono soma as frequências abaixo do crossover para mono, garantindo graves centrados.</Text>
+    </ScrollView>
+  );
+}
+
+function StereoWidenerEditor({ plugin, onParamChange }: { plugin: Plugin; onParamChange: (id: string, v: number) => void }) {
+  return (
+    <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+      <ParamRow param={{ id: 'width', label: 'Largura', min: 0, max: 200, step: 1, unit: '%' }} value={plugin.params.width ?? 120} onChange={v => onParamChange('width', v)} />
+      <ParamRow param={{ id: 'midGain', label: 'Mid Gain', min: -12, max: 12, step: 0.5, unit: 'dB' }} value={plugin.params.midGain ?? 0} onChange={v => onParamChange('midGain', v)} />
+      <ParamRow param={{ id: 'sideGain', label: 'Side Gain', min: -12, max: 12, step: 0.5, unit: 'dB' }} value={plugin.params.sideGain ?? 0} onChange={v => onParamChange('sideGain', v)} />
+      <ParamRow param={{ id: 'crossover', label: 'Crossover', min: 20, max: 1000, step: 1, unit: 'Hz' }} value={plugin.params.crossover ?? 200} onChange={v => onParamChange('crossover', v)} />
+      <ParamRow param={{ id: 'stereoize', label: 'Estereoizar', min: 0, max: 100, step: 1, unit: '%' }} value={plugin.params.stereoize ?? 30} onChange={v => onParamChange('stereoize', v)} />
+      <ParamRow param={{ id: 'mix', label: 'Mix', min: 0, max: 100, step: 1, unit: '%' }} value={plugin.params.mix ?? 100} onChange={v => onParamChange('mix', v)} />
+      <Text className="text-gray-600 text-[10px] mt-2 text-center">Stereo Widener processa o sinal M/S para alargar ou estreitar a imagem estéreo.</Text>
+    </ScrollView>
+  );
+}
+
 function UtilityEditor({ plugin, onParamChange }: { plugin: Plugin; onParamChange: (id: string, v: number) => void }) {
   return (
     <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
@@ -565,6 +654,10 @@ export function PluginEditor({ plugin, onParamChange, onToggle, onClose }: Plugi
     deesser: DeesserEditor,
     tapeSaturator: TapeSatEditor,
     truePeakLimiter: TruePeakEditor,
+    noiseGate: NoiseGateEditor,
+    autoPitch: AutoPitchEditor,
+    bassMono: BassMonoEditor,
+    stereoWidener: StereoWidenerEditor,
     utility: UtilityEditor,
   };
 

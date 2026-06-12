@@ -16,12 +16,16 @@ import {
   LufsMeter,
   BounceDialog,
   SampleBrowser,
+  CodeSampler,
+  Tuner,
+  PedalRack,
 } from '../../src/components';
 import { useHistory } from '../../src/lib/history';
 import { useKeyboardShortcuts } from '../../src/lib/keyboard';
 import { saveProject, loadProject } from '../../src/lib/projectStore';
+import { parseMidi, midiToTrackRegions } from '../../src/lib/midiParser';
 import { getGroupVolume } from '../../src/components/TrackGroup';
-import type { Plugin, MixSnapshot, MetronomeSettings, RecordSettings, TrackDef, GroupDef } from '../../src/lib/types';
+import type { Plugin, MixSnapshot, MetronomeSettings, RecordSettings, TrackDef, GroupDef, SendBus, TrackAmpChain } from '../../src/lib/types';
 import { MASTERING_CHAIN_PRESETS, buildMasteringChain } from '../../src/lib/mastering';
 import type { AutomationPoint } from '../../src/components/AutomationLane';
 
@@ -42,21 +46,21 @@ const GROUP_COLORS = ['#ff6482', '#5ac8fa', '#ffcc00', '#34c759', '#bf5af2', '#f
 const INITIAL_TRACKS: TrackDef[] = [
   {
     id: '1', name: 'Voz Principal', color: 'bg-red-500',
-    muted: false, solo: false, volume: 80,
+    muted: false, solo: false, volume: 80, pan: 0, sends: {},
     regions: [{ id: 'r1', start: 10, duration: 150 }],
     plugins: [],
     automation: {},
   },
   {
     id: '2', name: 'Guitarra Base', color: 'bg-blue-500',
-    muted: false, solo: false, volume: 70,
+    muted: false, solo: false, volume: 70, pan: 0, sends: {},
     regions: [{ id: 'r2', start: 0, duration: 200 }],
     plugins: [],
     automation: {},
   },
   {
     id: '3', name: 'Bateria Loop', color: 'bg-green-500',
-    muted: true, solo: false, volume: 90,
+    muted: true, solo: false, volume: 90, pan: 0, sends: {},
     regions: [{ id: 'r3', start: 0, duration: 100 }, { id: 'r4', start: 100, duration: 100 }],
     plugins: [],
     automation: {},
@@ -84,9 +88,13 @@ export default function Studio() {
   const [showRecordOptions, setShowRecordOptions] = useState(false);
   const [showBounce, setShowBounce] = useState(false);
   const [showSampleBrowser, setShowSampleBrowser] = useState(false);
+  const [showCodeSampler, setShowCodeSampler] = useState(false);
+  const [showTuner, setShowTuner] = useState(false);
   const [editingPlugin, setEditingPlugin] = useState<Plugin | null>(null);
   const [showAutomation, setShowAutomation] = useState<Record<string, boolean>>({});
   const [groups, setGroups] = useState<GroupDef[]>([]);
+  const [sendBuses, setSendBuses] = useState<SendBus[]>([]);
+  const [trackAmpChains, setTrackAmpChains] = useState<Record<string, TrackAmpChain>>({});
   const [trackAssignments, setTrackAssignments] = useState<Record<string, string | null>>({});
   const [masterPlugins, setMasterPlugins] = useState<Plugin[]>([]);
   const [masteringChain, setMasteringChain] = useState<Plugin[]>(() => buildMasteringChain(MASTERING_CHAIN_PRESETS[0]));
@@ -132,6 +140,8 @@ export default function Studio() {
       setMasteringChain(saved.masteringChain);
       setMixSnapshots(saved.mixSnapshots);
       setActiveMixId(saved.activeMixId);
+      setSendBuses(saved.sendBuses ?? []);
+      setTrackAmpChains(saved.trackAmpChains ?? {});
       if (saved.metronome) setMetronome(saved.metronome);
       if (saved.recordSettings) setRecordSettings(saved.recordSettings);
     }
@@ -153,12 +163,14 @@ export default function Studio() {
         activeMixId,
         metronome,
         recordSettings,
+        sendBuses,
+        trackAmpChains,
       });
       setLastSavedLabel('Salvo');
       setTimeout(() => setLastSavedLabel(null), 2000);
     }, 2000);
     return () => clearTimeout(timer);
-  }, [tracks, groups, trackAssignments, masterPlugins, masteringChain, mixSnapshots, activeMixId, metronome, recordSettings]);
+  }, [tracks, groups, trackAssignments, masterPlugins, masteringChain, mixSnapshots, activeMixId, metronome, recordSettings, sendBuses, trackAmpChains]);
 
   const isPlaying = player.playing;
   const currentTime = status.currentTime || 0;
@@ -187,6 +199,14 @@ export default function Studio() {
     setTracks(tracks.map(t => t.id === trackId ? { ...t, volume: vol } : t));
   }, [tracks, setTracks]);
 
+  const setTrackPan = useCallback((trackId: string, pan: number) => {
+    setTracks(tracks.map(t => t.id === trackId ? { ...t, pan } : t));
+  }, [tracks, setTracks]);
+
+  const setTrackSend = useCallback((trackId: string, busId: string, value: number) => {
+    setTracks(tracks.map(t => t.id === trackId ? { ...t, sends: { ...t.sends, [busId]: value } } : t));
+  }, [tracks, setTracks]);
+
   const trackVolume = (trackId: string) => tracks.find(t => t.id === trackId)?.volume ?? 70;
 
   const isAudible = (track: TrackDef) => {
@@ -213,6 +233,8 @@ export default function Studio() {
       name,
       created: Date.now(),
       trackVolumes: Object.fromEntries(tracks.map(t => [t.id, t.volume])),
+      trackPans: Object.fromEntries(tracks.map(t => [t.id, t.pan])),
+      trackSends: Object.fromEntries(tracks.map(t => [t.id, t.sends])),
       trackMutes: Object.fromEntries(tracks.map(t => [t.id, t.muted])),
       trackSolos: Object.fromEntries(tracks.map(t => [t.id, t.solo])),
       plugins: Object.fromEntries(tracks.map(t => [t.id, t.plugins])),
@@ -227,6 +249,8 @@ export default function Studio() {
     setTracks(tracks.map(t => ({
       ...t,
       volume: snap.trackVolumes[t.id] ?? t.volume,
+      pan: snap.trackPans[t.id] ?? t.pan,
+      sends: snap.trackSends[t.id] ?? t.sends,
       muted: snap.trackMutes[t.id] ?? t.muted,
       solo: snap.trackSolos[t.id] ?? t.solo,
       plugins: snap.plugins[t.id] ?? t.plugins,
@@ -246,14 +270,18 @@ export default function Studio() {
     const diffTracks = tracks.filter(t => {
       const vA = snapA.trackVolumes[t.id];
       const vB = snapB.trackVolumes[t.id];
-      return vA !== vB || snapA.trackMutes[t.id] !== snapB.trackMutes[t.id];
+      return vA !== vB || snapA.trackMutes[t.id] !== snapB.trackMutes[t.id] || snapA.trackPans[t.id] !== snapB.trackPans[t.id] || snapA.trackSends[t.id] !== snapB.trackSends[t.id];
     });
     const msg = diffTracks.map(t => {
       const vA = snapA.trackVolumes[t.id] ?? 0;
       const vB = snapB.trackVolumes[t.id] ?? 0;
-      return `${t.name}: ${vA}% → ${vB}%`;
+      const pA = snapA.trackPans[t.id] ?? 0;
+      const pB = snapB.trackPans[t.id] ?? 0;
+      const sA = JSON.stringify(snapA.trackSends[t.id] ?? {});
+      const sB = JSON.stringify(snapB.trackSends[t.id] ?? {});
+      return `${t.name}: vol ${vA}%→${vB}% | pan ${pA}→${pB} | send ${sA}→${sB}`;
     }).join('\n');
-    alert(`A/B — ${snapA.name} vs ${snapB.name}\n\n${msg || 'Nenhuma diferença'} (volumes/mutes)`);
+    alert(`A/B — ${snapA.name} vs ${snapB.name}\n\n${msg || 'Nenhuma diferença'} (vol/mute/pan/send)`);
   }, [tracks, mixSnapshots]);
 
   const handlePluginParamChange = useCallback((pluginId: string, paramId: string, value: number) => {
@@ -297,10 +325,12 @@ export default function Studio() {
       activeMixId,
       metronome,
       recordSettings,
+      sendBuses,
+      trackAmpChains,
     });
     setLastSavedLabel('Salvo ✓');
     setTimeout(() => setLastSavedLabel(null), 2000);
-  }, [tracks, groups, trackAssignments, masterPlugins, masteringChain, mixSnapshots, activeMixId, metronome, recordSettings, id, projectTitle, genreParam, projectKey]);
+  }, [tracks, groups, trackAssignments, masterPlugins, masteringChain, mixSnapshots, activeMixId, metronome, recordSettings, sendBuses, trackAmpChains, id, projectTitle, genreParam, projectKey]);
 
   const handleAddSample = useCallback((sample: { id: string; name: string; category: string; color: string; duration: number }) => {
     const trackId = `sample-${Date.now()}`;
@@ -311,6 +341,7 @@ export default function Studio() {
       muted: false,
       solo: false,
       volume: 75,
+      pan: 0, sends: {},
       regions: [{ id: `region-${Date.now()}`, start: 0, duration: Math.max(sample.duration * 10, 40) }],
       plugins: [],
       automation: {},
@@ -330,6 +361,7 @@ export default function Studio() {
       muted: false,
       solo: false,
       volume: 75,
+      pan: 0, sends: {},
       regions: [{ id: `region-${Date.now()}`, start: 0, duration: 80 }],
       plugins: [],
       automation: {},
@@ -361,12 +393,74 @@ export default function Studio() {
           muted: false,
           solo: false,
           volume: 75,
+          pan: 0, sends: {},
           regions: [{ id: `region-import-${Date.now()}-${i}`, start: i * 4, duration: Math.min(approxDuration, 300) }],
           plugins: [] as Plugin[],
           automation: {} as Record<string, AutomationPoint[]>,
         } as TrackDef;
       });
       setTracks([...tracks, ...newTracks]);
+    };
+    input.click();
+  }, [tracks, setTracks]);
+
+  const handleCodeRender = useCallback((patterns: { name: string; tokens: string[]; unit: string; bpm: number }[]) => {
+    const colors = ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-amber-500', 'bg-pink-500', 'bg-cyan-500'];
+    const stepSeconds = (unit: string, bpm: number) =>
+      unit === '1/4' ? 60 / bpm : unit === '1/8' ? 30 / bpm : 15 / bpm;
+
+    const newTracks: TrackDef[] = patterns.map((pattern, pi) => {
+      const step = stepSeconds(pattern.unit, pattern.bpm);
+      const tokens = pattern.tokens as string[];
+      const regions: { id: string; start: number; duration: number }[] = [];
+      let currentStart = 0;
+      for (let i = 0; i < tokens.length; i++) {
+        if (tokens[i] === 'REST') { currentStart += step; continue; }
+        const dur = tokens[i] === 'BASS' ? step * 2 : step * 0.9;
+        regions.push({ id: `code-${Date.now()}-${pi}-${i}`, start: currentStart, duration: dur });
+        currentStart += step;
+      }
+      return {
+        id: `code-${Date.now()}-${pi}`,
+        name: pattern.name + (patterns.length > 1 ? ` ${pi + 1}` : ''),
+        color: colors[(tracks.length + pi) % colors.length],
+        muted: false, solo: false, volume: 75, pan: 0, sends: {},
+        regions,
+        plugins: [] as Plugin[],
+        automation: {} as Record<string, AutomationPoint[]>,
+      } as TrackDef;
+    });
+    setTracks([...tracks, ...newTracks]);
+  }, [tracks, setTracks]);
+
+  const handleMidiImport = useCallback(() => {
+    if (Platform.OS !== 'web') { Alert.alert('MIDI', 'Importação MIDI disponível apenas na versão web.'); return; }
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.mid,.midi,audio/midi';
+    input.onchange = (e: Event) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const result = ev.target?.result;
+        if (!result || typeof result === 'string') return;
+        const midi = parseMidi(result as ArrayBuffer);
+        if (!midi) { Alert.alert('Erro', 'Não foi possível ler o arquivo MIDI.'); return; }
+        const colors = ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-amber-500', 'bg-pink-500', 'bg-cyan-500'];
+        const newTracks: TrackDef[] = midi.tracks.map((trk, ti) => ({
+          id: `midi-${Date.now()}-${ti}`,
+          name: `${trk.name} (${trk.instrument})`,
+          color: colors[(tracks.length + ti) % colors.length],
+          muted: false, solo: false, volume: 75, pan: 0, sends: {},
+          regions: midiToTrackRegions(trk, midi.bpm),
+          plugins: [] as Plugin[],
+          automation: {} as Record<string, AutomationPoint[]>,
+        }));
+        setTracks([...tracks, ...newTracks]);
+        Alert.alert('MIDI Importado', `${newTracks.length} faixas criadas de "${file.name}" (${midi.bpm} BPM)`);
+      };
+      reader.readAsArrayBuffer(file);
     };
     input.click();
   }, [tracks, setTracks]);
@@ -378,7 +472,7 @@ export default function Studio() {
     redo: redoHistory,
     save: handleManualSave,
     bounce: () => setShowBounce(true),
-    escape: () => { setEditingPlugin(null); setShowRecordOptions(false); setShowBounce(false); setShowSampleBrowser(false); },
+    escape: () => { setEditingPlugin(null); setShowRecordOptions(false); setShowBounce(false); setShowSampleBrowser(false); setShowCodeSampler(false); setShowTuner(false); },
     toggleMute: selectedTrack ? () => toggleMute(selectedTrack.id) : undefined,
     toggleSolo: selectedTrack ? () => toggleSolo(selectedTrack.id) : undefined,
   });
@@ -429,6 +523,14 @@ export default function Studio() {
         <View className="flex-row items-center gap-3">
           <Metronome settings={metronome} onChange={setMetronome} isPlaying={isPlaying} />
           <MixManager snapshots={mixSnapshots} activeMixId={activeMixId} onSave={handleSaveMix} onLoad={handleLoadMix} onDelete={handleDeleteMix} onCompare={handleCompareMix} />
+          <Pressable onPress={() => setShowTuner(true)}
+            className="w-8 h-8 rounded-lg bg-dark-muted items-center justify-center active:opacity-70">
+            <Text className="text-gray-400 text-xs">🎵</Text>
+          </Pressable>
+          <Pressable onPress={() => setShowCodeSampler(true)}
+            className="w-8 h-8 rounded-lg bg-dark-muted items-center justify-center active:opacity-70">
+            <Text className="text-gray-400 text-xs">⌨</Text>
+          </Pressable>
           <Pressable onPress={() => setShowSampleBrowser(prev => !prev)}
             className={`w-8 h-8 rounded-lg items-center justify-center ${showSampleBrowser ? 'bg-brand-accent/30 border border-brand-accent' : 'bg-dark-muted active:opacity-70'}`}>
             <Text className={`text-xs ${showSampleBrowser ? 'text-brand-accent' : 'text-gray-400'}`}>📂</Text>
@@ -525,7 +627,12 @@ export default function Studio() {
             <Pressable onPress={handleImportAudio}
               className="h-8 rounded-lg bg-dark-muted items-center justify-center flex-row gap-1 active:opacity-70">
               <Text className="text-gray-300 text-xs">📁</Text>
-              <Text className="text-gray-300 text-[10px] font-semibold">Import</Text>
+              <Text className="text-gray-300 text-[10px] font-semibold">Audio</Text>
+            </Pressable>
+            <Pressable onPress={handleMidiImport}
+              className="h-8 rounded-lg bg-dark-muted items-center justify-center flex-row gap-1 active:opacity-70">
+              <Text className="text-gray-300 text-xs">🎹</Text>
+              <Text className="text-gray-300 text-[10px] font-semibold">MIDI</Text>
             </Pressable>
           </View>
         </View>
@@ -624,32 +731,90 @@ export default function Studio() {
                   ))}
                 </View>
               )}
+              <Pressable onPress={() => { if (sendBuses.length < 20) setSendBuses(prev => [...prev, { id: `bus-${Date.now()}`, name: `Send ${prev.length + 1}`, color: '#5ac8fa', volume: 80, muted: false }]); }}
+                className="ml-auto px-2 py-1 rounded-md bg-dark-muted/40 border border-dark-border active:opacity-70">
+                <Text className="text-[10px] text-gray-400">+Send</Text>
+              </Pressable>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-1 px-4">
-              <View className="flex-row gap-4 py-2">
+              <View className="flex-row gap-3 py-2">
                 {tracks.map((track) => {
                   const effVol = getEffectiveVolume(track.id);
                   return (
-                    <View key={track.id} className="w-24 bg-dark-surface rounded-xl border border-dark-border p-2.5 items-center gap-2">
+                    <View key={track.id} className="w-28 bg-dark-surface rounded-xl border border-dark-border p-2.5 items-center gap-1.5">
                       <Text className="text-[10px] text-gray-400 font-medium truncate w-full text-center">{track.name}</Text>
+                      <View className="flex-row gap-1">
+                        <Pressable onPress={() => toggleMute(track.id)}
+                          className={`w-7 h-5 rounded items-center justify-center ${track.muted ? 'bg-red-500/30 border border-red-400' : 'bg-dark-muted/40'}`}>
+                          <Text className={`text-[9px] font-bold ${track.muted ? 'text-red-400' : 'text-gray-500'}`}>M</Text>
+                        </Pressable>
+                        <Pressable onPress={() => toggleSolo(track.id)}
+                          className={`w-7 h-5 rounded items-center justify-center ${track.solo ? 'bg-amber-500/30 border border-amber-400' : 'bg-dark-muted/40'}`}>
+                          <Text className={`text-[9px] font-bold ${track.solo ? 'text-amber-400' : 'text-gray-500'}`}>S</Text>
+                        </Pressable>
+                      </View>
                       <Pressable onPress={() => setTrackVolume(track.id, Math.min(100, Math.max(0, trackVolume(track.id) - 10)))}
-                        className="w-4 flex-1 bg-dark-bg rounded-full relative justify-end overflow-hidden active:opacity-80">
+                        className="w-3 flex-1 bg-dark-bg rounded-full relative justify-end overflow-hidden active:opacity-80">
                         <View style={{ height: `${effVol}%` }} className={`w-full rounded-full ${isAudible(track) ? 'bg-brand-accent' : 'bg-gray-600'}`} />
                       </Pressable>
                       <View className="flex-row items-center gap-1">
                         <Pressable onPress={() => setTrackVolume(track.id, Math.max(0, trackVolume(track.id) - 5))}
                           className="w-5 h-5 rounded bg-dark-muted/40 items-center justify-center active:opacity-70">
-                          <Text className="text-gray-400 text-xs">−</Text>
+                          <Text className="text-gray-400 text-[11px]">−</Text>
                         </Pressable>
                         <Text className="text-[9px] font-mono text-gray-500 w-8 text-center">{track.muted ? 'MUT' : `${effVol}%`}</Text>
                         <Pressable onPress={() => setTrackVolume(track.id, Math.min(100, trackVolume(track.id) + 5))}
                           className="w-5 h-5 rounded bg-dark-muted/40 items-center justify-center active:opacity-70">
-                          <Text className="text-gray-400 text-xs">+</Text>
+                          <Text className="text-gray-400 text-[11px]">+</Text>
                         </Pressable>
                       </View>
+                      <View className="w-full h-6 flex-row items-center gap-1">
+                        <Text className="text-[9px] text-gray-600 w-4 text-center">L</Text>
+                        <View className="flex-1 h-1 bg-dark-bg rounded-full overflow-hidden">
+                          <View className="h-full bg-cyan-500 rounded-full" style={{ width: `${Math.abs(track.pan) * (track.pan < 0 ? 0.5 : 0) + 50}%` }} />
+                        </View>
+                        <Text className="text-[9px] text-gray-600 w-4 text-center">R</Text>
+                      </View>
+                      <View className="flex-row items-center gap-1 w-full justify-center">
+                        <Pressable onPress={() => setTrackPan(track.id, Math.max(-100, track.pan - 10))}
+                          className="w-6 h-5 rounded bg-dark-muted/30 items-center justify-center active:opacity-70">
+                          <Text className="text-gray-500 text-[9px]">◀</Text>
+                        </Pressable>
+                        <Text className="text-[9px] font-mono text-gray-500 w-8 text-center">{track.pan > 0 ? `${track.pan}R` : track.pan < 0 ? `${-track.pan}L` : 'C'}</Text>
+                        <Pressable onPress={() => setTrackPan(track.id, Math.min(100, track.pan + 10))}
+                          className="w-6 h-5 rounded bg-dark-muted/30 items-center justify-center active:opacity-70">
+                          <Text className="text-gray-500 text-[9px]">▶</Text>
+                        </Pressable>
+                      </View>
+                      {sendBuses.map(bus => (
+                        <View key={bus.id} className="w-full flex-row items-center gap-1">
+                          <Text className="text-[8px] text-gray-600 w-5 truncate text-right">{bus.name.replace('Send ', 'S')}</Text>
+                          <View className="flex-1 h-0.5 bg-dark-bg rounded-full overflow-hidden">
+                            <View className="h-full bg-purple-500/70 rounded-full" style={{ width: `${track.sends[bus.id] ?? 0}%` }} />
+                          </View>
+                          <Pressable onPress={() => setTrackSend(track.id, bus.id, Math.min(100, (track.sends[bus.id] ?? 0) + 5))}
+                            className="w-4 h-4 rounded bg-dark-muted/30 items-center justify-center active:opacity-70">
+                            <Text className="text-gray-500 text-[8px]">+</Text>
+                          </Pressable>
+                        </View>
+                      ))}
                     </View>
                   );
                 })}
+                {sendBuses.length > 0 && (
+                  <View className="w-28 bg-dark-surface/60 rounded-xl border border-dashed border-dark-border p-2.5 items-center gap-1.5">
+                    <Text className="text-[10px] text-gray-500 font-medium">Send Buses</Text>
+                    {sendBuses.map(bus => (
+                      <View key={bus.id} className="w-full flex-row items-center gap-1">
+                        <Text className="text-[9px] text-gray-400 flex-1 truncate">{bus.name}</Text>
+                        <Pressable onPress={() => setSendBuses(prev => prev.filter(b => b.id !== bus.id))}
+                          className="w-4 h-4 rounded bg-red-500/20 items-center justify-center active:opacity-70">
+                          <Text className="text-red-400 text-[8px]">×</Text>
+                        </Pressable>
+                      </View>
+                    ))}
+                  </View>
+                )}
               </View>
             </ScrollView>
           </View>
@@ -664,6 +829,11 @@ export default function Studio() {
                   <Text className="label text-brand-accent/70">{selectedTrack.name}</Text>
                 </View>
                 <PluginRack plugins={selectedTrack.plugins} onChange={(pl) => updateTrackPlugins(selectedTrack.id, pl)} onEdit={setEditingPlugin} trackName={selectedTrack.name} />
+                <View className="mt-3">
+                  <PedalRack chain={trackAmpChains[selectedTrack.id] ?? { pedals: [], amp: null, cab: null }}
+                    onChange={(chain) => setTrackAmpChains(prev => ({ ...prev, [selectedTrack.id]: chain }))}
+                    trackName={selectedTrack.name} maxHeight={180} />
+                </View>
                 <MasterRack plugins={masterPlugins} onChange={setMasterPlugins} onEdit={setEditingPlugin} />
               </View>
             ) : (
@@ -759,6 +929,8 @@ export default function Studio() {
       <RecordOptions settings={recordSettings} onChange={setRecordSettings} visible={showRecordOptions} onClose={() => setShowRecordOptions(false)} />
       <PluginEditor plugin={editingPlugin} onParamChange={handlePluginParamChange} onToggle={handleTogglePlugin} onClose={() => setEditingPlugin(null)} />
       <BounceDialog visible={showBounce} onClose={() => setShowBounce(false)} projectTitle={projectTitle} duration={duration} />
+      <CodeSampler visible={showCodeSampler} onClose={() => setShowCodeSampler(false)} onRender={handleCodeRender} bpm={metronome.bpm} />
+      <Tuner visible={showTuner} onClose={() => setShowTuner(false)} />
     </View>
   );
 }
