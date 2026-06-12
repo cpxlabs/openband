@@ -1,8 +1,31 @@
+import type { AutomationPoint } from '../components/AutomationLane';
+
 export type EqBandType = 0 | 1 | 2 | 3 | 4 | 5;
 export const EQ_BAND_TYPES = ['lowCut', 'lowShelf', 'peak', 'notch', 'highShelf', 'highCut'] as const;
 export const EQ_BAND_LABELS: Record<number, string> = {
   0: 'LC', 1: 'LS', 2: 'PK', 3: 'NT', 4: 'HS', 5: 'HC',
 };
+
+export interface TrackDef {
+  id: string;
+  name: string;
+  color: string;
+  muted: boolean;
+  solo: boolean;
+  volume: number;
+  regions: { id: string; start: number; duration: number }[];
+  plugins: Plugin[];
+  automation: Record<string, AutomationPoint[]>;
+}
+
+export interface GroupDef {
+  id: string;
+  name: string;
+  color: string;
+  volume: number;
+  muted: boolean;
+  trackIds: string[];
+}
 
 export type PluginType =
   | 'eq' | 'compressor' | 'limiter' | 'distortion' | 'reverb' | 'delay'

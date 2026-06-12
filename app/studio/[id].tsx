@@ -1,5 +1,5 @@
-import { useState, useCallback, useMemo, useRef } from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { View, Text, Pressable, ScrollView, Platform, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { DEMO_AUDIO_URL } from '../../src/lib/constants';
@@ -14,35 +14,18 @@ import {
   AutomationLane,
   TrackGroupManager,
   LufsMeter,
+  BounceDialog,
+  SampleBrowser,
 } from '../../src/components';
 import { useHistory } from '../../src/lib/history';
+import { useKeyboardShortcuts } from '../../src/lib/keyboard';
+import { saveProject, loadProject } from '../../src/lib/projectStore';
 import { getGroupVolume } from '../../src/components/TrackGroup';
-import type { Plugin, MixSnapshot, MetronomeSettings, RecordSettings } from '../../src/lib/types';
+import type { Plugin, MixSnapshot, MetronomeSettings, RecordSettings, TrackDef, GroupDef } from '../../src/lib/types';
 import { MASTERING_CHAIN_PRESETS, buildMasteringChain } from '../../src/lib/mastering';
 import type { AutomationPoint } from '../../src/components/AutomationLane';
 
-interface Track {
-  id: string;
-  name: string;
-  color: string;
-  muted: boolean;
-  solo: boolean;
-  volume: number;
-  regions: { id: string; start: number; duration: number }[];
-  plugins: Plugin[];
-  automation: Record<string, AutomationPoint[]>;
-}
-
-interface GroupDef {
-  id: string;
-  name: string;
-  color: string;
-  volume: number;
-  muted: boolean;
-  trackIds: string[];
-}
-
-type BottomTab = 'mixer' | 'fx' | 'mastering' | 'groups' | 'mixes';
+type BottomTab = 'mixer' | 'fx' | 'mastering' | 'groups' | 'mixes' | 'bounce';
 
 function TimeDisplay({ seconds }: { seconds: number }) {
   const m = Math.floor(seconds / 60);
@@ -56,7 +39,7 @@ function TimeDisplay({ seconds }: { seconds: number }) {
 
 const GROUP_COLORS = ['#ff6482', '#5ac8fa', '#ffcc00', '#34c759', '#bf5af2', '#ff9f0a', '#00d4aa'];
 
-const INITIAL_TRACKS: Track[] = [
+const INITIAL_TRACKS: TrackDef[] = [
   {
     id: '1', name: 'Voz Principal', color: 'bg-red-500',
     muted: false, solo: false, volume: 80,
@@ -99,6 +82,8 @@ export default function Studio() {
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
   const [bottomTab, setBottomTab] = useState<BottomTab>('mixer');
   const [showRecordOptions, setShowRecordOptions] = useState(false);
+  const [showBounce, setShowBounce] = useState(false);
+  const [showSampleBrowser, setShowSampleBrowser] = useState(false);
   const [editingPlugin, setEditingPlugin] = useState<Plugin | null>(null);
   const [showAutomation, setShowAutomation] = useState<Record<string, boolean>>({});
   const [groups, setGroups] = useState<GroupDef[]>([]);
@@ -107,6 +92,7 @@ export default function Studio() {
   const [masteringChain, setMasteringChain] = useState<Plugin[]>(() => buildMasteringChain(MASTERING_CHAIN_PRESETS[0]));
   const [mixSnapshots, setMixSnapshots] = useState<MixSnapshot[]>([]);
   const [activeMixId, setActiveMixId] = useState<string | undefined>();
+  const [lastSavedLabel, setLastSavedLabel] = useState<string | null>(null);
 
   const {
     state: tracks,
@@ -115,7 +101,7 @@ export default function Studio() {
     redo: redoHistory,
     canUndo,
     canRedo,
-  } = useHistory<Track[]>(INITIAL_TRACKS);
+  } = useHistory<TrackDef[]>(INITIAL_TRACKS);
 
   const [metronome, setMetronome] = useState<MetronomeSettings>({
     bpm: initialBpm,
@@ -135,6 +121,44 @@ export default function Studio() {
     mono: false,
     preRoll: 2,
   });
+
+  useEffect(() => {
+    const saved = loadProject(id);
+    if (saved) {
+      setTracks(saved.tracks as unknown as TrackDef[]);
+      setGroups(saved.groups);
+      setTrackAssignments(saved.trackAssignments);
+      setMasterPlugins(saved.masterPlugins);
+      setMasteringChain(saved.masteringChain);
+      setMixSnapshots(saved.mixSnapshots);
+      setActiveMixId(saved.activeMixId);
+      if (saved.metronome) setMetronome(saved.metronome);
+      if (saved.recordSettings) setRecordSettings(saved.recordSettings);
+    }
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      saveProject(id, {
+        title: projectTitle,
+        genre: genreParam || '',
+        key: projectKey || '',
+        bpm: metronome.bpm,
+        tracks: tracks as unknown as TrackDef[],
+        groups,
+        trackAssignments,
+        masterPlugins,
+        masteringChain,
+        mixSnapshots,
+        activeMixId,
+        metronome,
+        recordSettings,
+      });
+      setLastSavedLabel('Salvo');
+      setTimeout(() => setLastSavedLabel(null), 2000);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [tracks, groups, trackAssignments, masterPlugins, masteringChain, mixSnapshots, activeMixId, metronome, recordSettings]);
 
   const isPlaying = player.playing;
   const currentTime = status.currentTime || 0;
@@ -165,7 +189,7 @@ export default function Studio() {
 
   const trackVolume = (trackId: string) => tracks.find(t => t.id === trackId)?.volume ?? 70;
 
-  const isAudible = (track: Track) => {
+  const isAudible = (track: TrackDef) => {
     if (anySolo) return track.solo;
     const groupVol = getGroupVolume(groups, track.id);
     if (groupVol?.muted) return false;
@@ -258,6 +282,107 @@ export default function Studio() {
     setMasteringChain(buildMasteringChain(preset));
   }, []);
 
+  const handleManualSave = useCallback(() => {
+    saveProject(id, {
+      title: projectTitle,
+      genre: genreParam || '',
+      key: projectKey || '',
+      bpm: metronome.bpm,
+      tracks: tracks as TrackDef[],
+      groups,
+      trackAssignments,
+      masterPlugins,
+      masteringChain,
+      mixSnapshots,
+      activeMixId,
+      metronome,
+      recordSettings,
+    });
+    setLastSavedLabel('Salvo ✓');
+    setTimeout(() => setLastSavedLabel(null), 2000);
+  }, [tracks, groups, trackAssignments, masterPlugins, masteringChain, mixSnapshots, activeMixId, metronome, recordSettings, id, projectTitle, genreParam, projectKey]);
+
+  const handleAddSample = useCallback((sample: { id: string; name: string; category: string; color: string; duration: number }) => {
+    const trackId = `sample-${Date.now()}`;
+    const newTrack: TrackDef = {
+      id: trackId,
+      name: sample.name,
+      color: sample.color,
+      muted: false,
+      solo: false,
+      volume: 75,
+      regions: [{ id: `region-${Date.now()}`, start: 0, duration: Math.max(sample.duration * 10, 40) }],
+      plugins: [],
+      automation: {},
+    };
+    setTracks([...tracks, newTrack]);
+  }, [tracks, setTracks]);
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleAddTrack = useCallback(() => {
+    const trackId = `track-${Date.now()}`;
+    const colors = ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-amber-500', 'bg-pink-500', 'bg-cyan-500'];
+    const newTrack: TrackDef = {
+      id: trackId,
+      name: `Track ${tracks.length + 1}`,
+      color: colors[tracks.length % colors.length],
+      muted: false,
+      solo: false,
+      volume: 75,
+      regions: [{ id: `region-${Date.now()}`, start: 0, duration: 80 }],
+      plugins: [],
+      automation: {},
+    };
+    setTracks([...tracks, newTrack]);
+    setSelectedTrackId(trackId);
+  }, [tracks, setTracks]);
+
+  const handleImportAudio = useCallback(() => {
+    if (Platform.OS !== 'web') {
+      Alert.alert('Importar', 'Importação disponível apenas na versão web.');
+      return;
+    }
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.wav,.mp3,.aiff,.flac,.ogg,.m4a,audio/*';
+    input.multiple = true;
+    input.onchange = (e: Event) => {
+      const files = (e.target as HTMLInputElement).files;
+      if (!files || files.length === 0) return;
+      const colors = ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-amber-500', 'bg-pink-500', 'bg-cyan-500'];
+      const newTracks = Array.from(files).map((file, i) => {
+        const ext = file.name.split('.').pop()?.toLowerCase() || 'wav';
+        const approxDuration = Math.max(10, Math.round(file.size / 30000));
+        return {
+          id: `import-${Date.now()}-${i}`,
+          name: file.name.replace(/\.[^/.]+$/, ''),
+          color: colors[(tracks.length + i) % colors.length],
+          muted: false,
+          solo: false,
+          volume: 75,
+          regions: [{ id: `region-import-${Date.now()}-${i}`, start: i * 4, duration: Math.min(approxDuration, 300) }],
+          plugins: [] as Plugin[],
+          automation: {} as Record<string, AutomationPoint[]>,
+        } as TrackDef;
+      });
+      setTracks([...tracks, ...newTracks]);
+    };
+    input.click();
+  }, [tracks, setTracks]);
+
+  useKeyboardShortcuts({
+    play: togglePlay,
+    record: toggleRecording,
+    undo: undoHistory,
+    redo: redoHistory,
+    save: handleManualSave,
+    bounce: () => setShowBounce(true),
+    escape: () => { setEditingPlugin(null); setShowRecordOptions(false); setShowBounce(false); setShowSampleBrowser(false); },
+    toggleMute: selectedTrack ? () => toggleMute(selectedTrack.id) : undefined,
+    toggleSolo: selectedTrack ? () => toggleSolo(selectedTrack.id) : undefined,
+  });
+
   const getEffectiveVolume = (trackId: string): number => {
     const gv = getGroupVolume(groups, trackId);
     const tv = trackVolume(trackId);
@@ -304,6 +429,10 @@ export default function Studio() {
         <View className="flex-row items-center gap-3">
           <Metronome settings={metronome} onChange={setMetronome} isPlaying={isPlaying} />
           <MixManager snapshots={mixSnapshots} activeMixId={activeMixId} onSave={handleSaveMix} onLoad={handleLoadMix} onDelete={handleDeleteMix} onCompare={handleCompareMix} />
+          <Pressable onPress={() => setShowSampleBrowser(prev => !prev)}
+            className={`w-8 h-8 rounded-lg items-center justify-center ${showSampleBrowser ? 'bg-brand-accent/30 border border-brand-accent' : 'bg-dark-muted active:opacity-70'}`}>
+            <Text className={`text-xs ${showSampleBrowser ? 'text-brand-accent' : 'text-gray-400'}`}>📂</Text>
+          </Pressable>
         </View>
 
         <View className="flex-row items-center gap-2">
@@ -319,9 +448,18 @@ export default function Studio() {
           </View>
         )}
 
-        <Pressable className="bg-brand-primary px-5 py-2 rounded-xl active:opacity-80">
-          <Text className="text-white font-bold text-sm">Salvar</Text>
-        </Pressable>
+        <View className="flex-row items-center gap-2">
+          <Pressable onPress={() => setShowBounce(true)}
+            className="w-8 h-8 rounded-lg bg-dark-muted items-center justify-center active:opacity-70">
+            <Text className="text-gray-400 text-xs">📦</Text>
+          </Pressable>
+          {lastSavedLabel && (
+            <Text className="text-gray-500 text-[10px] font-medium">{lastSavedLabel}</Text>
+          )}
+          <Pressable onPress={handleManualSave} className="bg-brand-primary px-5 py-2 rounded-xl active:opacity-80">
+            <Text className="text-white font-bold text-sm">Salvar</Text>
+          </Pressable>
+        </View>
       </View>
 
       <View className="h-10 bg-dark-surface/50 border-b border-dark-border flex-row items-center px-4">
@@ -378,6 +516,18 @@ export default function Studio() {
               </Pressable>
             );
           })}
+          <View className="p-1.5 gap-1 border-t border-dark-border bg-dark-surface/20">
+            <Pressable onPress={handleAddTrack}
+              className="h-8 rounded-lg bg-dark-muted items-center justify-center flex-row gap-1 active:opacity-70">
+              <Text className="text-gray-300 text-xs font-bold">+</Text>
+              <Text className="text-gray-300 text-[10px] font-semibold">Track</Text>
+            </Pressable>
+            <Pressable onPress={handleImportAudio}
+              className="h-8 rounded-lg bg-dark-muted items-center justify-center flex-row gap-1 active:opacity-70">
+              <Text className="text-gray-300 text-xs">📁</Text>
+              <Text className="text-gray-300 text-[10px] font-semibold">Import</Text>
+            </Pressable>
+          </View>
         </View>
 
         <ScrollView horizontal className="flex-1 bg-dark-bg">
@@ -436,6 +586,17 @@ export default function Studio() {
         </ScrollView>
       </View>
 
+      {showSampleBrowser && (
+        <View className="h-64 border-t border-dark-border bg-dark-bg">
+          <View className="flex-row items-center justify-between px-4 py-1.5 border-b border-dark-border/50">
+            <Text className="text-gray-500 text-[10px] font-bold uppercase tracking-wider">Sample Browser</Text>
+            <Pressable onPress={() => setShowSampleBrowser(false)} className="w-6 h-6 items-center justify-center active:opacity-60">
+              <Text className="text-gray-500 text-xs">✕</Text>
+            </Pressable>
+          </View>
+          <SampleBrowser visible onAddSample={handleAddSample} />
+        </View>
+      )}
       <View className="bg-dark-surface border-t border-dark-border">
         <View className="flex-row border-b border-dark-border/50">
           {bottomTabs.map(tab => (
@@ -597,6 +758,7 @@ export default function Studio() {
 
       <RecordOptions settings={recordSettings} onChange={setRecordSettings} visible={showRecordOptions} onClose={() => setShowRecordOptions(false)} />
       <PluginEditor plugin={editingPlugin} onParamChange={handlePluginParamChange} onToggle={handleTogglePlugin} onClose={() => setEditingPlugin(null)} />
+      <BounceDialog visible={showBounce} onClose={() => setShowBounce(false)} projectTitle={projectTitle} duration={duration} />
     </View>
   );
 }

@@ -18,3 +18,5 @@ export { WaveformClip } from './WaveformClip';
 export { AutomationLane } from './AutomationLane';
 export { TrackGroupManager } from './TrackGroup';
 export { LufsMeter } from './LufsMeter';
+export { BounceDialog } from './BounceDialog';
+export { SampleBrowser } from './SampleBrowser';
