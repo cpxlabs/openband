@@ -3,9 +3,12 @@ import { View, Text, KeyboardAvoidingView, Platform, Pressable } from 'react-nat
 import { Button, TextInput } from '../../src/components';
 import { supabase } from '../../src/lib/supabase';
 import { useResponsive } from '../../src/lib/responsive';
+import { VISITOR_MODE } from '../../src/lib/flags';
+import { useAuth } from '../../src/context/AuthContext';
 
 export default function Login() {
   const resp = useResponsive();
+  const { signInAsVisitor } = useAuth();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -114,6 +117,20 @@ export default function Login() {
             {isSignUp ? 'Já tem uma conta? Entre' : 'Não tem conta? Cadastre-se'}
           </Text>
         </Pressable>
+
+        {VISITOR_MODE && (
+          <View className="mt-8 pt-6 border-t border-dark-border">
+            <Button
+              title="Entrar como Visitante"
+              variant="secondary"
+              icon="👤"
+              onPress={signInAsVisitor}
+            />
+            <Text className="text-gray-600 text-[10px] text-center mt-2">
+              Modo desenvolvimento — perfil Admin
+            </Text>
+          </View>
+        )}
       </View>
     </KeyboardAvoidingView>
   );
