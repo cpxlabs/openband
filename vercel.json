@@ -2,18 +2,13 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "devCommand": "npm run web",
   "cleanUrls": true,
-  "trailingSlash": false,
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Frame-Options", "value": "DENY" }
-      ]
-    }
-  ],
+  "framework": null,
   "rewrites": [
-    { "source": "/((?!_expo|assets|favicon|manifest|sw).*)", "destination": "/index.html" }
+    {
+      "source": "/:path*",
+      "destination": "/"
+    }
   ]
 }
