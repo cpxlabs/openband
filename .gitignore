@@ -6,6 +6,7 @@ dist/
 *.keystore
 .secrets/
 backend/.venv/
+.env
 backend/package-lock.json
 uploads/
 stems/
