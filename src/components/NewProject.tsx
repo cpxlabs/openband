@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { View, Text, Pressable, ScrollView, TextInput } from 'react-native';
-import { GENRES, MUSICAL_KEYS } from '../lib/projectTemplates';
+import { GENRES, MUSICAL_KEYS, keyLabel } from '../lib/projectTemplates';
 import type { GenreTemplate } from '../lib/projectTemplates';
 
 interface NewProjectProps {
@@ -12,11 +12,6 @@ interface NewProjectProps {
     key: string;
     bpm: number;
   }) => void;
-}
-
-function keyLabel(k: string): string {
-  if (k.endsWith('m')) return `${k.slice(0, -1)}m`;
-  return k;
 }
 
 export function NewProject({ visible, onClose, onCreate }: NewProjectProps) {

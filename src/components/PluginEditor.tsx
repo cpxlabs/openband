@@ -184,7 +184,9 @@ function EqEditor({ plugin, onParamChange }: { plugin: Plugin; onParamChange: (i
             return (
               <Pressable
                 key={type}
-                onPress={() => {}}
+                onPress={() => {
+                  bands.forEach(b => onParamChange(`b${b.index}_type`, type));
+                }}
                 className="px-2 py-1 rounded-md bg-dark-surface border border-dark-border"
               >
                 <Text className="text-gray-400 text-[9px] font-mono">{label}</Text>

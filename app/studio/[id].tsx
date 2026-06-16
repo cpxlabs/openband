@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { View, Text, Pressable, ScrollView, Platform, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAudioPlayer, useAudioPlayerStatus, useAudioRecorder, useAudioRecorderState, AudioModule, setAudioModeAsync, RecordingPresets } from 'expo-audio';
@@ -35,7 +35,7 @@ import { MASTERING_CHAIN_PRESETS, buildMasteringChain } from '../../src/lib/mast
 import { autoMix, AUTOMIX_GENRES } from '../../src/lib/automix';
 import type { AutomationPoint } from '../../src/components/AutomationLane';
 
-type BottomTab = 'mixer' | 'fx' | 'mastering' | 'groups' | 'mixes' | 'bounce';
+type BottomTab = 'mixer' | 'fx' | 'mastering' | 'groups' | 'mixes';
 
 function TimeDisplay({ seconds }: { seconds: number }) {
   const m = Math.floor(seconds / 60);
@@ -86,7 +86,7 @@ export default function Studio() {
   }>();
   const router = useRouter();
   const projectTitle = (Array.isArray(titleParam) ? titleParam[0] : titleParam) || 'Projeto';
-  const initialBpm = bpmParam ? parseInt(Array.isArray(bpmParam) ? bpmParam[0] : bpmParam, 10) || 120 : 120;
+  const initialBpm = bpmParam ? (parseInt(Array.isArray(bpmParam) ? bpmParam[0] : bpmParam, 10) ?? 120) : 120;
   const projectKey = Array.isArray(keyParam) ? keyParam[0] : keyParam;
   const player = useAudioPlayer(null);
   const status = useAudioPlayerStatus(player);
@@ -172,7 +172,7 @@ export default function Studio() {
   useEffect(() => {
     const saved = loadProject(id);
     if (saved) {
-      setTracks(saved.tracks as unknown as TrackDef[]);
+      setTracks(saved.tracks as TrackDef[]);
       setGroups(saved.groups);
       setTrackAssignments(saved.trackAssignments);
       setMasterPlugins(saved.masterPlugins);
@@ -433,8 +433,6 @@ export default function Studio() {
     };
     setTracks([...tracks, newTrack]);
   }, [tracks, setTracks]);
-
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleAddTrack = useCallback(() => {
     const trackId = `track-${Date.now()}`;
@@ -1002,7 +1000,7 @@ export default function Studio() {
                 <View className="mt-3">
                   <PedalRack chain={trackAmpChains[selectedTrack.id] ?? { pedals: [], amp: null, cab: null }}
                     onChange={(chain) => setTrackAmpChains(prev => ({ ...prev, [selectedTrack.id]: chain }))}
-                    trackName={selectedTrack.name} maxHeight={180} />
+                    trackName={selectedTrack.name} />
                 </View>
                 <MasterRack plugins={masterPlugins} onChange={setMasterPlugins} onEdit={(p) => { setEditingPlugin(p); setEditingPluginSource('masterRack'); }} />
               </View>

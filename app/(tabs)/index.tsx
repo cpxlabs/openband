@@ -222,7 +222,7 @@ export default function Feed() {
                   <Pressable onPress={() => handleShare(item)}
                     className="flex-row items-center gap-1 px-2.5 py-1 rounded-full bg-dark-elevated border border-dark-border active:opacity-70">
                     <Text className="text-gray-400 text-xs">↗</Text>
-                    <Text className="text-gray-400 text-[10px] font-semibold">Share</Text>
+                    <Text className="text-gray-400 text-[10px] font-semibold">Compartilhar</Text>
                   </Pressable>
                 </View>
               </View>

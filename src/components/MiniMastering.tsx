@@ -15,10 +15,9 @@ interface MiniMasteringProps {
   activePreset: number;
   eqValues: Record<string, number>;
   onEqChange: (band: string, value: number) => void;
-  compact?: boolean;
 }
 
-export function MiniMastering({ onPresetChange, activePreset, eqValues, onEqChange, compact }: MiniMasteringProps) {
+export function MiniMastering({ onPresetChange, activePreset, eqValues, onEqChange }: MiniMasteringProps) {
   const [expanded, setExpanded] = useState(false);
 
   return (

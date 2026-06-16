@@ -119,16 +119,8 @@
     @apply bg-dark-elevated rounded-2xl border border-dark-border shadow-sm;
   }
 
-  .btn-primary {
-    @apply bg-brand-primary rounded-xl active:opacity-80 disabled:opacity-50;
-  }
-
   .btn-secondary {
     @apply bg-dark-muted border border-dark-border rounded-xl active:opacity-80;
-  }
-
-  .btn-ghost {
-    @apply rounded-xl active:bg-dark-muted;
   }
 
   .input-field {
@@ -137,10 +129,6 @@
 
   .input-field-focused {
     @apply border-brand-primary;
-  }
-
-  .section-header {
-    @apply text-gray-500 text-xs font-semibold uppercase tracking-widest;
   }
 
   .label {

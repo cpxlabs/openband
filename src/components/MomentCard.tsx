@@ -118,7 +118,6 @@ export function MomentCard({ moment }: MomentCardProps) {
             activePreset={masterPreset}
             eqValues={eqValues}
             onEqChange={handleEqChange}
-            compact
           />
         </View>
       </View>

@@ -48,15 +48,6 @@ function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-function floatTo16PCM(samples: Float32Array): Int16Array {
-  const pcm = new Int16Array(samples.length);
-  for (let i = 0; i < samples.length; i++) {
-    const s = Math.max(-1, Math.min(1, samples[i]));
-    pcm[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
-  }
-  return pcm;
-}
-
 function writeWavHeader(
   view: DataView,
   offset: number,
@@ -140,9 +131,7 @@ async function renderMixdown(
         panNode.connect(offlineCtx.destination);
 
         source.start(region.start, 0, Math.min(region.duration, duration - region.start));
-      } catch {
-        // skip failed regions
-      }
+      } catch {}
     }
   }
 
@@ -224,8 +213,8 @@ export function BounceDialog({ visible, onClose, projectTitle, duration, tracks 
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable className="flex-1 bg-black/60 justify-center items-center px-6" onPress={onClose}>
-        <Pressable className="w-full max-w-sm bg-dark-surface rounded-3xl border border-dark-border p-5" onPress={() => {}}>
+        <Pressable className="flex-1 bg-black/60 justify-center items-center px-6" onPress={onClose}>
+          <Pressable className="w-full max-w-sm bg-dark-surface rounded-3xl border border-dark-border p-5">
           <Text className="text-white text-lg font-bold mb-1">Exportar Mix</Text>
           <Text className="text-gray-500 text-xs mb-5">Escolha as configurações de exportação</Text>
 

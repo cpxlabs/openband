@@ -7,7 +7,6 @@ interface PedalRackProps {
   chain: TrackAmpChain;
   onChange: (chain: TrackAmpChain) => void;
   trackName?: string;
-  maxHeight?: number;
 }
 
 function PedalSlot({ pedal, index, onToggle, onReplace, onRemove }:
@@ -200,7 +199,7 @@ function CabSelector({ cab, onSelect, onRemove }:
   );
 }
 
-export function PedalRack({ chain, onChange, trackName, maxHeight }: PedalRackProps) {
+export function PedalRack({ chain, onChange, trackName }: PedalRackProps) {
   const handleTogglePedal = (index: number) => {
     const pedals = [...chain.pedals];
     if (pedals[index]) pedals[index] = { ...pedals[index], enabled: !pedals[index].enabled };
@@ -215,8 +214,8 @@ export function PedalRack({ chain, onChange, trackName, maxHeight }: PedalRackPr
 
   const handleRemovePedal = (index: number) => {
     const pedals = [...chain.pedals];
-    pedals[index] = null as unknown as GuitarPedal;
-    onChange({ ...chain, pedals: pedals.filter(Boolean) });
+    pedals.splice(index, 1);
+    onChange({ ...chain, pedals });
   };
 
   return (

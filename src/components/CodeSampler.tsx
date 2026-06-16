@@ -63,8 +63,8 @@ export function CodeSampler({ visible, onClose, onRender, bpm }: CodeSamplerProp
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable className="flex-1 bg-black/60 justify-center items-center px-3" onPress={onClose}>
-        <Pressable className="w-full max-w-lg max-h-[80%] bg-dark-surface rounded-3xl border border-dark-border overflow-hidden" onPress={() => {}}>
+        <Pressable className="flex-1 bg-black/60 justify-center items-center px-3" onPress={onClose}>
+          <Pressable className="w-full max-w-lg max-h-[80%] bg-dark-surface rounded-3xl border border-dark-border overflow-hidden">
           <View className="p-5 border-b border-dark-border">
             <View className="flex-row items-center justify-between mb-1">
               <Text className="text-white text-lg font-bold">Code Sampler</Text>

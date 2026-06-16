@@ -78,8 +78,8 @@ export function Tuner({ visible, onClose }: TunerProps) {
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable className="flex-1 bg-black/70 justify-center items-center px-4" onPress={onClose}>
-        <Pressable className="w-full max-w-sm bg-dark-surface rounded-3xl border border-dark-border p-6" onPress={() => {}}>
+        <Pressable className="flex-1 bg-black/70 justify-center items-center px-4" onPress={onClose}>
+          <Pressable className="w-full max-w-sm bg-dark-surface rounded-3xl border border-dark-border p-6">
           <View className="flex-row items-center justify-between mb-4">
             <Text className="text-white text-lg font-bold">Afinador</Text>
             <Pressable onPress={onClose} className="w-7 h-7 items-center justify-center active:opacity-60">

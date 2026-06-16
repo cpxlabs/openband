@@ -76,11 +76,11 @@ Available in `src/components/`:
 | `ProgressBar` | `progress, className?` | 0-100 progress fill |
 | `PageHeader` | `title, subtitle?` | Standard page header |
 | `Sidebar` | `currentRoute, onNavigate, isOpen, onClose, isPersistent` | Left drawer nav (persistent on desktop, overlay on mobile) |
-| `PedalRack` | `chain, onChange, trackName, maxHeight` | 6-slot guitar pedalboard with amp + cab selectors |
+| `PedalRack` | `chain, onChange, trackName` | 6-slot guitar pedalboard with amp + cab selectors |
 | `Tuner` | `visible, onClose` | Chromatic tuner overlay |
 | `CodeSampler` | `visible, onClose, onRender, bpm` | Token-based beat sequencer |
 | `MomentCard` | `moment: MomentData` | Artist moment card for social feed |
-| `MiniMastering` | (internal) | Quick mastering chain presets |
+| `MiniMastering` | `onPresetChange, activePreset, eqValues, onEqChange` | Quick mastering chain presets + EQ |
 | `LufsMeter` | `isPlaying` | Loudness meter (LUFS) |
 | `BounceDialog` | `visible, onClose, projectTitle, duration` | Export/stem bounce dialog |
 | `MixManager` | `snapshots, activeMixId, onSave, onLoad, onDelete, onCompare` | A/B mix snapshot manager |
@@ -94,13 +94,19 @@ Available in `src/components/`:
 | `RecordOptions` | `settings, onChange, visible, onClose` | Recording settings (source, quality, sample rate) |
 | `Metronome` | `settings, onChange, isPlaying` | BPM/tempo click track |
 | `NewProject` | `visible, onClose, onCreate` | New project creation modal |
+| `PianoRoll` | `notes, onChange, visible, onClose, bpm, numBars?, snap?, keySignature?, scale?` | MIDI note piano roll editor |
+| `Looper` | `visible, onClose, bpm, onCommitLoop` | Live loop recording/playback |
+| `VisualEQ` | `frequencies, onChange?, height?` | Visual equalizer display |
+| `OneKnob` | `label, value, onChange, min?, max?, step?, type?` | Single-knob control (18 types) |
+| `Sampler` | `visible, onClose, onAddToTrack` | Audio sample player |
+| `Synth` | `visible, onClose, bpm` | Synthesizer with presets |
 
 CSS component classes (from `global.css`):
 - `card`, `card-elevated` — container styles
-- `btn-primary`, `btn-secondary`, `btn-ghost` — button styles
+- `btn-secondary` — button style
 - `input-field`, `input-field-focused` — input styles
 - `badge` — badge container
-- `section-header`, `label` — text styles
+- `label` — text style
 
 ### Audio System
 
@@ -132,7 +138,10 @@ CSS component classes (from `global.css`):
 # TypeScript check — must pass with zero errors
 npx tsc --noEmit
 
-# Unit tests — must pass
+# Vitest component + lib tests — must pass
+npx vitest run
+
+# Legacy node:test suite — must pass
 npm test
 
 # Production build — must succeed
@@ -194,12 +203,21 @@ src/
   lib/responsive.ts   — useResponsive hook (mobile/tablet/desktop breakpoints)
   context/
     AuthContext.tsx    — Auth state context (session, user, loading, signOut)
-  components/         — Design system (29 components, see table above)
+  components/         — Design system (34 components, see table above)
 
 tests/
-  responsive.test.ts  — Breakpoint & dimension tests
-  types.test.ts       — Type structure tests (TrackDef, MixSnapshot, SendBus, etc.)
-  presets.test.ts     — Pedal/amp/cab preset count + structure tests
+  responsive.test.ts  — Breakpoint & dimension tests (legacy)
+  types.test.ts       — Type structure tests (legacy)
+  presets.test.ts     — Pedal/amp/cab preset count + structure tests (legacy)
+  components.test.tsx — Vitest component rendering + interaction tests (116 tests)
+  lib.test.ts         — Vitest library function tests (39 tests)
+
+stories/              — Storybook stories for all 34 components
+  *.stories.tsx       — Run: `npx storybook dev -p 6006`
+
+.storybook/
+  main.ts             — Vite + react-native-web alias
+  preview.ts          — Dark theme, CSS import
 
 backend/
   src/

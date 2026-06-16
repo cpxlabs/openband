@@ -1,4 +1,4 @@
-import { Pressable, Text, ActivityIndicator, View } from 'react-native';
+import { Pressable, Text, ActivityIndicator } from 'react-native';
 
 interface ButtonProps {
   title: string;
