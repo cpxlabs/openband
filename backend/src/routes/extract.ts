@@ -10,10 +10,13 @@ const router = Router();
 
 const STEMS_DIR = path.resolve(process.cwd(), 'stems');
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 router.post('/extract', (req: Request, res: Response) => {
   upload.single('audio')(req, res, async (err) => {
     if (err) {
-      const body: ErrorResponse = { error: 'Upload failed', details: err.message };
+      console.error('Upload error:', err.message);
+      const body: ErrorResponse = { error: 'Upload failed', ...(isProduction ? {} : { details: err.message }) };
       return res.status(400).json(body);
     }
 
@@ -50,18 +53,24 @@ router.post('/extract', (req: Request, res: Response) => {
         } as ExtractResponse & { warning: string });
       }
 
-      res.status(500).json({ error: 'Erro ao processar áudio', details: message });
+      console.error('Extract error:', message);
+      res.status(500).json({ error: 'Erro ao processar áudio', ...(isProduction ? {} : { details: message }) });
     }
   });
 });
 
 router.get('/stems/:filename', (req: Request, res: Response) => {
-  const filePath = path.join(STEMS_DIR, req.params.filename);
-
+  const filename = req.params.filename;
+  if (filename.includes('..') || filename.includes('/') || filename.includes('\\') || filename.includes('\0')) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  const filePath = path.resolve(STEMS_DIR, filename);
+  if (!filePath.startsWith(STEMS_DIR)) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ error: 'Stem não encontrado.' });
   }
-
   res.sendFile(filePath);
 });
 

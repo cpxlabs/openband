@@ -142,6 +142,14 @@ export function playMidiNotes(
   return ids;
 }
 
+export function disposeAudioContext(): void {
+  stopAllNotes();
+  if (audioCtx) {
+    audioCtx.close();
+    audioCtx = null;
+  }
+}
+
 export function midiNoteToName(pitch: number): string {
   const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
   return `${NOTE_NAMES[pitch % 12]}${Math.floor(pitch / 12) - 1}`;

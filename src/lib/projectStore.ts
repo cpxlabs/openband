@@ -68,12 +68,52 @@ export function exportProject(id: string): string | null {
   return JSON.stringify(project, null, 2);
 }
 
+function sanitizeProjectData(raw: unknown): ProjectData | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const data = raw as Record<string, unknown>;
+  if (typeof data.id !== 'string' && data.id !== undefined) return null;
+  if (typeof data.title !== 'string') return null;
+  if (typeof data.bpm !== 'number') return null;
+  return {
+    id: data.id as string || `import-${Date.now()}`,
+    title: data.title as string,
+    genre: typeof data.genre === 'string' ? data.genre : '',
+    key: typeof data.key === 'string' ? data.key : 'C',
+    bpm: data.bpm as number,
+    tracks: Array.isArray(data.tracks) ? data.tracks : [],
+    groups: Array.isArray(data.groups) ? data.groups : [],
+    trackAssignments: typeof data.trackAssignments === 'object' && data.trackAssignments !== null
+      ? (data.trackAssignments as Record<string, string | null>)
+      : {},
+    masterPlugins: Array.isArray(data.masterPlugins) ? data.masterPlugins : [],
+    masteringChain: Array.isArray(data.masteringChain) ? data.masteringChain : [],
+    sendBuses: Array.isArray(data.sendBuses) ? data.sendBuses : [],
+    trackAmpChains: typeof data.trackAmpChains === 'object' && data.trackAmpChains !== null
+      ? (data.trackAmpChains as Record<string, TrackAmpChain>)
+      : {},
+    mixSnapshots: Array.isArray(data.mixSnapshots) ? data.mixSnapshots : [],
+    activeMixId: typeof data.activeMixId === 'string' ? data.activeMixId : undefined,
+    metronome: typeof data.metronome === 'object' && data.metronome !== null
+      ? (data.metronome as ProjectData['metronome'])
+      : { bpm: 120, timeSig: [4, 4] as [number, number], accentInterval: 4, volume: 0.5, enabled: false, countIn: false, countInBars: 2 },
+    recordSettings: typeof data.recordSettings === 'object' && data.recordSettings !== null
+      ? (data.recordSettings as ProjectData['recordSettings'])
+      : { armed: false, inputSource: 'mic', quality: 'high', sampleRate: 44100, mono: false, preRoll: 0 },
+    lastSaved: typeof data.lastSaved === 'number' ? data.lastSaved : Date.now(),
+  };
+}
+
 export function importProject(json: string): string | null {
   try {
-    const data = JSON.parse(json) as ProjectData;
-    const id = data.id || `import-${Date.now()}`;
-    saveProject(id, data);
-    return id;
+    const parsed = JSON.parse(json);
+    if (parsed && typeof parsed === 'object') {
+      delete parsed.__proto__;
+      delete parsed.constructor;
+    }
+    const data = sanitizeProjectData(parsed);
+    if (!data) return null;
+    saveProject(data.id, data);
+    return data.id;
   } catch {
     return null;
   }

@@ -6,20 +6,20 @@ import { Platform } from 'react-native';
 const ExpoSecureStoreAdapter = {
   getItem: async (key: string) => {
     if (Platform.OS === 'web') {
-      return typeof window !== 'undefined' ? window.localStorage.getItem(key) : null;
+      return typeof window !== 'undefined' ? window.sessionStorage.getItem(key) : null;
     }
     return SecureStore.getItemAsync(key);
   },
   setItem: async (key: string, value: string) => {
     if (Platform.OS === 'web') {
-      if (typeof window !== 'undefined') window.localStorage.setItem(key, value);
+      if (typeof window !== 'undefined') window.sessionStorage.setItem(key, value);
       return;
     }
     return SecureStore.setItemAsync(key, value);
   },
   removeItem: async (key: string) => {
     if (Platform.OS === 'web') {
-      if (typeof window !== 'undefined') window.localStorage.removeItem(key);
+      if (typeof window !== 'undefined') window.sessionStorage.removeItem(key);
       return;
     }
     return SecureStore.deleteItemAsync(key);
@@ -109,6 +109,20 @@ function createMockClient() {
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  const isServerSide = typeof document === 'undefined';
+  if (!isServerSide && typeof __DEV__ !== 'undefined' && !__DEV__) {
+    throw new Error(
+      'EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY must be set in production'
+    );
+  }
+  if (isServerSide && typeof __DEV__ !== 'undefined' && !__DEV__) {
+    console.error(
+      'EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY must be set in production'
+    );
+  }
+}
 
 export const supabase = supabaseUrl && supabaseAnonKey
   ? createClient(supabaseUrl, supabaseAnonKey, {

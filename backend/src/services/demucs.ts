@@ -16,9 +16,13 @@ function ensureDir(dir: string) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
+const PYTHON_PATH = process.env.PYTHON_PATH && process.env.PYTHON_PATH.startsWith('/')
+  ? process.env.PYTHON_PATH
+  : path.resolve(process.cwd(), 'backend/.venv/bin/python3');
+
 function execPython(args: string[]): Promise<string> {
   return new Promise((resolve, reject) => {
-    execFile(process.env.PYTHON_PATH || 'backend/.venv/bin/python3', ['-u', ...args], {
+    execFile(PYTHON_PATH, ['-u', ...args], {
       maxBuffer: 1024 * 1024 * 100,
       timeout: 1000 * 60 * 30,
     }, (err, stdout, stderr) => {
@@ -90,8 +94,16 @@ export async function runDemucs(options: DemucsOptions): Promise<StemFile[]> {
 
 export async function checkDemucsInstalled(): Promise<boolean> {
   try {
-    await execPython(['-c', 'import demucs; print("ok")']);
-    return true;
+    const result = await new Promise<string>((resolve, reject) => {
+      execFile(PYTHON_PATH, ['-c', 'import demucs; print("ok")'], {
+        timeout: 15000,
+        maxBuffer: 1024,
+      }, (err, stdout) => {
+        if (err) reject(err);
+        else resolve(stdout);
+      });
+    });
+    return result.trim() === 'ok';
   } catch {
     return false;
   }

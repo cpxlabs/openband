@@ -18,6 +18,20 @@ export default function Login() {
       setError('Preencha todos os campos.');
       return;
     }
+    if (isSignUp) {
+      if (password.length < 8) {
+        setError('Senha deve ter no mínimo 8 caracteres.');
+        return;
+      }
+      if (!/[A-Z]/.test(password)) {
+        setError('Senha deve conter pelo menos uma letra maiúscula.');
+        return;
+      }
+      if (!/[0-9]/.test(password)) {
+        setError('Senha deve conter pelo menos um número.');
+        return;
+      }
+    }
     setLoading(true);
     setError(null);
     try {

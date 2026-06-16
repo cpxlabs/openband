@@ -203,6 +203,25 @@ create policy "Users can delete own posts"
   on public.posts for delete using (auth.uid() = user_id);
 
 -- ============================================================
+-- AUTO-UPDATE updated_at
+-- ============================================================
+
+create or replace function public.set_updated_at()
+returns trigger
+language plpgsql
+security definer set search_path = ''
+as $$
+begin
+  new.updated_at = timezone('utc'::text, now());
+  return new;
+end;
+$$;
+
+create trigger set_projects_updated_at
+  before update on public.projects
+  for each row execute function public.set_updated_at();
+
+-- ============================================================
 -- AUTO-CREATE PROFILES ON SIGNUP
 -- ============================================================
 
@@ -235,11 +254,12 @@ insert into storage.buckets (id, name, public)
 values ('audio', 'audio', true)
 on conflict (id) do nothing;
 
-create policy "Authenticated users can upload audio"
+create policy "Authenticated users can upload audio to own folder"
   on storage.objects for insert
   with check (
     bucket_id = 'audio'
     and auth.role() = 'authenticated'
+    and (storage.foldername(name))[1] = auth.uid()::text
   );
 
 create policy "Anyone can read audio"

@@ -90,7 +90,16 @@ function writeWavHeader(
 }
 
 async function fetchAudioData(url: string): Promise<AudioBuffer> {
-  const response = await fetch(url);
+  const parsed = new URL(url, typeof location !== 'undefined' ? location.origin : undefined);
+  if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+    throw new Error('Invalid URL scheme');
+  }
+  if (parsed.hostname !== 'localhost' && parsed.hostname !== '127.0.0.1' && !parsed.hostname.endsWith('.localhost')) {
+    if (parsed.protocol !== 'https:') {
+      throw new Error('Only HTTPS allowed for external URLs');
+    }
+  }
+  const response = await fetch(url, { credentials: 'omit' });
   const arrayBuffer = await response.arrayBuffer();
   const audioCtx = new AudioContext();
   const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
@@ -205,7 +214,7 @@ export function BounceDialog({ visible, onClose, projectTitle, duration, tracks 
         blob = new Blob([rawBuffer], { type: 'audio/wav' });
       }
 
-      downloadBlob(blob, `${projectTitle.replace(/\s+/g, '_')}_mix${ext}`);
+      downloadBlob(blob, `${projectTitle.replace(/[^a-zA-Z0-9_-]/g, '').replace(/\s+/g, '_')}_mix${ext}`);
       Alert.alert('Exportado', `Mix exportado como ${format.toUpperCase()} (${bitDepth}bit, ${sampleRate}Hz)`);
     } catch {
       Alert.alert('Erro', 'Falha ao exportar mix.');

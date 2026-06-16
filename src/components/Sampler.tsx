@@ -75,6 +75,8 @@ export function Sampler({ visible, onClose, onAddToTrack }: SamplerProps) {
     input.onchange = async (e: Event) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) { setLoadingSlot(null); return; }
+      if (file.size > 50 * 1024 * 1024) { setLoadingSlot(null); return; }
+      if (!file.type.startsWith('audio/') && !file.name.match(/\.(wav|mp3|aiff|flac|ogg)$/i)) { setLoadingSlot(null); return; }
       const reader = new FileReader();
       reader.onload = async (ev) => {
         const result = ev.target?.result;
