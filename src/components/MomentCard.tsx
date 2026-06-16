@@ -1,7 +1,9 @@
 import { useState, useCallback } from 'react';
 import { View, Text, Pressable, Image } from 'react-native';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
-import { Avatar, Badge, ProgressBar } from '.';
+import { Avatar } from './Avatar';
+import { Badge } from './Badge';
+import { ProgressBar } from './ProgressBar';
 import { MiniMastering } from './MiniMastering';
 import { DEMO_AUDIO_URL } from '../lib/constants';
 
