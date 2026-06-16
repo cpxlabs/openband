@@ -19,15 +19,20 @@ import {
   CodeSampler,
   Tuner,
   PedalRack,
+  PianoRoll,
+  Looper,
+  Sampler,
+  Synth,
 } from '../../src/components';
 import { useHistory } from '../../src/lib/history';
 import { useKeyboardShortcuts } from '../../src/lib/keyboard';
 import { saveProject, loadProject } from '../../src/lib/projectStore';
 import { parseMidi, midiToTrackRegions } from '../../src/lib/midiParser';
 import { getGroupVolume } from '../../src/components/TrackGroup';
-import type { Plugin, MixSnapshot, MetronomeSettings, RecordSettings, TrackDef, GroupDef, SendBus, TrackAmpChain } from '../../src/lib/types';
+import type { Plugin, MixSnapshot, MetronomeSettings, RecordSettings, TrackDef, GroupDef, SendBus, TrackAmpChain, TrackRegion, MIDINote } from '../../src/lib/types';
 import { useResponsive } from '../../src/lib/responsive';
 import { MASTERING_CHAIN_PRESETS, buildMasteringChain } from '../../src/lib/mastering';
+import { autoMix, AUTOMIX_GENRES } from '../../src/lib/automix';
 import type { AutomationPoint } from '../../src/components/AutomationLane';
 
 type BottomTab = 'mixer' | 'fx' | 'mastering' | 'groups' | 'mixes' | 'bounce';
@@ -43,25 +48,28 @@ function TimeDisplay({ seconds }: { seconds: number }) {
 }
 
 const GROUP_COLORS = ['#ff6482', '#5ac8fa', '#ffcc00', '#34c759', '#bf5af2', '#ff9f0a', '#00d4aa'];
+const TRACK_COLORS = ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-amber-500', 'bg-pink-500', 'bg-cyan-500'];
+
+type PluginSource = 'mastering' | 'masterRack' | 'track' | null;
 
 const INITIAL_TRACKS: TrackDef[] = [
   {
     id: '1', name: 'Voz Principal', color: 'bg-red-500',
-    muted: false, solo: false, volume: 80, pan: 0, sends: {},
+    muted: false, solo: false, volume: 80, pan: 0, sends: {}, sidechainSource: null,
     regions: [{ id: 'r1', start: 10, duration: 150 }],
     plugins: [],
     automation: {},
   },
   {
     id: '2', name: 'Guitarra Base', color: 'bg-blue-500',
-    muted: false, solo: false, volume: 70, pan: 0, sends: {},
+    muted: false, solo: false, volume: 70, pan: 0, sends: {}, sidechainSource: null,
     regions: [{ id: 'r2', start: 0, duration: 200 }],
     plugins: [],
     automation: {},
   },
   {
     id: '3', name: 'Bateria Loop', color: 'bg-green-500',
-    muted: true, solo: false, volume: 90, pan: 0, sends: {},
+    muted: true, solo: false, volume: 90, pan: 0, sends: {}, sidechainSource: null,
     regions: [{ id: 'r3', start: 0, duration: 100 }, { id: 'r4', start: 100, duration: 100 }],
     plugins: [],
     automation: {},
@@ -109,7 +117,13 @@ export default function Studio() {
   const [showSampleBrowser, setShowSampleBrowser] = useState(false);
   const [showCodeSampler, setShowCodeSampler] = useState(false);
   const [showTuner, setShowTuner] = useState(false);
+  const [showLooper, setShowLooper] = useState(false);
+  const [showSampler, setShowSampler] = useState(false);
+  const [showSynth, setShowSynth] = useState(false);
+  const [showPianoRoll, setShowPianoRoll] = useState(false);
+  const [editingMidiTrackId, setEditingMidiTrackId] = useState<string | null>(null);
   const [editingPlugin, setEditingPlugin] = useState<Plugin | null>(null);
+  const [editingPluginSource, setEditingPluginSource] = useState<PluginSource>(null);
   const [showAutomation, setShowAutomation] = useState<Record<string, boolean>>({});
   const [groups, setGroups] = useState<GroupDef[]>([]);
   const [sendBuses, setSendBuses] = useState<SendBus[]>([]);
@@ -215,17 +229,16 @@ export default function Studio() {
       const uri = audioRecorder.uri;
       if (uri) {
         const trackId = `rec-${Date.now()}`;
-        const colors = ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-amber-500', 'bg-pink-500', 'bg-cyan-500'];
         const newTrack: TrackDef = {
           id: trackId,
           name: `Recording ${tracks.length + 1}`,
-          color: colors[tracks.length % colors.length],
+          color: TRACK_COLORS[tracks.length % TRACK_COLORS.length],
           muted: false,
           solo: false,
           volume: 80,
           pan: 0,
-          sends: {},
-          regions: [{ id: `region-${Date.now()}`, start: 0, duration: Math.max(recorderState.durationMillis / 1000, 1) }],
+          sends: {}, sidechainSource: null,
+          regions: [{ id: `region-${Date.now()}`, start: 0, duration: Math.max(recorderState.durationMillis / 1000, 1), url: uri }],
           plugins: [],
           automation: {},
         };
@@ -269,6 +282,10 @@ export default function Studio() {
 
   const setTrackSend = useCallback((trackId: string, busId: string, value: number) => {
     setTracks(tracks.map(t => t.id === trackId ? { ...t, sends: { ...t.sends, [busId]: value } } : t));
+  }, [tracks, setTracks]);
+
+  const setTrackSidechain = useCallback((trackId: string, sourceId: string | null) => {
+    setTracks(tracks.map(t => t.id === trackId ? { ...t, sidechainSource: sourceId } : t));
   }, [tracks, setTracks]);
 
   const trackVolume = (trackId: string) => tracks.find(t => t.id === trackId)?.volume ?? 70;
@@ -351,22 +368,26 @@ export default function Studio() {
   const handlePluginParamChange = useCallback((pluginId: string, paramId: string, value: number) => {
     const updateChain = (chain: Plugin[]) =>
       chain.map(p => p.id === pluginId ? { ...p, params: { ...p.params, [paramId]: value } } : p);
-    setMasteringChain(prev => updateChain(prev));
-    setMasterPlugins(prev => updateChain(prev));
-    if (selectedTrack) {
+    if (editingPluginSource === 'mastering') {
+      setMasteringChain(prev => updateChain(prev));
+    } else if (editingPluginSource === 'masterRack') {
+      setMasterPlugins(prev => updateChain(prev));
+    } else if (editingPluginSource === 'track' && selectedTrack) {
       setTracks(tracks.map(t => t.id === selectedTrack.id ? { ...t, plugins: updateChain(t.plugins) } : t));
     }
-  }, [selectedTrack, setTracks, tracks]);
+  }, [editingPluginSource, selectedTrack, setTracks, tracks]);
 
   const handleTogglePlugin = useCallback((pluginId: string) => {
     const toggleChain = (chain: Plugin[]) =>
       chain.map(p => p.id === pluginId ? { ...p, enabled: !p.enabled } : p);
-    setMasteringChain(prev => toggleChain(prev));
-    setMasterPlugins(prev => toggleChain(prev));
-    if (selectedTrack) {
+    if (editingPluginSource === 'mastering') {
+      setMasteringChain(prev => toggleChain(prev));
+    } else if (editingPluginSource === 'masterRack') {
+      setMasterPlugins(prev => toggleChain(prev));
+    } else if (editingPluginSource === 'track' && selectedTrack) {
       setTracks(tracks.map(t => t.id === selectedTrack.id ? { ...t, plugins: toggleChain(t.plugins) } : t));
     }
-  }, [selectedTrack, setTracks, tracks]);
+  }, [editingPluginSource, selectedTrack, setTracks, tracks]);
 
   const handleLoadMasteringPreset = useCallback((index: number) => {
     const preset = MASTERING_CHAIN_PRESETS[index];
@@ -405,7 +426,7 @@ export default function Studio() {
       muted: false,
       solo: false,
       volume: 75,
-      pan: 0, sends: {},
+      pan: 0,       sends: {}, sidechainSource: null,
       regions: [{ id: `region-${Date.now()}`, start: 0, duration: Math.max(sample.duration * 10, 40) }],
       plugins: [],
       automation: {},
@@ -417,15 +438,14 @@ export default function Studio() {
 
   const handleAddTrack = useCallback(() => {
     const trackId = `track-${Date.now()}`;
-    const colors = ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-amber-500', 'bg-pink-500', 'bg-cyan-500'];
     const newTrack: TrackDef = {
       id: trackId,
       name: `Track ${tracks.length + 1}`,
-      color: colors[tracks.length % colors.length],
+      color: TRACK_COLORS[tracks.length % TRACK_COLORS.length],
       muted: false,
       solo: false,
       volume: 75,
-      pan: 0, sends: {},
+      pan: 0, sends: {}, sidechainSource: null,
       regions: [{ id: `region-${Date.now()}`, start: 0, duration: 80 }],
       plugins: [],
       automation: {},
@@ -446,18 +466,17 @@ export default function Studio() {
     input.onchange = (e: Event) => {
       const files = (e.target as HTMLInputElement).files;
       if (!files || files.length === 0) return;
-      const colors = ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-amber-500', 'bg-pink-500', 'bg-cyan-500'];
       const newTracks = Array.from(files).map((file, i) => {
         const ext = file.name.split('.').pop()?.toLowerCase() || 'wav';
         const approxDuration = Math.max(10, Math.round(file.size / 30000));
         return {
           id: `import-${Date.now()}-${i}`,
           name: file.name.replace(/\.[^/.]+$/, ''),
-          color: colors[(tracks.length + i) % colors.length],
+          color: TRACK_COLORS[(tracks.length + i) % TRACK_COLORS.length],
           muted: false,
           solo: false,
           volume: 75,
-          pan: 0, sends: {},
+          pan: 0, sends: {}, sidechainSource: null,
           regions: [{ id: `region-import-${Date.now()}-${i}`, start: i * 4, duration: Math.min(approxDuration, 300) }],
           plugins: [] as Plugin[],
           automation: {} as Record<string, AutomationPoint[]>,
@@ -469,14 +488,13 @@ export default function Studio() {
   }, [tracks, setTracks]);
 
   const handleCodeRender = useCallback((patterns: { name: string; tokens: string[]; unit: string; bpm: number }[]) => {
-    const colors = ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-amber-500', 'bg-pink-500', 'bg-cyan-500'];
     const stepSeconds = (unit: string, bpm: number) =>
       unit === '1/4' ? 60 / bpm : unit === '1/8' ? 30 / bpm : 15 / bpm;
 
     const newTracks: TrackDef[] = patterns.map((pattern, pi) => {
       const step = stepSeconds(pattern.unit, pattern.bpm);
       const tokens = pattern.tokens as string[];
-      const regions: { id: string; start: number; duration: number }[] = [];
+      const regions: TrackRegion[] = [];
       let currentStart = 0;
       for (let i = 0; i < tokens.length; i++) {
         if (tokens[i] === 'REST') { currentStart += step; continue; }
@@ -487,8 +505,8 @@ export default function Studio() {
       return {
         id: `code-${Date.now()}-${pi}`,
         name: pattern.name + (patterns.length > 1 ? ` ${pi + 1}` : ''),
-        color: colors[(tracks.length + pi) % colors.length],
-        muted: false, solo: false, volume: 75, pan: 0, sends: {},
+        color: TRACK_COLORS[(tracks.length + pi) % TRACK_COLORS.length],
+        muted: false, solo: false, volume: 75, pan: 0, sends: {}, sidechainSource: null,
         regions,
         plugins: [] as Plugin[],
         automation: {} as Record<string, AutomationPoint[]>,
@@ -511,13 +529,18 @@ export default function Studio() {
         if (!result || typeof result === 'string') return;
         const midi = parseMidi(result as ArrayBuffer);
         if (!midi) { Alert.alert('Erro', 'Não foi possível ler o arquivo MIDI.'); return; }
-        const colors = ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-amber-500', 'bg-pink-500', 'bg-cyan-500'];
         const newTracks: TrackDef[] = midi.tracks.map((trk, ti) => ({
           id: `midi-${Date.now()}-${ti}`,
           name: `${trk.name} (${trk.instrument})`,
-          color: colors[(tracks.length + ti) % colors.length],
-          muted: false, solo: false, volume: 75, pan: 0, sends: {},
+          color: TRACK_COLORS[(tracks.length + ti) % TRACK_COLORS.length],
+          muted: false, solo: false, volume: 75, pan: 0, sends: {}, sidechainSource: null,
           regions: midiToTrackRegions(trk, midi.bpm),
+          midiNotes: trk.notes.map(n => ({
+            pitch: n.note,
+            start: n.start / 480,
+            duration: n.duration / 480,
+            velocity: n.velocity,
+          })),
           plugins: [] as Plugin[],
           automation: {} as Record<string, AutomationPoint[]>,
         }));
@@ -529,6 +552,42 @@ export default function Studio() {
     input.click();
   }, [tracks, setTracks]);
 
+  const selectedMidiTrack = useMemo(() => {
+    if (!editingMidiTrackId) return null;
+    return tracks.find(t => t.id === editingMidiTrackId) || null;
+  }, [tracks, editingMidiTrackId]);
+
+  const currentMidiNotes: MIDINote[] = useMemo(() => {
+    return selectedMidiTrack?.midiNotes || [];
+  }, [selectedMidiTrack]);
+
+  function midiNotesToRegions(notes: MIDINote[], bpm: number): TrackRegion[] {
+    if (notes.length === 0) return [];
+    const minBeat = Math.min(...notes.map(n => n.start));
+    return notes.map((n, i) => ({
+      id: `midi-${n.pitch}-${i}-${Date.now()}`,
+      start: (n.start - minBeat) * (60 / bpm),
+      duration: Math.max(n.duration * (60 / bpm), 0.5),
+    }));
+  }
+
+  const handleOpenPianoRoll = useCallback((trackId: string) => {
+    setEditingMidiTrackId(trackId);
+    setShowPianoRoll(true);
+  }, []);
+
+  const handlePianoRollChange = useCallback((notes: MIDINote[]) => {
+    if (!editingMidiTrackId) return;
+    setTracks(tracks.map(t => {
+      if (t.id !== editingMidiTrackId) return t;
+      return {
+        ...t,
+        midiNotes: notes,
+        regions: midiNotesToRegions(notes, metronome.bpm),
+      };
+    }));
+  }, [editingMidiTrackId, tracks, setTracks, metronome.bpm]);
+
   useKeyboardShortcuts({
     play: togglePlay,
     record: toggleRecording,
@@ -536,7 +595,7 @@ export default function Studio() {
     redo: redoHistory,
     save: handleManualSave,
     bounce: () => setShowBounce(true),
-    escape: () => { setEditingPlugin(null); setShowRecordOptions(false); setShowBounce(false); setShowSampleBrowser(false); setShowCodeSampler(false); setShowTuner(false); },
+    escape: () => { setEditingPlugin(null); setShowRecordOptions(false); setShowBounce(false); setShowSampleBrowser(false); setShowCodeSampler(false); setShowTuner(false); setShowLooper(false); setShowSampler(false); setShowSynth(false); setShowPianoRoll(false); setEditingMidiTrackId(null); },
     toggleMute: selectedTrack ? () => toggleMute(selectedTrack.id) : undefined,
     toggleSolo: selectedTrack ? () => toggleSolo(selectedTrack.id) : undefined,
   });
@@ -588,8 +647,20 @@ export default function Studio() {
           <Metronome settings={metronome} onChange={setMetronome} isPlaying={isPlaying} />
           <MixManager snapshots={mixSnapshots} activeMixId={activeMixId} onSave={handleSaveMix} onLoad={handleLoadMix} onDelete={handleDeleteMix} onCompare={handleCompareMix} />
           <Pressable onPress={() => setShowTuner(true)}
-            className="w-8 h-8 rounded-lg bg-dark-muted items-center justify-center active:opacity-70">
-            <Text className="text-gray-400 text-xs">🎵</Text>
+            className="h-8 rounded-lg items-center justify-center px-2 bg-dark-muted">
+            <Text className="text-gray-300 text-xs">🎵</Text>
+          </Pressable>
+          <Pressable onPress={() => setShowSampler(true)}
+            className="h-8 rounded-lg items-center justify-center px-2 bg-dark-muted active:opacity-70">
+            <Text className="text-gray-300 text-xs">🎛️</Text>
+          </Pressable>
+          <Pressable onPress={() => setShowSynth(true)}
+            className="h-8 rounded-lg items-center justify-center px-2 bg-dark-muted active:opacity-70">
+            <Text className="text-gray-300 text-xs">🎹</Text>
+          </Pressable>
+          <Pressable onPress={() => setShowLooper(true)}
+            className="h-8 rounded-lg items-center justify-center px-2 bg-dark-muted active:opacity-70">
+            <Text className="text-gray-300 text-xs">🔁</Text>
           </Pressable>
           <Pressable onPress={() => setShowCodeSampler(true)}
             className="w-8 h-8 rounded-lg bg-dark-muted items-center justify-center active:opacity-70">
@@ -690,6 +761,12 @@ export default function Studio() {
                             className={`w-7 h-7 rounded items-center justify-center border ${showAutomation[track.id] ? 'bg-brand-accent/20 border-brand-accent' : 'bg-dark-muted/40 border-dark-border'}`}>
                       <Text className={`text-xs font-bold ${showAutomation[track.id] ? 'text-brand-accent' : 'text-gray-400'}`}>A</Text>
                     </Pressable>
+                    {track.midiNotes && track.midiNotes.length > 0 && (
+                      <Pressable onPress={() => handleOpenPianoRoll(track.id)}
+                        className="w-7 h-7 rounded items-center justify-center border bg-dark-muted/40 border-dark-border">
+                        <Text className="text-xs text-brand-accent font-bold">🎹</Text>
+                      </Pressable>
+                    )}
                 </View>
               </Pressable>
             );
@@ -863,6 +940,22 @@ export default function Studio() {
                           <Text className="text-gray-500 text-[9px]">▶</Text>
                         </Pressable>
                       </View>
+                      <View className="w-full flex-row items-center gap-1">
+                        <Text className="text-[8px] text-gray-600 w-5">SC:</Text>
+                        <Pressable
+                          onPress={() => {
+                            const others = tracks.filter(t => t.id !== track.id);
+                            const currentIdx = others.findIndex(t => t.id === track.sidechainSource);
+                            const next = others[(currentIdx + 1) % others.length];
+                            setTrackSidechain(track.id, next?.id || null);
+                          }}
+                          className="flex-1 h-4 rounded bg-dark-muted/30 items-center justify-center active:opacity-70"
+                        >
+                          <Text className="text-[8px] text-gray-400">
+                            {track.sidechainSource ? tracks.find(t => t.id === track.sidechainSource)?.name || '...' : 'OFF'}
+                          </Text>
+                        </Pressable>
+                      </View>
                       {sendBuses.map(bus => (
                         <View key={bus.id} className="w-full flex-row items-center gap-1">
                           <Text className="text-[8px] text-gray-600 w-5 truncate text-right">{bus.name.replace('Send ', 'S')}</Text>
@@ -905,18 +998,18 @@ export default function Studio() {
                   <View className="w-1.5 h-1.5 rounded-full bg-brand-accent" />
                   <Text className="label text-brand-accent/70">{selectedTrack.name}</Text>
                 </View>
-                <PluginRack plugins={selectedTrack.plugins} onChange={(pl) => updateTrackPlugins(selectedTrack.id, pl)} onEdit={setEditingPlugin} trackName={selectedTrack.name} />
+                <PluginRack plugins={selectedTrack.plugins} onChange={(pl) => updateTrackPlugins(selectedTrack.id, pl)} onEdit={(p) => { setEditingPlugin(p); setEditingPluginSource('track'); }} trackName={selectedTrack.name} />
                 <View className="mt-3">
                   <PedalRack chain={trackAmpChains[selectedTrack.id] ?? { pedals: [], amp: null, cab: null }}
                     onChange={(chain) => setTrackAmpChains(prev => ({ ...prev, [selectedTrack.id]: chain }))}
                     trackName={selectedTrack.name} maxHeight={180} />
                 </View>
-                <MasterRack plugins={masterPlugins} onChange={setMasterPlugins} onEdit={setEditingPlugin} />
+                <MasterRack plugins={masterPlugins} onChange={setMasterPlugins} onEdit={(p) => { setEditingPlugin(p); setEditingPluginSource('masterRack'); }} />
               </View>
             ) : (
               <View className="py-4 items-center gap-2">
                 <Text className="text-gray-500 text-xs">Selecione uma track para ver os plugins</Text>
-                <MasterRack plugins={masterPlugins} onChange={setMasterPlugins} onEdit={setEditingPlugin} />
+                <MasterRack plugins={masterPlugins} onChange={setMasterPlugins} onEdit={(p) => { setEditingPlugin(p); setEditingPluginSource('masterRack'); }} />
               </View>
             )}
           </ScrollView>
@@ -944,7 +1037,7 @@ export default function Studio() {
             {masteringChain.map((plugin, i) => {
               const isTruePeak = plugin.type === 'truePeakLimiter';
               return (
-                <Pressable key={plugin.id} onPress={() => setEditingPlugin(plugin)}
+                <Pressable key={plugin.id} onPress={() => { setEditingPlugin(plugin); setEditingPluginSource('mastering'); }}
                   className={`flex-row items-center gap-3 px-3 py-2.5 rounded-xl mb-1.5 border ${isTruePeak ? 'bg-red-500/10 border-red-500/30' : 'bg-dark-surface/80 border-dark-border'}`}>
                   <View className="flex-row items-center gap-2 flex-1">
                     <View className="w-1 h-8 rounded-full" style={{ backgroundColor: plugin.color }} />
@@ -997,17 +1090,64 @@ export default function Studio() {
         )}
 
         {bottomTab === 'mixes' && (
-          <View className="px-4 py-3" style={{ maxHeight: 220 }}>
+          <View className="px-4 py-3" style={{ maxHeight: 280 }}>
+            <View className="flex-row items-center gap-2 mb-2">
+              <Text className="text-gray-300 text-xs font-semibold">AutoMix</Text>
+              {AUTOMIX_GENRES.map(genre => (
+                <Pressable
+                  key={genre}
+                  onPress={() => setTracks(autoMix(tracks, genre))}
+                  className="px-2.5 py-1 rounded-lg bg-dark-muted border border-dark-border active:opacity-70"
+                >
+                  <Text className="text-gray-300 text-[10px] font-medium capitalize">{genre}</Text>
+                </Pressable>
+              ))}
+            </View>
             <MixManager snapshots={mixSnapshots} activeMixId={activeMixId} onSave={handleSaveMix} onLoad={handleLoadMix} onDelete={handleDeleteMix} onCompare={handleCompareMix} />
           </View>
         )}
       </View>
 
       <RecordOptions settings={recordSettings} onChange={setRecordSettings} visible={showRecordOptions} onClose={() => setShowRecordOptions(false)} />
-      <PluginEditor plugin={editingPlugin} onParamChange={handlePluginParamChange} onToggle={handleTogglePlugin} onClose={() => setEditingPlugin(null)} />
-      <BounceDialog visible={showBounce} onClose={() => setShowBounce(false)} projectTitle={projectTitle} duration={duration} />
+      <PluginEditor plugin={editingPlugin} onParamChange={handlePluginParamChange} onToggle={handleTogglePlugin} onClose={() => { setEditingPlugin(null); setEditingPluginSource(null); }} />
+      <BounceDialog visible={showBounce} onClose={() => setShowBounce(false)} projectTitle={projectTitle} duration={duration} tracks={tracks.map(t => ({ id: t.id, name: t.name, muted: t.muted, solo: t.solo, volume: t.volume, pan: t.pan, regions: t.regions }))} />
       <CodeSampler visible={showCodeSampler} onClose={() => setShowCodeSampler(false)} onRender={handleCodeRender} bpm={metronome.bpm} />
       <Tuner visible={showTuner} onClose={() => setShowTuner(false)} />
+      <Sampler visible={showSampler} onClose={() => setShowSampler(false)} onAddToTrack={(name) => {
+        const trackId = `sampler-${Date.now()}`;
+        const newTrack: TrackDef = {
+          id: trackId, name, color: TRACK_COLORS[tracks.length % TRACK_COLORS.length],
+          muted: false, solo: false, volume: 75, pan: 0, sends: {}, sidechainSource: null,
+          regions: [{ id: `s-region-${Date.now()}`, start: 0, duration: 30 }], plugins: [], automation: {},
+        };
+        setTracks([...tracks, newTrack]);
+        setSelectedTrackId(trackId);
+        setShowSampler(false);
+      }} />
+      <Synth visible={showSynth} onClose={() => setShowSynth(false)} bpm={metronome.bpm} />
+      <Looper visible={showLooper} onClose={() => setShowLooper(false)} bpm={metronome.bpm} onCommitLoop={(slot, bars) => {
+        const region: TrackRegion = { id: `loop-${Date.now()}-${slot}`, start: 0, duration: bars * 4 * (60 / metronome.bpm) };
+        const trackId = `loop-${Date.now()}`;
+        const newTrack: TrackDef = {
+          id: trackId, name: `Loop ${slot + 1}`, color: TRACK_COLORS[tracks.length % TRACK_COLORS.length],
+          muted: false, solo: false, volume: 75, pan: 0, sends: {}, sidechainSource: null,
+          regions: [region], plugins: [], automation: {},
+        };
+        setTracks([...tracks, newTrack]);
+        setSelectedTrackId(trackId);
+      }} />
+      <PianoRoll
+        notes={currentMidiNotes}
+        onChange={handlePianoRollChange}
+        snap="beat"
+        numBars={8}
+        bpm={metronome.bpm}
+        keySignature="C"
+        scale="major"
+        visible={showPianoRoll}
+        onClose={() => { setShowPianoRoll(false); setEditingMidiTrackId(null); }}
+        trackName={selectedMidiTrack?.name}
+      />
     </View>
   );
 }

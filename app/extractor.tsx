@@ -1,9 +1,12 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { PageHeader, Card, Button, Badge, ProgressBar } from '../src/components';
 import { DEMO_AUDIO_URL } from '../src/lib/constants';
 import { useResponsive } from '../src/lib/responsive';
+import { saveProject } from '../src/lib/projectStore';
+import type { TrackDef, TrackRegion } from '../src/lib/types';
 
 type StemType = 'drums' | 'bass' | 'vocals' | 'other';
 
@@ -152,9 +155,50 @@ export default function Extractor() {
     setSelectedTrack(id);
   }, []);
 
+  const router = useRouter();
+
   const handleAddToProject = useCallback((stem: StemResult) => {
-    alert(`Stem "${stem.label}" adicionada ao projeto (demo)`);
-  }, []);
+    const projectId = `stem-${Date.now()}`;
+    const region: TrackRegion = {
+      id: `region-${Date.now()}`,
+      start: 0,
+      duration: 30,
+      url: stem.url,
+    };
+    const track: TrackDef = {
+      id: `track-${Date.now()}`,
+      name: stem.label,
+      color: 'bg-blue-500',
+      muted: false,
+      solo: false,
+      volume: 75,
+      pan: 0,
+      sends: {},
+      sidechainSource: null,
+      regions: [region],
+      plugins: [],
+      automation: {},
+    };
+    saveProject(projectId, {
+      title: stem.label,
+      genre: 'pop',
+      key: 'C',
+      bpm: 120,
+      tracks: [track],
+      groups: [],
+      trackAssignments: {},
+      masterPlugins: [],
+      masteringChain: [],
+      sendBuses: [],
+      trackAmpChains: {},
+      mixSnapshots: [],
+      activeMixId: undefined,
+      metronome: { bpm: 120, timeSig: [4, 4], accentInterval: 4, volume: 60, enabled: true, countIn: true, countInBars: 2 },
+      recordSettings: { armed: false, inputSource: 'mic', quality: 'high', sampleRate: 44100, mono: false, preRoll: 0 },
+    });
+    router.push(`/studio/${projectId}?title=${encodeURIComponent(stem.label)}`);
+  }, [router]);
+
 
   const handleReset = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -299,7 +343,9 @@ export default function Extractor() {
               <Button
                 title="Adicionar todos ao estúdio"
                 icon="+"
-                onPress={() => alert('Stems adicionadas ao estúdio (demo)')}
+                onPress={() => {
+                  results.forEach(stem => handleAddToProject(stem));
+                }}
               />
               <Button
                 title="Exportar stems"

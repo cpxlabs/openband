@@ -62,6 +62,23 @@ export function deleteProject(id: string): void {
   storage.setItem(INDEX_KEY, JSON.stringify(index));
 }
 
+export function exportProject(id: string): string | null {
+  const project = loadProject(id);
+  if (!project) return null;
+  return JSON.stringify(project, null, 2);
+}
+
+export function importProject(json: string): string | null {
+  try {
+    const data = JSON.parse(json) as ProjectData;
+    const id = data.id || `import-${Date.now()}`;
+    saveProject(id, data);
+    return id;
+  } catch {
+    return null;
+  }
+}
+
 export function listProjectIndex(): Record<string, { title: string; lastSaved: number }> {
   const storage = getStorage();
   if (!storage) return {};

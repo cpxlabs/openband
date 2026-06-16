@@ -25,23 +25,6 @@ function TabIcon({ label, focused }: { label: string; focused: boolean }) {
   );
 }
 
-function RouteGuard({ children }: { children: React.ReactNode }) {
-  const { breakpoint, isWeb } = useResponsive();
-  const isDesktop = breakpoint === 'desktop' && isWeb;
-
-  if (!isDesktop) return <>{children}</>;
-
-  const validTabs = ['index', 'moments', 'library', 'account', 'settings'];
-  const segments = useSegments();
-  const currentRoute = segments[segments.length - 1];
-
-  if (currentRoute && validTabs.includes(currentRoute)) {
-    return <>{children}</>;
-  }
-
-  return <>{children}</>;
-}
-
 export default function TabLayout() {
   const router = useRouter();
   const segments = useSegments();

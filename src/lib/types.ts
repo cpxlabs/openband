@@ -1,7 +1,6 @@
 import type { AutomationPoint } from '../components/AutomationLane';
 
 export type EqBandType = 0 | 1 | 2 | 3 | 4 | 5;
-export const EQ_BAND_TYPES = ['lowCut', 'lowShelf', 'peak', 'notch', 'highShelf', 'highCut'] as const;
 export const EQ_BAND_LABELS: Record<number, string> = {
   0: 'LC', 1: 'LS', 2: 'PK', 3: 'NT', 4: 'HS', 5: 'HC',
 };
@@ -15,9 +14,25 @@ export interface TrackDef {
   volume: number;
   pan: number;
   sends: Record<string, number>;
-  regions: { id: string; start: number; duration: number }[];
+  regions: TrackRegion[];
+  midiNotes?: MIDINote[];
+  sidechainSource: string | null;
   plugins: Plugin[];
   automation: Record<string, AutomationPoint[]>;
+}
+
+export interface MIDINote {
+  pitch: number;
+  start: number;
+  duration: number;
+  velocity: number;
+}
+
+export interface TrackRegion {
+  id: string;
+  start: number;
+  duration: number;
+  url?: string;
 }
 
 export interface SendBus {
@@ -152,7 +167,7 @@ export const PLUGIN_SPECS: Record<PluginType, PluginTypeSpec> = {
         { freq: 40, gain: 0, q: 0.71, type: 0, enabled: 1 },
         { freq: 18000, gain: 0, q: 0.71, type: 5, enabled: 0 },
       ]),
-      makeEqPreset('Soround', [
+      makeEqPreset('Surround', [
         { freq: 30, gain: 0, q: 0.71, type: 3, enabled: 0 },
         { freq: 120, gain: 0, q: 0.71, type: 2, enabled: 0 },
         { freq: 500, gain: -2, q: 1.5, type: 2, enabled: 1 },

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useMemo } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { View, Text, Pressable, TextInput } from 'react-native';
 import type { MetronomeSettings } from '../lib/types';
 
@@ -26,10 +26,6 @@ export function Metronome({ settings, onChange, isPlaying }: MetronomeProps) {
       }
     }
   }, [settings, onChange]);
-
-  const clickCount = useMemo(() => {
-    return settings.timeSig[0];
-  }, [settings.timeSig]);
 
   return (
     <View>
@@ -151,7 +147,7 @@ export function Metronome({ settings, onChange, isPlaying }: MetronomeProps) {
 
           {isPlaying && (
             <View className="flex-row gap-1 mt-3 justify-center">
-              {Array.from({ length: clickCount }, (_, i) => (
+              {Array.from({ length: settings.timeSig[0] }, (_, i) => (
                 <View
                   key={i}
                   className={`w-2 h-2 rounded-full ${i % settings.accentInterval === 0 ? 'bg-emerald-400' : 'bg-emerald-600/50'}`}

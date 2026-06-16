@@ -14,6 +14,30 @@ const FORMATS: { key: ExportFormat; label: string; ext: string }[] = [
 const BIT_DEPTHS: BitDepth[] = [16, 24, 32];
 const SAMPLE_RATES: ExportSampleRate[] = [44100, 48000, 96000];
 
+interface BounceRegion {
+  start: number;
+  duration: number;
+  url?: string;
+}
+
+interface BounceTrack {
+  id: string;
+  name: string;
+  muted: boolean;
+  solo: boolean;
+  volume: number;
+  pan: number;
+  regions: BounceRegion[];
+}
+
+interface BounceDialogProps {
+  visible: boolean;
+  onClose: () => void;
+  projectTitle: string;
+  duration: number;
+  tracks?: BounceTrack[];
+}
+
 function downloadBlob(blob: Blob, filename: string) {
   if (Platform.OS !== 'web') return;
   const url = URL.createObjectURL(blob);
@@ -24,87 +48,170 @@ function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-function generateSilentWav(durationSec: number, sampleRate: ExportSampleRate, bitDepth: BitDepth): Blob {
-  const numChannels = 2;
-  const numSamples = Math.floor(sampleRate * durationSec);
+function floatTo16PCM(samples: Float32Array): Int16Array {
+  const pcm = new Int16Array(samples.length);
+  for (let i = 0; i < samples.length; i++) {
+    const s = Math.max(-1, Math.min(1, samples[i]));
+    pcm[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+  }
+  return pcm;
+}
+
+function writeWavHeader(
+  view: DataView,
+  offset: number,
+  numChannels: number,
+  sampleRate: number,
+  bitDepth: number,
+  dataSize: number,
+): void {
   const byteRate = sampleRate * numChannels * (bitDepth / 8);
   const blockAlign = numChannels * (bitDepth / 8);
-  const dataSize = numSamples * blockAlign;
-  const buffer = new ArrayBuffer(44 + dataSize);
-  const view = new DataView(buffer);
 
-  const writeStr = (offset: number, str: string) => {
-    for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+  const writeStr = (o: number, str: string) => {
+    for (let i = 0; i < str.length; i++) view.setUint8(o + i, str.charCodeAt(i));
   };
-  const write16 = (offset: number, v: number) => view.setUint16(offset, v, true);
-  const write32 = (offset: number, v: number) => view.setUint32(offset, v, true);
+  const write16 = (o: number, v: number) => view.setUint16(o, v, true);
+  const write32 = (o: number, v: number) => view.setUint32(o, v, true);
 
-  writeStr(0, 'RIFF');
-  write32(4, 36 + dataSize);
-  writeStr(8, 'WAVE');
-  writeStr(12, 'fmt ');
-  write32(16, 16);
-  write16(20, 1);
-  write16(22, numChannels);
-  write32(24, sampleRate);
-  write32(28, byteRate);
-  write16(32, blockAlign);
-  write16(34, bitDepth);
-  writeStr(36, 'data');
-  write32(40, dataSize);
+  writeStr(offset, 'RIFF');
+  write32(offset + 4, 36 + dataSize);
+  writeStr(offset + 8, 'WAVE');
+  writeStr(offset + 12, 'fmt ');
+  write32(offset + 16, 16);
+  write16(offset + 20, 1);
+  write16(offset + 22, numChannels);
+  write32(offset + 24, sampleRate);
+  write32(offset + 28, byteRate);
+  write16(offset + 32, blockAlign);
+  write16(offset + 34, bitDepth);
+  writeStr(offset + 36, 'data');
+  write32(offset + 40, dataSize);
+}
 
-  const bytesPerSample = bitDepth / 8;
-  for (let i = 0; i < numSamples; i++) {
-    for (let ch = 0; ch < numChannels; ch++) {
-      const offset = 44 + (i * numChannels + ch) * bytesPerSample;
-      if (bitDepth === 16) {
-        const val = Math.floor(Math.random() * 4 - 2);
-        write16(offset, Math.max(-32768, Math.min(32767, val)));
-      } else if (bitDepth === 24) {
-        const val = Math.floor(Math.random() * 512 - 256);
-        view.setInt8(offset + 2, Math.max(-128, Math.min(127, val >> 16)));
-        view.setInt8(offset + 1, Math.max(-128, Math.min(127, (val >> 8) & 0xff)));
-        view.setInt8(offset, Math.max(-128, Math.min(127, val & 0xff)));
-      } else {
-        view.setFloat32(offset, Math.random() * 0.0002 - 0.0001, true);
+async function fetchAudioData(url: string): Promise<AudioBuffer> {
+  const response = await fetch(url);
+  const arrayBuffer = await response.arrayBuffer();
+  const audioCtx = new AudioContext();
+  const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+  audioCtx.close();
+  return audioBuffer;
+}
+
+async function renderMixdown(
+  tracks: BounceTrack[],
+  duration: number,
+  sampleRate: ExportSampleRate,
+): Promise<AudioBuffer> {
+  const anySolo = tracks.some(t => t.solo);
+  const audible = tracks.filter(t => {
+    if (anySolo) return t.solo && !t.muted;
+    return !t.muted;
+  });
+
+  const offlineCtx = new OfflineAudioContext(2, Math.ceil(sampleRate * duration), sampleRate);
+
+  for (const track of audible) {
+    for (const region of track.regions) {
+      if (!region.url) continue;
+      try {
+        const audioBuffer = await fetchAudioData(region.url);
+
+        const source = offlineCtx.createBufferSource();
+        source.buffer = audioBuffer;
+
+        const gainNode = offlineCtx.createGain();
+        gainNode.gain.value = track.volume / 100;
+
+        const panNode = offlineCtx.createStereoPanner();
+        panNode.pan.value = track.pan / 100;
+
+        source.connect(gainNode);
+        gainNode.connect(panNode);
+        panNode.connect(offlineCtx.destination);
+
+        source.start(region.start, 0, Math.min(region.duration, duration - region.start));
+      } catch {
+        // skip failed regions
       }
     }
   }
 
-  return new Blob([buffer], { type: 'audio/wav' });
+  return offlineCtx.startRendering();
 }
 
-interface BounceDialogProps {
-  visible: boolean;
-  onClose: () => void;
-  projectTitle: string;
-  duration: number;
+function audioBufferToWavBlob(buffer: AudioBuffer, bitDepth: BitDepth): Blob {
+  const numChannels = buffer.numberOfChannels;
+  const sampleRate = buffer.sampleRate;
+  const numSamples = buffer.length;
+  const bytesPerSample = bitDepth / 8;
+  const blockAlign = numChannels * bytesPerSample;
+  const dataSize = numSamples * blockAlign;
+  const headerSize = 44;
+  const totalSize = headerSize + dataSize;
+
+  const arrayBuffer = new ArrayBuffer(totalSize);
+  const view = new DataView(arrayBuffer);
+
+  writeWavHeader(view, 0, numChannels, sampleRate, bitDepth, dataSize);
+
+  for (let i = 0; i < numSamples; i++) {
+    for (let ch = 0; ch < numChannels; ch++) {
+      const sample = buffer.getChannelData(ch)[i];
+      const offset = headerSize + (i * numChannels + ch) * bytesPerSample;
+
+      if (bitDepth === 16) {
+        const pcm = Math.max(-32768, Math.min(32767, Math.round(sample * 32767)));
+        view.setInt16(offset, pcm, true);
+      } else if (bitDepth === 24) {
+        const pcm = Math.max(-8388608, Math.min(8388607, Math.round(sample * 8388607)));
+        view.setInt8(offset, pcm & 0xff);
+        view.setInt8(offset + 1, (pcm >> 8) & 0xff);
+        view.setInt8(offset + 2, (pcm >> 16) & 0xff);
+      } else {
+        view.setFloat32(offset, sample, true);
+      }
+    }
+  }
+
+  return new Blob([arrayBuffer], { type: 'audio/wav' });
 }
 
-export function BounceDialog({ visible, onClose, projectTitle, duration }: BounceDialogProps) {
+export function BounceDialog({ visible, onClose, projectTitle, duration, tracks = [] }: BounceDialogProps) {
   const [format, setFormat] = useState<ExportFormat>('wav');
   const [bitDepth, setBitDepth] = useState<BitDepth>(24);
   const [sampleRate, setSampleRate] = useState<ExportSampleRate>(48000);
   const [exporting, setExporting] = useState(false);
 
-  const handleExport = useCallback(() => {
+  const handleExport = useCallback(async () => {
     if (Platform.OS !== 'web') {
       Alert.alert('Exportar', 'Exportação disponível apenas na versão web.');
       return;
     }
     setExporting(true);
-    setTimeout(() => {
-      try {
-        const ext = FORMATS.find(f => f.key === format)?.ext || '.wav';
-        const blob = generateSilentWav(Math.min(duration, 30), sampleRate, bitDepth);
-        downloadBlob(blob, `${projectTitle.replace(/\s+/g, '_')}_mix${ext}`);
-        Alert.alert('Exportado', `Mix exportado como ${format.toUpperCase()} (${bitDepth}bit, ${sampleRate}Hz)`);
-      } catch {
-        Alert.alert('Erro', 'Falha ao exportar.');
+    try {
+      const ext = FORMATS.find(f => f.key === format)?.ext || '.wav';
+      let blob: Blob;
+
+      if (tracks.length > 0) {
+        const mixBuffer = await renderMixdown(tracks, Math.min(duration, 300), sampleRate);
+        blob = audioBufferToWavBlob(mixBuffer, bitDepth);
+      } else {
+        const sampleCount = Math.floor(sampleRate * Math.min(duration, 30));
+        const silentBuffer = new Float32Array(sampleCount * 2);
+        const rawBuffer = new ArrayBuffer(44 + silentBuffer.length * 2);
+        const view = new DataView(rawBuffer);
+        writeWavHeader(view, 0, 2, sampleRate, 16, silentBuffer.length * 2);
+        blob = new Blob([rawBuffer], { type: 'audio/wav' });
       }
-      setExporting(false);
-    }, 800);
-  }, [format, bitDepth, sampleRate, projectTitle, duration]);
+
+      downloadBlob(blob, `${projectTitle.replace(/\s+/g, '_')}_mix${ext}`);
+      Alert.alert('Exportado', `Mix exportado como ${format.toUpperCase()} (${bitDepth}bit, ${sampleRate}Hz)`);
+    } catch {
+      Alert.alert('Erro', 'Falha ao exportar mix.');
+    }
+    setExporting(false);
+  }, [format, bitDepth, sampleRate, projectTitle, duration, tracks]);
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -151,7 +258,9 @@ export function BounceDialog({ visible, onClose, projectTitle, duration }: Bounc
             <Pressable onPress={handleExport}
               className="flex-1 py-3 rounded-xl bg-brand-primary items-center active:opacity-80 disabled:opacity-50"
               disabled={exporting}>
-              <Text className="text-white text-sm font-bold">{exporting ? 'Exportando...' : 'Exportar'}</Text>
+              <Text className={`text-white text-sm font-bold ${exporting ? 'opacity-70' : ''}`}>
+                {exporting ? 'Renderizando...' : 'Exportar'}
+              </Text>
             </Pressable>
           </View>
         </Pressable>

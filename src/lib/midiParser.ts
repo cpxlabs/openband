@@ -170,7 +170,9 @@ export function ticksToSeconds(ticks: number, bpm: number, ticksPerQuarter: numb
   return (ticks / ticksPerQuarter) * (60 / bpm);
 }
 
-export function midiToTrackRegions(track: MidiTrack, bpm: number, ticksPerQuarter: number = 480): { id: string; start: number; duration: number }[] {
+import type { TrackRegion } from './types';
+
+export function midiToTrackRegions(track: MidiTrack, bpm: number, ticksPerQuarter: number = 480): TrackRegion[] {
   const minTick = track.notes.length > 0 ? Math.min(...track.notes.map(n => n.start)) : 0;
   return track.notes.map(n => ({
     id: `midi-${n.note}-${n.start}`,

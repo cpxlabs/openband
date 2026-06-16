@@ -1,8 +1,8 @@
-let waveCache = new Map<string, number[]>();
+const cache = new Map<string, number[]>();
 
 export function generateWaveform(seed: string, count: number): number[] {
   const key = `${seed}-${count}`;
-  if (waveCache.has(key)) return waveCache.get(key)!;
+  if (cache.has(key)) return cache.get(key)!;
   const data: number[] = [];
   let h = hashStr(seed);
   for (let i = 0; i < count; i++) {
@@ -13,7 +13,7 @@ export function generateWaveform(seed: string, count: number): number[] {
     const noise = ((h & 0xff) / 255) * 2 - 1;
     data.push(Math.max(-1, Math.min(1, (shape * 0.6 + noise * 0.4) * envelope)));
   }
-  waveCache.set(key, data);
+  cache.set(key, data);
   return data;
 }
 
@@ -26,5 +26,5 @@ function hashStr(s: string): number {
 }
 
 export function clearWaveCache() {
-  waveCache = new Map();
+  cache.clear();
 }

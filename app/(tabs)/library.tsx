@@ -1,20 +1,25 @@
-import { useState, useCallback } from 'react';
-import { View, Text, FlatList } from 'react-native';
+import { useState, useCallback, useMemo } from 'react';
+import { View, Text, FlatList, Pressable, Platform, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { CardRow, CardIcon, EmptyState, PageHeader, Button } from '../../src/components';
 import { NewProject } from '../../src/components/NewProject';
 import type { GenreTemplate } from '../../src/lib/projectTemplates';
 import { useResponsive } from '../../src/lib/responsive';
-
-const mockProjects = [
-  { id: 'musica-1', title: 'Meu Hit de Verão', updated: '2 dias atrás', stemCount: 4 },
-  { id: 'musica-2', title: 'Ideia de Riff (C# Menor)', updated: '1 semana atrás', stemCount: 2 },
-];
+import { listProjectIndex, exportProject, importProject } from '../../src/lib/projectStore';
 
 export default function Library() {
   const router = useRouter();
   const resp = useResponsive();
   const [showNewProject, setShowNewProject] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const projectIndex = useMemo(() => listProjectIndex(), [refreshKey]);
+
+  const projects = useMemo(() => {
+    return Object.entries(projectIndex)
+      .map(([id, meta]) => ({ id, title: meta.title, lastSaved: meta.lastSaved }))
+      .sort((a, b) => b.lastSaved - a.lastSaved);
+  }, [projectIndex]);
 
   const handleCreate = useCallback((config: { name: string; genre: GenreTemplate; key: string; bpm: number }) => {
     const projectId = `proj-${Date.now()}`;
@@ -26,6 +31,51 @@ export default function Library() {
     });
     setShowNewProject(false);
     router.push(`/studio/${projectId}?${params.toString()}`);
+  }, [router]);
+
+  const handleShareProject = useCallback((id: string, title: string) => {
+    const json = exportProject(id);
+    if (!json) { Alert.alert('Erro', 'Não foi possível exportar o projeto.'); return; }
+    if (Platform.OS === 'web') {
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${title.replace(/\s+/g, '_')}.openband.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } else {
+      Alert.alert('Exportar', 'Copie o JSON do console.');
+      console.log(json);
+    }
+  }, []);
+
+  const handleImportProject = useCallback(() => {
+    if (Platform.OS !== 'web') {
+      Alert.alert('Importar', 'Importação disponível apenas na versão web.');
+      return;
+    }
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (e: Event) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const result = ev.target?.result;
+        if (typeof result !== 'string') return;
+        const id = importProject(result);
+        if (id) {
+          setRefreshKey(k => k + 1);
+          router.push(`/studio/${id}`);
+        } else {
+          Alert.alert('Erro', 'Arquivo de projeto inválido.');
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
   }, [router]);
 
   return (
@@ -40,16 +90,29 @@ export default function Library() {
           icon="+"
           onPress={() => setShowNewProject(true)}
         />
-        <Button
-          title="Separar Stems"
-          variant="secondary"
-          icon="🔊"
-          onPress={() => router.push('/extractor')}
-        />
+        <View className="flex-row gap-3">
+          <View className="flex-1">
+            <Button
+              title="Importar Projeto"
+              variant="secondary"
+              icon="📂"
+              onPress={handleImportProject}
+            />
+          </View>
+          <View className="flex-1">
+            <Button
+              title="Separar Stems"
+              variant="secondary"
+              icon="🔊"
+              onPress={() => router.push('/extractor')}
+            />
+          </View>
+        </View>
       </View>
 
       <FlatList
-        data={mockProjects}
+        key={refreshKey}
+        data={projects.length > 0 ? projects : [{ id: 'placeholder', title: '', lastSaved: 0 }]}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: resp.isMobile ? 16 : 24 }}
         style={resp.isDesktop ? { maxWidth: 768, alignSelf: 'center', width: '100%' } : undefined}
@@ -60,20 +123,35 @@ export default function Library() {
             subtitle="Crie seu primeiro projeto acima"
           />
         }
-        renderItem={({ item }) => (
-          <CardRow onPress={() => router.push(`/studio/${item.id}`)} className="mb-2">
-            <CardIcon icon="♫" />
-            <View className="flex-1 ml-4">
-              <Text className="text-white font-semibold text-base">{item.title}</Text>
-              <View className="flex-row items-center gap-3 mt-1">
-                <Text className="text-gray-500 text-xs">{item.updated}</Text>
-                <Text className="text-gray-600 text-xs">·</Text>
-                <Text className="text-gray-500 text-xs">{item.stemCount} stems</Text>
+        renderItem={({ item }) => {
+          if (item.id === 'placeholder') {
+            return (
+              <EmptyState
+                icon="🎧"
+                title="Nenhum projeto ainda"
+                subtitle="Crie seu primeiro projeto acima"
+              />
+            );
+          }
+          return (
+            <CardRow onPress={() => router.push(`/studio/${item.id}`)} className="mb-2">
+              <CardIcon icon="♫" />
+              <View className="flex-1 ml-4">
+                <Text className="text-white font-semibold text-base">{item.title}</Text>
+                <Text className="text-gray-500 text-xs mt-1">
+                  {new Date(item.lastSaved).toLocaleDateString()}
+                </Text>
               </View>
-            </View>
-            <Text className="text-brand-accent text-sm">Abrir →</Text>
-          </CardRow>
-        )}
+              <Pressable
+                onPress={() => handleShareProject(item.id, item.title)}
+                className="px-3 py-2 rounded-lg bg-dark-muted active:opacity-70 mr-2"
+              >
+                <Text className="text-gray-300 text-xs font-semibold">Compartilhar</Text>
+              </Pressable>
+              <Text className="text-brand-accent text-sm">Abrir →</Text>
+            </CardRow>
+          );
+        }}
       />
 
       <NewProject

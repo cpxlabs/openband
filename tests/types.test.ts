@@ -1,82 +1,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { PLUGIN_SPECS, type Plugin, type TrackDef, type MixSnapshot, type SendBus, type TrackAmpChain } from '../src/lib/types';
 
-interface PluginParamSpec {
-  id: string;
-  label: string;
-  min: number;
-  max: number;
-  step: number;
-  default: number;
-  unit?: string;
-}
-
-interface PluginTypeSpec {
-  params: PluginParamSpec[];
-  presets: { name: string; values: Record<string, number> }[];
-}
-
-type PluginType =
-  | 'eq' | 'compressor' | 'limiter' | 'distortion' | 'reverb' | 'delay'
-  | 'filter' | 'modulation' | 'utility'
-  | 'multibandCompressor' | 'stereoImager' | 'deesser' | 'tapeSaturator' | 'truePeakLimiter'
-  | 'noiseGate' | 'autoPitch' | 'bassMono' | 'stereoWidener';
-
-const PLUGIN_TYPE_LIST: PluginType[] = [
-  'eq', 'compressor', 'limiter', 'distortion', 'reverb', 'delay',
-  'filter', 'modulation', 'utility', 'multibandCompressor', 'stereoImager',
-  'deesser', 'tapeSaturator', 'truePeakLimiter', 'noiseGate', 'autoPitch',
-  'bassMono', 'stereoWidener',
-];
-
-interface TrackDef {
-  id: string;
-  name: string;
-  color: string;
-  muted: boolean;
-  solo: boolean;
-  volume: number;
-  pan: number;
-  sends: Record<string, number>;
-  regions: { id: string; start: number; duration: number }[];
-  plugins: Plugin[];
-  automation: Record<string, any[]>;
-}
-
-interface Plugin {
-  id: string;
-  name: string;
-  type: PluginType;
-  enabled: boolean;
-  params: Record<string, number>;
-  color?: string;
-}
-
-interface MixSnapshot {
-  id: string;
-  name: string;
-  created: number;
-  trackVolumes: Record<string, number>;
-  trackPans: Record<string, number>;
-  trackSends: Record<string, Record<string, number>>;
-  trackMutes: Record<string, boolean>;
-  trackSolos: Record<string, boolean>;
-  plugins: Record<string, Plugin[]>;
-}
-
-interface SendBus {
-  id: string;
-  name: string;
-  color: string;
-  volume: number;
-  muted: boolean;
-}
-
-interface TrackAmpChain {
-  pedals: any[];
-  amp: any | null;
-  cab: any | null;
-}
+const PLUGIN_TYPE_LIST = Object.keys(PLUGIN_SPECS);
 
 describe('PluginType enum', () => {
   it('has exactly 18 types', () => {
@@ -86,7 +12,7 @@ describe('PluginType enum', () => {
   it('includes all expected plugin types', () => {
     const required = ['eq', 'compressor', 'reverb', 'delay', 'bassMono', 'stereoWidener'];
     for (const t of required) {
-      assert.ok(PLUGIN_TYPE_LIST.includes(t as PluginType), `${t} should be in plugin types`);
+      assert.ok(PLUGIN_TYPE_LIST.includes(t), `${t} should be in plugin types`);
     }
   });
 });
@@ -94,7 +20,7 @@ describe('PluginType enum', () => {
 describe('TrackDef structure', () => {
   const track: TrackDef = {
     id: '1', name: 'Test', color: 'bg-red-500',
-    muted: false, solo: false, volume: 80, pan: 0, sends: {},
+    muted: false, solo: false, volume: 80, pan: 0, sends: {}, sidechainSource: null,
     regions: [{ id: 'r1', start: 0, duration: 100 }],
     plugins: [], automation: {},
   };

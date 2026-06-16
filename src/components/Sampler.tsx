@@ -1,0 +1,228 @@
+import { useState, useCallback, useRef } from 'react';
+import { View, Text, Pressable, Modal, Platform } from 'react-native';
+
+interface SampleSlot {
+  key: string;
+  name: string;
+  data: AudioBuffer | null;
+  rootKey: number;
+  lowKey: number;
+  highKey: number;
+}
+
+interface ADSR {
+  attack: number;
+  decay: number;
+  sustain: number;
+  release: number;
+}
+
+interface SamplerProps {
+  visible: boolean;
+  onClose: () => void;
+  onAddToTrack: (name: string, sampleData: SampleSlot[]) => void;
+}
+
+const DRUM_PADS = [
+  { key: 'C2', label: 'Kick', color: '#ff6482' },
+  { key: 'D2', label: 'Snare', color: '#ff9f0a' },
+  { key: 'E2', label: 'Hi-Hat', color: '#5ac8fa' },
+  { key: 'F2', label: 'Open HH', color: '#34c759' },
+  { key: 'G2', label: 'Clap', color: '#bf5af2' },
+  { key: 'A2', label: 'Tom Low', color: '#ff375f' },
+  { key: 'B2', label: 'Tom Mid', color: '#00d4aa' },
+  { key: 'C3', label: 'Tom High', color: '#64d2ff' },
+  { key: 'D3', label: 'Crash', color: '#ffcc00' },
+  { key: 'E3', label: 'Ride', color: '#30d158' },
+  { key: 'F3', label: 'Shaker', color: '#aeaeb2' },
+  { key: 'G3', label: 'Tambourine', color: '#ff453a' },
+  { key: 'A3', label: 'Claves', color: '#bf5af2' },
+  { key: 'B3', label: 'Cowbell', color: '#ff9f0a' },
+  { key: 'C4', label: 'Vocal Chop', color: '#5ac8fa' },
+  { key: 'D4', label: 'FX', color: '#34c759' },
+];
+
+export function Sampler({ visible, onClose, onAddToTrack }: SamplerProps) {
+  const [mode, setMode] = useState<'drum' | 'melodic'>('drum');
+  const [slots, setSlots] = useState<SampleSlot[]>(
+    DRUM_PADS.map(p => ({
+      key: p.key,
+      name: p.label,
+      data: null,
+      rootKey: 36 + DRUM_PADS.indexOf(p),
+      lowKey: 36 + DRUM_PADS.indexOf(p),
+      highKey: 36 + DRUM_PADS.indexOf(p),
+    }))
+  );
+  const [adsr, setAdsr] = useState<ADSR>({ attack: 10, decay: 200, sustain: 70, release: 300 });
+  const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
+  const [loadingSlot, setLoadingSlot] = useState<number | null>(null);
+
+  const audioCtx = useRef<AudioContext | null>(null);
+
+  const getAudioContext = useCallback(() => {
+    if (!audioCtx.current) audioCtx.current = new AudioContext();
+    if (audioCtx.current.state === 'suspended') audioCtx.current.resume();
+    return audioCtx.current;
+  }, []);
+
+  const handleLoadSample = useCallback(async (slotIndex: number) => {
+    if (Platform.OS !== 'web') return;
+    setLoadingSlot(slotIndex);
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.wav,.mp3,.aiff,.flac,.ogg';
+    input.onchange = async (e: Event) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) { setLoadingSlot(null); return; }
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        const result = ev.target?.result;
+        if (!result) { setLoadingSlot(null); return; }
+        try {
+          const ctx = getAudioContext();
+          const buffer = await ctx.decodeAudioData(result as ArrayBuffer);
+          setSlots(prev => prev.map((s, i) => i === slotIndex ? { ...s, data: buffer, name: file.name.replace(/\.[^/.]+$/, '') } : s));
+        } catch {}
+        setLoadingSlot(null);
+      };
+      reader.readAsArrayBuffer(file);
+    };
+    input.click();
+  }, [getAudioContext]);
+
+  const previewSample = useCallback((slotIndex: number) => {
+    const slot = slots[slotIndex];
+    if (!slot.data) return;
+    try {
+      const ctx = getAudioContext();
+      const source = ctx.createBufferSource();
+      source.buffer = slot.data;
+
+      const gainNode = ctx.createGain();
+      const now = ctx.currentTime;
+      const a = adsr.attack / 1000;
+      const d = adsr.decay / 1000;
+      gainNode.gain.setValueAtTime(0, now);
+      gainNode.gain.linearRampToValueAtTime(1, now + a);
+      gainNode.gain.linearRampToValueAtTime(adsr.sustain / 100, now + a + d);
+      gainNode.gain.setValueAtTime(adsr.sustain / 100, now + slot.data.duration - adsr.release / 1000);
+      gainNode.gain.linearRampToValueAtTime(0, now + slot.data.duration);
+
+      source.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      source.start(now);
+    } catch {}
+  }, [slots, adsr, getAudioContext]);
+
+  const noteToPitch = useCallback((key: string): number => {
+    const notes: Record<string, number> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+    const match = key.match(/^([A-G]#?)(\d)$/);
+    if (!match) return 60;
+    return notes[match[1]] + (parseInt(match[2]) + 1) * 12;
+  }, []);
+
+  const handleAddToTrack = useCallback(() => {
+    const loadedSlots = slots.filter(s => s.data);
+    if (loadedSlots.length === 0) return;
+    onAddToTrack(mode === 'drum' ? 'Drum Rack' : 'Sampler', loadedSlots);
+    onClose();
+  }, [slots, mode, onAddToTrack, onClose]);
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View className="flex-1 bg-black/80 justify-center items-center px-2">
+        <View className="w-full max-w-lg bg-dark-surface rounded-3xl border border-dark-border p-4" style={{ maxHeight: '90%' }}>
+          <View className="flex-row items-center justify-between mb-3">
+            <Text className="text-white text-lg font-bold">Sampler</Text>
+            <View className="flex-row gap-2">
+              <Pressable onPress={() => setMode('drum')}
+                className={`px-3 py-1 rounded-lg border ${mode === 'drum' ? 'bg-brand-accent/20 border-brand-accent' : 'border-dark-border'}`}>
+                <Text className={`text-xs ${mode === 'drum' ? 'text-brand-accent' : 'text-gray-400'}`}>Drum Rack</Text>
+              </Pressable>
+              <Pressable onPress={() => setMode('melodic')}
+                className={`px-3 py-1 rounded-lg border ${mode === 'melodic' ? 'bg-brand-accent/20 border-brand-accent' : 'border-dark-border'}`}>
+                <Text className={`text-xs ${mode === 'melodic' ? 'text-brand-accent' : 'text-gray-400'}`}>Melodic</Text>
+              </Pressable>
+            </View>
+          </View>
+
+          <View className="flex-row flex-wrap gap-1.5 mb-3">
+            {slots.map((slot, i) => (
+              <Pressable
+                key={slot.key}
+                onPress={() => { setSelectedSlot(i); if (slot.data) previewSample(i); }}
+                onLongPress={() => handleLoadSample(i)}
+                className="rounded-xl p-2 border items-center justify-center"
+                style={{
+                  width: '23%',
+                  aspectRatio: 1,
+                  borderColor: selectedSlot === i ? DRUM_PADS[i].color : '#333',
+                  backgroundColor: slot.data ? 'rgba(90,200,250,0.1)' : loadingSlot === i ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.03)',
+                }}
+              >
+                <Text className="text-[9px] text-gray-300 font-semibold">{slot.name}</Text>
+                <Text className="text-[8px] text-gray-600 mt-0.5">{slot.key}</Text>
+                <Text className="text-[7px] text-gray-600 mt-0.5">{slot.data ? '✓' : loadingSlot === i ? '...' : '+'}</Text>
+              </Pressable>
+            ))}
+          </View>
+
+          {selectedSlot !== null && (
+            <View className="bg-dark-bg rounded-xl p-3 border border-dark-border mb-3">
+              <Text className="text-gray-300 text-xs font-semibold mb-2">ADSR Envelope</Text>
+              <View className="flex-row gap-2">
+                {(['attack', 'decay', 'sustain', 'release'] as (keyof ADSR)[]).map(param => (
+                  <View key={param} className="flex-1 items-center">
+                    <Text className="text-gray-500 text-[8px] mb-1">{param[0].toUpperCase()}</Text>
+                    <View className="w-full h-12 bg-dark-surface rounded-lg relative overflow-hidden justify-end">
+                      <View
+                        className="w-full bg-brand-accent rounded-t-sm"
+                        style={{ height: `${param === 'sustain' ? adsr[param] : (adsr[param] / (param === 'attack' ? 1000 : param === 'decay' ? 1000 : param === 'release' ? 1000 : 1)) * 100}%` }}
+                      />
+                    </View>
+                    <Pressable
+                      onPress={() => {
+                        const max = param === 'attack' ? 1000 : param === 'decay' ? 1000 : param === 'release' ? 1000 : 100;
+                        const step = param === 'sustain' ? 5 : 50;
+                        setAdsr(prev => ({ ...prev, [param]: Math.min(max, prev[param] + step) }));
+                      }}
+                      className="w-6 h-4 rounded bg-dark-muted items-center justify-center mt-1 active:opacity-70"
+                    >
+                      <Text className="text-gray-400 text-[8px]">+</Text>
+                    </Pressable>
+                    <Text className="text-[8px] text-gray-500 font-mono mt-0.5">
+                      {adsr[param]}{param === 'sustain' ? '%' : 'ms'}
+                    </Text>
+                    <Pressable
+                      onPress={() => {
+                        const step = param === 'sustain' ? 5 : 50;
+                        setAdsr(prev => ({ ...prev, [param]: Math.max(param === 'sustain' ? 0 : 1, prev[param] - step) }));
+                      }}
+                      className="w-6 h-4 rounded bg-dark-muted items-center justify-center active:opacity-70"
+                    >
+                      <Text className="text-gray-400 text-[8px]">−</Text>
+                    </Pressable>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
+          <View className="flex-row gap-3">
+            <Pressable onPress={onClose} className="flex-1 py-3 rounded-xl border border-dark-border items-center active:opacity-70">
+              <Text className="text-gray-400 text-sm font-semibold">Cancel</Text>
+            </Pressable>
+            <Pressable onPress={handleAddToTrack}
+              className="flex-1 py-3 rounded-xl bg-brand-primary items-center active:opacity-80"
+            >
+              <Text className="text-white text-sm font-bold">
+                Add to Track ({slots.filter(s => s.data).length} samples)
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
