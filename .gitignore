@@ -10,3 +10,4 @@ backend/.venv/
 backend/package-lock.json
 uploads/
 stems/
+.vercel
