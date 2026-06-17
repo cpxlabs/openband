@@ -51,7 +51,7 @@ function RootLayoutProtected() {
 
 export default function RootLayout() {
   useEffect(() => {
-    if (Platform.OS !== "web" || !("serviceWorker" in navigator)) return;
+    if (Platform.OS !== "web" || !("serviceWorker" in navigator) || (window as any).electronAPI) return;
     const register = async () => {
       try {
         const resp = await fetch("/sw.js", { method: "HEAD" });

@@ -1,11 +1,12 @@
 import { useState, useCallback, useMemo } from 'react';
-import { View, Text, FlatList, Pressable, Platform, Alert } from 'react-native';
+import { View, Text, FlatList, Pressable, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { CardRow, CardIcon, EmptyState, PageHeader, Button } from '../../src/components';
 import { NewProject } from '../../src/components/NewProject';
 import type { GenreTemplate } from '../../src/lib/projectTemplates';
 import { useResponsive } from '../../src/lib/responsive';
 import { listProjectIndex, exportProject, importProject } from '../../src/lib/projectStore';
+import { OpenBandNative } from '../../src/bridge';
 
 export default function Library() {
   const router = useRouter();
@@ -33,49 +34,41 @@ export default function Library() {
     router.push(`/studio/${projectId}?${params.toString()}`);
   }, [router]);
 
-  const handleShareProject = useCallback((id: string, title: string) => {
+  const handleShareProject = useCallback(async (id: string, title: string) => {
     const json = exportProject(id);
     if (!json) { Alert.alert('Erro', 'Não foi possível exportar o projeto.'); return; }
-    if (Platform.OS === 'web') {
-      const blob = new Blob([json], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${title.replace(/\s+/g, '_')}.openband.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } else {
-      Alert.alert('Exportar', 'Copie o JSON do console.');
-      console.log(json);
+    try {
+      const path = await OpenBandNative.showSaveDialog({
+        defaultPath: `${title.replace(/\s+/g, '_')}.openband.json`,
+        filters: [{ name: 'OpenBand Project', extensions: ['json'] }],
+      });
+      if (path) {
+        await OpenBandNative.writeFile(path, json);
+        Alert.alert('Exportado', 'Projeto exportado com sucesso.');
+      }
+    } catch {
+      Alert.alert('Erro', 'Falha ao exportar projeto.');
     }
   }, []);
 
-  const handleImportProject = useCallback(() => {
-    if (Platform.OS !== 'web') {
-      Alert.alert('Importar', 'Importação disponível apenas na versão web.');
-      return;
+  const handleImportProject = useCallback(async () => {
+    try {
+      const path = await OpenBandNative.showOpenDialog({
+        filters: [{ name: 'OpenBand Project', extensions: ['json'] }],
+      });
+      if (!path) return;
+      const buffer = await OpenBandNative.readFile(path);
+      const text = new TextDecoder().decode(buffer);
+      const id = importProject(text);
+      if (id) {
+        setRefreshKey(k => k + 1);
+        router.push(`/studio/${id}`);
+      } else {
+        Alert.alert('Erro', 'Arquivo de projeto inválido.');
+      }
+    } catch {
+      Alert.alert('Erro', 'Falha ao importar projeto.');
     }
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = (e: Event) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const result = ev.target?.result;
-        if (typeof result !== 'string') return;
-        const id = importProject(result);
-        if (id) {
-          setRefreshKey(k => k + 1);
-          router.push(`/studio/${id}`);
-        } else {
-          Alert.alert('Erro', 'Arquivo de projeto inválido.');
-        }
-      };
-      reader.readAsText(file);
-    };
-    input.click();
   }, [router]);
 
   return (

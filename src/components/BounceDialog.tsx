@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { View, Text, Modal, Pressable, Platform, Alert } from 'react-native';
+import { OpenBandNative } from '../bridge';
 
 type ExportFormat = 'wav' | 'aiff' | 'flac';
 type BitDepth = 16 | 24 | 32;
@@ -38,14 +39,9 @@ interface BounceDialogProps {
   tracks?: BounceTrack[];
 }
 
-function downloadBlob(blob: Blob, filename: string) {
-  if (Platform.OS !== 'web') return;
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
+async function writeBlobToFile(blob: Blob, filename: string) {
+  const arrayBuffer = await blob.arrayBuffer();
+  await OpenBandNative.writeFile(filename, arrayBuffer);
 }
 
 function writeWavHeader(
@@ -182,10 +178,6 @@ export function BounceDialog({ visible, onClose, projectTitle, duration, tracks 
   const [exporting, setExporting] = useState(false);
 
   const handleExport = useCallback(async () => {
-    if (Platform.OS !== 'web') {
-      Alert.alert('Exportar', 'Exportação disponível apenas na versão web.');
-      return;
-    }
     setExporting(true);
     try {
       const ext = FORMATS.find(f => f.key === format)?.ext || '.wav';
@@ -203,8 +195,15 @@ export function BounceDialog({ visible, onClose, projectTitle, duration, tracks 
         blob = new Blob([rawBuffer], { type: 'audio/wav' });
       }
 
-      downloadBlob(blob, `${projectTitle.replace(/[^a-zA-Z0-9_-]/g, '').replace(/\s+/g, '_')}_mix${ext}`);
-      Alert.alert('Exportado', `Mix exportado como ${format.toUpperCase()} (${bitDepth}bit, ${sampleRate}Hz)`);
+      const filename = `${projectTitle.replace(/[^a-zA-Z0-9_-]/g, '').replace(/\s+/g, '_')}_mix${ext}`;
+      const path = await OpenBandNative.showSaveDialog({
+        defaultPath: filename,
+        filters: [{ name: 'Audio', extensions: [format] }],
+      });
+      if (path) {
+        await writeBlobToFile(blob, path);
+        Alert.alert('Exportado', `Mix exportado como ${format.toUpperCase()} (${bitDepth}bit, ${sampleRate}Hz)`);
+      }
     } catch (e) {
       console.error('Export failed:', e);
       Alert.alert('Erro', 'Falha ao exportar mix.');
@@ -256,7 +255,7 @@ export function BounceDialog({ visible, onClose, projectTitle, duration, tracks 
             </Pressable>
             <Pressable onPress={handleExport}
               className="flex-1 py-3 rounded-xl bg-brand-primary items-center active:opacity-80 disabled:opacity-50"
-              disabled={exporting || Platform.OS !== 'web'}>
+              disabled={exporting}>
               <Text className={`text-white text-sm font-bold ${exporting ? 'opacity-70' : ''}`}>
                 {exporting ? 'Renderizando...' : 'Exportar'}
               </Text>

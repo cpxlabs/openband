@@ -96,14 +96,16 @@ export default function Studio() {
 
   useEffect(() => {
     (async () => {
-      const { granted } = await AudioModule.requestRecordingPermissionsAsync();
-      if (!granted) {
-        Alert.alert('Permissão', 'Permissão para usar o microfone foi negada.');
-      }
-      await setAudioModeAsync({
-        playsInSilentMode: true,
-        allowsRecording: true,
-      });
+      try {
+        const { granted } = await AudioModule.requestRecordingPermissionsAsync();
+        if (!granted) {
+          Alert.alert('Permissão', 'Permissão para usar o microfone foi negada.');
+        }
+        await setAudioModeAsync({
+          playsInSilentMode: true,
+          allowsRecording: true,
+        });
+      } catch {}
     })();
   }, []);
 

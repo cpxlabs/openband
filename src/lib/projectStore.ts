@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import { OpenBandNative } from '../bridge';
 import type { Plugin, MixSnapshot, MetronomeSettings, RecordSettings, TrackDef, GroupDef, SendBus, TrackAmpChain } from './types';
 
 export interface ProjectData {
@@ -24,6 +25,19 @@ export interface ProjectData {
 const STORAGE_PREFIX = 'openband_project_';
 const INDEX_KEY = 'openband_project_index';
 
+let bridgeAvailable: boolean | null = null;
+
+async function checkBridge(): Promise<boolean> {
+  if (bridgeAvailable !== null) return bridgeAvailable;
+  try {
+    await OpenBandNative.getDocumentsPath();
+    bridgeAvailable = true;
+  } catch {
+    bridgeAvailable = false;
+  }
+  return bridgeAvailable;
+}
+
 function getStorage(): Storage | null {
   if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
     return localStorage;
@@ -31,22 +45,12 @@ function getStorage(): Storage | null {
   return null;
 }
 
-export function saveProject(id: string, data: Omit<ProjectData, 'id' | 'lastSaved'>): void {
-  const storage = getStorage();
-  if (!storage) return;
-  try {
-    const project: ProjectData = { ...data, id, lastSaved: Date.now() };
-    storage.setItem(STORAGE_PREFIX + id, JSON.stringify(project));
-    const index = listProjectIndex();
-    index[id] = { title: data.title, lastSaved: project.lastSaved };
-    storage.setItem(INDEX_KEY, JSON.stringify(index));
-  } catch {}
+async function saveViaBridge(id: string, project: ProjectData): Promise<void> {
+  await OpenBandNative.saveProject(id, JSON.stringify(project));
 }
 
-export function loadProject(id: string): ProjectData | null {
-  const storage = getStorage();
-  if (!storage) return null;
-  const raw = storage.getItem(STORAGE_PREFIX + id);
+async function loadViaBridge(id: string): Promise<ProjectData | null> {
+  const raw = await OpenBandNative.loadProject(id);
   if (!raw) return null;
   try {
     return JSON.parse(raw) as ProjectData;
@@ -55,13 +59,55 @@ export function loadProject(id: string): ProjectData | null {
   }
 }
 
+async function deleteViaBridge(id: string): Promise<void> {
+  await OpenBandNative.deleteProject(id);
+}
+
+export function saveProject(id: string, data: Omit<ProjectData, 'id' | 'lastSaved'>): void {
+  const project: ProjectData = { ...data, id, lastSaved: Date.now() };
+  const storage = getStorage();
+  if (storage) {
+    try {
+      storage.setItem(STORAGE_PREFIX + id, JSON.stringify(project));
+      const index = listProjectIndex();
+      index[id] = { title: data.title, lastSaved: project.lastSaved };
+      storage.setItem(INDEX_KEY, JSON.stringify(index));
+    } catch {}
+  }
+  checkBridge().then(available => {
+    if (available) saveViaBridge(id, project);
+  });
+}
+
+export function loadProject(id: string): ProjectData | null {
+  const storage = getStorage();
+  if (storage) {
+    const raw = storage.getItem(STORAGE_PREFIX + id);
+    if (raw) {
+      try {
+        return JSON.parse(raw) as ProjectData;
+      } catch {}
+    }
+  }
+  return null;
+}
+
+export async function loadProjectFromBridge(id: string): Promise<ProjectData | null> {
+  if (!await checkBridge()) return null;
+  return loadViaBridge(id);
+}
+
 export function deleteProject(id: string): void {
   const storage = getStorage();
-  if (!storage) return;
-  storage.removeItem(STORAGE_PREFIX + id);
-  const index = listProjectIndex();
-  delete index[id];
-  storage.setItem(INDEX_KEY, JSON.stringify(index));
+  if (storage) {
+    storage.removeItem(STORAGE_PREFIX + id);
+    const index = listProjectIndex();
+    delete index[id];
+    storage.setItem(INDEX_KEY, JSON.stringify(index));
+  }
+  checkBridge().then(available => {
+    if (available) deleteViaBridge(id);
+  });
 }
 
 export function exportProject(id: string): string | null {
