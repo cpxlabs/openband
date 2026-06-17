@@ -132,7 +132,7 @@ export function MixManager({ snapshots, activeMixId, onSave, onLoad, onDelete, o
                         {snap.name}
                       </Text>
                       <Text className="text-gray-600 text-[9px]">
-                        {new Date(snap.created).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                        {(() => { const d = new Date(snap.created); return isNaN(d.getTime()) ? 'Data desconhecida' : d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); })()}
                       </Text>
                     </View>
 

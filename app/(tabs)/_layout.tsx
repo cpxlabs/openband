@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Tabs, useRouter, useSegments, type Href } from 'expo-router';
-import { Text, View, Pressable } from 'react-native';
+import { Text, View, Pressable, type ViewStyle } from 'react-native';
 import { useResponsive } from '../../src/lib/responsive';
 import { Sidebar } from '../../src/components/Sidebar';
 
@@ -44,6 +44,7 @@ export default function TabLayout() {
 
   const handleNavigate = (route: string) => {
     router.replace(`/(tabs)/${route}` as Href);
+    setDrawerOpen(false);
   };
 
   return (
@@ -84,7 +85,7 @@ export default function TabLayout() {
               paddingBottom: 8,
               paddingTop: 6,
               paddingHorizontal: breakpoint === 'tablet' ? 24 : 12,
-            } as any,
+            } as ViewStyle,
             tabBarActiveTintColor: '#ff3b30',
             tabBarInactiveTintColor: '#888',
             tabBarShowLabel: false,

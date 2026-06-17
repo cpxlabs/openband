@@ -41,7 +41,7 @@ export function MiniMastering({ onPresetChange, activePreset, eqValues, onEqChan
               {MASTERING_CHAIN_PRESETS.map((preset, i) => (
                 <Pressable key={preset.name} onPress={() => onPresetChange(i)}
                   className={`px-2.5 py-1.5 rounded-lg border ${activePreset === i ? 'bg-brand-accent/20 border-brand-accent' : 'bg-dark-elevated border-dark-border'}`}>
-                  <Text className={`text-[9px] font-semibold whitespace-nowrap ${activePreset === i ? 'text-brand-accent' : 'text-gray-300'}`}>{preset.name}</Text>
+                  <Text className={`text-[9px] font-semibold ${activePreset === i ? 'text-brand-accent' : 'text-gray-300'}`} style={{ flexShrink: 0 }}>{preset.name}</Text>
                   <Text className="text-gray-600 text-[7px]">{preset.plugins.length} plugins</Text>
                 </Pressable>
               ))}
@@ -64,7 +64,7 @@ export function MiniMastering({ onPresetChange, activePreset, eqValues, onEqChan
                     <View className="absolute left-1/2 top-0 bottom-0 w-px bg-dark-border" />
                     <View
                       className="absolute top-0.5 bottom-0.5 rounded-full bg-brand-accent/60"
-                      style={{ left: `${50 + (val / 12) * 50}%`, right: `${50 - (val / 12) * 50}%` }}
+                      style={{ left: `${50 + ((val ?? 0) / 12) * 50}%`, right: `${50 - ((val ?? 0) / 12) * 50}%` }}
                     />
                   </View>
                   <View className="flex-row items-center gap-0.5">

@@ -43,7 +43,6 @@ function RootLayoutProtected() {
       }}
     >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="extractor" options={{ title: 'Separar Stems', headerShown: false }} />
       <Stack.Screen name="studio/[id]" options={{ headerShown: false }} />
     </Stack>
@@ -69,7 +68,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <Head>
         <link rel="manifest" href="/manifest.json" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <link rel="apple-touch-icon" href="/assets/icon-192.png" />
       </Head>

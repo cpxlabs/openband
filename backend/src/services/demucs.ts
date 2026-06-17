@@ -18,7 +18,7 @@ function ensureDir(dir: string) {
 
 const PYTHON_PATH = process.env.PYTHON_PATH && process.env.PYTHON_PATH.startsWith('/')
   ? process.env.PYTHON_PATH
-  : path.resolve(process.cwd(), 'backend/.venv/bin/python3');
+  : path.resolve(__dirname, '../../.venv/bin/python3');
 
 function execPython(args: string[]): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -47,7 +47,7 @@ export async function runDemucs(options: DemucsOptions): Promise<StemFile[]> {
   const demucsOut = path.join(stemDir, DEMUCS_MODEL, baseName);
 
   if (fs.existsSync(demucsOut)) {
-    fs.rmSync(demucsOut, { recursive: true });
+    await fs.promises.rm(demucsOut, { recursive: true, force: true });
   }
 
   onProgress?.('Iniciando Demucs (htdemucs)...', 10);

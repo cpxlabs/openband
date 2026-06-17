@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import type { Plugin } from '../lib/types';
-import { PLUGIN_PRESETS, PLUGIN_ICONS, getDefaultParams } from '../lib/types';
+import { PLUGIN_PRESETS, PLUGIN_ICONS, PLUGIN_SPECS, getDefaultParams } from '../lib/types';
 
 interface PluginRackProps {
   plugins: Plugin[];
@@ -24,7 +24,7 @@ export function PluginRack({ plugins, onChange, onEdit, trackName, maxSlots = 8 
 
   const addPlugin = useCallback((preset: Partial<Plugin>) => {
     if (plugins.length >= maxSlots) return;
-    const type = (preset.type as Plugin['type']) || 'utility';
+    const type = PLUGIN_SPECS[preset.type as keyof typeof PLUGIN_SPECS] ? (preset.type as Plugin['type']) : 'utility';
     const plugin: Plugin = {
       id: `plugin-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       name: preset.name || 'Plugin',

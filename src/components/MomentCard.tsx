@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { View, Text, Pressable, Image } from 'react-native';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { Avatar } from './Avatar';
@@ -31,27 +31,54 @@ interface MomentCardProps {
   moment: MomentData;
 }
 
-export function MomentCard({ moment }: MomentCardProps) {
-  const player = useAudioPlayer(null);
+function MomentAudioPlayer({ isPlaying, onStatusChange }: {
+  isPlaying: boolean;
+  onStatusChange: (playing: boolean, currentTime: number, duration: number) => void;
+}) {
+  const player = useAudioPlayer(isPlaying ? DEMO_AUDIO_URL : null);
   const status = useAudioPlayerStatus(player);
+
+  const prevPlaying = useRef(false);
+  if (isPlaying && !prevPlaying.current) {
+    player.play();
+  } else if (!isPlaying && prevPlaying.current) {
+    player.pause();
+  }
+  prevPlaying.current = isPlaying;
+
+  const prevStatus = useRef(status);
+  if (status !== prevStatus.current) {
+    onStatusChange(status.playing, status.currentTime ?? 0, status.duration ?? 0);
+    prevStatus.current = status;
+  }
+
+  return null;
+}
+
+export function MomentCard({ moment }: MomentCardProps) {
+  const [playerActive, setPlayerActive] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(0);
   const [masterPreset, setMasterPreset] = useState(0);
   const [liked, setLiked] = useState(moment.userLiked);
   const [likeCount, setLikeCount] = useState(moment.likes);
   const [eqValues, setEqValues] = useState<Record<string, number>>({
     bass: 0, lowMid: 0, mid: 0, highMid: 0, treble: 0,
   });
+  const loadedRef = useRef(false);
 
   const handlePlay = useCallback(() => {
-    if (isPlaying && player.playing) {
-      player.pause();
-      setIsPlaying(false);
-    } else {
-      player.replace(DEMO_AUDIO_URL);
-      player.play();
-      setIsPlaying(true);
+    if (!playerActive) {
+      setPlayerActive(true);
     }
-  }, [isPlaying, player]);
+    setIsPlaying(prev => !prev);
+  }, [playerActive]);
+
+  const handleStatusChange = useCallback((playing: boolean, currentTime: number, dur: number) => {
+    setDuration(dur);
+    setProgress(dur ? (currentTime / dur) * 100 : 0);
+  }, []);
 
   const handleLike = useCallback(() => {
     setLiked(!liked);
@@ -62,7 +89,7 @@ export function MomentCard({ moment }: MomentCardProps) {
     setEqValues(prev => ({ ...prev, [band]: value }));
   }, []);
 
-  const progress = status.duration ? (status.currentTime / status.duration) * 100 : 0;
+  const progressPercent = duration ? progress : 0;
 
   return (
     <View className="mb-4 bg-dark-surface rounded-2xl border border-dark-border overflow-hidden">
@@ -111,8 +138,8 @@ export function MomentCard({ moment }: MomentCardProps) {
             </Pressable>
           </View>
 
-          {isPlaying && (
-            <ProgressBar progress={progress} />
+          {playerActive && (
+            <ProgressBar progress={progressPercent} />
           )}
 
           <MiniMastering
@@ -121,6 +148,12 @@ export function MomentCard({ moment }: MomentCardProps) {
             eqValues={eqValues}
             onEqChange={handleEqChange}
           />
+          {playerActive && (
+            <MomentAudioPlayer
+              isPlaying={isPlaying}
+              onStatusChange={handleStatusChange}
+            />
+          )}
         </View>
       </View>
 

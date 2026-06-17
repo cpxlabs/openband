@@ -34,7 +34,7 @@ export function Metronome({ settings, onChange, isPlaying }: MetronomeProps) {
         className="flex-row items-center gap-2 bg-[#0b0b0d] px-3 py-1.5 rounded-lg border border-dark-border"
       >
         <Text className="text-emerald-400 font-mono text-[10px] tracking-widest">
-          {settings.enabled ? '♩' : '♩'}
+          {settings.enabled ? '♩' : '♪'}
         </Text>
         <Text className="text-white font-mono text-sm">{settings.bpm}</Text>
       </Pressable>

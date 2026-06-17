@@ -27,7 +27,7 @@ export function AutomationLane({
   minValue = 0,
   maxValue = 100,
 }: AutomationLaneProps) {
-  if (!visible || points.length === 0) return null;
+  if (!visible) return null;
 
   const totalWidth = duration * 2.4;
 

@@ -1,8 +1,13 @@
+const MAX_CACHE_SIZE = 100;
 const cache = new Map<string, number[]>();
 
 export function generateWaveform(seed: string, count: number): number[] {
   const key = `${seed}-${count}`;
   if (cache.has(key)) return cache.get(key)!;
+  if (cache.size >= MAX_CACHE_SIZE) {
+    const firstKey = cache.keys().next().value;
+    if (firstKey !== undefined) cache.delete(firstKey);
+  }
   const data: number[] = [];
   let h = hashStr(seed);
   for (let i = 0; i < count; i++) {

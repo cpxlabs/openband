@@ -146,7 +146,7 @@ export function parseMidi(buffer: ArrayBuffer): MidiData | null {
             offset += len.value;
           }
         } else {
-          offset += view.getUint8(offset) === 0 ? 0 : (eventType === 0xa ? 2 : 1);
+          offset += eventType === 0xa ? 2 : 1;
         }
       }
 

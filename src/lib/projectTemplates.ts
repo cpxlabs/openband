@@ -171,6 +171,5 @@ const ALL_KEYS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B
 export const MUSICAL_KEYS = ALL_KEYS.flatMap(k => [k, `${k}m`]);
 
 export function keyLabel(key: string): string {
-  if (key.endsWith('m')) return `${key.slice(0, -1)}m`;
   return key;
 }

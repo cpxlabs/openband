@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 
 interface EqBand {
@@ -107,9 +107,9 @@ export function VisualEQ({ bands, onChange, spectrum, height = 140 }: VisualEQPr
   const w = 320;
   const h = height;
 
-  const renderCurve = () => {
-    const points: { x: number; y: number }[] = [];
-    for (let fi = 0; fi < 100; fi++) {
+  const barData = useMemo(() => {
+    const data: { gain: number }[] = [];
+    for (let fi = 0; fi < 99; fi++) {
       const freq = 20 * Math.pow(20000 / 20, fi / 99);
       let totalGain = 0;
       for (const band of bands) {
@@ -133,12 +133,10 @@ export function VisualEQ({ bands, onChange, spectrum, height = 140 }: VisualEQPr
         }
         totalGain += contribution;
       }
-      points.push({ x: freqToX(freq, w), y: gainToY(Math.max(-18, Math.min(18, totalGain)), h) });
+      data.push({ gain: Math.max(-18, Math.min(18, totalGain)) });
     }
-    return points;
-  };
-
-  const curvePoints = renderCurve();
+    return data;
+  }, [bands]);
 
   return (
     <View className="bg-dark-bg rounded-xl border border-dark-border overflow-hidden">
@@ -188,27 +186,19 @@ export function VisualEQ({ bands, onChange, spectrum, height = 140 }: VisualEQPr
           );
         })}
 
-        {/* Spectrum line segments */}
-        {curvePoints.slice(0, -1).map((pt, i) => {
-          const next = curvePoints[i + 1];
-          if (!next) return null;
-          const dx = next.x - pt.x;
-          const dy = next.y - pt.y;
-          const len = Math.sqrt(dx * dx + dy * dy);
-          const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-          const isPositive = (pt.y + next.y) / 2 < h / 2;
+        {/* Spectrum bars */}
+        {barData.map((seg, i) => {
+          const barHeight = ((seg.gain + 18) / 36) * 100;
           return (
             <View
               key={i}
-              className="absolute"
+              className="absolute bottom-0"
               style={{
-                left: pt.x,
-                top: pt.y,
-                width: len,
-                height: 2,
-                backgroundColor: isPositive ? '#5ac8fa' : '#ff6482',
-                transform: [{ rotate: `${angle}deg` }],
-                transformOrigin: '0 0',
+                left: `${(i / 99) * 100}%`,
+                width: `${100 / 99}%`,
+                height: `${barHeight}%`,
+                backgroundColor: seg.gain >= 0 ? '#22c55e' : '#ef4444',
+                opacity: 0.6,
               }}
             />
           );

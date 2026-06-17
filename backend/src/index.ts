@@ -57,7 +57,7 @@ function rateLimit(maxRequests: number, windowMs: number) {
   };
 }
 
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 
 app.use('/api', rateLimit(30, 15 * 60 * 1000));
 
@@ -72,12 +72,9 @@ app.get('/api/health', async (_req, res) => {
   res.json({ status: 'ok' });
 });
 
-app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  if (isProduction) {
-    res.status(500).json({ error: 'Internal server error' });
-  } else {
-    res.status(500).json({ error: err.message });
-  }
+app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error('Unhandled error:', err instanceof Error ? err.message : err);
+  res.status(500).json({ error: 'Internal server error' });
 });
 
 app.listen(PORT, () => {

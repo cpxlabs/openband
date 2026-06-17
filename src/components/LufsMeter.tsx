@@ -28,6 +28,8 @@ function simulateLoudness(playing: boolean, base: number, target: number, speed:
 export function LufsMeter({ isPlaying }: LufsMeterProps) {
   const [targetIdx, setTargetIdx] = useState(0);
   const target = LUFS_TARGETS[targetIdx];
+  const targetRef = useRef(target);
+  targetRef.current = target;
 
   const integratedRef = useRef(-24);
   const shortTermRef = useRef(-26);
@@ -61,7 +63,7 @@ export function LufsMeter({ isPlaying }: LufsMeterProps) {
 
     const baseIntegrated = -(4 + Math.random() * 6);
     const baseShortTerm = baseIntegrated + (Math.random() * 2 - 0.5);
-    const baseTruePeak = target.integrated + 10 + Math.random() * 4;
+    const baseTruePeak = targetRef.current.integrated + 10 + Math.random() * 4;
     const baseLra = 4 + Math.random() * 6;
 
     let time = 0;
@@ -88,7 +90,7 @@ export function LufsMeter({ isPlaying }: LufsMeterProps) {
     }, 200);
 
     return () => clearInterval(tick);
-  }, [isPlaying, target.integrated]);
+  }, [isPlaying]);
 
   const shortPct = ((shortTerm - MIN_LUFS) / RANGE) * 100;
   const integratedPct = ((avgLoudness - MIN_LUFS) / RANGE) * 100;

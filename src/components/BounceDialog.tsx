@@ -205,7 +205,8 @@ export function BounceDialog({ visible, onClose, projectTitle, duration, tracks 
 
       downloadBlob(blob, `${projectTitle.replace(/[^a-zA-Z0-9_-]/g, '').replace(/\s+/g, '_')}_mix${ext}`);
       Alert.alert('Exportado', `Mix exportado como ${format.toUpperCase()} (${bitDepth}bit, ${sampleRate}Hz)`);
-    } catch {
+    } catch (e) {
+      console.error('Export failed:', e);
       Alert.alert('Erro', 'Falha ao exportar mix.');
     }
     setExporting(false);
@@ -255,7 +256,7 @@ export function BounceDialog({ visible, onClose, projectTitle, duration, tracks 
             </Pressable>
             <Pressable onPress={handleExport}
               className="flex-1 py-3 rounded-xl bg-brand-primary items-center active:opacity-80 disabled:opacity-50"
-              disabled={exporting}>
+              disabled={exporting || Platform.OS !== 'web'}>
               <Text className={`text-white text-sm font-bold ${exporting ? 'opacity-70' : ''}`}>
                 {exporting ? 'Renderizando...' : 'Exportar'}
               </Text>

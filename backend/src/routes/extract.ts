@@ -14,53 +14,69 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 router.post('/extract', (req: Request, res: Response) => {
   upload.single('audio')(req, res, async (err) => {
-    if (err) {
-      console.error('Upload error:', err.message);
-      const body: ErrorResponse = { error: 'Upload failed', ...(isProduction ? {} : { details: err.message }) };
-      return res.status(400).json(body);
-    }
-
-    if (!req.file) {
-      return res.status(400).json({ error: 'Nenhum arquivo enviado.' });
-    }
-
     try {
-      const hasDemucs = await checkDemucsInstalled();
-      const stems = hasDemucs
-        ? await runDemucs({
-            inputPath: req.file.path,
-            stemDir: STEMS_DIR,
-          })
-        : await runMock(req.file.path, STEMS_DIR);
+      if (err) {
+        console.error('Upload error:', err.message);
+        const body: ErrorResponse = { error: 'Upload failed', ...(isProduction ? {} : { details: err.message }) };
+        return res.status(400).json(body);
+      }
 
-      fs.unlink(req.file.path, () => {});
+      if (!req.file) {
+        return res.status(400).json({ error: 'Nenhum arquivo enviado.' });
+      }
 
-      const body: ExtractResponse = {
-        jobId: `${Date.now()}`,
-        stems,
-        duration: 30,
-      };
+      try {
+        const hasDemucs = await checkDemucsInstalled();
+        const stems = hasDemucs
+          ? await runDemucs({
+              inputPath: req.file.path,
+              stemDir: STEMS_DIR,
+            })
+          : await runMock(req.file.path, STEMS_DIR);
 
-      res.json(body);
-    } catch (e) {
-      const message = e instanceof Error ? e.message : 'Erro desconhecido';
+        fs.unlink(req.file.path, (err) => {
+          if (err) console.error('cleanup error:', err);
+        });
 
-      if (message === 'DEMUCS_NOT_FOUND') {
-        const stems = await runMock(req.file.path, STEMS_DIR);
-        fs.unlink(req.file.path, () => {});
-        return res.json({
+        const body: ExtractResponse = {
           jobId: `${Date.now()}`,
           stems,
           duration: 30,
-          warning: 'Demucs não instalado. Usando simulação. Para resultados reais: pip install demucs',
-        } as ExtractResponse & { warning: string });
-      }
+        };
 
-      if (req.file) {
-        fs.unlink(req.file.path, () => {});
+        res.json(body);
+      } catch (e) {
+        const message = e instanceof Error ? e.message : 'Erro desconhecido';
+
+        if (message === 'DEMUCS_NOT_FOUND') {
+          const stems = await runMock(req.file.path, STEMS_DIR);
+          fs.unlink(req.file.path, (err) => {
+            if (err) console.error('cleanup error:', err);
+          });
+          return res.json({
+            jobId: `${Date.now()}`,
+            stems,
+            duration: 30,
+            warning: 'Demucs não instalado. Usando simulação. Para resultados reais: pip install demucs',
+          } as ExtractResponse & { warning: string });
+        }
+
+        if (req.file) {
+          fs.unlink(req.file.path, (err) => {
+            if (err) console.error('cleanup error:', err);
+          });
+        }
+        console.error('Extract error:', message);
+        res.status(500).json({ error: 'Erro ao processar áudio', ...(isProduction ? {} : { details: message }) });
       }
-      console.error('Extract error:', message);
-      res.status(500).json({ error: 'Erro ao processar áudio', ...(isProduction ? {} : { details: message }) });
+    } catch (e) {
+      console.error('Fatal error:', e);
+      if (req.file) {
+        fs.unlink(req.file.path, (err) => {
+          if (err) console.error('cleanup error:', err);
+        });
+      }
+      res.status(500).json({ error: 'Internal server error' });
     }
   });
 });
@@ -74,10 +90,12 @@ router.get('/stems/:filename', (req: Request, res: Response) => {
   if (!filePath.startsWith(STEMS_DIR)) {
     return res.status(403).json({ error: 'Forbidden' });
   }
-  if (!fs.existsSync(filePath)) {
-    return res.status(404).json({ error: 'Stem não encontrado.' });
-  }
-  res.sendFile(filePath);
+  res.sendFile(filePath, (err) => {
+    if (err) {
+      console.error('sendFile error:', err);
+      res.status(404).json({ error: 'Stem file not found' });
+    }
+  });
 });
 
 export default router;

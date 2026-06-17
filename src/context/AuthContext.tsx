@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
@@ -86,12 +86,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
   };
 
-  const signInAsVisitor = async () => {
-    setSession(createVisitorSession());
-    setUser(createVisitorUser());
+  const signInAsVisitor = useCallback(async () => {
+    const s = createVisitorSession();
+    setSession(s);
+    setUser(s.user);
     setIsVisitor(true);
     setLoading(false);
-  };
+  }, []);
 
   return (
     <AuthContext.Provider value={{ session, user, loading, isVisitor, signOut, signInAsVisitor }}>

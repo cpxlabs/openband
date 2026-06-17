@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, type GestureResponderEvent } from 'react-native';
 
 interface OneKnobProps {
   label: string;
@@ -16,13 +16,13 @@ export function OneKnob({ label, value, onChange, min = 0, max = 100, step = 1, 
   const startY = useRef(0);
   const [showValue, setShowValue] = useState(false);
 
-  const handlePressIn = useCallback((e: any) => {
+  const handlePressIn = useCallback((e: GestureResponderEvent) => {
     startY.current = e.nativeEvent.pageY;
     setDragging(true);
     setShowValue(true);
   }, []);
 
-  const handleMove = useCallback((e: any) => {
+  const handleMove = useCallback((e: GestureResponderEvent) => {
     if (!dragging) return;
     const dy = startY.current - e.nativeEvent.pageY;
     const delta = Math.round(dy / 3) * step;

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, Alert } from 'react-native';
 import { useAuth } from '../../src/context/AuthContext';
 import { supabase } from '../../src/lib/supabase';
@@ -11,6 +11,10 @@ export default function Account() {
   const currentName = (user?.user_metadata?.name as string) ?? user?.email?.split('@')[0] ?? '';
   const [name, setName] = useState(currentName);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setName(currentName);
+  }, [currentName]);
   const [signingOut, setSigningOut] = useState(false);
 
   const handleSaveName = async () => {
@@ -36,7 +40,11 @@ export default function Account() {
         style: 'destructive',
         onPress: async () => {
           setSigningOut(true);
-          await signOut();
+          try {
+            await signOut();
+          } catch {
+            setSigningOut(false);
+          }
         },
       },
     ]);

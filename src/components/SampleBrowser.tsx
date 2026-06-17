@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { View, Text, Pressable, ScrollView, TextInput } from 'react-native';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { DEMO_AUDIO_URL } from '../lib/constants';
@@ -90,10 +90,15 @@ const SAMPLES: SampleEntry[] = [
   { id: 'hh_vocal_what', name: 'Hip-Hop Vocal "What"', category: 'hiphop', color: 'bg-amber-500', duration: 1 },
 ];
 
-function SampleCard({ sample, onAddToTrack }: { sample: SampleEntry; onAddToTrack: (s: SampleEntry) => void }) {
-  const player = useAudioPlayer(null);
-  const status = useAudioPlayerStatus(player);
-  const isThisPlaying = status.isLoaded && status.playing;
+function SampleCard({ sample, onAddToTrack, player, status, playingId, onPlayPreview }: {
+  sample: SampleEntry;
+  onAddToTrack: (s: SampleEntry) => void;
+  player: any;
+  status: any;
+  playingId: string | null;
+  onPlayPreview: (id: string) => void;
+}) {
+  const isThisPlaying = playingId === sample.id && status.isLoaded && status.playing;
 
   return (
     <View className="bg-dark-surface rounded-xl border border-dark-border overflow-hidden">
@@ -108,10 +113,7 @@ function SampleCard({ sample, onAddToTrack }: { sample: SampleEntry; onAddToTrac
 
         <View className="flex-row gap-1.5">
           <Pressable
-            onPress={() => {
-              if (isThisPlaying) { player.pause(); }
-              else { player.replace(DEMO_AUDIO_URL); player.play(); }
-            }}
+            onPress={() => onPlayPreview(sample.id)}
             className={`flex-1 h-7 rounded-lg items-center justify-center ${isThisPlaying ? 'bg-green-600' : 'bg-dark-muted'}`}
           >
             <Text className="text-white text-[10px] font-bold">{isThisPlaying ? '⏸' : '▶'}</Text>
@@ -136,6 +138,20 @@ interface SampleBrowserProps {
 export function SampleBrowser({ visible, onAddSample }: SampleBrowserProps) {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
+  const player = useAudioPlayer(null);
+  const status = useAudioPlayerStatus(player);
+  const [playingId, setPlayingId] = useState<string | null>(null);
+
+  const handlePlayPreview = useCallback(async (id: string) => {
+    if (playingId === id) {
+      player.pause();
+      setPlayingId(null);
+    } else {
+      await player.replace(DEMO_AUDIO_URL);
+      player.play();
+      setPlayingId(id);
+    }
+  }, [player, playingId]);
 
   const filtered = SAMPLES.filter(s => {
     if (category !== 'all' && s.category !== category) return false;
@@ -172,7 +188,7 @@ export function SampleBrowser({ visible, onAddSample }: SampleBrowserProps) {
         <View className="flex-row flex-wrap gap-2">
           {filtered.map(sample => (
             <View key={sample.id} className="w-[calc(50%-4px)]" style={{ width: '48%' }}>
-              <SampleCard sample={sample} onAddToTrack={onAddSample} />
+              <SampleCard sample={sample} onAddToTrack={onAddSample} player={player} status={status} playingId={playingId} onPlayPreview={handlePlayPreview} />
             </View>
           ))}
           {filtered.length === 0 && (

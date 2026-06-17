@@ -54,6 +54,8 @@ export function Tuner({ visible, onClose }: TunerProps) {
   const animRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const tuning = instrument === 'guitar' ? GUITAR_STANDARD : BASS_STANDARD;
+  const tuningRef = useRef(tuning);
+  tuningRef.current = tuning;
 
   useEffect(() => {
     if (!visible) { setSimFreq(0); setActiveString(-1); return; }
@@ -65,12 +67,12 @@ export function Tuner({ visible, onClose }: TunerProps) {
       setSimFreq(Math.max(20, freq + 200));
 
       const note = noteNameFromFreq(freq + 200);
-      const idx = tuning.findIndex(t => t.name === note.name && Math.abs(t.octave - note.octave) <= 1);
+      const idx = tuningRef.current.findIndex(t => t.name === note.name && Math.abs(t.octave - note.octave) <= 1);
       setActiveString(idx >= 0 ? idx : -1);
     }, 200);
 
     return () => { if (animRef.current) clearInterval(animRef.current); };
-  }, [visible, tuning]);
+  }, [visible]);
 
   const note = noteNameFromFreq(simFreq);
   const isInTune = Math.abs(note.cents) <= 5;

@@ -46,7 +46,10 @@ export function CodeSampler({ visible, onClose, onRender, bpm }: CodeSamplerProp
   const [patternBpm, setPatternBpm] = useState(bpm);
   const [useBpm, setUseBpm] = useState(true);
 
-  const tokens = useMemo(() => parsePattern(code), [code]);
+  const tokens = useMemo(() => {
+    const parsed = parsePattern(code);
+    return parsed.filter(t => t === 'REST' || TOKEN_MAP[t as TokenKey]);
+  }, [code]);
   const effectiveBpm = useBpm ? bpm : patternBpm;
 
   const handleRender = useCallback(() => {

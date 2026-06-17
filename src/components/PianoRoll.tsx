@@ -80,7 +80,7 @@ export function PianoRoll({
   const gridHeight = numKeys * ROW_HEIGHT;
 
   const [selectedNoteId, setSelectedNoteId] = useState<number | null>(null);
-  const [dragging, setDragging] = useState<{ index: number; startX: number; startY: number; origNote: MIDINote } | null>(null);
+  const draggingRef = useRef<{ index: number; startX: number; startY: number; origNote: MIDINote } | null>(null);
 
   const isInScale = useCallback((pitch: number) => {
     const scaleNotes = getScaleNotes(keySignature, scale);
@@ -90,7 +90,11 @@ export function PianoRoll({
   const isWhiteKey = (pitch: number) => WHITE_KEYS.includes(pitch % 12);
 
   const handleGridTap = useCallback((evt: { locationX: number; locationY: number }) => {
-    if (dragging) return;
+    if (longPressFiredRef.current) {
+      longPressFiredRef.current = false;
+      return;
+    }
+    if (draggingRef.current) return;
     const beat = evt.locationX / PX_PER_BEAT;
     const pitchOffset = Math.floor(evt.locationY / ROW_HEIGHT);
     const pitch = maxPitch - pitchOffset;
@@ -123,10 +127,11 @@ export function PianoRoll({
     const next = [...notes, newNote].sort((a, b) => a.start - b.start || b.pitch - a.pitch);
     onChange(next);
     setSelectedNoteId(next.indexOf(newNote));
-  }, [notes, onChange, snap, totalBeats, maxPitch, selectedNoteId, dragging]);
+  }, [notes, onChange, snap, totalBeats, maxPitch, selectedNoteId]);
 
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressPos = useRef<{ x: number; y: number } | null>(null);
+  const longPressFiredRef = useRef(false);
 
   const handleGridLongPress = useCallback((x: number, y: number) => {
     const beat = x / PX_PER_BEAT;
@@ -143,34 +148,35 @@ export function PianoRoll({
   }, [notes, onChange, snap, maxPitch]);
 
   const handleNoteDragStart = useCallback((index: number, evt: { locationX: number; locationY: number }) => {
-    setDragging({
+    draggingRef.current = {
       index,
       startX: evt.locationX,
       startY: evt.locationY,
       origNote: { ...notes[index] },
-    });
+    };
+    setSelectedNoteId(index);
   }, [notes]);
 
   const handleNoteDragMove = useCallback((evt: { locationX: number; locationY: number }) => {
-    if (!dragging) return;
-    const dx = evt.locationX - dragging.startX;
-    const dy = evt.locationY - dragging.startY;
+    if (!draggingRef.current) return;
+    const dx = evt.locationX - draggingRef.current.startX;
+    const dy = evt.locationY - draggingRef.current.startY;
 
     const beatDelta = Math.round(dx / (PX_PER_BEAT / 4)) * 0.25;
     const pitchDelta = Math.round(-dy / ROW_HEIGHT);
 
     const newNote: MIDINote = {
-      ...dragging.origNote,
-      start: Math.max(0, snapValue(dragging.origNote.start + beatDelta, snap)),
-      pitch: Math.min(127, Math.max(0, dragging.origNote.pitch + pitchDelta)),
+      ...draggingRef.current.origNote,
+      start: Math.max(0, snapValue(draggingRef.current.origNote.start + beatDelta, snap)),
+      pitch: Math.min(127, Math.max(0, draggingRef.current.origNote.pitch + pitchDelta)),
     };
 
-    const next = notes.map((n, i) => i === dragging.index ? newNote : n);
+    const next = notes.map((n, i) => i === draggingRef.current!.index ? newNote : n);
     onChange(next);
-  }, [dragging, notes, onChange, snap]);
+  }, [notes, onChange, snap]);
 
   const handleNoteDragEnd = useCallback(() => {
-    setDragging(null);
+    draggingRef.current = null;
   }, []);
 
   const renderKeyboard = () => {
@@ -340,7 +346,7 @@ export function PianoRoll({
                 <ScrollView
                   horizontal
                   ref={gridRef}
-                  scrollEnabled={!dragging}
+                  scrollEnabled={!draggingRef.current}
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={{ width: totalWidth }}
                 >
@@ -350,25 +356,26 @@ export function PianoRoll({
 
               <ScrollView
                 horizontal
-                scrollEnabled={!dragging}
+                scrollEnabled={!draggingRef.current}
                 showsHorizontalScrollIndicator={false}
                 className="flex-1"
               >
                 <ScrollView
                   showsVerticalScrollIndicator={false}
-                  scrollEnabled={!dragging}
+                  scrollEnabled={!draggingRef.current}
                   className="flex-1"
                 >
                   <View
                     style={{ width: totalWidth, height: gridHeight }}
                     onStartShouldSetResponder={() => true}
-                    onMoveShouldSetResponder={() => !!dragging}
+                    onMoveShouldSetResponder={() => !!draggingRef.current}
                     onResponderGrant={(e) => {
-                      if (!dragging) {
+                      if (!draggingRef.current) {
                         longPressPos.current = { x: e.nativeEvent.locationX, y: e.nativeEvent.locationY };
                         longPressTimer.current = setTimeout(() => {
                           if (longPressPos.current) {
                             handleGridLongPress(longPressPos.current.x, longPressPos.current.y);
+                            longPressFiredRef.current = true;
                             longPressPos.current = null;
                           }
                         }, 500);
@@ -379,7 +386,7 @@ export function PianoRoll({
                         clearTimeout(longPressTimer.current);
                         longPressTimer.current = null;
                       }
-                      if (dragging) {
+                      if (draggingRef.current) {
                         handleNoteDragEnd();
                       } else if (longPressPos.current) {
                         handleGridTap(e.nativeEvent);
@@ -392,7 +399,7 @@ export function PianoRoll({
                         longPressTimer.current = null;
                         longPressPos.current = null;
                       }
-                      if (dragging) {
+                      if (draggingRef.current) {
                         handleNoteDragMove(e.nativeEvent);
                       }
                     }}

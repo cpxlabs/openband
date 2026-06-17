@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
-import { PageHeader, Avatar, Card, Divider } from '../../src/components';
+import { PageHeader, Avatar, Divider } from '../../src/components';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useResponsive } from '../../src/lib/responsive';
 

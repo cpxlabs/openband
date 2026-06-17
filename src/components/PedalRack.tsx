@@ -42,7 +42,7 @@ function PedalSlot({ pedal, index, onToggle, onReplace, onRemove }:
         <View className="absolute top-full left-0 z-50 w-48 bg-dark-elevated border border-dark-border rounded-xl p-2 shadow-2xl" style={{ maxHeight: 200 }}>
           <ScrollView showsVerticalScrollIndicator={false}>
             {PEDAL_PRESETS.map((preset, i) => (
-              <Pressable key={i} onPress={() => { onReplace({ id: `pedal-${Date.now()}-${i}`, ...preset, enabled: true } as GuitarPedal); setShowPicker(false); }}
+              <Pressable key={i} onPress={() => { const pedal: GuitarPedal = { id: `pedal-${Date.now()}-${i}`, ...preset, enabled: true }; onReplace(pedal); setShowPicker(false); }}
                 className="flex-row items-center gap-2 py-1.5 px-2 rounded-lg active:bg-dark-muted/40">
                 <Text className="text-[10px] text-gray-400 flex-1">{preset.brand} {preset.name}</Text>
                 <Text className="text-[8px] text-gray-600 uppercase">{preset.type}</Text>

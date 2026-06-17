@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useMemo } from 'react';
+import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { FlatList, View, Text, Pressable, ScrollView, Share, Platform, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
@@ -53,6 +53,12 @@ export default function Feed() {
   const player = useAudioPlayer(null);
   const status = useAudioPlayerStatus(player);
   const [playingId, setPlayingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      player.pause();
+    };
+  }, [player]);
   const [genreFilter, setGenreFilter] = useState('all');
   const [sortMode, setSortMode] = useState<SortMode>('recent');
   const [posts, setPosts] = useState(MOCK_POSTS);

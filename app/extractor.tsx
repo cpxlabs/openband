@@ -109,6 +109,7 @@ export default function Extractor() {
   ];
 
   const startProcessing = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
     setPhase('processing');
     setProgress(0);
     let step = 0;

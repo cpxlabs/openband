@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { View, Text, Pressable, ScrollView, Platform, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAudioPlayer, useAudioPlayerStatus, useAudioRecorder, useAudioRecorderState, AudioModule, setAudioModeAsync, RecordingPresets } from 'expo-audio';
@@ -134,6 +134,7 @@ export default function Studio() {
   const [mixSnapshots, setMixSnapshots] = useState<MixSnapshot[]>([]);
   const [activeMixId, setActiveMixId] = useState<string | undefined>();
   const [lastSavedLabel, setLastSavedLabel] = useState<string | null>(null);
+  const saveLabelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const {
     state: tracks,
@@ -206,9 +207,15 @@ export default function Studio() {
         trackAmpChains,
       });
       setLastSavedLabel('Salvo');
-      setTimeout(() => setLastSavedLabel(null), 2000);
+      saveLabelTimerRef.current = setTimeout(() => setLastSavedLabel(null), 2000);
     }, 2000);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      if (saveLabelTimerRef.current) {
+        clearTimeout(saveLabelTimerRef.current);
+        saveLabelTimerRef.current = null;
+      }
+    };
   }, [tracks, groups, trackAssignments, masterPlugins, masteringChain, mixSnapshots, activeMixId, metronome, recordSettings, sendBuses, trackAmpChains, id, projectTitle, genreParam, projectKey]);
 
   const isPlaying = player.playing;
@@ -226,7 +233,7 @@ export default function Studio() {
 
     if (isRecording) {
       await audioRecorder.stop();
-      const uri = audioRecorder.uri;
+      const uri = recorderState?.url || audioRecorder.uri || '';
       if (uri) {
         const trackId = `rec-${Date.now()}`;
         const newTrack: TrackDef = {
@@ -586,7 +593,7 @@ export default function Studio() {
     }));
   }, [editingMidiTrackId, tracks, setTracks, metronome.bpm]);
 
-  useKeyboardShortcuts({
+  const shortcuts = useMemo(() => ({
     play: togglePlay,
     record: toggleRecording,
     undo: undoHistory,
@@ -596,7 +603,9 @@ export default function Studio() {
     escape: () => { setEditingPlugin(null); setShowRecordOptions(false); setShowBounce(false); setShowSampleBrowser(false); setShowCodeSampler(false); setShowTuner(false); setShowLooper(false); setShowSampler(false); setShowSynth(false); setShowPianoRoll(false); setEditingMidiTrackId(null); },
     toggleMute: selectedTrack ? () => toggleMute(selectedTrack.id) : undefined,
     toggleSolo: selectedTrack ? () => toggleSolo(selectedTrack.id) : undefined,
-  });
+  }), [togglePlay, toggleRecording, undoHistory, redoHistory, handleManualSave, selectedTrack, toggleMute, toggleSolo]);
+
+  useKeyboardShortcuts(shortcuts);
 
   const getEffectiveVolume = (trackId: string): number => {
     const gv = getGroupVolume(groups, trackId);

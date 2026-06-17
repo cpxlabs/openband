@@ -24,7 +24,7 @@ const fileFilter = (_req: Express.Request, file: Express.Multer.File, cb: multer
   if (!allowed.includes(ext)) {
     return cb(new Error(`Formato não suportado: ${ext}. Use MP3, WAV, FLAC, M4A, OGG, AAC ou WMA.`));
   }
-  if (file.mimetype && !ALLOWED_MIMES.includes(file.mimetype)) {
+  if (!file.mimetype || !ALLOWED_MIMES.includes(file.mimetype)) {
     return cb(new Error(`Tipo de arquivo não suportado: ${file.mimetype}`));
   }
   cb(null, true);

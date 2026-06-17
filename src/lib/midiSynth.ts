@@ -74,9 +74,10 @@ export function stopNote(id: string): void {
   const voice = activeVoices.get(id);
   if (voice) {
     try {
-      voice.gainNode.gain.cancelScheduledValues(voice.startTime);
-      voice.gainNode.gain.setValueAtTime(voice.gainNode.gain.value, voice.startTime);
-      voice.gainNode.gain.exponentialRampToValueAtTime(0.001, voice.startTime + 0.05);
+      const ctx = getAudioContext();
+      voice.gainNode.gain.cancelScheduledValues(ctx.currentTime);
+      voice.gainNode.gain.setValueAtTime(voice.gainNode.gain.value, ctx.currentTime);
+      voice.gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
       setTimeout(() => {
         try { voice.oscillator.stop(); } catch {}
         activeVoices.delete(id);

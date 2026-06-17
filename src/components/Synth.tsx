@@ -88,6 +88,7 @@ export function Synth({ visible, onClose, bpm }: SynthProps) {
 
   const audioCtxRef = useRef<AudioContext | null>(null);
   const activeNodes = useRef<{ stop: () => void }[]>([]);
+  const arpTimeouts = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const getCtx = useCallback(() => {
     if (!audioCtxRef.current) audioCtxRef.current = new AudioContext();
@@ -96,6 +97,8 @@ export function Synth({ visible, onClose, bpm }: SynthProps) {
   }, []);
 
   const stopAll = useCallback(() => {
+    arpTimeouts.current.forEach(clearTimeout);
+    arpTimeouts.current = [];
     activeNodes.current.forEach(n => n.stop());
     activeNodes.current = [];
     setPlaying(false);
@@ -178,7 +181,8 @@ export function Synth({ visible, onClose, bpm }: SynthProps) {
     const divisions = preset.arp.rate === '1/4' ? 1 : preset.arp.rate === '1/8' ? 2 : 4;
     const interval = (60 / bpm) / divisions;
     notes.forEach((n, i) => {
-      setTimeout(() => playNote(n), i * interval * 1000);
+      const t = setTimeout(() => playNote(n), i * interval * 1000);
+      arpTimeouts.current.push(t);
     });
   }, [preset, bpm, playNote, stopAll]);
 

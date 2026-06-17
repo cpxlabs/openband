@@ -6,20 +6,20 @@ import { Platform } from 'react-native';
 const ExpoSecureStoreAdapter = {
   getItem: async (key: string) => {
     if (Platform.OS === 'web') {
-      return typeof window !== 'undefined' ? window.sessionStorage.getItem(key) : null;
+      return window.sessionStorage.getItem(key);
     }
     return SecureStore.getItemAsync(key);
   },
   setItem: async (key: string, value: string) => {
     if (Platform.OS === 'web') {
-      if (typeof window !== 'undefined') window.sessionStorage.setItem(key, value);
+      window.sessionStorage.setItem(key, value);
       return;
     }
     return SecureStore.setItemAsync(key, value);
   },
   removeItem: async (key: string) => {
     if (Platform.OS === 'web') {
-      if (typeof window !== 'undefined') window.sessionStorage.removeItem(key);
+      window.sessionStorage.removeItem(key);
       return;
     }
     return SecureStore.deleteItemAsync(key);
@@ -61,6 +61,7 @@ function createMockClient() {
   }
 
   return {
+    from: () => { throw new Error('Mock client does not support database queries'); },
     auth: {
       getSession: async () => ({ data: { session: mockSession }, error: null }),
       onAuthStateChange: (callback: AuthListener) => {

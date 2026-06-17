@@ -9,6 +9,7 @@ interface PluginEditorProps {
   onParamChange: (pluginId: string, paramId: string, value: number) => void;
   onToggle: (pluginId: string) => void;
   onClose: () => void;
+  bpm?: number;
 }
 
 function ParamRow({
@@ -317,9 +318,8 @@ function ReverbEditor({ plugin, onParamChange }: { plugin: Plugin; onParamChange
   );
 }
 
-function DelayEditor({ plugin, onParamChange }: { plugin: Plugin; onParamChange: (id: string, v: number) => void }) {
+function DelayEditor({ plugin, onParamChange, bpm = 120 }: { plugin: Plugin; onParamChange: (id: string, v: number) => void; bpm?: number }) {
   const timeMs = plugin.params.time ?? 300;
-  const bpm = 120;
   const noteValues = [
     { label: '1/4', ms: 60000 / bpm },
     { label: '1/4T', ms: 60000 / bpm / 1.5 },
@@ -634,7 +634,7 @@ function UtilityEditor({ plugin, onParamChange }: { plugin: Plugin; onParamChang
   );
 }
 
-export function PluginEditor({ plugin, onParamChange, onToggle, onClose }: PluginEditorProps) {
+export function PluginEditor({ plugin, onParamChange, onToggle, onClose, bpm }: PluginEditorProps) {
   if (!plugin) return null;
 
   const spec = PLUGIN_SPECS[plugin.type];
@@ -643,7 +643,7 @@ export function PluginEditor({ plugin, onParamChange, onToggle, onClose }: Plugi
     onParamChange(plugin.id, paramId, value);
   };
 
-  type EditorComp = (props: { plugin: Plugin; onParamChange: (id: string, v: number) => void }) => React.JSX.Element;
+  type EditorComp = (props: { plugin: Plugin; onParamChange: (id: string, v: number) => void; bpm?: number }) => React.JSX.Element;
   const editorMap: Record<string, EditorComp> = {
     eq: EqEditor,
     compressor: CompressorEditor,
@@ -695,7 +695,7 @@ export function PluginEditor({ plugin, onParamChange, onToggle, onClose }: Plugi
 
         <ScrollView className="px-5 py-4" style={{ maxHeight: 500 }}>
           {EditorComponent ? (
-            <EditorComponent plugin={plugin} onParamChange={handleParamChange} />
+            <EditorComponent plugin={plugin} onParamChange={handleParamChange} bpm={bpm} />
           ) : (
             <View className="py-4">
               {spec.params.map(p => (
