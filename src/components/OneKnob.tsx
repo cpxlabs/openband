@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 
 interface OneKnobProps {
@@ -13,7 +13,7 @@ interface OneKnobProps {
 
 export function OneKnob({ label, value, onChange, min = 0, max = 100, step = 1, unit = '%' }: OneKnobProps) {
   const [dragging, setDragging] = useState(false);
-  const startY = { current: 0 };
+  const startY = useRef(0);
   const [showValue, setShowValue] = useState(false);
 
   const handlePressIn = useCallback((e: any) => {

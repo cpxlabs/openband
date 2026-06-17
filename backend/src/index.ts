@@ -17,7 +17,9 @@ if (!fs.existsSync(STEMS_DIR)) {
 const ALLOWED_ORIGINS = ['http://localhost:8081', 'http://localhost:3000', 'http://localhost:19006', 'exp://localhost:19000', 'exp://localhost:19001', 'http://127.0.0.1:8081'];
 app.use(cors({
   origin: (origin, callback) => {
-    if (ALLOWED_ORIGINS.includes(origin || '')) {
+    if (origin === undefined) {
+      callback(null, true);
+    } else if (ALLOWED_ORIGINS.includes(origin)) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));

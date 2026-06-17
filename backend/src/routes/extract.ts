@@ -33,6 +33,8 @@ router.post('/extract', (req: Request, res: Response) => {
           })
         : await runMock(req.file.path, STEMS_DIR);
 
+      fs.unlink(req.file.path, () => {});
+
       const body: ExtractResponse = {
         jobId: `${Date.now()}`,
         stems,
@@ -45,6 +47,7 @@ router.post('/extract', (req: Request, res: Response) => {
 
       if (message === 'DEMUCS_NOT_FOUND') {
         const stems = await runMock(req.file.path, STEMS_DIR);
+        fs.unlink(req.file.path, () => {});
         return res.json({
           jobId: `${Date.now()}`,
           stems,
@@ -53,6 +56,9 @@ router.post('/extract', (req: Request, res: Response) => {
         } as ExtractResponse & { warning: string });
       }
 
+      if (req.file) {
+        fs.unlink(req.file.path, () => {});
+      }
       console.error('Extract error:', message);
       res.status(500).json({ error: 'Erro ao processar áudio', ...(isProduction ? {} : { details: message }) });
     }

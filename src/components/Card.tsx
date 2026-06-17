@@ -35,7 +35,7 @@ export function CardRow({ children, onPress, className = '' }: CardProps) {
 
 export function CardIcon({ icon }: { icon: string }) {
   return (
-    <View className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-primary/20 to-brand-accent/20 items-center justify-center">
+    <View className="w-12 h-12 rounded-xl bg-brand-primary/20 items-center justify-center">
       <Text className="text-xl">{icon}</Text>
     </View>
   );

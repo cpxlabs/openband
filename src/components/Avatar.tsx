@@ -15,7 +15,7 @@ export function Avatar({ name, size = 'md' }: AvatarProps) {
   const initial = name.charAt(0).toUpperCase();
 
   return (
-    <View className={`${sizes[size]} rounded-2xl bg-gradient-to-br from-brand-primary/30 to-brand-accent/30 items-center justify-center`}>
+    <View className={`${sizes[size]} rounded-2xl bg-brand-primary/30 items-center justify-center`}>
       <Text className={`${sizes[size]} text-white font-bold text-center leading-none`}>{initial}</Text>
     </View>
   );

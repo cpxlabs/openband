@@ -34,11 +34,13 @@ function getStorage(): Storage | null {
 export function saveProject(id: string, data: Omit<ProjectData, 'id' | 'lastSaved'>): void {
   const storage = getStorage();
   if (!storage) return;
-  const project: ProjectData = { ...data, id, lastSaved: Date.now() };
-  storage.setItem(STORAGE_PREFIX + id, JSON.stringify(project));
-  const index = listProjectIndex();
-  index[id] = { title: data.title, lastSaved: project.lastSaved };
-  storage.setItem(INDEX_KEY, JSON.stringify(index));
+  try {
+    const project: ProjectData = { ...data, id, lastSaved: Date.now() };
+    storage.setItem(STORAGE_PREFIX + id, JSON.stringify(project));
+    const index = listProjectIndex();
+    index[id] = { title: data.title, lastSaved: project.lastSaved };
+    storage.setItem(INDEX_KEY, JSON.stringify(index));
+  } catch {}
 }
 
 export function loadProject(id: string): ProjectData | null {

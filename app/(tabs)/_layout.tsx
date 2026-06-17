@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Tabs, useRouter, useSegments } from 'expo-router';
+import { Tabs, useRouter, useSegments, type Href } from 'expo-router';
 import { Text, View, Pressable } from 'react-native';
 import { useResponsive } from '../../src/lib/responsive';
 import { Sidebar } from '../../src/components/Sidebar';
@@ -43,7 +43,7 @@ export default function TabLayout() {
   const pageTitle = routeNameMap[currentSegment] || 'OpenBand';
 
   const handleNavigate = (route: string) => {
-    router.replace(`/(tabs)/${route}` as any);
+    router.replace(`/(tabs)/${route}` as Href);
   };
 
   return (
