@@ -289,17 +289,18 @@ function autoMix(tracks: TrackDef[], genre: string): TrackDef[] {
 
 ## Current Status
 
-**Shipped (07/39 features total):**
+**Shipped (30/40 features total):**
 
 ✅ Multi-track DAW · ✅ Step sequencer · ✅ Auto-Pitch · ✅ Noise Gate · ✅ Bass Mono
 ✅ Stereo Widener · ✅ Guitar pedal board · ✅ Amp/Cab modeling · ✅ Mastering presets
 ✅ LUFS metering · ✅ A/B mix snapshots · ✅ Send buses · ✅ Social feed
-✅ Stem separation · ✅ Export/Bounce · ✅ Project save/load · ✅ Sample browser
-✅ Plugin system (18 types) · ✅ Track grouping · ✅ Keyboard shortcuts · ✅ Metronome
-✅ Waveform visualization · ✅ Responsive layout · ✅ Sidebar drawer · ✅ Tuner
-✅ MIDI import · ✅ Automation (volume) · ✅ Sample browser
+✅ Stem separation · ✅ Export/Bounce (desktop save dialog via bridge) · ✅ Project save/load
+✅ Sample browser · ✅ Plugin system (18 types) · ✅ Track grouping
+✅ Keyboard shortcuts · ✅ Metronome · ✅ Waveform visualization
+✅ Responsive layout · ✅ Sidebar drawer · ✅ Tuner · ✅ MIDI import
+✅ Automation (volume) · ✅ Desktop (Electron shell + swappable bridge) · ✅ MIDI synth
 
-**Needs implementation (12 gaps):**
+**Needs implementation (10 gaps):**
 
 | # | Feature | Phase | Sprint |
 |---|---------|-------|--------|
@@ -309,9 +310,7 @@ function autoMix(tracks: TrackDef[], genre: string): TrackDef[] {
 | 4 | Virtual instruments (synth) | 3 | 4–5 |
 | 5 | Sampler / Slicing | 3 | 4–5 |
 | 6 | Collaboration / sharing | 4 | 6 |
-| 7 | Visual EQ | 5 | 6 |
-| 8 | One-Knob simplifiers | 5 | 6 |
-| 9 | Sidechain | 6 | 7 |
-| 10 | Looper / Overdub | 6 | 7 |
-| 11 | AutoMix (AI) | 7 | 7 |
-| 12 | Chord track | — | TBD |
+| 7 | Sidechain | 6 | 7 |
+| 8 | Looper / Overdub | 6 | 7 |
+| 9 | AutoMix (AI) | 7 | 7 |
+| 10 | Chord track | — | TBD |

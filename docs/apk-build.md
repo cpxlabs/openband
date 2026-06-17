@@ -136,3 +136,19 @@ cd android && ./gradlew assembleRelease
 # APK at android/app/build/outputs/apk/release/app-release.apk
 cp android/app/build/outputs/apk/release/app-release.apk dist/
 ```
+
+---
+
+## Building the Desktop App (Electron)
+
+For desktop builds, use `electron-builder`:
+
+```bash
+cd electron
+npm install
+npm run build:linux   # AppImage + deb
+npm run build:mac     # DMG
+npm run build:win     # NSIS installer
+```
+
+Output goes to `electron/out/`. The desktop app loads the web SPA from `dist/` (built via `npm run build` first).

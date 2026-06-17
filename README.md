@@ -2,7 +2,7 @@
 
 Open-source music production platform — multi-track DAW, guitar pedal board, amp/cab modeling, stem separation, social feed, and responsive web-first design.
 
-Built with **Expo Router**, **TypeScript**, **NativeWind v4 (Tailwind CSS v3)**, and **Supabase**. Runs on Web, Android, and iOS.
+Built with **Expo Router**, **TypeScript**, **NativeWind v4 (Tailwind CSS v3)**, and **Supabase**. Runs on Web, Android, iOS, and **Desktop (Electron)**.
 
 ## Stack
 
@@ -12,9 +12,10 @@ Built with **Expo Router**, **TypeScript**, **NativeWind v4 (Tailwind CSS v3)**,
 | Styling | [NativeWind v4](https://www.nativewind.dev/) + Tailwind CSS v3 |
 | Language | TypeScript ~6.0 |
 | Auth / DB | [Supabase](https://supabase.com/) (PostgreSQL + Auth) |
-| Audio | [`expo-audio`](https://docs.expo.dev/versions/v56.0.0/sdk/audio/) (SDK 56) |
+| Audio | [`expo-audio`](https://docs.expo.dev/versions/v56.0.0/sdk/audio/) (SDK 56) + Web Audio API |
 | Audio Processing | [Demucs](https://github.com/facebookresearch/demucs) (HTDEMUCS model) via Python subprocess |
-| Testing | Node.js `node:test` runner + `tsx` |
+| Desktop | [Electron 35](https://www.electronjs.org/) with swappable bridge (`src/bridge/`) |
+| Testing | [Vitest](https://vitest.dev/) + legacy `node:test` |
 
 ## Getting Started
 
@@ -76,7 +77,20 @@ npm start        # Expo Go / web
 npm run android  # Android
 npm run ios      # iOS (macOS only)
 npm run web      # Browser
+npm run desktop  # Build web SPA then launch Electron desktop app
 ```
+
+### 7. Desktop (Electron)
+
+```bash
+cd electron
+npm install
+cd ..
+npm run desktop       # Build + launch
+npm run desktop:dev   # Hot-reload dev (starts Expo + Electron concurrently)
+```
+
+The desktop app uses a **swappable bridge** (`src/bridge/`) — the frontend has zero knowledge of Electron. All native desktop I/O goes through `OpenBandNative` from `@bridge`. The same code runs in browser, Electron, or (future) Tauri without changes.
 
 ## Features
 
@@ -129,22 +143,19 @@ openband/
 │   ├── extractor.tsx        # Stem separation page
 │   └── studio/[id].tsx      # DAW multi-track mixer
 ├── src/
-│   ├── lib/supabase.ts      # Supabase client + mock fallback
-│   ├── context/AuthContext.tsx
-│   └── components/          # Design system (12 components)
-│       ├── index.ts
-│       ├── Button.tsx
-│       ├── TextInput.tsx
-│       ├── Card.tsx
-│       ├── CardRow.tsx
-│       ├── CardIcon.tsx
-│       ├── Badge.tsx
-│       ├── Avatar.tsx
-│       ├── Divider.tsx
-│       ├── Loading.tsx
-│       ├── EmptyState.tsx
-│       ├── ProgressBar.tsx
-│       └── PageHeader.tsx
+│   ├── lib/                 # Utilities: supabase, audio, midi, projectStore, etc.
+│   ├── context/             # AuthContext, ThemeContext
+│   ├── bridge/              # Desktop bridge (interface, Electron, Tauri stub, browser fallback)
+│   │   ├── interface.ts     # NativeBridge contract
+│   │   ├── electron.ts      # Electron impl → window.electronAPI
+│   │   ├── tauri.ts         # Tauri stub for future migration
+│   │   ├── browser.ts       # Browser fallback (localStorage, DOM APIs)
+│   │   └── index.ts         # Auto-detect platform + re-export
+│   └── components/          # Design system (34 components, see table below)
+├── electron/
+│   ├── main.js              # Electron main process (BrowserWindow, IPC, native menus)
+│   ├── preload.js           # Context bridge (sandboxed electronAPI)
+│   └── package.json         # Electron 35 + electron-builder 26
 ├── backend/
 │   ├── src/
 │   │   ├── index.ts         # Express server (port 3001)
@@ -163,38 +174,50 @@ openband/
 ├── tailwind.config.js       # Design tokens
 ├── babel.config.js
 ├── metro.config.js
-├── tsconfig.json
+├── tsconfig.json            # Strict TS, @/ + @bridge path aliases
+├── global.d.ts              # ElectronAPI window type declarations
 ├── .env.example
 ├── AGENTS.md                # Agent workflow instructions
 ├── CLAUDE.md                # Points to AGENTS.md
 └── docs/
-    └── supabase.md          # Complete Supabase setup guide
+    ├── supabase.md          # Complete Supabase setup guide
+    ├── features-analysis.md # Feature comparison vs BandLab/Cubasis
+    ├── features-implementation.md # Implementation plan
+    └── apk-build.md         # Android APK build guide
 ```
 
 ## Design System
 
-12 reusable components in `src/components/`:
+34 reusable components in `src/components/` (see `AGENTS.md` for full reference):
 
-| Component | Props |
-|-----------|-------|
-| `Button` | `title, onPress, variant(primary\|secondary\|ghost), loading, disabled, icon` |
-| `TextInput` | `label, error, ...TextInputProps` |
-| `Card` | `children, onPress, activeBorder, elevated` |
-| `CardRow` | `children, onPress` |
-| `CardIcon` | `icon: string` |
-| `Badge` | `text, icon, variant(default\|play\|active)` |
-| `Avatar` | `name, size(sm\|md\|lg)` |
-| `Divider` | `label?, className?` |
-| `Loading` | `message?, fullScreen?` |
-| `EmptyState` | `icon, title, subtitle?, action?` |
-| `ProgressBar` | `progress, className?` |
-| `PageHeader` | `title, subtitle?` |
+| Component | Description |
+|-----------|-------------|
+| `Button` | `variant: primary\|secondary\|ghost`, `loading`, `icon` |
+| `TextInput` | Wraps RN TextInput with label + error |
+| `Card` / `CardRow` / `CardIcon` | Dark surface containers, gradient icons |
+| `Badge` | `variant: default\|play\|active`, with optional icon |
+| `Avatar` | `size: sm\|md\|lg`, displays initials |
+| `Divider` | Horizontal line with optional label |
+| `Loading` / `EmptyState` | Spinner + message / centered empty state |
+| `ProgressBar` | 0–100 fill bar |
+| `PageHeader` / `Sidebar` | Screen title + responsive drawer nav |
+| `PedalRack` / `Tuner` | 6-slot pedalboard + chromatic tuner |
+| `CodeSampler` / `PianoRoll` / `Looper` | Token sequencer, MIDI editor, live loop recorder |
+| `BounceDialog` / `MixManager` | Export dialog + A/B snapshot manager |
+| `PluginRack` / `MasterRack` / `PluginEditor` | Track/master plugin chains + full 18-type editor |
+| `AutomationLane` / `WaveformClip` | Volume/param automation + audio waveform viz |
+| `VisualEQ` / `OneKnob` | Visual equalizer + single-knob control (18 types) |
+| `MiniMastering` / `LufsMeter` | Mastering chain presets + loudness meter |
+| `MomentCard` | Social feed post card |
+| `SampleBrowser` / `Sampler` / `Synth` | Sample packs, audio player, synthesizer |
+| `Metronome` / `RecordOptions` / `NewProject` | Click track, recording settings, project creator |
+| `TrackGroupManager` / `SampleBrowser` | Track grouping + sample library |
 
 CSS utility classes (from `global.css`):
-- `.card`, `.card-elevated`
-- `.btn-primary`, `.btn-secondary`, `.btn-ghost`
-- `.input-field`, `.input-field-focused`
-- `.badge`, `.section-header`, `.label`
+- `.card`, `.card-elevated` — containers
+- `.btn-primary`, `.btn-secondary`, `.btn-ghost` — buttons
+- `.input-field`, `.input-field-focused` — inputs
+- `.badge`, `.section-header`, `.label` — text
 
 ## Audio API (expo-audio)
 
@@ -228,12 +251,49 @@ player.volume = 0.5;                            // 0.0 – 1.0
 ## Scripts
 
 ```bash
-npm start            # Start Expo dev server
-npm run web          # Start web-only dev server
-npm run build        # Production web export
-npx tsc --noEmit     # TypeScript check
-cd backend && npm run dev   # Backend dev server
+npm start                 # Start Expo dev server
+npm run web               # Start web-only dev server
+npm run build             # Production web export (output: dist/)
+npm run desktop           # Build + launch Electron desktop app
+npm run desktop:dev       # Hot-reload dev (Expo + Electron concurrently)
+npx tsc --noEmit          # TypeScript check
+npx vitest run            # Run 155+ component + lib tests
+cd backend && npm run dev # Backend dev server (port 3001)
 ```
+
+### Electron Desktop
+
+```bash
+cd electron
+npm install
+npm run start             # Launch Electron (loads dist/ or dev server)
+npm run build:linux       # Package Linux AppImage / deb
+npm run build:mac         # Package macOS DMG
+npm run build:win         # Package Windows NSIS installer
+```
+
+Project files are persisted to `~/Documents/OpenBand/projects/` on desktop.
+
+## Desktop Bridge
+
+All native desktop capabilities go through a single swappable bridge:
+
+```ts
+import { OpenBandNative } from '@bridge';
+
+// File dialogs
+const file = await OpenBandNative.showOpenDialog({
+  filters: [{ name: 'Audio', extensions: ['wav', 'mp3'] }],
+});
+await OpenBandNative.writeFile(path, data);
+
+// Project persistence
+await OpenBandNative.saveProject(id, JSON.stringify(project));
+const data = await OpenBandNative.loadProject(id);
+const projects = await OpenBandNative.listProjects();
+```
+
+The bridge auto-detects Electron, Tauri (future), or browser — swap the backend by replacing one file.
 
 ## Environment Variables
 

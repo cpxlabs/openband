@@ -35,7 +35,7 @@ Current feature inventory against [BandLab](https://www.bandlab.com/features) (w
 | 23 | **Send buses** | ✅ up to 20 | ✅ | ✅ | ✅ | — | All three support sends |
 | 24 | **Social feed** | ✅ Feed + Moments | ✅ | ✅ | ❌ | — | BandLab: 100M+ creator community |
 | 25 | **Stem separation** | ✅ 4 stems | ✅ 4 stems | ✅ | ❌ | — | Both use AI; BandLab: "Splitter"; OpenBand: Demucs backend |
-| 26 | **Export / Bounce** | ✅ BounceDialog | ✅ | ✅ | ✅ WAV, AIFF, MP3 | — | BandLab: audio + video export; Cubasis: mixdown to MP3 since 3.6 |
+| 26 | **Export / Bounce** | ✅ BounceDialog (desktop save dialog via bridge) | ✅ | ✅ | ✅ WAV, AIFF, MP3 | — | BandLab: audio + video export; Cubasis: mixdown to MP3 since 3.6. OpenBand desktop: native save dialog via `OpenBandNative.showSaveDialog()` |
 | 27 | **Project save/load** | ✅ localStorage auto-save | ✅ cloud sync | ✅ | ✅ | — | OpenBand: local only; BandLab: cloud; Cubasis: local + DAWproject |
 | 28 | **Sample browser** | ✅ SampleBrowser | ✅ Loop Lib | ✅ | ✅ MediaBay | — | Cubasis 3.0: redesigned MediaBay |
 | 29 | **Track grouping** | ✅ TrackGroupManager | ✅ | ✅ | ✅ Group Tracks | — | All three support group/bus tracks |
