@@ -110,20 +110,6 @@ function createMockClient() {
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  const isServerSide = typeof document === 'undefined';
-  if (!isServerSide && typeof __DEV__ !== 'undefined' && !__DEV__) {
-    throw new Error(
-      'EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY must be set in production'
-    );
-  }
-  if (isServerSide && typeof __DEV__ !== 'undefined' && !__DEV__) {
-    console.error(
-      'EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY must be set in production'
-    );
-  }
-}
-
 export const supabase = supabaseUrl && supabaseAnonKey
   ? createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
