@@ -5,6 +5,12 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "@bridge": [
+        "./src/bridge/index"
+      ],
+      "@bridge/*": [
+        "./src/bridge/*"
       ]
     }
   },

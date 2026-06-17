@@ -11,3 +11,6 @@ backend/package-lock.json
 uploads/
 stems/
 .vercel
+electron/out/
+electron/node_modules/
+electron/.env

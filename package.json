@@ -45,7 +45,9 @@
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "desktop": "npm run build && cd electron && npm start",
+    "desktop:dev": "concurrently \"expo start --web\" \"sleep 5 && cd electron && npm start\""
   },
   "private": true
 }

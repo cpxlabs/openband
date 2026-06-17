@@ -49,11 +49,12 @@ Before starting any task:
 ### Constraints
 
 - **No new dependencies** unless explicitly approved. Check `package.json` first.
+- **Desktop bridge rule:** Never use `require('fs')`, `ipcRenderer`, or Tauri APIs in `src/` frontend code. All native desktop I/O goes through `OpenBandNative` from `@bridge`.
 - **Follow existing patterns.** If the project uses `View` + `className`, do that. Don't introduce `StyleSheet.create`.
 - **Use the design system.** Import from `src/components/` whenever possible. Don't inline styles that exist as components.
 - **No comments in code.** The code should be self-documenting.
 - **Tailwind v3 syntax.** Use `@tailwind base/components/utilities` directives, NOT `@import "tailwindcss/..."` (that's v4).
-- **Don't modify config files** (`tailwind.config.js`, `metro.config.js`, `babel.config.js`, `tsconfig.json`) unless the task explicitly requires it.
+- **Don't modify config files** (`tailwind.config.js`, `metro.config.js`, `babel.config.js`, `tsconfig.json`) unless the task explicitly requires it. (Adding `@bridge` alias to tsconfig.json is allowed for desktop architecture changes.)
 - **No dead code.** Don't leave unused imports, variables, or files.
 - **Root cause, not suppression.** For bugs, fix the underlying issue. Don't add try/catch wrappers that silence errors.
 
@@ -107,6 +108,26 @@ CSS component classes (from `global.css`):
 - `input-field`, `input-field-focused` — input styles
 - `badge` — badge container
 - `label` — text style
+
+### Desktop Bridge (`src/bridge/`)
+
+All native desktop capabilities **must** go through `src/bridge/` — **never** use `require('fs')`, Electron `ipcRenderer`, or Tauri APIs in frontend code.
+
+| File | Role |
+|------|------|
+| `interface.ts` | Contract — `NativeBridge` interface with all method signatures |
+| `electron.ts` | Electron impl — delegates to `window.electronAPI` (exposed via preload) |
+| `tauri.ts` | Tauri stub — placeholder for future migration (all methods warn + return null) |
+| `browser.ts` | Browser fallback — uses `localStorage`, `document.createElement`, etc. |
+| `index.ts` | Auto-detect: `electronAPI` → Electron, `__TAURI__` → Tauri, else browser |
+
+**Usage in frontend:**
+```ts
+import { OpenBandNative } from '@bridge';
+const path = await OpenBandNative.showOpenDialog({ filters: [...] });
+```
+
+**Motto:** The frontend has zero knowledge of whether it's running in Electron, Tauri, or a browser tab. Swap the backend by replacing one file.
 
 ### Audio System
 
@@ -203,6 +224,7 @@ src/
   lib/responsive.ts   — useResponsive hook (mobile/tablet/desktop breakpoints)
   context/
     AuthContext.tsx    — Auth state context (session, user, loading, signOut)
+  bridge/            — Desktop bridge (interface, electron, tauri stub, browser fallback, auto-detect)
   components/         — Design system (34 components, see table above)
 
 tests/
@@ -237,7 +259,12 @@ Config:
   global.css          — Tailwind v3 directives + component layer
   babel.config.js     — Babel with expo preset + nativewind/babel + reanimated
   metro.config.js     — Metro with NativeWind + nativewind node_modules paths
-  tsconfig.json       — Strict TS, @/ path alias
+  tsconfig.json       — Strict TS, @/ + @bridge path aliases
   .env.example        — Supabase env vars template
   docs/supabase.md    — Complete Supabase setup guide
+
+electron/
+  main.js             — Electron main process (BrowserWindow, IPC handlers, native menus)
+  preload.js          — Context bridge exposing electronAPI methods to renderer
+  package.json        — Electron + electron-builder deps
 ```
