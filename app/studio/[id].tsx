@@ -23,6 +23,7 @@ import {
   Looper,
   Sampler,
   Synth,
+  PromptSampler,
 } from '../../src/components';
 import { useHistory } from '../../src/lib/history';
 import { useKeyboardShortcuts } from '../../src/lib/keyboard';
@@ -123,6 +124,7 @@ export default function Studio() {
   const [showLooper, setShowLooper] = useState(false);
   const [showSampler, setShowSampler] = useState(false);
   const [showSynth, setShowSynth] = useState(false);
+  const [showPromptSampler, setShowPromptSampler] = useState(false);
   const [showPianoRoll, setShowPianoRoll] = useState(false);
   const [editingMidiTrackId, setEditingMidiTrackId] = useState<string | null>(null);
   const [editingPlugin, setEditingPlugin] = useState<Plugin | null>(null);
@@ -536,6 +538,53 @@ export default function Studio() {
     setTracks([...tracks, ...newTracks]);
   }, [tracks, setTracks]);
 
+  const handlePromptMidiRender = useCallback(async (data: { prompt: string; bpm: number; key: string }) => {
+    try {
+      const response = await fetch('http://localhost:3001/api/generate-midi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) throw new Error('Failed to generate MIDI');
+      
+      const result = await response.json();
+      
+      // Create track
+      const trackId = `gen-${Date.now()}`;
+      const newTrack: TrackDef = {
+        id: trackId,
+        name: `Gen: ${data.prompt}`,
+        color: TRACK_COLORS[tracks.length % TRACK_COLORS.length],
+        muted: false,
+        solo: false,
+        volume: 80,
+        pan: 0,
+        sends: {},
+        sidechainSource: null,
+        regions: result.midiData.map((n: any) => ({
+          id: `reg-${Date.now()}-${n.start}`,
+          start: n.start * (60 / result.bpm),
+          duration: n.duration * (60 / result.bpm),
+        })),
+        midiNotes: result.midiData.map((n: any) => ({
+          pitch: n.note,
+          start: n.start,
+          duration: n.duration,
+          velocity: 100,
+        })),
+        plugins: [],
+        automation: {},
+      };
+      
+      setTracks([...tracks, newTrack]);
+      setSelectedTrackId(trackId);
+      
+    } catch (err) {
+      Alert.alert('Erro', 'Falha ao gerar MIDI.');
+    }
+  }, [tracks, setTracks]);
+
   const handleMidiImport = useCallback(() => {
     if (Platform.OS !== 'web') { Alert.alert('MIDI', 'Importação MIDI disponível apenas na versão web.'); return; }
     const input = document.createElement('input');
@@ -691,6 +740,10 @@ export default function Studio() {
           <Pressable onPress={() => setShowCodeSampler(true)}
             className="w-8 h-8 rounded-lg bg-dark-muted items-center justify-center active:opacity-70">
             <Text className="text-gray-400 text-xs">⌨</Text>
+          </Pressable>
+          <Pressable onPress={() => setShowPromptSampler(true)}
+            className="w-8 h-8 rounded-lg bg-brand-accent/20 items-center justify-center active:opacity-70">
+            <Text className="text-brand-accent text-xs">✨</Text>
           </Pressable>
           <Pressable onPress={() => setShowSampleBrowser(prev => !prev)}
             className={`w-8 h-8 rounded-lg items-center justify-center ${showSampleBrowser ? 'bg-brand-accent/30 border border-brand-accent' : 'bg-dark-muted active:opacity-70'}`}>
@@ -1145,6 +1198,7 @@ export default function Studio() {
       <PluginEditor plugin={editingPlugin} onParamChange={handlePluginParamChange} onToggle={handleTogglePlugin} onClose={() => { setEditingPlugin(null); setEditingPluginSource(null); }} />
       <BounceDialog visible={showBounce} onClose={() => setShowBounce(false)} projectTitle={projectTitle} duration={duration} tracks={tracks.map(t => ({ id: t.id, name: t.name, muted: t.muted, solo: t.solo, volume: t.volume, pan: t.pan, regions: t.regions }))} />
       <CodeSampler visible={showCodeSampler} onClose={() => setShowCodeSampler(false)} onRender={handleCodeRender} bpm={metronome.bpm} />
+      <PromptSampler visible={showPromptSampler} onClose={() => setShowPromptSampler(false)} onRender={handlePromptMidiRender} bpm={metronome.bpm} />
       <Tuner visible={showTuner} onClose={() => setShowTuner(false)} />
       <Sampler visible={showSampler} onClose={() => setShowSampler(false)} onAddToTrack={(name) => {
         const trackId = `sampler-${Date.now()}`;

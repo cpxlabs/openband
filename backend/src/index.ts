@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import extractRoutes from './routes/extract';
 import masterRoutes from './routes/master';
+import generatorRoutes from './routes/generator';
 import { checkDemucsInstalled } from './services/demucs';
 
 const app = express();
@@ -78,6 +79,7 @@ app.use('/api', rateLimit(30, 15 * 60 * 1000));
 
 app.use('/api', extractRoutes);
 app.use('/api', masterRoutes);
+app.use('/api', generatorRoutes);
 
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error('Unhandled error:', err instanceof Error ? err.message : err);

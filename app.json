@@ -42,7 +42,9 @@
       }
     },
     "plugins": [
-      "expo-audio"
+      "expo-audio",
+      "expo-asset",
+      "expo-router"
     ],
     "cli": {
       "appVersionSource": "remote"

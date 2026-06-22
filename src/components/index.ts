@@ -21,6 +21,7 @@ export { LufsMeter } from './LufsMeter';
 export { BounceDialog } from './BounceDialog';
 export { SampleBrowser } from './SampleBrowser';
 export { CodeSampler } from './CodeSampler';
+export { PromptSampler } from './PromptSampler';
 export { MomentCard } from './MomentCard';
 export { MiniMastering } from './MiniMastering';
 export { Tuner } from './Tuner';
