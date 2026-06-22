@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import { View, Text, Pressable, ScrollView, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { PageHeader, Card, Button, Badge, ProgressBar } from '../src/components';
@@ -371,7 +371,7 @@ export default function Extractor() {
                 title="Exportar stems"
                 variant="secondary"
                 icon="📦"
-                onPress={() => alert('Exportação iniciada (demo)')}
+                onPress={() => Alert.alert('Exportação', 'Exportação iniciada (demo)')}
               />
             </View>
           </View>

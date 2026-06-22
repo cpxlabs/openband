@@ -76,7 +76,7 @@ export function saveProject(id: string, data: Omit<ProjectData, 'id' | 'lastSave
     } catch {}
   }
   checkBridge().then(available => {
-    if (available) saveViaBridge(id, project);
+    if (available) saveViaBridge(id, project).catch(() => {});
   }).catch(() => {});
 }
 
@@ -107,7 +107,7 @@ export function deleteProject(id: string): void {
     storage.setItem(INDEX_KEY, JSON.stringify(index));
   }
   checkBridge().then(available => {
-    if (available) deleteViaBridge(id);
+    if (available) deleteViaBridge(id).catch(() => {});
   }).catch(() => {});
 }
 

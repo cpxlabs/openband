@@ -50,7 +50,7 @@ export function CodeSampler({ visible, onClose, onRender, bpm }: CodeSamplerProp
     const parsed = parsePattern(code);
     return parsed.filter(t => t === 'REST' || TOKEN_MAP[t as TokenKey]);
   }, [code]);
-  const effectiveBpm = useBpm ? bpm : patternBpm;
+  const effectiveBpm = Math.max(1, useBpm ? bpm : patternBpm);
 
   const handleRender = useCallback(() => {
     onRender([{ name: 'Code Pattern', tokens, unit, bpm: effectiveBpm }]);

@@ -68,14 +68,18 @@ app.use('/api', masterRoutes);
 let demucsAvailable: boolean | null = null;
 let demucsCheckPromise: Promise<boolean> | null = null;
 
-app.get('/api/health', async (_req, res) => {
-  if (demucsAvailable === null) {
-    if (!demucsCheckPromise) {
-      demucsCheckPromise = checkDemucsInstalled().then(r => { demucsAvailable = r; return r; });
+app.get('/api/health', async (_req, res, next) => {
+  try {
+    if (demucsAvailable === null) {
+      if (!demucsCheckPromise) {
+        demucsCheckPromise = checkDemucsInstalled().then(r => { demucsAvailable = r; return r; });
+      }
+      demucsAvailable = await demucsCheckPromise;
     }
-    demucsAvailable = await demucsCheckPromise;
+    res.json({ status: 'ok' });
+  } catch (e) {
+    next(e);
   }
-  res.json({ status: 'ok' });
 });
 
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

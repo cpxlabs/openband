@@ -51,6 +51,7 @@ export function AutomationLane({
 
   const lineY = 12;
   const range = maxValue - minValue;
+  const norm = (v: number) => range === 0 ? 0 : (v - minValue) / range;
 
   return (
     <View
@@ -65,7 +66,7 @@ export function AutomationLane({
     >
       {points.map((pt, i) => {
         const x = pt.time * 2.4;
-        const y = lineY - ((pt.value - minValue) / range) * (lineY - 4) + 2;
+        const y = lineY - norm(pt.value) * (lineY - 4) + 2;
         const isActive = i > 0 && i < points.length - 1;
         return (
           <Pressable
@@ -98,7 +99,7 @@ export function AutomationLane({
             const p1 = points[hi];
             const frac = p0.time === p1.time ? 1 : (t - p0.time) / (p1.time - p0.time);
             const val = p0.value + (p1.value - p0.value) * frac;
-            const y = ((val - minValue) / range) * 12;
+            const y = norm(val) * 12;
             return (
               <View
                 key={i}

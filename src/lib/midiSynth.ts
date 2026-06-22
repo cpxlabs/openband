@@ -106,7 +106,8 @@ export function playMidiNotes(
   const ctx = getAudioContext();
   if (!ctx) return ids;
   const now = ctx.currentTime;
-  const beatDuration = 60 / bpm;
+  const safeBpm = Math.max(1, bpm);
+  const beatDuration = 60 / safeBpm;
 
   for (const note of notes) {
     const startTime = now + (note.start - startBeat) * beatDuration;

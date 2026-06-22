@@ -1,4 +1,4 @@
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import type { Plugin } from '../lib/types';
 import { PLUGIN_ICONS } from '../lib/types';
 import { MASTERING_PLUGIN_DEFS } from '../lib/masteringSuite';

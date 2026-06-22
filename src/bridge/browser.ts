@@ -24,10 +24,12 @@ function createFileUpload(accept: string): Promise<string | null> {
       const reader = new FileReader();
       reader.onload = (ev) => {
         const buf = ev.target?.result as ArrayBuffer;
+        if (!buf) { resolve(null); return; }
         const key = `_upload_${++uploadCounter}_${file.name}`;
         uploadCache.set(key, buf);
         resolve(key);
       };
+      reader.onerror = () => resolve(null);
       reader.readAsArrayBuffer(file);
     };
     input.click();

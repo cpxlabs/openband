@@ -247,7 +247,7 @@ export default function Studio() {
           volume: 80,
           pan: 0,
           sends: {}, sidechainSource: null,
-          regions: [{ id: `region-${Date.now()}`, start: 0, duration: Math.max(recorderState.durationMillis / 1000, 1), url: uri }],
+          regions: [{ id: `region-${Date.now()}`, start: 0, duration: Math.max((recorderState.durationMillis ?? 0) / 1000, 1), url: uri }],
           plugins: [],
           automation: {},
         };
@@ -570,11 +570,12 @@ export default function Studio() {
 
   function midiNotesToRegions(notes: MIDINote[], bpm: number): TrackRegion[] {
     if (notes.length === 0) return [];
+    const safeBpm = Math.max(1, bpm);
     const minBeat = Math.min(...notes.map(n => n.start));
     return notes.map((n, i) => ({
       id: `midi-${n.pitch}-${i}-${Date.now()}`,
-      start: (n.start - minBeat) * (60 / bpm),
-      duration: Math.max(n.duration * (60 / bpm), 0.5),
+      start: (n.start - minBeat) * (60 / safeBpm),
+      duration: Math.max(n.duration * (60 / safeBpm), 0.5),
     }));
   }
 
@@ -1142,7 +1143,8 @@ export default function Studio() {
       }} />
       <Synth visible={showSynth} onClose={() => setShowSynth(false)} bpm={metronome.bpm} />
       <Looper visible={showLooper} onClose={() => setShowLooper(false)} bpm={metronome.bpm} onCommitLoop={(slot, bars) => {
-        const region: TrackRegion = { id: `loop-${Date.now()}-${slot}`, start: 0, duration: bars * 4 * (60 / metronome.bpm) };
+        const safeBpm = Math.max(1, metronome.bpm);
+        const region: TrackRegion = { id: `loop-${Date.now()}-${slot}`, start: 0, duration: bars * 4 * (60 / safeBpm) };
         const trackId = `loop-${Date.now()}`;
         const newTrack: TrackDef = {
           id: trackId, name: `Loop ${slot + 1}`, color: TRACK_COLORS[tracks.length % TRACK_COLORS.length],

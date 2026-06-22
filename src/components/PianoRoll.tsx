@@ -127,7 +127,6 @@ export function PianoRoll({
 
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressPos = useRef<{ x: number; y: number } | null>(null);
-  const longPressFiredRef = useRef(false);
 
   const handleGridLongPress = useCallback((x: number, y: number) => {
     const beat = x / PX_PER_BEAT;
@@ -371,7 +370,6 @@ export function PianoRoll({
                         longPressTimer.current = setTimeout(() => {
                           if (longPressPos.current) {
                             handleGridLongPress(longPressPos.current.x, longPressPos.current.y);
-                            longPressFiredRef.current = true;
                             longPressPos.current = null;
                           }
                         }, 500);

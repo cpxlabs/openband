@@ -140,7 +140,7 @@ export function parseMidi(buffer: ArrayBuffer): MidiData | null {
               trackName = String.fromCharCode(...Array.from({ length: len.value }, (_, i) => view.getUint8(offset + i)));
             } else if (metaType === 0x51) {
               const microsecs = (view.getUint8(offset) << 16) | (view.getUint8(offset + 1) << 8) | view.getUint8(offset + 2);
-              globalBpm = Math.round(60000000 / microsecs);
+              globalBpm = microsecs > 0 ? Math.round(60000000 / microsecs) : 120;
             } else if (metaType === 0x2f) { break; }
             offset += len.value;
           }
@@ -166,7 +166,9 @@ export function parseMidi(buffer: ArrayBuffer): MidiData | null {
 }
 
 export function ticksToSeconds(ticks: number, bpm: number, ticksPerQuarter: number): number {
-  return (ticks / ticksPerQuarter) * (60 / bpm);
+  const safeBpm = Math.max(1, bpm);
+  const safeTpq = Math.max(1, ticksPerQuarter);
+  return (ticks / safeTpq) * (60 / safeBpm);
 }
 
 import type { TrackRegion } from './types';

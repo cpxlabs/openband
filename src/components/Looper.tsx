@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, Modal } from 'react-native';
 
 interface LoopSlot {
