@@ -11,9 +11,9 @@ Current feature inventory against [BandLab](https://www.bandlab.com/features) (w
 | # | Feature | OpenBand | BandLab Free | BandLab Pro/Max | Cubasis 3.8 | Priority | Notes |
 |---|---------|----------|-------------|-----------------|-------------|----------|-------|
 | 1 | Multi-track DAW | ✅ | ✅ | ✅ | ✅ | — | All three support multi-track |
-| 2 | **Audio recording** | ⚠️ UI only | ✅ | ✅ | ✅ | **High** | OpenBand has RecordOptions UI but no actual recording via `expo-audio` |
+| 2 | **Audio recording** | ✅ | ✅ | ✅ | ✅ | — | Uses `expo-audio` `useAudioRecorder` |
 | 3 | **MIDI import** | ✅ | ✅ | ✅ | ✅ | — | Uses `parseMidi()` + `midiToTrackRegions()` |
-| 4 | **MIDI editor (piano roll)** | ❌ | ✅ | ✅ | ✅ | **High** | BandLab has per-track piano roll; Cubasis has full piano roll + MIDI CC |
+| 4 | **MIDI editor (piano roll)** | ✅ | ✅ | ✅ | ✅ | — | PianoRoll component with note add/move/resize/delete, snap, scale highlighting |
 | 5 | **Virtual instruments** | ❌ | ✅ Sampler | ✅ | ✅ Micrologue, MicroSonic, MiniSampler | **High** | BandLab: Sampler + synth; Cubasis: Micrologue ARP, MicroSonic (1100+ sounds), MiniSampler |
 | 6 | **Drum machine / Step sequencer** | ✅ CodeSampler | ✅ Beat Maker | ✅ | ❌ | — | OpenBand's CodeSampler is token-based; BandLab's Beat Maker is grid-based |
 | 7 | **Auto-Pitch / Vocal Tuner** | ✅ autoPitch plugin | ⚠️ basic | ✅ 18 AutoPitch effects | ✅ Waves Tune Real-Time (IAP) | — | OpenBand: 6 presets; BandLab Pro: 18 effects; Cubasis: 3rd-party IAP |
@@ -23,7 +23,7 @@ Current feature inventory against [BandLab](https://www.bandlab.com/features) (w
 | 11 | **Sampler / Slicing** | ⚠️ Sample Browser | ✅ Sampler | ✅ | ✅ MiniSampler | **High** | OpenBand can browse/add samples but no slicing/warping |
 | 12 | **Chord track / helper** | ❌ | ❌ | ❌ | ✅ | Medium | Cubasis: chord track with progression tools |
 | 13 | **Collaboration / sharing** | ❌ | ✅ | ✅ | ❌ | **High** | BandLab: invite collaborators, cloud sync, comments; Cubasis: DAWproject export |
-| 14 | **Looper / Overdub** | ❌ | ✅ | ✅ | ✅ | Medium | Cubasis 3.0+; BandLab has Looper |
+| 14 | **Looper / Overdub** | ✅ | ✅ | ✅ | ✅ | — | Looper component with record, loop, overdub layers, 4 independent slots |
 | 15 | **Time-stretch / pitch-shift** | ❌ | ✅ | ✅ | ✅ | Medium | `player.playbackRate` available in `expo-audio` but not exposed in UI |
 | 16 | **Automation** | ✅ Volume lanes | ✅ | ✅ | ✅ | — | OpenBand: volume only; BandLab: volume + pan + effects; Cubasis: full |
 | 17 | **Plugin system** | ✅ 19 types | ✅ limited | ✅ 9+ effects | ✅ AUv3 (iOS) | — | See plugin table below |
@@ -48,7 +48,7 @@ Current feature inventory against [BandLab](https://www.bandlab.com/features) (w
 | 36 | **Metronome / Click** | ✅ Metronome | ✅ | ✅ | ✅ | — | OpenBand: BPM, time sig, count-in |
 | 37 | **Waveform visualization** | ✅ WaveformClip | ✅ | ✅ | ✅ | — | |
 | 38 | **Audio unit / AUv3** | ❌ | ❌ | ❌ | ✅ iOS only | Low | Cubasis: 3rd-party plugin support |
-| 39 | **Sidechain** | ❌ | ❌ | ❌ | ✅ | Medium | Cubasis 3.3: sidechain support |
+| 39 | **Sidechain** | ✅ | ❌ | ❌ | ✅ | — | Per-track sidechain source selector, compressor sidechain filter |
 | 40 | **MIDI Learn / MCU** | ❌ | ❌ | ❌ | ✅ | Low | Cubasis 3.3: MIDI Learn + Mackie Control/HUI |
 
 **Key:** ✅ = Shipped | ⚠️ = Partial / In progress | ❌ = Not implemented

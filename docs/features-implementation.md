@@ -289,7 +289,7 @@ function autoMix(tracks: TrackDef[], genre: string): TrackDef[] {
 
 ## Current Status
 
-**Shipped (30/40 features total):**
+**Shipped (34/40 features total):**
 
 ✅ Multi-track DAW · ✅ Step sequencer · ✅ Auto-Pitch · ✅ Noise Gate · ✅ Bass Mono
 ✅ Stereo Widener · ✅ Guitar pedal board · ✅ Amp/Cab modeling · ✅ Mastering presets
@@ -299,18 +299,15 @@ function autoMix(tracks: TrackDef[], genre: string): TrackDef[] {
 ✅ Keyboard shortcuts · ✅ Metronome · ✅ Waveform visualization
 ✅ Responsive layout · ✅ Sidebar drawer · ✅ Tuner · ✅ MIDI import
 ✅ Automation (volume) · ✅ Desktop (Electron shell + swappable bridge) · ✅ MIDI synth
+✅ Audio recording · ✅ Piano roll MIDI editor · ✅ Looper / Overdub · ✅ Sidechain
 
-**Needs implementation (10 gaps):**
+**Needs implementation (6 gaps):**
 
 | # | Feature | Phase | Sprint |
 |---|---------|-------|--------|
-| 1 | Audio recording | 1 | 1 |
-| 2 | Time-stretch / pitch-shift | 1 | 1 |
-| 3 | Piano roll MIDI editor | 2 | 2–3 |
-| 4 | Virtual instruments (synth) | 3 | 4–5 |
-| 5 | Sampler / Slicing | 3 | 4–5 |
-| 6 | Collaboration / sharing | 4 | 6 |
-| 7 | Sidechain | 6 | 7 |
-| 8 | Looper / Overdub | 6 | 7 |
-| 9 | AutoMix (AI) | 7 | 7 |
-| 10 | Chord track | — | TBD |
+| 1 | Time-stretch / pitch-shift | 1 | 1 |
+| 2 | Virtual instruments (synth) | 3 | 4–5 |
+| 3 | Sampler / Slicing | 3 | 4–5 |
+| 4 | Collaboration / sharing | 4 | 6 |
+| 5 | AutoMix (AI) | 7 | 7 |
+| 6 | Chord track | — | TBD |

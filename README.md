@@ -101,6 +101,10 @@ Multi-track DAW with real-time audio playback via `expo-audio`:
 - Playhead cursor with real-time position tracking
 - Play/pause/seek transport controls
 - BPM readout and time signature display
+- Audio recording via `useAudioRecorder` with configurable quality/sample rate
+- Piano roll MIDI note editor with snap, scale highlighting, note drag/resize/delete
+- Sidechain routing per track (source selector + compressor sidechain filter)
+- Looper with record/overdub/playback, 4 loop slots
 
 ### Stem Extraction (`app/extractor.tsx`)
 3-phase separation pipeline:
@@ -128,6 +132,22 @@ User's project collection:
 - Email/password login via Supabase Auth
 - Mock fallback: any email + any password works when Supabase env vars aren't set
 - Session persistence via `expo-secure-store` (native) / `localStorage` (web)
+- Visitor mode (anonymous exploration without sign-up)
+
+### Settings (`app/(tabs)/settings.tsx`)
+- Dark/light theme toggle
+- Profile display, app version info
+- Theme persisted via ThemeContext
+
+### Feed (`app/(tabs)/moments.tsx`)
+- Artist moments / social feed with audio previews
+- Free sample pack store with 30+ curated samples
+- One-tap sample import to new studio project
+
+### Account (`app/(tabs)/account.tsx`)
+- Display name editing with Supabase profile sync
+- Sign-out with loading state
+- Profile info (member since, location, bio)
 
 ## Project Structure
 
@@ -137,10 +157,15 @@ openband/
 │   ├── _layout.tsx          # Root: SafeAreaProvider + AuthProvider + redirect
 │   ├── (auth)/login.tsx     # Login screen
 │   ├── (tabs)/
-│   │   ├── _layout.tsx      # Tab navigator (Feed, Biblioteca)
+│   │   ├── _layout.tsx      # Tab navigator (Feed, Biblioteca, Momentos)
 │   │   ├── index.tsx        # Global feed with audio playback
-│   │   └── library.tsx      # Project library
+│   │   ├── library.tsx      # Project library
+│   │   ├── moments.tsx      # Sample pack store / artist moments
+│   │   ├── account.tsx      # Profile + sign-out
+│   │   └── settings.tsx     # App settings
 │   ├── extractor.tsx        # Stem separation page
+│   ├── mastering/
+│   │   └── index.tsx        # Mastering suite page (full chain)
 │   └── studio/[id].tsx      # DAW multi-track mixer
 ├── src/
 │   ├── lib/                 # Utilities: supabase, audio, midi, projectStore, etc.
@@ -241,6 +266,8 @@ player.volume = 0.5;                            // 0.0 – 1.0
 |--------|----------|-------------|
 | POST | `/api/extract` | Upload audio file → returns stem URLs |
 | GET | `/api/stems/:filename` | Download processed stem |
+| POST | `/api/master/bounce` | Upload audio → apply master processing → download result |
+| GET | `/api/master/download/:filename` | Download mastered audio file |
 
 ### POST /api/extract
 
