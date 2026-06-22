@@ -1,6 +1,7 @@
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import crypto from 'crypto';
 
 const UPLOAD_DIR = path.resolve(process.cwd(), 'uploads');
 
@@ -12,7 +13,7 @@ const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, UPLOAD_DIR),
   filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname) || '.wav';
-    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
+    cb(null, `${Date.now()}-${crypto.randomUUID().slice(0, 8)}${ext}`);
   },
 });
 

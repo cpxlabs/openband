@@ -10,7 +10,6 @@ import {
   PluginEditor,
 } from '../components';
 import {
-  MasteringVersion,
   MasteringInput,
   MasteringSession,
   buildMasteringChain,

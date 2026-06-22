@@ -1,6 +1,7 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import path from 'path';
 import fs from 'fs';
+import multer from 'multer';
 import { upload } from '../middleware/upload';
 
 function safeJsonParse(s: string | undefined): unknown {
@@ -16,7 +17,18 @@ if (!fs.existsSync(MASTER_DIR)) {
   fs.mkdirSync(MASTER_DIR, { recursive: true });
 }
 
-router.post('/master/bounce', upload.single('audio'), async (req: Request, res: Response) => {
+router.post('/master/bounce', (req: Request, res: Response, next: NextFunction) => {
+  upload.single('audio')(req, res, (err) => {
+    if (err) {
+      if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ error: 'Arquivo muito grande. Máximo 200MB.' });
+        return res.status(400).json({ error: `Erro no upload: ${err.message}` });
+      }
+      return res.status(400).json({ error: err.message });
+    }
+    next();
+  });
+}, async (req: Request, res: Response) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'Nenhum arquivo de áudio enviado.' });

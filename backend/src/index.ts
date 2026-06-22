@@ -33,6 +33,13 @@ app.use((_req, res, next) => {
 
 const rateLimitStore: Record<string, { count: number; resetAt: number }> = {};
 
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of Object.entries(rateLimitStore)) {
+    if (now > entry.resetAt) delete rateLimitStore[ip];
+  }
+}, 60 * 1000);
+
 function rateLimit(maxRequests: number, windowMs: number) {
   return (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const ip = req.ip || req.socket.remoteAddress || 'unknown';
@@ -52,24 +59,25 @@ function rateLimit(maxRequests: number, windowMs: number) {
 
 app.use(express.json({ limit: '1mb' }));
 
+let demucsCheckPromise: Promise<boolean> | null = null;
+
+app.get('/api/health', async (_req, res) => {
+  try {
+    if (demucsCheckPromise === null) {
+      demucsCheckPromise = checkDemucsInstalled();
+    }
+    await demucsCheckPromise;
+    res.json({ status: 'ok' });
+  } catch {
+    demucsCheckPromise = null;
+    res.json({ status: 'ok', demucs: false });
+  }
+});
+
 app.use('/api', rateLimit(30, 15 * 60 * 1000));
 
 app.use('/api', extractRoutes);
 app.use('/api', masterRoutes);
-
-let demucsCheckPromise: Promise<boolean> | null = null;
-
-app.get('/api/health', async (_req, res, next) => {
-  try {
-    if (demucsCheckPromise === null) {
-      demucsCheckPromise = checkDemucsInstalled().catch(() => false);
-    }
-    await demucsCheckPromise;
-    res.json({ status: 'ok' });
-  } catch (e) {
-    next(e);
-  }
-});
 
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error('Unhandled error:', err instanceof Error ? err.message : err);
@@ -78,4 +86,7 @@ app.use((err: unknown, _req: express.Request, res: express.Response, _next: expr
 
 app.listen(PORT, () => {
   console.log(`OpenBand API running on port ${PORT}`);
+}).on('error', (err: Error) => {
+  console.error(`Failed to start server on port ${PORT}:`, err.message);
+  process.exit(1);
 });

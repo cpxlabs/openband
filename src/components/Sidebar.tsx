@@ -1,4 +1,4 @@
-import { View, Text, Pressable, ScrollView, Platform } from 'react-native';
+import { View, Text, Pressable, ScrollView } from 'react-native';
 
 const NAV_ITEMS = [
   { key: 'index', label: 'Feed', icon: '♫' },

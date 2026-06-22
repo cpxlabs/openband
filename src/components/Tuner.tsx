@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, Pressable, Modal, Platform } from 'react-native';
+import { View, Text, Pressable, Modal } from 'react-native';
 
 interface TuningNote {
   name: string;

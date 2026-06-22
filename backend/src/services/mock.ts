@@ -2,8 +2,6 @@ import fs from 'fs';
 import path from 'path';
 import type { StemFile } from '../types';
 
-const MOCK_DIR = path.resolve(process.cwd(), 'stems');
-
 async function generateSilentWav(filePath: string, durationSec: number): Promise<void> {
   const sampleRate = 44100;
   const numChannels = 2;

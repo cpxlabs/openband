@@ -3,7 +3,6 @@ import path from 'path';
 import fs from 'fs';
 import type { StemFile } from '../types';
 
-const OUTPUT_DIR = path.resolve(process.cwd(), 'stems');
 const DEMUCS_MODEL = 'htdemucs';
 
 interface DemucsOptions {
@@ -46,9 +45,7 @@ export async function runDemucs(options: DemucsOptions): Promise<StemFile[]> {
 
   const demucsOut = path.join(stemDir, DEMUCS_MODEL, baseName);
 
-  if (fs.existsSync(demucsOut)) {
-    await fs.promises.rm(demucsOut, { recursive: true, force: true });
-  }
+  await fs.promises.rm(demucsOut, { recursive: true, force: true }).catch(() => {});
 
   onProgress?.('Iniciando Demucs (htdemucs)...', 10);
 
@@ -76,15 +73,19 @@ export async function runDemucs(options: DemucsOptions): Promise<StemFile[]> {
     const stemPath = path.join(demucsOut, `${stemName}.wav`);
     const destPath = path.join(stemDir, `${baseName}-${stemName}.wav`);
 
-    if (fs.existsSync(stemPath)) {
+    try {
+      await fs.promises.access(stemPath, fs.constants.R_OK);
       await fs.promises.cp(stemPath, destPath);
+      const size = (await fs.promises.stat(destPath)).size;
       stems.push({
         type: meta.type,
         label: meta.label,
         filename: `${baseName}-${stemName}.wav`,
-        size: fs.statSync(destPath).size,
+        size,
         url: `/api/stems/${baseName}-${stemName}.wav`,
       });
+    } catch {
+      console.warn(`Stem ${stemName} not found at ${stemPath}, skipping`);
     }
   }
 
