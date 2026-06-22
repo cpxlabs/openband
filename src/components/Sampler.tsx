@@ -94,6 +94,7 @@ export function Sampler({ visible, onClose, onAddToTrack }: SamplerProps) {
   }, [getAudioContext]);
 
   const previewSample = useCallback((slotIndex: number) => {
+    if (Platform.OS !== 'web') return;
     const slot = slots[slotIndex];
     if (!slot.data) return;
     try {

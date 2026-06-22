@@ -23,11 +23,21 @@ function applyTheme(theme: Theme) {
   }
 }
 
+function loadInitialTheme(): Theme {
+  if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
+    return (localStorage.getItem('openband_theme') as Theme) ?? 'dark';
+  }
+  return 'dark';
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('dark');
+  const [theme, setThemeState] = useState<Theme>(loadInitialTheme);
 
   useEffect(() => {
     applyTheme(theme);
+    if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
+      localStorage.setItem('openband_theme', theme);
+    }
   }, [theme]);
 
   const toggleTheme = () => {

@@ -2,7 +2,7 @@
 
 Current feature inventory against [BandLab](https://www.bandlab.com/features) (web/mobile DAW, 100M+ creators) and [Cubasis 3.8](https://www.steinberg.net/cubasis/) (mobile DAW, iOS/Android) to identify gaps, prioritize roadmap, and guide implementation.
 
-**Last updated:** June 12, 2026
+**Last updated:** June 22, 2026
 
 ---
 
@@ -26,7 +26,7 @@ Current feature inventory against [BandLab](https://www.bandlab.com/features) (w
 | 14 | **Looper / Overdub** | ❌ | ✅ | ✅ | ✅ | Medium | Cubasis 3.0+; BandLab has Looper |
 | 15 | **Time-stretch / pitch-shift** | ❌ | ✅ | ✅ | ✅ | Medium | `player.playbackRate` available in `expo-audio` but not exposed in UI |
 | 16 | **Automation** | ✅ Volume lanes | ✅ | ✅ | ✅ | — | OpenBand: volume only; BandLab: volume + pan + effects; Cubasis: full |
-| 17 | **Plugin system** | ✅ 18 types | ✅ limited | ✅ 9+ effects | ✅ AUv3 (iOS) | — | See plugin table below |
+| 17 | **Plugin system** | ✅ 19 types | ✅ limited | ✅ 9+ effects | ✅ AUv3 (iOS) | — | See plugin table below |
 | 18 | **Guitar pedal board** | ✅ 16 pedal presets | ❌ | ❌ | ✅ Amp Rack | — | OpenBand: famous pedals; Cubasis 3.8: Amp Rack with amp sim |
 | 19 | **Amp + Cab modeling** | ✅ 20 amps, 10 cabs | ❌ | ❌ | ⚠️ Amp Rack | — | OpenBand: more amp models; Cubasis: newer amp sim in 3.8 |
 | 20 | **Mastering presets** | ✅ 10 chains | ✅ 4 presets | ✅ 8 presets + EQ | ✅ Master Strip Suite | — | BandLab: intensity slider + Mastering EQ (Max); Cubasis: 4 processors |
@@ -128,7 +128,7 @@ Current feature inventory against [BandLab](https://www.bandlab.com/features) (w
 | Vocal Verb | ❌ | ✅ | ❌ |
 | Gater / Shaper | ❌ | ✅ | ❌ |
 | Amp Rack | ❌ | ❌ | ✅ |
-| **Total** | **18** | ~12 | ~15+AUv3 |
+| **Total** | **19** | ~12 | ~15+AUv3 |
 
 ---
 
@@ -147,7 +147,7 @@ Current feature inventory against [BandLab](https://www.bandlab.com/features) (w
 | File | Tests | What it covers |
 |------|-------|----------------|
 | `tests/responsive.test.ts` | 15 | Breakpoints (mobile/tablet/desktop), contentPadding, channelWidth, tracksSidebarWidth, toolbarFontSize |
-| `tests/types.test.ts` | 13 | TrackDef, MixSnapshot, SendBus, Plugin union (18 types), TrackAmpChain structure |
+| `tests/types.test.ts` | 13 | TrackDef, MixSnapshot, SendBus, Plugin union (19 types), TrackAmpChain structure |
 | `tests/presets.test.ts` | 11 | Pedal count (16), Amp count (20), Cab count (10), brand distribution, type coverage |
 
 ```bash

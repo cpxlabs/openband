@@ -1,8 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { View, Text, FlatList, Pressable, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { CardRow, CardIcon, EmptyState, PageHeader, Button } from '../../src/components';
-import { NewProject } from '../../src/components/NewProject';
+import { CardRow, CardIcon, EmptyState, PageHeader, Button, NewProject } from '../../src/components';
 import type { GenreTemplate } from '../../src/lib/projectTemplates';
 import { useResponsive } from '../../src/lib/responsive';
 import { listProjectIndex, exportProject, importProject } from '../../src/lib/projectStore';
@@ -58,7 +57,9 @@ export default function Library() {
       });
       if (!path) return;
       const buffer = await OpenBandNative.readFile(path);
-      const text = new TextDecoder().decode(buffer);
+      const text = typeof TextDecoder !== 'undefined'
+        ? new TextDecoder().decode(buffer)
+        : String.fromCharCode(...new Uint8Array(buffer));
       const id = importProject(text);
       if (id) {
         setRefreshKey(k => k + 1);
@@ -105,7 +106,7 @@ export default function Library() {
 
       <FlatList
         key={refreshKey}
-        data={projects.length > 0 ? projects : [{ id: 'placeholder', title: '', lastSaved: 0 }]}
+        data={projects}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: resp.isMobile ? 16 : 24 }}
         style={resp.isDesktop ? { maxWidth: 768, alignSelf: 'center', width: '100%' } : undefined}
@@ -116,35 +117,24 @@ export default function Library() {
             subtitle="Crie seu primeiro projeto acima"
           />
         }
-        renderItem={({ item }) => {
-          if (item.id === 'placeholder') {
-            return (
-              <EmptyState
-                icon="🎧"
-                title="Nenhum projeto ainda"
-                subtitle="Crie seu primeiro projeto acima"
-              />
-            );
-          }
-          return (
-            <CardRow onPress={() => router.push(`/studio/${item.id}`)} className="mb-2">
-              <CardIcon icon="♫" />
-              <View className="flex-1 ml-4">
-                <Text className="text-white font-semibold text-base">{item.title}</Text>
-                <Text className="text-gray-500 text-xs mt-1">
-                  {new Date(item.lastSaved).toLocaleDateString()}
-                </Text>
-              </View>
-              <Pressable
-                onPress={() => handleShareProject(item.id, item.title)}
-                className="px-3 py-2 rounded-lg bg-dark-muted active:opacity-70 mr-2"
-              >
-                <Text className="text-gray-300 text-xs font-semibold">Compartilhar</Text>
-              </Pressable>
-              <Text className="text-brand-accent text-sm">Abrir →</Text>
-            </CardRow>
-          );
-        }}
+        renderItem={({ item }) => (
+          <CardRow onPress={() => router.push(`/studio/${item.id}`)} className="mb-2">
+            <CardIcon icon="♫" />
+            <View className="flex-1 ml-4">
+              <Text className="text-white font-semibold text-base">{item.title}</Text>
+              <Text className="text-gray-500 text-xs mt-1">
+                {new Date(item.lastSaved).toLocaleDateString()}
+              </Text>
+            </View>
+            <Pressable
+              onPress={() => handleShareProject(item.id, item.title)}
+              className="px-3 py-2 rounded-lg bg-dark-muted active:opacity-70 mr-2"
+            >
+              <Text className="text-gray-300 text-xs font-semibold">Compartilhar</Text>
+            </Pressable>
+            <Text className="text-brand-accent text-sm">Abrir →</Text>
+          </CardRow>
+        )}
       />
 
       <NewProject

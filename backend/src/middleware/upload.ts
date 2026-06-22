@@ -16,7 +16,7 @@ const storage = multer.diskStorage({
   },
 });
 
-const ALLOWED_MIMES = ['audio/mpeg', 'audio/wav', 'audio/wave', 'audio/x-wav', 'audio/flac', 'audio/x-flac', 'audio/mp4', 'audio/aac', 'audio/ogg', 'audio/x-ms-wma'];
+const ALLOWED_MIMES = ['audio/mpeg', 'audio/wav', 'audio/wave', 'audio/x-wav', 'audio/flac', 'audio/x-flac', 'audio/mp4', 'audio/x-m4a', 'audio/aac', 'audio/ogg', 'audio/x-ms-wma'];
 
 const fileFilter = (_req: Express.Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   const allowed = ['.mp3', '.wav', '.flac', '.m4a', '.ogg', '.aac', '.wma'];

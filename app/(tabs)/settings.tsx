@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { PageHeader, Avatar, Divider } from '../../src/components';
 import { useTheme } from '../../src/context/ThemeContext';
@@ -15,7 +14,7 @@ const MOCK_PROFILE = {
 export default function Settings() {
   const resp = useResponsive();
   const { theme, setTheme } = useTheme();
-  const [profile] = useState(MOCK_PROFILE);
+  const profile = MOCK_PROFILE;
 
   return (
     <ScrollView className="flex-1 bg-dark-bg">

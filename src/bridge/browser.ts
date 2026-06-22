@@ -10,6 +10,9 @@ function createBlobDownload(data: ArrayBuffer | string, filename: string): void 
   URL.revokeObjectURL(url);
 }
 
+const uploadCache = new Map<string, ArrayBuffer>();
+let uploadCounter = 0;
+
 function createFileUpload(accept: string): Promise<string | null> {
   return new Promise((resolve) => {
     const input = document.createElement('input');
@@ -20,9 +23,12 @@ function createFileUpload(accept: string): Promise<string | null> {
       if (!file) { resolve(null); return; }
       const reader = new FileReader();
       reader.onload = (ev) => {
-        resolve(ev.target?.result as string ?? null);
+        const buf = ev.target?.result as ArrayBuffer;
+        const key = `_upload_${++uploadCounter}_${file.name}`;
+        uploadCache.set(key, buf);
+        resolve(key);
       };
-      reader.readAsText(file);
+      reader.readAsArrayBuffer(file);
     };
     input.click();
   });
@@ -38,9 +44,11 @@ export const browserBridge: NativeBridge = {
     return options.defaultPath ?? 'untitled';
   },
 
-  async readFile(_path: string): Promise<ArrayBuffer> {
-    console.warn('[Browser bridge] readFile not available — use showOpenDialog instead');
-    throw new Error('readFile not available in browser');
+  async readFile(path: string): Promise<ArrayBuffer> {
+    const cached = uploadCache.get(path);
+    if (cached) return cached.slice(0);
+    console.warn('[Browser bridge] readFile: path not found in upload cache');
+    throw new Error('File not found in browser upload cache');
   },
 
   async writeFile(path: string, data: ArrayBuffer | string): Promise<void> {
@@ -90,5 +98,11 @@ export const browserBridge: NativeBridge = {
       delete index[id];
       localStorage.setItem('openband_project_index', JSON.stringify(index));
     }
+  },
+
+  onMenuAction(_callback: (action: string) => void): void {
+  },
+
+  removeMenuActionListener(): void {
   },
 };

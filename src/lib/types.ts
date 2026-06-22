@@ -469,6 +469,7 @@ export const PLUGIN_SPECS: Record<PluginType, PluginTypeSpec> = {
 
 export function getDefaultParams(type: PluginType): Record<string, number> {
   const spec = PLUGIN_SPECS[type];
+  if (!spec) return {};
   const params: Record<string, number> = {};
   for (const p of spec.params) {
     params[p.id] = p.default;

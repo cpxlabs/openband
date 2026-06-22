@@ -9,7 +9,6 @@ import { checkDemucsInstalled } from './services/demucs';
 const app = express();
 const PORT = process.env.PORT || 3001;
 const STEMS_DIR = path.resolve(process.cwd(), 'stems');
-const isProduction = process.env.NODE_ENV === 'production';
 
 if (!fs.existsSync(STEMS_DIR)) {
   fs.mkdirSync(STEMS_DIR, { recursive: true });

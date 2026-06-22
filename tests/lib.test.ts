@@ -446,6 +446,6 @@ describe('masteringSuite.ts', () => {
 
   it('formatSampleRate returns kHz string', () => {
     expect(formatSampleRate(44100)).toBe('44.1kHz');
-    expect(formatSampleRate(96000)).toBe('96kHz');
+    expect(formatSampleRate(96000)).toBe('96.0kHz');
   });
 });

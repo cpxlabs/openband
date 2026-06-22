@@ -14,7 +14,7 @@ function detectBridge(): NativeBridge {
     return electronBridge;
   }
 
-  if ((window as any).__TAURI__ || (window as any).ipcRenderer) {
+  if ((window as any).__TAURI__) {
     return tauriBridge;
   }
 

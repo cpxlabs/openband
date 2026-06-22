@@ -28,4 +28,6 @@ export interface NativeBridge {
   saveProject(id: string, data: string): Promise<void>;
   loadProject(id: string): Promise<string | null>;
   deleteProject(id: string): Promise<void>;
+  onMenuAction(callback: (action: string) => void): void;
+  removeMenuActionListener(): void;
 }

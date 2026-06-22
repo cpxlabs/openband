@@ -32,6 +32,7 @@ export function OneKnob({ label, value, onChange, min = 0, max = 100, step = 1, 
 
   const handleRelease = useCallback(() => {
     setDragging(false);
+    setShowValue(false);
   }, []);
 
   const pct = ((value - min) / (max - min)) * 100;

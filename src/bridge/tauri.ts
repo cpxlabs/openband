@@ -47,4 +47,12 @@ export const tauriBridge: NativeBridge = {
   async deleteProject(_id: string): Promise<void> {
     console.warn('[Tauri stub] deleteProject not yet implemented');
   },
+
+  onMenuAction(_callback: (action: string) => void): void {
+    console.warn('[Tauri stub] onMenuAction not yet implemented');
+  },
+
+  removeMenuActionListener(): void {
+    console.warn('[Tauri stub] removeMenuActionListener not yet implemented');
+  },
 };

@@ -22,11 +22,15 @@ function createVisitorUser(): User {
     email: VISITOR_EMAIL,
     email_confirmed_at: new Date().toISOString(),
     phone: '',
+    confirmed_at: new Date().toISOString(),
+    last_sign_in_at: new Date().toISOString(),
     app_metadata: { provider: 'email', providers: ['email'] },
     user_metadata: { name: 'Admin' },
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    is_anonymous: false,
+    is_anonymous: true,
+    identities: [],
+    factors: [],
   } as User;
 }
 
@@ -37,6 +41,8 @@ function createVisitorSession(): Session {
     expires_in: 86400,
     expires_at: Math.floor(Date.now() / 1000) + 86400,
     token_type: 'bearer',
+    provider_token: null,
+    provider_refresh_token: null,
     user: createVisitorUser(),
   } as Session;
 }

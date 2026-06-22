@@ -3,6 +3,11 @@ import path from 'path';
 import fs from 'fs';
 import { upload } from '../middleware/upload';
 
+function safeJsonParse(s: string | undefined): unknown {
+  if (!s) return undefined;
+  try { return JSON.parse(s); } catch { return undefined; }
+}
+
 const router = Router();
 
 const MASTER_DIR = path.resolve(process.cwd(), 'masters');
@@ -19,8 +24,8 @@ router.post('/master/bounce', upload.single('audio'), async (req: Request, res: 
 
     const { bitDepth, sampleRate, format, pluginStates } = req.body;
 
-    const parsedBitDepth = parseInt(bitDepth, 10) || 24;
-    const parsedSampleRate = parseInt(sampleRate, 10) || 44100;
+    const parsedBitDepth = (() => { const v = parseInt(bitDepth, 10); return Number.isNaN(v) ? 24 : v; })();
+    const parsedSampleRate = (() => { const v = parseInt(sampleRate, 10); return Number.isNaN(v) ? 44100 : v; })();
     const outputFormat = format || 'wav';
 
     const outputFilename = `master_${Date.now()}.${outputFormat === 'mp3' ? 'mp3' : 'wav'}`;
@@ -51,7 +56,7 @@ router.post('/master/bounce', upload.single('audio'), async (req: Request, res: 
       bitDepth: parsedBitDepth,
       sampleRate: parsedSampleRate,
       size: fs.statSync(outputPath).size,
-      pluginStates: pluginStates ? JSON.parse(pluginStates) : undefined,
+      pluginStates: pluginStates ? safeJsonParse(pluginStates) : undefined,
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Erro desconhecido';

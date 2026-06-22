@@ -12,7 +12,6 @@ interface EqBand {
 interface VisualEQProps {
   bands: EqBand[];
   onChange: (index: number, params: Partial<EqBand>) => void;
-  spectrum?: number[];
   height?: number;
 }
 
@@ -84,7 +83,7 @@ const PRESETS: { name: string; bands: EqBand[] }[] = [
   },
 ];
 
-export function VisualEQ({ bands, onChange, spectrum, height = 140 }: VisualEQProps) {
+export function VisualEQ({ bands, onChange, height = 140 }: VisualEQProps) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [showPresets, setShowPresets] = useState(false);
 

@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useMemo } from 'react';
-import { View, Text, Pressable, Modal } from 'react-native';
+import { View, Text, Pressable, Modal, Platform } from 'react-native';
 
 type WaveformType = 'sawtooth' | 'square' | 'triangle' | 'sine' | 'noise';
 type FilterType = 'lowpass' | 'highpass' | 'bandpass';
@@ -90,7 +90,8 @@ export function Synth({ visible, onClose, bpm }: SynthProps) {
   const activeNodes = useRef<{ stop: () => void }[]>([]);
   const arpTimeouts = useRef<ReturnType<typeof setTimeout>[]>([]);
 
-  const getCtx = useCallback(() => {
+  const getCtx = useCallback((): AudioContext => {
+    if (Platform.OS !== 'web') throw new Error('AudioContext not available on native');
     if (!audioCtxRef.current) audioCtxRef.current = new AudioContext();
     if (audioCtxRef.current.state === 'suspended') audioCtxRef.current.resume();
     return audioCtxRef.current;
@@ -105,6 +106,7 @@ export function Synth({ visible, onClose, bpm }: SynthProps) {
   }, []);
 
   const playNote = useCallback((note: number) => {
+    if (Platform.OS !== 'web') return;
     try {
       const ctx = getCtx();
       const now = ctx.currentTime;
@@ -175,6 +177,7 @@ export function Synth({ visible, onClose, bpm }: SynthProps) {
   }, [getCtx, preset]);
 
   const playArp = useCallback(() => {
+    if (Platform.OS !== 'web') return;
     if (!preset.arp.enabled) return;
     stopAll();
     const notes = [60, 64, 67, 72];

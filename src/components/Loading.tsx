@@ -1,4 +1,4 @@
-import { View, Text } from 'react-native';
+import { View, Text, ActivityIndicator } from 'react-native';
 
 interface LoadingProps {
   message?: string;
@@ -8,7 +8,7 @@ interface LoadingProps {
 export function Loading({ message = 'Carregando...', fullScreen = false }: LoadingProps) {
   const content = (
     <View className="items-center justify-center gap-4">
-      <View className="w-10 h-10 rounded-full border-2 border-brand-primary border-t-transparent animate-spin" />
+      <ActivityIndicator size="large" color="#ff3b30" />
       {message && <Text className="text-gray-400 text-sm font-medium">{message}</Text>}
     </View>
   );

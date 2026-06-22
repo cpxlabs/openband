@@ -23,7 +23,6 @@ import {
   Looper,
   Sampler,
   Synth,
-  MasteringSuite,
 } from '../../src/components';
 import { useHistory } from '../../src/lib/history';
 import { useKeyboardShortcuts } from '../../src/lib/keyboard';
@@ -1060,7 +1059,7 @@ export default function Studio() {
                     className={`w-8 h-6 rounded-md border items-center justify-center ${plugin.enabled ? (isTruePeak ? 'bg-red-500/30 border-red-500/50' : 'bg-dark-elevated border-dark-border') : 'bg-dark-surface border-dark-border/30'}`}>
                     <Text className={`text-[9px] font-bold ${plugin.enabled ? (isTruePeak ? 'text-red-400' : 'text-white') : 'text-gray-600'}`}>{plugin.enabled ? 'ON' : 'OFF'}</Text>
                   </Pressable>
-                  <Pressable onPress={() => setEditingPlugin(plugin)} className="w-6 h-6 items-center justify-center">
+                  <Pressable onPress={() => { setEditingPlugin(plugin); setEditingPluginSource('mastering'); }} className="w-6 h-6 items-center justify-center">
                     <Text className="text-gray-500 text-xs">▸</Text>
                   </Pressable>
                 </Pressable>

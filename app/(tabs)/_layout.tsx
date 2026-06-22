@@ -58,7 +58,7 @@ export default function TabLayout() {
           isPersistent
         />
       )}
-      <View className={`flex-1 ${isDesktop ? '' : ''}`}>
+      <View className="flex-1">
         {!isDesktop && (
           <View className="h-12 bg-dark-surface border-b border-dark-border flex-row items-center px-3 z-20">
             <Pressable

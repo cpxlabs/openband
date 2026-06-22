@@ -7,7 +7,7 @@ import { useResponsive } from '../../src/lib/responsive';
 
 export default function Account() {
   const resp = useResponsive();
-  const { session, user, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const currentName = (user?.user_metadata?.name as string) ?? user?.email?.split('@')[0] ?? '';
   const [name, setName] = useState(currentName);
   const [saving, setSaving] = useState(false);

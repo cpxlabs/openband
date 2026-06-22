@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { View, Text, Pressable, ScrollView, TextInput } from 'react-native';
 import { GENRES, MUSICAL_KEYS, keyLabel } from '../lib/projectTemplates';
 import type { GenreTemplate } from '../lib/projectTemplates';

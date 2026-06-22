@@ -87,7 +87,7 @@ Available in `src/components/`:
 | `MixManager` | `snapshots, activeMixId, onSave, onLoad, onDelete, onCompare` | A/B mix snapshot manager |
 | `PluginRack` | `plugins, onChange, onEdit, trackName` | Plugin chain per track |
 | `MasterRack` | `plugins, onChange, onEdit` | Master bus plugin chain |
-| `PluginEditor` | `plugin, onParamChange, onToggle, onClose` | Deep plugin parameter editor (all 18 types) |
+| `PluginEditor` | `plugin, onParamChange, onToggle, onClose` | Deep plugin parameter editor (all 19 types) |
 | `AutomationLane` | `points, onChange, duration, color, visible, label, minValue, maxValue` | Volume/param automation curve editor |
 | `TrackGroupManager` | `groups, tracks, onCreateGroup, onRemoveGroup, onGroupVolume, onGroupMute, onAssignTrack, trackAssignments` | Track grouping with shared volume/mute |
 | `WaveformClip` | `regionId, duration, color, audible, height` | Waveform visualization for audio clips |
@@ -98,9 +98,13 @@ Available in `src/components/`:
 | `PianoRoll` | `notes, onChange, visible, onClose, bpm, numBars?, snap?, keySignature?, scale?` | MIDI note piano roll editor |
 | `Looper` | `visible, onClose, bpm, onCommitLoop` | Live loop recording/playback |
 | `VisualEQ` | `frequencies, onChange?, height?` | Visual equalizer display |
-| `OneKnob` | `label, value, onChange, min?, max?, step?, type?` | Single-knob control (18 types) |
+| `OneKnob` | `label, value, onChange, min?, max?, step?, type?` | Single-knob control (19 types) |
 | `Sampler` | `visible, onClose, onAddToTrack` | Audio sample player |
 | `Synth` | `visible, onClose, bpm` | Synthesizer with presets |
+| `MasteringSuite` | `audioUri, onExport, onClose, visible` | Full mastering chain with EQ, comp, limiter, LUFS |
+| `MasteringChain` | `plugins, onToggle, onReset` | Mastering chain slot UI with ON/OFF toggles |
+| `MasteringVersionManager` | `versions, activeId, onSelect, onSave, onDelete, onBypass` | A/B version compare + snapshot management |
+| `MasteringUpload` | `input, onInputChange, mode` | Upload/drop zone for audio files and stems |
 
 CSS component classes (from `global.css`):
 - `card`, `card-elevated` — container styles
@@ -225,16 +229,16 @@ src/
   context/
     AuthContext.tsx    — Auth state context (session, user, loading, signOut)
   bridge/            — Desktop bridge (interface, electron, tauri stub, browser fallback, auto-detect)
-  components/         — Design system (34 components, see table above)
+  components/         — Design system (38 components, see table above)
 
 tests/
   responsive.test.ts  — Breakpoint & dimension tests (legacy)
   types.test.ts       — Type structure tests (legacy)
   presets.test.ts     — Pedal/amp/cab preset count + structure tests (legacy)
-  components.test.tsx — Vitest component rendering + interaction tests (116 tests)
-  lib.test.ts         — Vitest library function tests (39 tests)
+  components.test.tsx — Vitest component rendering + interaction tests (129 tests)
+  lib.test.ts         — Vitest library function tests (44 tests)
 
-stories/              — Storybook stories for all 34 components
+stories/              — Storybook stories for all 38 components
   *.stories.tsx       — Run: `npx storybook dev -p 6006`
 
 .storybook/

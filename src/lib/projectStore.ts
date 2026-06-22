@@ -42,6 +42,7 @@ function getStorage(): Storage | null {
   if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
     return localStorage;
   }
+  console.warn('[projectStore] No storage available on this platform — project data will not persist');
   return null;
 }
 

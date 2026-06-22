@@ -1,70 +1,59 @@
 import type { NativeBridge, OpenDialogOptions, SaveDialogOptions, ProjectMeta } from './interface';
 
-function getAPI(): NativeBridge | null {
-  if (typeof window !== 'undefined' && (window as any).electronAPI) {
-    return (window as any).electronAPI as NativeBridge;
-  }
-  return null;
+const api: NativeBridge | null =
+  typeof window !== 'undefined' ? ((window as any).electronAPI as NativeBridge ?? null) : null;
+
+function requireAPI(): NativeBridge {
+  if (!api) throw new Error('electronAPI not available');
+  return api;
 }
 
 export const electronBridge: NativeBridge = {
   async showOpenDialog(options: OpenDialogOptions): Promise<string | null> {
-    const api = getAPI();
-    if (!api) throw new Error('electronAPI not available');
-    return api.showOpenDialog(options);
+    return requireAPI().showOpenDialog(options);
   },
 
   async showSaveDialog(options: SaveDialogOptions): Promise<string | null> {
-    const api = getAPI();
-    if (!api) throw new Error('electronAPI not available');
-    return api.showSaveDialog(options);
+    return requireAPI().showSaveDialog(options);
   },
 
   async readFile(path: string): Promise<ArrayBuffer> {
-    const api = getAPI();
-    if (!api) throw new Error('electronAPI not available');
-    return api.readFile(path);
+    return requireAPI().readFile(path);
   },
 
   async writeFile(path: string, data: ArrayBuffer | string): Promise<void> {
-    const api = getAPI();
-    if (!api) throw new Error('electronAPI not available');
-    return api.writeFile(path, data);
+    return requireAPI().writeFile(path, data);
   },
 
   async getDocumentsPath(): Promise<string> {
-    const api = getAPI();
-    if (!api) throw new Error('electronAPI not available');
-    return api.getDocumentsPath();
+    return requireAPI().getDocumentsPath();
   },
 
   async getAppDataPath(): Promise<string> {
-    const api = getAPI();
-    if (!api) throw new Error('electronAPI not available');
-    return api.getAppDataPath();
+    return requireAPI().getAppDataPath();
   },
 
   async listProjects(): Promise<ProjectMeta[]> {
-    const api = getAPI();
-    if (!api) throw new Error('electronAPI not available');
-    return api.listProjects();
+    return requireAPI().listProjects();
   },
 
   async saveProject(id: string, data: string): Promise<void> {
-    const api = getAPI();
-    if (!api) throw new Error('electronAPI not available');
-    return api.saveProject(id, data);
+    return requireAPI().saveProject(id, data);
   },
 
   async loadProject(id: string): Promise<string | null> {
-    const api = getAPI();
-    if (!api) throw new Error('electronAPI not available');
-    return api.loadProject(id);
+    return requireAPI().loadProject(id);
   },
 
   async deleteProject(id: string): Promise<void> {
-    const api = getAPI();
-    if (!api) throw new Error('electronAPI not available');
-    return api.deleteProject(id);
+    return requireAPI().deleteProject(id);
+  },
+
+  onMenuAction(callback: (action: string) => void): void {
+    requireAPI().onMenuAction(callback);
+  },
+
+  removeMenuActionListener(): void {
+    requireAPI().removeMenuActionListener();
   },
 };

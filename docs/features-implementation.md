@@ -295,7 +295,7 @@ function autoMix(tracks: TrackDef[], genre: string): TrackDef[] {
 ✅ Stereo Widener · ✅ Guitar pedal board · ✅ Amp/Cab modeling · ✅ Mastering presets
 ✅ LUFS metering · ✅ A/B mix snapshots · ✅ Send buses · ✅ Social feed
 ✅ Stem separation · ✅ Export/Bounce (desktop save dialog via bridge) · ✅ Project save/load
-✅ Sample browser · ✅ Plugin system (18 types) · ✅ Track grouping
+✅ Sample browser · ✅ Plugin system (19 types) · ✅ Track grouping
 ✅ Keyboard shortcuts · ✅ Metronome · ✅ Waveform visualization
 ✅ Responsive layout · ✅ Sidebar drawer · ✅ Tuner · ✅ MIDI import
 ✅ Automation (volume) · ✅ Desktop (Electron shell + swappable bridge) · ✅ MIDI synth

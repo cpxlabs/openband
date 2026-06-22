@@ -263,7 +263,7 @@ export default function Extractor() {
                 }}
                 className="card p-4 mb-3 active:border-brand-accent/50 flex-row items-center gap-4"
               >
-                <View className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-primary/20 to-brand-accent/20 items-center justify-center">
+                <View className="w-12 h-12 rounded-xl bg-brand-primary/20 items-center justify-center">
                   <Text className="text-xl">♫</Text>
                 </View>
                 <View className="flex-1">
@@ -345,7 +345,26 @@ export default function Extractor() {
                 title="Adicionar todos ao estúdio"
                 icon="+"
                 onPress={() => {
-                  results.forEach(stem => handleAddToProject(stem));
+                  results.forEach(stem => {
+                    const id = `stem-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+                    saveProject(id, {
+                      title: stem.label,
+                      genre: 'pop', key: 'C', bpm: 120,
+                      tracks: [{
+                        id: `track-${Date.now()}`, name: stem.label, color: 'bg-blue-500',
+                        muted: false, solo: false, volume: 75, pan: 0, sends: {},
+                        sidechainSource: null,
+                        regions: [{ id: `region-${Date.now()}`, start: 0, duration: 30, url: stem.url }],
+                        plugins: [], automation: {},
+                      }],
+                      groups: [], trackAssignments: {}, masterPlugins: [], masteringChain: [],
+                      sendBuses: [], trackAmpChains: {}, mixSnapshots: [], activeMixId: undefined,
+                      metronome: { bpm: 120, timeSig: [4, 4], accentInterval: 4, volume: 60, enabled: true, countIn: true, countInBars: 2 },
+                      recordSettings: { armed: false, inputSource: 'mic', quality: 'high', sampleRate: 44100, mono: false, preRoll: 0 },
+                    });
+                  });
+                  const lastId = `stem-${Date.now()}`;
+                  router.push(`/studio/${lastId}?title=multi_stems`);
                 }}
               />
               <Button

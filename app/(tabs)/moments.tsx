@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { PageHeader, Button, Avatar, Badge } from '../../src/components';
-import { MomentCard } from '../../src/components/MomentCard';
+import { MomentCard } from '../../src/components';
 import type { MomentData } from '../../src/components/MomentCard';
 import { useResponsive } from '../../src/lib/responsive';
 

@@ -3,6 +3,16 @@ import { View, Text, Pressable, ScrollView } from 'react-native';
 import type { Plugin } from '../lib/types';
 import { PLUGIN_PRESETS, PLUGIN_ICONS, PLUGIN_SPECS, getDefaultParams } from '../lib/types';
 
+function formatPluginType(type: string): string {
+  switch (type) {
+    case 'multibandCompressor': return 'MULTI COMP';
+    case 'truePeakLimiter': return 'TRUE PEAK';
+    case 'stereoImager': return 'STEREO IMG';
+    case 'tapeSaturator': return 'TAPE SAT';
+    default: return type.replace(/([A-Z])/g, ' $1').trim().toUpperCase();
+  }
+}
+
 interface PluginRackProps {
   plugins: Plugin[];
   onChange: (plugins: Plugin[]) => void;
@@ -102,7 +112,7 @@ export function PluginRack({ plugins, onChange, onEdit, trackName, maxSlots = 8 
               {plugin.name}
             </Text>
             <Text className={`text-[9px] ${plugin.enabled ? 'text-gray-500' : 'text-gray-700'}`}>
-              {plugin.type === 'multibandCompressor' ? 'MULTI COMP' : plugin.type === 'truePeakLimiter' ? 'TRUE PEAK' : plugin.type === 'stereoImager' ? 'STEREO IMG' : plugin.type === 'tapeSaturator' ? 'TAPE SAT' : plugin.type.replace(/([A-Z])/g, ' $1').trim().toUpperCase()}
+              {formatPluginType(plugin.type)}
             </Text>
           </View>
 
@@ -147,7 +157,7 @@ export function PluginRack({ plugins, onChange, onEdit, trackName, maxSlots = 8 
                 >
                   <Text className="text-white text-xs font-semibold">{presetName}</Text>
                   <Text className="text-gray-500 text-[9px] mt-0.5">
-                    {PLUGIN_ICONS[presetType] || '≡'} {presetType === 'multibandCompressor' ? 'multi comp' : presetType === 'truePeakLimiter' ? 'tp limiter' : presetType === 'stereoImager' ? 'stereo' : presetType === 'tapeSaturator' ? 'tape' : presetType.replace(/([A-Z])/g, ' $1').trim().toLowerCase()}
+                    {PLUGIN_ICONS[presetType] || '≡'} {formatPluginType(presetType).toLowerCase()}
                   </Text>
                 </Pressable>
               );

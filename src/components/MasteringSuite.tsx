@@ -125,6 +125,7 @@ export function MasteringSuite({ initialProjectId, onBack }: MasteringSuiteProps
   const [exportBitDepth, setExportBitDepth] = useState<16 | 24>(24);
   const [exportSampleRate, setExportSampleRate] = useState<44100 | 48000 | 96000>(44100);
   const [exporting, setExporting] = useState(false);
+  const [seekBarWidth, setSeekBarWidth] = useState(0);
 
   const audioSource = useMemo(() => {
     if (session.inputFile?.url && !session.inputFile.url.startsWith('audio://')) {
@@ -227,6 +228,11 @@ export function MasteringSuite({ initialProjectId, onBack }: MasteringSuiteProps
   }, [player]);
 
   const handleExport = useCallback(async () => {
+    if (Platform.OS !== 'web') {
+      Alert.alert('Indisponível', 'Exportação está disponível apenas na versão web.');
+      setExporting(false);
+      return;
+    }
     setExporting(true);
     try {
       const sr = exportFormat === 'mp3' ? 44100 : exportSampleRate;
@@ -255,26 +261,7 @@ export function MasteringSuite({ initialProjectId, onBack }: MasteringSuiteProps
       }
     } catch (e) {
       console.error('Export failed:', e);
-      if (Platform.OS === 'web') {
-        try {
-          const sr = exportFormat === 'mp3' ? 44100 : exportSampleRate;
-          const bd = exportFormat === 'mp3' ? 16 : exportBitDepth;
-          const sourceUrl = session.inputFile?.url || DEMO_AUDIO_URL;
-          const rendered = await fetchAndRenderAudio(sourceUrl, sr, 30);
-          const blob = audioBufferToWavBlob(rendered, bd);
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'master_export.wav';
-          a.click();
-          URL.revokeObjectURL(url);
-          Alert.alert('Exportado', 'Master exportado via download.');
-        } catch {
-          Alert.alert('Erro', 'Falha ao exportar master.');
-        }
-      } else {
-        Alert.alert('Erro', 'Falha ao exportar master.');
-      }
+      Alert.alert('Erro', 'Falha ao exportar master.');
     }
     setExporting(false);
     setShowExport(false);
@@ -322,12 +309,12 @@ export function MasteringSuite({ initialProjectId, onBack }: MasteringSuiteProps
               </Text>
             </Pressable>
             <View className="flex-1">
-              <View className="h-2 bg-dark-muted rounded-full overflow-hidden">
+              <View className="h-2 bg-dark-muted rounded-full overflow-hidden"
+                onLayout={(e) => setSeekBarWidth(e.nativeEvent.layout.width)}>
                 <Pressable
                   onPress={(e) => {
-                    const x = (e as any).nativeEvent?.locationX ?? 0;
-                    const w = (e as any).nativeEvent?.target?.clientWidth ?? 1;
-                    handleSeek(x / (w || 1));
+                    const x = e.nativeEvent.locationX;
+                    handleSeek(seekBarWidth > 0 ? x / seekBarWidth : 0);
                   }}
                   className="h-full"
                   style={{ width: `${playerStatus.duration > 0 ? (playerStatus.currentTime / playerStatus.duration) * 100 : 0}%`, backgroundColor: '#007aff' }}
@@ -377,7 +364,7 @@ export function MasteringSuite({ initialProjectId, onBack }: MasteringSuiteProps
           </View>
           <Pressable
             onPress={() => setShowExport(true)}
-            className="bg-gradient-to-r from-purple-600/30 to-brand-accent/30 rounded-xl border border-purple-500/30 p-4 items-center active:opacity-80"
+            className="bg-purple-600/30 rounded-xl border border-purple-500/30 p-4 items-center active:opacity-80"
           >
             <Text className="text-white text-sm font-bold">Exportar Master</Text>
             <Text className="text-gray-400 text-[10px] mt-1">

@@ -12,6 +12,13 @@ const STEMS_DIR = path.resolve(process.cwd(), 'stems');
 
 const isProduction = process.env.NODE_ENV === 'production';
 
+function cleanup(filePath: string | undefined): void {
+  if (!filePath) return;
+  fs.unlink(filePath, (err) => {
+    if (err) console.error('cleanup error:', err);
+  });
+}
+
 router.post('/extract', (req: Request, res: Response) => {
   upload.single('audio')(req, res, async (err) => {
     try {
@@ -34,9 +41,7 @@ router.post('/extract', (req: Request, res: Response) => {
             })
           : await runMock(req.file.path, STEMS_DIR);
 
-        fs.unlink(req.file.path, (err) => {
-          if (err) console.error('cleanup error:', err);
-        });
+        cleanup(req.file.path);
 
         const body: ExtractResponse = {
           jobId: `${Date.now()}`,
@@ -48,34 +53,24 @@ router.post('/extract', (req: Request, res: Response) => {
       } catch (e) {
         const message = e instanceof Error ? e.message : 'Erro desconhecido';
 
+        cleanup(req.file?.path);
+
         if (message === 'DEMUCS_NOT_FOUND') {
           const stems = await runMock(req.file.path, STEMS_DIR);
-          fs.unlink(req.file.path, (err) => {
-            if (err) console.error('cleanup error:', err);
-          });
           return res.json({
             jobId: `${Date.now()}`,
             stems,
             duration: 30,
             warning: 'Demucs não instalado. Usando simulação. Para resultados reais: pip install demucs',
-          } as ExtractResponse & { warning: string });
-        }
-
-        if (req.file) {
-          fs.unlink(req.file.path, (err) => {
-            if (err) console.error('cleanup error:', err);
           });
         }
+
         console.error('Extract error:', message);
         res.status(500).json({ error: 'Erro ao processar áudio', ...(isProduction ? {} : { details: message }) });
       }
     } catch (e) {
       console.error('Fatal error:', e);
-      if (req.file) {
-        fs.unlink(req.file.path, (err) => {
-          if (err) console.error('cleanup error:', err);
-        });
-      }
+      cleanup(req.file?.path);
       res.status(500).json({ error: 'Internal server error' });
     }
   });

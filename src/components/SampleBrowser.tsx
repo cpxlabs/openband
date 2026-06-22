@@ -159,8 +159,10 @@ export function SampleBrowser({ visible, onAddSample }: SampleBrowserProps) {
     return true;
   });
 
+  if (!visible) return null;
+
   return (
-    <View className={`flex-1 ${visible ? '' : 'hidden'}`}>
+    <View className="flex-1">
       <View className="px-4 py-2">
         <View className="bg-dark-elevated rounded-xl border border-dark-border px-3 py-2">
           <TextInput

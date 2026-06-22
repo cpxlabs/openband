@@ -1,5 +1,5 @@
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { MasteringSuite } from '../../src/components/MasteringSuite';
+import { MasteringSuite } from '../../src/components';
 
 export default function MasteringScreen() {
   const router = useRouter();

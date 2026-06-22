@@ -178,6 +178,11 @@ export function BounceDialog({ visible, onClose, projectTitle, duration, tracks 
   const [exporting, setExporting] = useState(false);
 
   const handleExport = useCallback(async () => {
+    if (Platform.OS !== 'web') {
+      Alert.alert('Indisponível', 'Exportação de mix está disponível apenas na versão web.');
+      setExporting(false);
+      return;
+    }
     setExporting(true);
     try {
       const ext = FORMATS.find(f => f.key === format)?.ext || '.wav';

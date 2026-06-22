@@ -63,7 +63,7 @@ export function formatBitDepth(d: number): string {
 }
 
 export function formatSampleRate(r: number): string {
-  return `${r / 1000}kHz`;
+  return `${(r / 1000).toFixed(1)}kHz`;
 }
 
 export function formatFileSize(bytes: number): string {

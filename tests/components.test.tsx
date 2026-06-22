@@ -991,7 +991,7 @@ describe('Synth', () => {
 });
 
 describe('SYNTH_PRESETS', () => {
-  it('has 18 presets', () => {
+  it('has 20 presets', () => {
     expect(SYNTH_PRESETS).toHaveLength(20);
   });
 

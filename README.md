@@ -12,10 +12,10 @@ Built with **Expo Router**, **TypeScript**, **NativeWind v4 (Tailwind CSS v3)**,
 | Styling | [NativeWind v4](https://www.nativewind.dev/) + Tailwind CSS v3 |
 | Language | TypeScript ~6.0 |
 | Auth / DB | [Supabase](https://supabase.com/) (PostgreSQL + Auth) |
-| Audio | [`expo-audio`](https://docs.expo.dev/versions/v56.0.0/sdk/audio/) (SDK 56) + Web Audio API |
+| Audio | [`expo-audio`](https://docs.expo.dev/versions/v56.0.0/sdk/audio/) (SDK 56) |
 | Audio Processing | [Demucs](https://github.com/facebookresearch/demucs) (HTDEMUCS model) via Python subprocess |
 | Desktop | [Electron 35](https://www.electronjs.org/) with swappable bridge (`src/bridge/`) |
-| Testing | [Vitest](https://vitest.dev/) + legacy `node:test` |
+| Testing | [Vitest](https://vitest.dev/) (173 tests) + legacy `node:test` (39 tests) |
 
 ## Getting Started
 
@@ -151,7 +151,7 @@ openband/
 │   │   ├── tauri.ts         # Tauri stub for future migration
 │   │   ├── browser.ts       # Browser fallback (localStorage, DOM APIs)
 │   │   └── index.ts         # Auto-detect platform + re-export
-│   └── components/          # Design system (34 components, see table below)
+│   └── components/          # Design system (38 components, see table below)
 ├── electron/
 │   ├── main.js              # Electron main process (BrowserWindow, IPC, native menus)
 │   ├── preload.js           # Context bridge (sandboxed electronAPI)
@@ -188,7 +188,7 @@ openband/
 
 ## Design System
 
-34 reusable components in `src/components/` (see `AGENTS.md` for full reference):
+38 reusable components in `src/components/` (see `AGENTS.md` for full reference):
 
 | Component | Description |
 |-----------|-------------|
@@ -204,14 +204,15 @@ openband/
 | `PedalRack` / `Tuner` | 6-slot pedalboard + chromatic tuner |
 | `CodeSampler` / `PianoRoll` / `Looper` | Token sequencer, MIDI editor, live loop recorder |
 | `BounceDialog` / `MixManager` | Export dialog + A/B snapshot manager |
-| `PluginRack` / `MasterRack` / `PluginEditor` | Track/master plugin chains + full 18-type editor |
+| `PluginRack` / `MasterRack` / `PluginEditor` | Track/master plugin chains + full 19-type editor |
 | `AutomationLane` / `WaveformClip` | Volume/param automation + audio waveform viz |
-| `VisualEQ` / `OneKnob` | Visual equalizer + single-knob control (18 types) |
+| `VisualEQ` / `OneKnob` | Visual equalizer + single-knob control (19 types) |
 | `MiniMastering` / `LufsMeter` | Mastering chain presets + loudness meter |
 | `MomentCard` | Social feed post card |
 | `SampleBrowser` / `Sampler` / `Synth` | Sample packs, audio player, synthesizer |
 | `Metronome` / `RecordOptions` / `NewProject` | Click track, recording settings, project creator |
 | `TrackGroupManager` / `SampleBrowser` | Track grouping + sample library |
+| `MasteringSuite` / `MasteringChain` / `MasteringVersionManager` / `MasteringUpload` | Full mastering chain + A/B versioning + audio upload |
 
 CSS utility classes (from `global.css`):
 - `.card`, `.card-elevated` — containers
@@ -257,7 +258,7 @@ npm run build             # Production web export (output: dist/)
 npm run desktop           # Build + launch Electron desktop app
 npm run desktop:dev       # Hot-reload dev (Expo + Electron concurrently)
 npx tsc --noEmit          # TypeScript check
-npx vitest run            # Run 155+ component + lib tests
+npx vitest run            # Run 173 component + lib tests
 cd backend && npm run dev # Backend dev server (port 3001)
 ```
 
