@@ -522,6 +522,34 @@ function TruePeakEditor({ plugin, onParamChange }: { plugin: Plugin; onParamChan
   );
 }
 
+function ClipperEditor({ plugin, onParamChange }: { plugin: Plugin; onParamChange: (id: string, v: number) => void }) {
+  const mode = plugin.params.mode ?? 0;
+  return (
+    <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+      <View className="bg-[#0b0b0d] rounded-xl border border-dark-border mb-3 p-4">
+        <View className="items-center mb-2">
+          <Text className="text-gray-500 text-[9px] tracking-wider uppercase">Clip Mode</Text>
+          <View className="flex-row gap-2 mt-2">
+            {['Soft', 'Hard'].map((label, i) => (
+              <Pressable
+                key={label}
+                onPress={() => onParamChange('mode', i)}
+                className={`flex-1 py-2 rounded-lg items-center border ${mode === i ? 'bg-brand-accent/20 border-brand-accent' : 'bg-dark-surface border-dark-border'}`}
+              >
+                <Text className={`text-xs font-bold ${mode === i ? 'text-brand-accent' : 'text-gray-400'}`}>{label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      </View>
+      <ParamRow param={{ id: 'threshold', label: 'Threshold', min: -30, max: 0, step: 0.5, unit: 'dB' }} value={plugin.params.threshold ?? -3} onChange={v => onParamChange('threshold', v)} />
+      <ParamRow param={{ id: 'ceiling', label: 'Ceiling', min: -6, max: 0, step: 0.1, unit: 'dB' }} value={plugin.params.ceiling ?? -0.5} onChange={v => onParamChange('ceiling', v)} />
+      <ParamRow param={{ id: 'mix', label: 'Mix', min: 0, max: 100, step: 1, unit: '%' }} value={plugin.params.mix ?? 100} onChange={v => onParamChange('mix', v)} />
+      <Text className="text-gray-600 text-[10px] mt-2 text-center">Clipper segura transientes antes do limiter, aumentando loudness perceptível.</Text>
+    </ScrollView>
+  );
+}
+
 function NoiseGateEditor({ plugin, onParamChange }: { plugin: Plugin; onParamChange: (id: string, v: number) => void }) {
   return (
     <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
@@ -656,6 +684,7 @@ export function PluginEditor({ plugin, onParamChange, onToggle, onClose, bpm }: 
     deesser: DeesserEditor,
     tapeSaturator: TapeSatEditor,
     truePeakLimiter: TruePeakEditor,
+    clipper: ClipperEditor,
     noiseGate: NoiseGateEditor,
     autoPitch: AutoPitchEditor,
     bassMono: BassMonoEditor,

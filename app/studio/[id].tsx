@@ -23,6 +23,7 @@ import {
   Looper,
   Sampler,
   Synth,
+  MasteringSuite,
 } from '../../src/components';
 import { useHistory } from '../../src/lib/history';
 import { useKeyboardShortcuts } from '../../src/lib/keyboard';
@@ -1065,6 +1066,13 @@ export default function Studio() {
                 </Pressable>
               );
             })}
+            <Pressable
+              onPress={() => router.push('/mastering')}
+              className="mt-3 flex-row items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-rose-600/20 to-brand-accent/20 border border-rose-500/30 active:opacity-80"
+            >
+              <Text className="text-rose-400 text-sm font-bold">Enviar para Mastering Suite</Text>
+              <Text className="text-rose-400/70 text-lg">→</Text>
+            </Pressable>
           </ScrollView>
         )}
 

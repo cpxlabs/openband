@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { midiNoteToName } from '../src/lib/midiSynth';
 import { GENRES, MUSICAL_KEYS, keyLabel } from '../src/lib/projectTemplates';
 import { MASTERING_CHAIN_PRESETS, buildMasteringChain, getOversampleLabel } from '../src/lib/mastering';
+import { MASTERING_PLUGIN_DEFS, buildMasteringChain as buildSuiteChain, createVersion, formatFileSize, formatSampleRate } from '../src/lib/masteringSuite';
 
 const mockAudioCtx = {
   createOscillator: vi.fn(() => ({
@@ -414,5 +415,37 @@ describe('mastering.ts', () => {
         expect(plugin.color).toBeTruthy();
       }
     }
+  });
+});
+
+describe('masteringSuite.ts', () => {
+  it('MASTERING_PLUGIN_DEFS has 7 plugins', () => {
+    expect(MASTERING_PLUGIN_DEFS).toHaveLength(7);
+  });
+
+  it('buildSuiteChain returns 7 plugins with default params', () => {
+    const chain = buildSuiteChain();
+    expect(chain).toHaveLength(7);
+    expect(chain[0].name).toBe('Parametric EQ');
+    expect(chain[6].name).toBe('Limiter');
+  });
+
+  it('createVersion deep-clones plugin params', () => {
+    const chain = buildSuiteChain();
+    const version = createVersion(chain, 'Test V1', 'testing deep clone');
+    expect(version.name).toBe('Test V1');
+    expect(version.notes).toBe('testing deep clone');
+    expect(version.plugins).toHaveLength(7);
+    expect(version.plugins[0].params).not.toBe(chain[0].params);
+  });
+
+  it('formatFileSize returns MB for large files', () => {
+    expect(formatFileSize(52428800)).toContain('MB');
+    expect(formatFileSize(500)).toContain('KB');
+  });
+
+  it('formatSampleRate returns kHz string', () => {
+    expect(formatSampleRate(44100)).toBe('44.1kHz');
+    expect(formatSampleRate(96000)).toBe('96kHz');
   });
 });

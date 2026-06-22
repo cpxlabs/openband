@@ -56,7 +56,7 @@ export type PluginType =
   | 'eq' | 'compressor' | 'limiter' | 'distortion' | 'reverb' | 'delay'
   | 'filter' | 'modulation' | 'utility'
   | 'multibandCompressor' | 'stereoImager' | 'deesser' | 'tapeSaturator' | 'truePeakLimiter'
-  | 'noiseGate' | 'autoPitch' | 'bassMono' | 'stereoWidener';
+  | 'noiseGate' | 'autoPitch' | 'bassMono' | 'stereoWidener' | 'clipper';
 
 export interface PluginParamSpec {
   id: string;
@@ -384,6 +384,20 @@ export const PLUGIN_SPECS: Record<PluginType, PluginTypeSpec> = {
       { name: 'Broadcast', values: { threshold: -8, ceiling: -2, oversample: 3, lookahead: 3, release: 100 } },
     ],
   },
+  clipper: {
+    params: [
+      { id: 'threshold', label: 'Threshold', min: -30, max: 0, step: 0.5, default: -3, unit: 'dB' },
+      { id: 'ceiling', label: 'Ceiling', min: -6, max: 0, step: 0.1, default: -0.5, unit: 'dB' },
+      { id: 'mode', label: 'Mode', min: 0, max: 1, step: 1, default: 0 },
+      { id: 'mix', label: 'Mix', min: 0, max: 100, step: 1, default: 100, unit: '%' },
+    ],
+    presets: [
+      { name: 'Soft Clip', values: { threshold: -3, ceiling: -0.5, mode: 0, mix: 100 } },
+      { name: 'Hard Clip', values: { threshold: -6, ceiling: -0.5, mode: 1, mix: 100 } },
+      { name: 'Transparente', values: { threshold: -1, ceiling: -0.3, mode: 0, mix: 60 } },
+      { name: 'Máximo', values: { threshold: -10, ceiling: -1, mode: 1, mix: 100 } },
+    ],
+  },
   noiseGate: {
     params: [
       { id: 'threshold', label: 'Threshold', min: -80, max: 0, step: 0.5, default: -40, unit: 'dB' },
@@ -471,6 +485,7 @@ export const PLUGIN_PRESETS: Partial<Plugin>[] = [
   { name: 'DeEsser', type: 'deesser', color: '#ff9f0a' },
   { name: 'Tape Saturator', type: 'tapeSaturator', color: '#ff453a' },
   { name: 'True Peak Limiter', type: 'truePeakLimiter', color: '#ff375f' },
+  { name: 'Clipper', type: 'clipper', color: '#ff6482' },
   { name: 'Distortion', type: 'distortion', color: '#ff375f' },
   { name: 'Reverb', type: 'reverb', color: '#64d2ff' },
   { name: 'Delay', type: 'delay', color: '#30d158' },
@@ -492,6 +507,7 @@ export const PLUGIN_ICONS: Record<string, string> = {
   deesser: '∿',
   tapeSaturator: '∾',
   truePeakLimiter: '⊡',
+  clipper: '⊡',
   distortion: '▲',
   reverb: '↗',
   delay: '↘',

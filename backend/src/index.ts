@@ -3,6 +3,7 @@ import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
 import extractRoutes from './routes/extract';
+import masterRoutes from './routes/master';
 import { checkDemucsInstalled } from './services/demucs';
 
 const app = express();
@@ -62,6 +63,7 @@ app.use(express.json({ limit: '1mb' }));
 app.use('/api', rateLimit(30, 15 * 60 * 1000));
 
 app.use('/api', extractRoutes);
+app.use('/api', masterRoutes);
 
 let demucsAvailable: boolean | null = null;
 

@@ -45,6 +45,7 @@ function RootLayoutProtected() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="extractor" options={{ title: 'Separar Stems', headerShown: false }} />
       <Stack.Screen name="studio/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="mastering" options={{ headerShown: false }} />
     </Stack>
   );
 }

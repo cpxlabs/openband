@@ -43,6 +43,10 @@ import {
   Sampler,
   Synth,
   SYNTH_PRESETS,
+  MasteringSuite,
+  MasteringChain,
+  MasteringVersionManager,
+  MasteringUpload,
 } from '../src/components';
 import type {
   Plugin,
@@ -996,5 +1000,97 @@ describe('SYNTH_PRESETS', () => {
     expect(names).toContain('Classic Bass');
     expect(names).toContain('Deep Sub');
     expect(names).toContain('Lead Saw');
+  });
+});
+
+describe('MasteringChain', () => {
+  const mockPlugins: Plugin[] = [
+    { id: 'master-0', name: 'Parametric EQ', type: 'eq', enabled: true, params: { master: 0 }, color: '#5ac8fa' },
+    { id: 'master-1', name: 'Compressor', type: 'compressor', enabled: false, params: { threshold: -18 }, color: '#ff9500' },
+  ];
+
+  it('renders plugin names', () => {
+    render(<MasteringChain plugins={mockPlugins} onToggle={() => {}} onEdit={() => {}} onReset={() => {}} />);
+    expect(screen.getByText('Parametric EQ')).toBeTruthy();
+    expect(screen.getByText('Compressor')).toBeTruthy();
+  });
+
+  it('shows ON/OFF state', () => {
+    render(<MasteringChain plugins={mockPlugins} onToggle={() => {}} onEdit={() => {}} onReset={() => {}} />);
+    expect(screen.getByText('ON')).toBeTruthy();
+    expect(screen.getByText('OFF')).toBeTruthy();
+  });
+
+  it('fires onToggle when button pressed', () => {
+    const onToggle = vi.fn();
+    render(<MasteringChain plugins={mockPlugins} onToggle={onToggle} onEdit={() => {}} onReset={() => {}} />);
+    fireEvent.click(screen.getAllByText('ON')[0]);
+    expect(onToggle).toHaveBeenCalledWith('master-0');
+  });
+
+  it('fires onReset when reset clicked', () => {
+    const onReset = vi.fn();
+    render(<MasteringChain plugins={mockPlugins} onToggle={() => {}} onEdit={() => {}} onReset={onReset} />);
+    fireEvent.click(screen.getByText('Reset'));
+    expect(onReset).toHaveBeenCalled();
+  });
+});
+
+describe('MasteringVersionManager', () => {
+  const mockVersions = [
+    { id: 'v1', name: 'Master V1', created: Date.now(), plugins: [], notes: 'Added 1dB air' },
+    { id: 'v2', name: 'Master V2', created: Date.now() - 86400000, plugins: [], notes: 'Tighter comp' },
+  ];
+
+  it('shows empty state when no versions', () => {
+    render(<MasteringVersionManager versions={[]} activeVersionId={null} bypassed={false} onSaveVersion={() => {}} onLoadVersion={() => {}} onDeleteVersion={() => {}} onToggleBypass={() => {}} />);
+    expect(screen.getByText('Nenhuma versão salva')).toBeTruthy();
+  });
+
+  it('renders version names', () => {
+    render(<MasteringVersionManager versions={mockVersions} activeVersionId="v1" bypassed={false} onSaveVersion={() => {}} onLoadVersion={() => {}} onDeleteVersion={() => {}} onToggleBypass={() => {}} />);
+    expect(screen.getByText('Master V1')).toBeTruthy();
+    expect(screen.getByText('Master V2')).toBeTruthy();
+  });
+
+  it('shows active version notes', () => {
+    render(<MasteringVersionManager versions={mockVersions} activeVersionId="v1" bypassed={false} onSaveVersion={() => {}} onLoadVersion={() => {}} onDeleteVersion={() => {}} onToggleBypass={() => {}} />);
+    expect(screen.getByText('Recall Notes')).toBeTruthy();
+    const notes = screen.getAllByText('Added 1dB air');
+    expect(notes.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('shows A/B button text when bypassed', () => {
+    render(<MasteringVersionManager versions={mockVersions} activeVersionId="v1" bypassed={true} onSaveVersion={() => {}} onLoadVersion={() => {}} onDeleteVersion={() => {}} onToggleBypass={() => {}} />);
+    expect(screen.getByText('BYPASS')).toBeTruthy();
+  });
+
+  it('shows A/B button text when not bypassed', () => {
+    render(<MasteringVersionManager versions={mockVersions} activeVersionId="v1" bypassed={false} onSaveVersion={() => {}} onLoadVersion={() => {}} onDeleteVersion={() => {}} onToggleBypass={() => {}} />);
+    expect(screen.getByText('A/B')).toBeTruthy();
+  });
+});
+
+describe('MasteringUpload', () => {
+  it('renders upload drop zone when no input', () => {
+    render(<MasteringUpload input={null} mode="single" onModeChange={() => {}} onUpload={() => {}} onClear={() => {}} />);
+    expect(screen.getByText('Upload .wav Mix')).toBeTruthy();
+  });
+
+  it('shows stems mode text', () => {
+    render(<MasteringUpload input={null} mode="stems" onModeChange={() => {}} onUpload={() => {}} onClear={() => {}} />);
+    expect(screen.getByText('Upload Stems')).toBeTruthy();
+  });
+
+  it('shows filename when input provided', () => {
+    const mockInput = { type: 'single' as const, filename: 'mix_final.wav', size: 52428800, sampleRate: 44100, bitDepth: 24, duration: 180, url: 'test.wav' };
+    render(<MasteringUpload input={mockInput} mode="single" onModeChange={() => {}} onUpload={() => {}} onClear={() => {}} />);
+    expect(screen.getByText('mix_final.wav')).toBeTruthy();
+  });
+
+  it('shows Trocar button when input exists', () => {
+    const mockInput = { type: 'single' as const, filename: 'mix_final.wav', size: 52428800, sampleRate: 44100, bitDepth: 24, duration: 180, url: 'test.wav' };
+    render(<MasteringUpload input={mockInput} mode="single" onModeChange={() => {}} onUpload={() => {}} onClear={() => {}} />);
+    expect(screen.getByText('Trocar')).toBeTruthy();
   });
 });

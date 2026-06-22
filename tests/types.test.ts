@@ -5,12 +5,12 @@ import { PLUGIN_SPECS, type Plugin, type TrackDef, type MixSnapshot, type SendBu
 const PLUGIN_TYPE_LIST = Object.keys(PLUGIN_SPECS);
 
 describe('PluginType enum', () => {
-  it('has exactly 18 types', () => {
-    assert.equal(PLUGIN_TYPE_LIST.length, 18);
+  it('has exactly 19 types', () => {
+    assert.equal(PLUGIN_TYPE_LIST.length, 19);
   });
 
   it('includes all expected plugin types', () => {
-    const required = ['eq', 'compressor', 'reverb', 'delay', 'bassMono', 'stereoWidener'];
+    const required = ['eq', 'compressor', 'reverb', 'delay', 'bassMono', 'stereoWidener', 'clipper'];
     for (const t of required) {
       assert.ok(PLUGIN_TYPE_LIST.includes(t), `${t} should be in plugin types`);
     }

@@ -32,3 +32,7 @@ export { VisualEQ } from './VisualEQ';
 export { OneKnob, OneKnobProcessor, ONE_KNOB_TYPES, KNOB_PRESETS } from './OneKnob';
 export { Sampler } from './Sampler';
 export { Synth, SYNTH_PRESETS } from './Synth';
+export { MasteringSuite } from './MasteringSuite';
+export { MasteringChain } from './MasteringChain';
+export { MasteringVersionManager } from './MasteringVersionManager';
+export { MasteringUpload } from './MasteringUpload';
