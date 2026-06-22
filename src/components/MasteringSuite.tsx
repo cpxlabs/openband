@@ -1,5 +1,6 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useMemo } from 'react';
 import { View, Text, Pressable, ScrollView, Alert, Platform } from 'react-native';
+import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import type { Plugin } from '../lib/types';
 import {
   MasteringChain,
@@ -16,6 +17,7 @@ import {
   createVersion,
 } from '../lib/masteringSuite';
 import { OpenBandNative } from '../bridge';
+import { DEMO_AUDIO_URL } from '../lib/constants';
 
 interface MasteringSuiteProps {
   initialProjectId?: string;
@@ -67,6 +69,36 @@ export function MasteringSuite({ initialProjectId, onBack }: MasteringSuiteProps
   const [exportBitDepth, setExportBitDepth] = useState<16 | 24>(24);
   const [exportSampleRate, setExportSampleRate] = useState<44100 | 48000 | 96000>(44100);
   const [exporting, setExporting] = useState(false);
+
+  const audioSource = useMemo(() => {
+    if (session.inputFile?.url && !session.inputFile.url.startsWith('audio://')) {
+      return session.inputFile.url;
+    }
+    return DEMO_AUDIO_URL;
+  }, [session.inputFile]);
+
+  const player = useAudioPlayer(audioSource);
+  const playerStatus = useAudioPlayerStatus(player);
+
+  const togglePlay = useCallback(() => {
+    if (playerStatus.playing) {
+      player.pause();
+    } else {
+      player.play();
+    }
+  }, [player, playerStatus.playing]);
+
+  const handleSeek = useCallback((pct: number) => {
+    if (playerStatus.duration) {
+      player.seekTo(pct * playerStatus.duration);
+    }
+  }, [player, playerStatus.duration]);
+
+  function formatTime(s: number): string {
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, '0')}`;
+  }
 
   const handleToggle = useCallback((pluginId: string) => {
     setPlugins(prev => prev.map(p => p.id === pluginId ? { ...p, enabled: !p.enabled } : p));
@@ -120,13 +152,13 @@ export function MasteringSuite({ initialProjectId, onBack }: MasteringSuiteProps
       sampleRate: 44100,
       bitDepth: 24,
       duration: 180,
-      url: `audio://input-${now}.wav`,
+      url: DEMO_AUDIO_URL,
       stems: inputMode === 'stems'
         ? [
-            { name: 'Drums', url: `audio://stem-drums-${now}.wav` },
-            { name: 'Bass', url: `audio://stem-bass-${now}.wav` },
-            { name: 'Vocals', url: `audio://stem-vocals-${now}.wav` },
-            { name: 'Melodies', url: `audio://stem-melodies-${now}.wav` },
+            { name: 'Drums', url: DEMO_AUDIO_URL },
+            { name: 'Bass', url: DEMO_AUDIO_URL },
+            { name: 'Vocals', url: DEMO_AUDIO_URL },
+            { name: 'Melodies', url: DEMO_AUDIO_URL },
           ]
         : undefined,
     };
@@ -134,8 +166,9 @@ export function MasteringSuite({ initialProjectId, onBack }: MasteringSuiteProps
   }, [inputMode]);
 
   const handleClearInput = useCallback(() => {
+    player.pause();
     setSession(prev => ({ ...prev, inputFile: null }));
-  }, []);
+  }, [player]);
 
   const handleExport = useCallback(async () => {
     setExporting(true);
@@ -232,8 +265,42 @@ export function MasteringSuite({ initialProjectId, onBack }: MasteringSuiteProps
           onClear={handleClearInput}
         />
 
+        <View className="mt-4 bg-dark-surface rounded-xl border border-dark-border p-3">
+          <View className="flex-row items-center gap-3">
+            <Pressable
+              onPress={togglePlay}
+              className="w-10 h-10 rounded-full bg-brand-accent items-center justify-center active:opacity-80"
+            >
+              <Text className="text-white text-lg">
+                {playerStatus.playing ? '⏸' : '▶'}
+              </Text>
+            </Pressable>
+            <View className="flex-1">
+              <View className="h-2 bg-dark-muted rounded-full overflow-hidden">
+                <Pressable
+                  onPress={(e) => {
+                    const x = (e as any).nativeEvent?.locationX ?? 0;
+                    const w = (e as any).nativeEvent?.target?.clientWidth ?? 1;
+                    handleSeek(x / (w || 1));
+                  }}
+                  className="h-full"
+                  style={{ width: `${playerStatus.duration > 0 ? (playerStatus.currentTime / playerStatus.duration) * 100 : 0}%`, backgroundColor: '#007aff' }}
+                />
+              </View>
+              <View className="flex-row justify-between mt-1">
+                <Text className="text-gray-400 text-[10px] font-mono">
+                  {formatTime(playerStatus.currentTime)}
+                </Text>
+                <Text className="text-gray-500 text-[10px] font-mono">
+                  {playerStatus.isLoaded ? formatTime(playerStatus.duration) : '--:--'}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
         <View className="mt-4">
-          <LufsMeter isPlaying={!session.bypassed && !!session.inputFile} />
+          <LufsMeter isPlaying={playerStatus.playing && !session.bypassed} />
         </View>
 
         <View className="mt-4">
