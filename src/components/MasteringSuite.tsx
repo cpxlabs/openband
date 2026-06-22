@@ -54,6 +54,58 @@ function writeWavHeader(
   write32(offset + 40, dataSize);
 }
 
+async function fetchAndRenderAudio(url: string, sampleRate: number, duration: number): Promise<AudioBuffer> {
+  const response = await fetch(url);
+  const raw = await response.arrayBuffer();
+  const audioCtx = new AudioContext();
+  const decoded = await audioCtx.decodeAudioData(raw);
+  audioCtx.close();
+  const renderLen = Math.ceil(sampleRate * Math.min(duration, decoded.duration));
+  const offlineCtx = new OfflineAudioContext(2, renderLen, sampleRate);
+  const source = offlineCtx.createBufferSource();
+  source.buffer = decoded;
+  source.connect(offlineCtx.destination);
+  source.start(0);
+  return offlineCtx.startRendering();
+}
+
+function audioBufferToWavBlob(buffer: AudioBuffer, bitDepth: number): Blob {
+  const numChannels = buffer.numberOfChannels;
+  const sampleRate = buffer.sampleRate;
+  const numSamples = buffer.length;
+  const bytesPerSample = bitDepth / 8;
+  const blockAlign = numChannels * bytesPerSample;
+  const dataSize = numSamples * blockAlign;
+  const headerSize = 44;
+  const totalSize = headerSize + dataSize;
+
+  const arrayBuffer = new ArrayBuffer(totalSize);
+  const view = new DataView(arrayBuffer);
+
+  writeWavHeader(view, 0, numChannels, sampleRate, bitDepth, dataSize);
+
+  for (let i = 0; i < numSamples; i++) {
+    for (let ch = 0; ch < numChannels; ch++) {
+      const sample = buffer.getChannelData(ch)[i];
+      const offset = headerSize + (i * numChannels + ch) * bytesPerSample;
+
+      if (bitDepth === 16) {
+        const pcm = Math.max(-32768, Math.min(32767, Math.round(sample * 32767)));
+        view.setInt16(offset, pcm, true);
+      } else if (bitDepth === 24) {
+        const pcm = Math.max(-8388608, Math.min(8388607, Math.round(sample * 8388607)));
+        view.setInt8(offset, pcm & 0xff);
+        view.setInt8(offset + 1, (pcm >> 8) & 0xff);
+        view.setInt8(offset + 2, (pcm >> 16) & 0xff);
+      } else {
+        view.setFloat32(offset, sample, true);
+      }
+    }
+  }
+
+  return new Blob([arrayBuffer], { type: 'audio/wav' });
+}
+
 export function MasteringSuite({ initialProjectId, onBack }: MasteringSuiteProps) {
   const [session, setSession] = useState<MasteringSession>({
     inputFile: null,
@@ -63,7 +115,11 @@ export function MasteringSuite({ initialProjectId, onBack }: MasteringSuiteProps
   });
   const [plugins, setPlugins] = useState<Plugin[]>(buildMasteringChain());
   const [inputMode, setInputMode] = useState<'single' | 'stems'>('single');
-  const [editingPlugin, setEditingPlugin] = useState<Plugin | null>(null);
+  const [editingPluginId, setEditingPluginId] = useState<string | null>(null);
+  const editingPlugin = useMemo(() => {
+    if (!editingPluginId) return null;
+    return plugins.find(p => p.id === editingPluginId) ?? null;
+  }, [editingPluginId, plugins]);
   const [showExport, setShowExport] = useState(false);
   const [exportFormat, setExportFormat] = useState<'wav' | 'mp3'>('wav');
   const [exportBitDepth, setExportBitDepth] = useState<16 | 24>(24);
@@ -173,21 +229,14 @@ export function MasteringSuite({ initialProjectId, onBack }: MasteringSuiteProps
   const handleExport = useCallback(async () => {
     setExporting(true);
     try {
-      const sampleRate = exportFormat === 'mp3' ? 44100 : exportSampleRate;
-      const bitDepth = exportFormat === 'mp3' ? 16 : exportBitDepth;
+      const sr = exportFormat === 'mp3' ? 44100 : exportSampleRate;
+      const bd = exportFormat === 'mp3' ? 16 : exportBitDepth;
       const ext = exportFormat === 'mp3' ? '.mp3' : '.wav';
+      const sourceUrl = session.inputFile?.url || DEMO_AUDIO_URL;
       const duration = session.inputFile?.duration ?? 30;
-      const numSamples = Math.floor(sampleRate * Math.min(duration, 300));
-      const numChannels = 2;
-      const bytesPerSample = bitDepth / 8;
-      const blockAlign = numChannels * bytesPerSample;
-      const dataSize = numSamples * blockAlign;
-      const headerSize = 44;
-      const totalSize = headerSize + dataSize;
 
-      const arrayBuffer = new ArrayBuffer(totalSize);
-      const view = new DataView(arrayBuffer);
-      writeWavHeader(view, 0, numChannels, sampleRate, bitDepth, dataSize);
+      const rendered = await fetchAndRenderAudio(sourceUrl, sr, duration);
+      const blob = audioBufferToWavBlob(rendered, bd);
 
       const filename = session.inputFile
         ? session.inputFile.filename.replace(/\.[^/.]+$/, '') + '_master'
@@ -200,39 +249,36 @@ export function MasteringSuite({ initialProjectId, onBack }: MasteringSuiteProps
       });
 
       if (path) {
-        const blob = new Blob([arrayBuffer], { type: 'audio/wav' });
         const bytes = await blob.arrayBuffer();
         await OpenBandNative.writeFile(path, bytes);
-        Alert.alert('Exportado', `Master exportado como ${exportFormat.toUpperCase()} (${bitDepth}bit, ${sampleRate}Hz)`);
+        Alert.alert('Exportado', `Master exportado com áudio (${bd}bit, ${sr}Hz)`);
       }
     } catch (e) {
       console.error('Export failed:', e);
       if (Platform.OS === 'web') {
-        const sampleRate = exportFormat === 'mp3' ? 44100 : exportSampleRate;
-        const bitDepth = exportFormat === 'mp3' ? 16 : exportBitDepth;
-        const numSamples = Math.floor(sampleRate * 30);
-        const numChannels = 2;
-        const bytesPerSample = bitDepth / 8;
-        const dataSize = numSamples * numChannels * bytesPerSample;
-        const totalSize = 44 + dataSize;
-        const buf = new ArrayBuffer(totalSize);
-        const vw = new DataView(buf);
-        writeWavHeader(vw, 0, numChannels, sampleRate, bitDepth, dataSize);
-        const blob = new Blob([buf], { type: 'audio/wav' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'master_export.wav';
-        a.click();
-        URL.revokeObjectURL(url);
-        Alert.alert('Exportado', 'Master exportado via download.');
+        try {
+          const sr = exportFormat === 'mp3' ? 44100 : exportSampleRate;
+          const bd = exportFormat === 'mp3' ? 16 : exportBitDepth;
+          const sourceUrl = session.inputFile?.url || DEMO_AUDIO_URL;
+          const rendered = await fetchAndRenderAudio(sourceUrl, sr, 30);
+          const blob = audioBufferToWavBlob(rendered, bd);
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'master_export.wav';
+          a.click();
+          URL.revokeObjectURL(url);
+          Alert.alert('Exportado', 'Master exportado via download.');
+        } catch {
+          Alert.alert('Erro', 'Falha ao exportar master.');
+        }
       } else {
         Alert.alert('Erro', 'Falha ao exportar master.');
       }
     }
     setExporting(false);
     setShowExport(false);
-  }, [plugins, exportFormat, exportBitDepth, exportSampleRate, session.inputFile]);
+  }, [exportFormat, exportBitDepth, exportSampleRate, session.inputFile]);
 
   return (
     <View className="flex-1 bg-dark-bg">
@@ -307,7 +353,7 @@ export function MasteringSuite({ initialProjectId, onBack }: MasteringSuiteProps
           <MasteringChain
             plugins={plugins}
             onToggle={handleToggle}
-            onEdit={setEditingPlugin}
+            onEdit={(p) => setEditingPluginId(p.id)}
             onReset={handleReset}
           />
         </View>
@@ -425,7 +471,7 @@ export function MasteringSuite({ initialProjectId, onBack }: MasteringSuiteProps
         plugin={editingPlugin}
         onParamChange={handleParamChange}
         onToggle={handleToggle}
-        onClose={() => setEditingPlugin(null)}
+        onClose={() => setEditingPluginId(null)}
       />
     </View>
   );
