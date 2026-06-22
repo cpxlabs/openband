@@ -45,13 +45,13 @@ const DRUM_PADS = [
 export function Sampler({ visible, onClose, onAddToTrack }: SamplerProps) {
   const [mode, setMode] = useState<'drum' | 'melodic'>('drum');
   const [slots, setSlots] = useState<SampleSlot[]>(
-    DRUM_PADS.map(p => ({
+    DRUM_PADS.map((p, i) => ({
       key: p.key,
       name: p.label,
       data: null,
-      rootKey: 36 + DRUM_PADS.indexOf(p),
-      lowKey: 36 + DRUM_PADS.indexOf(p),
-      highKey: 36 + DRUM_PADS.indexOf(p),
+      rootKey: 36 + i,
+      lowKey: 36 + i,
+      highKey: 36 + i,
     }))
   );
   const [adsr, setAdsr] = useState<ADSR>({ attack: 10, decay: 200, sustain: 70, release: 300 });

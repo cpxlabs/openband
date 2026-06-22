@@ -345,26 +345,24 @@ export default function Extractor() {
                 title="Adicionar todos ao estúdio"
                 icon="+"
                 onPress={() => {
-                  let lastId = '';
-                  results.forEach(stem => {
-                    lastId = `stem-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-                    saveProject(lastId, {
-                      title: stem.label,
-                      genre: 'pop', key: 'C', bpm: 120,
-                      tracks: [{
-                        id: `track-${Date.now()}`, name: stem.label, color: 'bg-blue-500',
-                        muted: false, solo: false, volume: 75, pan: 0, sends: {},
-                        sidechainSource: null,
-                        regions: [{ id: `region-${Date.now()}`, start: 0, duration: 30, url: stem.url }],
-                        plugins: [], automation: {},
-                      }],
-                      groups: [], trackAssignments: {}, masterPlugins: [], masteringChain: [],
-                      sendBuses: [], trackAmpChains: {}, mixSnapshots: [], activeMixId: undefined,
-                      metronome: { bpm: 120, timeSig: [4, 4], accentInterval: 4, volume: 60, enabled: true, countIn: true, countInBars: 2 },
-                      recordSettings: { armed: false, inputSource: 'mic', quality: 'high', sampleRate: 44100, mono: false, preRoll: 0 },
-                    });
+                  const projectId = `stems-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+                  const tracks = results.map(stem => ({
+                    id: `track-${stem.type}`, name: stem.label, color: 'bg-blue-500',
+                    muted: false, solo: false, volume: 75, pan: 0, sends: {},
+                    sidechainSource: null,
+                    regions: [{ id: `region-${stem.type}`, start: 0, duration: 30, url: stem.url }],
+                    plugins: [], automation: {},
+                  }));
+                  saveProject(projectId, {
+                    title: 'multi_stems',
+                    genre: 'pop', key: 'C', bpm: 120,
+                    tracks,
+                    groups: [], trackAssignments: {}, masterPlugins: [], masteringChain: [],
+                    sendBuses: [], trackAmpChains: {}, mixSnapshots: [], activeMixId: undefined,
+                    metronome: { bpm: 120, timeSig: [4, 4], accentInterval: 4, volume: 60, enabled: true, countIn: true, countInBars: 2 },
+                    recordSettings: { armed: false, inputSource: 'mic', quality: 'high', sampleRate: 44100, mono: false, preRoll: 0 },
                   });
-                  router.push(`/studio/${lastId}?title=multi_stems`);
+                  router.push(`/studio/${projectId}?title=multi_stems`);
                 }}
               />
               <Button

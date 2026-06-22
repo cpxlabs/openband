@@ -189,7 +189,7 @@ export function SampleBrowser({ visible, onAddSample }: SampleBrowserProps) {
       <ScrollView className="flex-1 px-4" contentContainerStyle={{ paddingBottom: 80 }}>
         <View className="flex-row flex-wrap gap-2">
           {filtered.map(sample => (
-            <View key={sample.id} className="w-[calc(50%-4px)]" style={{ width: '48%' }}>
+            <View key={sample.id} className="w-[calc(50%-4px)]">
               <SampleCard sample={sample} onAddToTrack={onAddSample} player={player} status={status} playingId={playingId} onPlayPreview={handlePlayPreview} />
             </View>
           ))}

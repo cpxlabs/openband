@@ -55,6 +55,7 @@ function writeWavHeader(
 }
 
 async function fetchAndRenderAudio(url: string, sampleRate: number, duration: number): Promise<AudioBuffer> {
+  if (Platform.OS !== 'web') throw new Error('AudioContext unavailable on native');
   const response = await fetch(url);
   const raw = await response.arrayBuffer();
   const audioCtx = new AudioContext();

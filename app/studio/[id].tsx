@@ -187,7 +187,7 @@ export default function Studio() {
       if (saved.metronome) setMetronome(saved.metronome);
       if (saved.recordSettings) setRecordSettings(saved.recordSettings);
     }
-  }, []);
+  }, [id]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -231,45 +231,50 @@ export default function Studio() {
   }, [isPlaying, player]);
 
   const toggleRecording = useCallback(async () => {
-    if (!recordSettings.armed) { setShowRecordOptions(true); return; }
+    try {
+      if (!recordSettings.armed) { setShowRecordOptions(true); return; }
 
-    if (isRecording) {
-      await audioRecorder.stop();
-      const uri = recorderState?.url || audioRecorder.uri || '';
-      if (uri) {
-        const trackId = `rec-${Date.now()}`;
-        const newTrack: TrackDef = {
-          id: trackId,
-          name: `Recording ${tracks.length + 1}`,
-          color: TRACK_COLORS[tracks.length % TRACK_COLORS.length],
-          muted: false,
-          solo: false,
-          volume: 80,
-          pan: 0,
-          sends: {}, sidechainSource: null,
-          regions: [{ id: `region-${Date.now()}`, start: 0, duration: Math.max((recorderState.durationMillis ?? 0) / 1000, 1), url: uri }],
-          plugins: [],
-          automation: {},
+      if (isRecording) {
+        await audioRecorder.stop();
+        const uri = recorderState?.url || audioRecorder.uri || '';
+        if (uri) {
+          const trackId = `rec-${Date.now()}`;
+          const newTrack: TrackDef = {
+            id: trackId,
+            name: `Recording ${tracks.length + 1}`,
+            color: TRACK_COLORS[tracks.length % TRACK_COLORS.length],
+            muted: false,
+            solo: false,
+            volume: 80,
+            pan: 0,
+            sends: {}, sidechainSource: null,
+            regions: [{ id: `region-${Date.now()}`, start: 0, duration: Math.max((recorderState.durationMillis ?? 0) / 1000, 1), url: uri }],
+            plugins: [],
+            automation: {},
+          };
+          setTracks([...tracks, newTrack]);
+          setSelectedTrackId(trackId);
+        }
+        setIsRecording(false);
+      } else {
+        const bitRateMap: Record<string, number> = {
+          low: 64000,
+          medium: 128000,
+          high: 192000,
+          lossless: 1411000,
         };
-        setTracks([...tracks, newTrack]);
-        setSelectedTrackId(trackId);
+        await audioRecorder.prepareToRecordAsync({
+          sampleRate: recordSettings.sampleRate,
+          numberOfChannels: recordSettings.mono ? 1 : 2,
+          bitRate: bitRateMap[recordSettings.quality] || 128000,
+          extension: recordSettings.quality === 'lossless' ? '.wav' : '.m4a',
+        });
+        audioRecorder.record();
+        setIsRecording(true);
       }
+    } catch (e) {
+      console.error('Recording error:', e);
       setIsRecording(false);
-    } else {
-      const bitRateMap: Record<string, number> = {
-        low: 64000,
-        medium: 128000,
-        high: 192000,
-        lossless: 1411000,
-      };
-      await audioRecorder.prepareToRecordAsync({
-        sampleRate: recordSettings.sampleRate,
-        numberOfChannels: recordSettings.mono ? 1 : 2,
-        bitRate: bitRateMap[recordSettings.quality] || 128000,
-        extension: recordSettings.quality === 'lossless' ? '.wav' : '.m4a',
-      });
-      audioRecorder.record();
-      setIsRecording(true);
     }
   }, [recordSettings.armed, isRecording, audioRecorder, recorderState.durationMillis, tracks, setTracks, recordSettings.sampleRate, recordSettings.mono, recordSettings.quality]);
 
@@ -955,6 +960,7 @@ export default function Studio() {
                         <Pressable
                           onPress={() => {
                             const others = tracks.filter(t => t.id !== track.id);
+                            if (others.length === 0) { setTrackSidechain(track.id, null); return; }
                             const currentIdx = others.findIndex(t => t.id === track.sidechainSource);
                             const next = others[(currentIdx + 1) % others.length];
                             setTrackSidechain(track.id, next?.id || null);

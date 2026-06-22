@@ -1,7 +1,5 @@
 import express from 'express';
 import cors from 'cors';
-import path from 'path';
-import fs from 'fs';
 import extractRoutes from './routes/extract';
 import masterRoutes from './routes/master';
 import { checkDemucsInstalled } from './services/demucs';
@@ -9,11 +7,6 @@ import { checkDemucsInstalled } from './services/demucs';
 const app = express();
 app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3001;
-const STEMS_DIR = path.resolve(process.cwd(), 'stems');
-
-if (!fs.existsSync(STEMS_DIR)) {
-  fs.mkdirSync(STEMS_DIR, { recursive: true });
-}
 
 const ALLOWED_ORIGINS = ['http://localhost:8081', 'http://localhost:3000', 'http://localhost:19006', 'exp://localhost:19000', 'exp://localhost:19001', 'http://127.0.0.1:8081'];
 app.use(cors({
@@ -38,8 +31,7 @@ app.use((_req, res, next) => {
   next();
 });
 
-let rateLimitStore: Record<string, { count: number; resetAt: number }> = {};
-setInterval(() => { rateLimitStore = {}; }, 15 * 60 * 1000);
+const rateLimitStore: Record<string, { count: number; resetAt: number }> = {};
 
 function rateLimit(maxRequests: number, windowMs: number) {
   return (req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -65,17 +57,14 @@ app.use('/api', rateLimit(30, 15 * 60 * 1000));
 app.use('/api', extractRoutes);
 app.use('/api', masterRoutes);
 
-let demucsAvailable: boolean | null = null;
 let demucsCheckPromise: Promise<boolean> | null = null;
 
 app.get('/api/health', async (_req, res, next) => {
   try {
-    if (demucsAvailable === null) {
-      if (!demucsCheckPromise) {
-        demucsCheckPromise = checkDemucsInstalled().then(r => { demucsAvailable = r; return r; });
-      }
-      demucsAvailable = await demucsCheckPromise;
+    if (demucsCheckPromise === null) {
+      demucsCheckPromise = checkDemucsInstalled().catch(() => false);
     }
+    await demucsCheckPromise;
     res.json({ status: 'ok' });
   } catch (e) {
     next(e);

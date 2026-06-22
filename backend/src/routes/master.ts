@@ -40,7 +40,7 @@ router.post('/master/bounce', upload.single('audio'), async (req: Request, res: 
         done = true;
         inputStream.destroy();
         outputStream.destroy();
-        fs.unlink(outputPath, () => {});
+        fs.unlink(outputPath, (e) => { if (e) console.error('cleanup error:', e); });
         if (err) reject(err);
       }
 
@@ -65,16 +65,17 @@ router.post('/master/bounce', upload.single('audio'), async (req: Request, res: 
       format: outputFormat,
       bitDepth: parsedBitDepth,
       sampleRate: parsedSampleRate,
-      size: fs.statSync(outputPath).size,
+      size: (await fs.promises.stat(outputPath)).size,
       pluginStates: pluginStates ? safeJsonParse(pluginStates) : undefined,
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Erro desconhecido';
     console.error('Master bounce error:', message);
     if (req.file) {
-      fs.unlink(req.file.path, () => {});
+      fs.unlink(req.file.path, (e) => { if (e) console.error('cleanup error:', e); });
     }
-    res.status(500).json({ error: 'Erro ao processar master', details: message });
+    const isProduction = process.env.NODE_ENV === 'production';
+    res.status(500).json({ error: 'Erro ao processar master', ...(isProduction ? {} : { details: message }) });
   }
 });
 
@@ -89,6 +90,7 @@ router.get('/master/download/:filename', (req: Request, res: Response) => {
   }
   res.sendFile(filePath, (err) => {
     if (err) {
+      if (res.headersSent) return;
       console.error('sendFile error:', err);
       res.status(404).json({ error: 'Master file not found' });
     }

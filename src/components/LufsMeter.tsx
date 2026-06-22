@@ -90,7 +90,7 @@ export function LufsMeter({ isPlaying }: LufsMeterProps) {
     }, 200);
 
     return () => clearInterval(tick);
-  }, [isPlaying]);
+  }, [isPlaying, targetIdx]);
 
   const shortPct = ((shortTerm - MIN_LUFS) / RANGE) * 100;
   const integratedPct = ((avgLoudness - MIN_LUFS) / RANGE) * 100;

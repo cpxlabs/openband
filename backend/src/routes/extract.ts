@@ -87,6 +87,7 @@ router.get('/stems/:filename', (req: Request, res: Response) => {
   }
   res.sendFile(filePath, (err) => {
     if (err) {
+      if (res.headersSent) return;
       console.error('sendFile error:', err);
       res.status(404).json({ error: 'Stem file not found' });
     }

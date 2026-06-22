@@ -663,6 +663,28 @@ function UtilityEditor({ plugin, onParamChange }: { plugin: Plugin; onParamChang
   );
 }
 
+type EditorComp = (props: { plugin: Plugin; onParamChange: (id: string, v: number) => void; bpm?: number }) => React.JSX.Element;
+
+const EDITOR_MAP: Record<string, EditorComp> = {
+  eq: EqEditor,
+  compressor: CompressorEditor,
+  limiter: LimiterEditor,
+  distortion: DistortionEditor,
+  reverb: ReverbEditor,
+  delay: DelayEditor,
+  multibandCompressor: MultibandCompEditor,
+  stereoImager: StereoImagerEditor,
+  deesser: DeesserEditor,
+  tapeSaturator: TapeSatEditor,
+  truePeakLimiter: TruePeakEditor,
+  clipper: ClipperEditor,
+  noiseGate: NoiseGateEditor,
+  autoPitch: AutoPitchEditor,
+  bassMono: BassMonoEditor,
+  stereoWidener: StereoWidenerEditor,
+  utility: UtilityEditor,
+};
+
 export function PluginEditor({ plugin, onParamChange, onToggle, onClose, bpm }: PluginEditorProps) {
   if (!plugin) return null;
 
@@ -672,28 +694,7 @@ export function PluginEditor({ plugin, onParamChange, onToggle, onClose, bpm }: 
     onParamChange(plugin.id, paramId, value);
   };
 
-  type EditorComp = (props: { plugin: Plugin; onParamChange: (id: string, v: number) => void; bpm?: number }) => React.JSX.Element;
-  const editorMap: Record<string, EditorComp> = {
-    eq: EqEditor,
-    compressor: CompressorEditor,
-    limiter: LimiterEditor,
-    distortion: DistortionEditor,
-    reverb: ReverbEditor,
-    delay: DelayEditor,
-    multibandCompressor: MultibandCompEditor,
-    stereoImager: StereoImagerEditor,
-    deesser: DeesserEditor,
-    tapeSaturator: TapeSatEditor,
-    truePeakLimiter: TruePeakEditor,
-    clipper: ClipperEditor,
-    noiseGate: NoiseGateEditor,
-    autoPitch: AutoPitchEditor,
-    bassMono: BassMonoEditor,
-    stereoWidener: StereoWidenerEditor,
-    utility: UtilityEditor,
-  };
-
-  const EditorComponent = editorMap[plugin.type] || null;
+  const EditorComponent = EDITOR_MAP[plugin.type] || null;
 
   return (
     <View className="absolute inset-0 z-50 bg-black/70 justify-end">
@@ -726,13 +727,13 @@ export function PluginEditor({ plugin, onParamChange, onToggle, onClose, bpm }: 
         <ScrollView className="px-5 py-4" style={{ maxHeight: 500 }}>
           {EditorComponent ? (
             <EditorComponent plugin={plugin} onParamChange={handleParamChange} bpm={bpm} />
-          ) : (
+          ) : spec ? (
             <View className="py-4">
               {spec.params.map(p => (
                 <ParamRow key={p.id} param={p} value={plugin.params[p.id] ?? p.default} onChange={v => handleParamChange(p.id, v)} />
               ))}
             </View>
-          )}
+          ) : null}
         </ScrollView>
       </View>
     </View>
