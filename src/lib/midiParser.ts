@@ -132,6 +132,10 @@ export function parseMidi(buffer: ArrayBuffer): MidiData | null {
           offset += 2;
         } else if (eventType === 0xe) {
           offset += 2;
+        } else if (eventType === 0xd) {
+          offset += 1;
+        } else if (eventType === 0xa) {
+          offset += 2;
         } else if (eventType === 0xf) {
           if (chan === 0xf) {
             const metaType = view.getUint8(offset); offset++;
@@ -145,7 +149,7 @@ export function parseMidi(buffer: ArrayBuffer): MidiData | null {
             offset += len.value;
           }
         } else {
-          offset += eventType === 0xa ? 2 : 1;
+          offset += 1;
         }
       }
 

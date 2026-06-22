@@ -33,42 +33,6 @@
     @apply bg-dark-bg text-white;
   }
 
-  [data-theme="light"] {
-    --text-white: #000000;
-    --text-black: #000000;
-    --text-gray-150: #1c1c1e;
-    --text-gray-250: #2c2c2e;
-    --text-gray-350: #3a3a3c;
-    --text-gray-400: #4a4a4d;
-    --text-gray-500: #636366;
-    --text-gray-600: #8e8e93;
-    --text-gray-700: #aeaeb2;
-    --text-brand-primary: #dc2626;
-    --text-brand-accent: #2563eb;
-    --text-brand-green: #15803d;
-    --text-green-400: #15803d;
-    --text-green-500: #15803d;
-    --text-red-400: #b91c1c;
-    --text-amber-500: #92400e;
-    --text-rose-400: #be123c;
-    --bg-green-500: #15803d;
-    --bg-green-600: #15803d;
-    --bg-red-500: #b91c1c;
-    --bg-red-600: #b91c1c;
-    --bg-amber-500: #92400e;
-    --bg-blue-500: #1d4ed8;
-    --bg-purple-600: #7c3aed;
-    --bg-dark-muted: #d1d1d6;
-    --border-dark-border: #e5e5ea;
-    --border-brand-primary: #dc2626;
-    --border-brand-accent: #2563eb;
-    --border-red-500: #b91c1c;
-    --border-green-400: #15803d;
-    --border-green-500: #15803d;
-    --border-amber-400: #92400e;
-    --opacity-dark-border: 0.5;
-  }
-
   [data-theme="light"] .text-white { color: #000; }
   [data-theme="light"] .text-black { color: #000; }
   [data-theme="light"] .text-gray-150 { color: #1c1c1e; }

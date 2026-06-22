@@ -90,6 +90,7 @@ export default function Studio() {
   const projectKey = Array.isArray(keyParam) ? keyParam[0] : keyParam;
   const player = useAudioPlayer(null);
   const status = useAudioPlayerStatus(player);
+  const hasLoadedRef = useRef(false);
 
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const recorderState = useAudioRecorderState(audioRecorder);
@@ -226,8 +227,11 @@ export default function Studio() {
   const anySolo = useMemo(() => tracks.some(t => t.solo), [tracks]);
 
   const togglePlay = useCallback(() => {
-    if (isPlaying) { player.pause(); }
-    else { player.replace(DEMO_AUDIO_URL); player.play(); }
+    if (isPlaying) { player.pause(); return; }
+    if (hasLoadedRef.current) { player.play(); return; }
+    hasLoadedRef.current = true;
+    player.replace(DEMO_AUDIO_URL);
+    player.play();
   }, [isPlaying, player]);
 
   const toggleRecording = useCallback(async () => {
@@ -272,8 +276,8 @@ export default function Studio() {
         audioRecorder.record();
         setIsRecording(true);
       }
-    } catch (e) {
-      console.error('Recording error:', e);
+    } catch {
+      Alert.alert('Erro', 'Falha ao gravar áudio.');
       setIsRecording(false);
     }
   }, [recordSettings.armed, isRecording, audioRecorder, recorderState.durationMillis, tracks, setTracks, recordSettings.sampleRate, recordSettings.mono, recordSettings.quality]);
@@ -559,6 +563,7 @@ export default function Studio() {
         setTracks([...tracks, ...newTracks]);
         Alert.alert('MIDI Importado', `${newTracks.length} faixas criadas de "${file.name}" (${midi.bpm} BPM)`);
       };
+      reader.onerror = () => { Alert.alert('Erro', 'Falha ao ler o arquivo MIDI.'); };
       reader.readAsArrayBuffer(file);
     };
     input.click();
@@ -808,8 +813,7 @@ export default function Studio() {
         <ScrollView horizontal className="flex-1 bg-dark-bg">
           <View style={{ width: 1200 }}>
             <View className="relative" style={{ height: tracks.length * (resp.isDesktop ? 104 : 80) }}>
-              {tracks.map((track) => {
-                const trackIndex = tracks.indexOf(track);
+              {tracks.map((track, trackIndex) => {
                 const showAuto = showAutomation[track.id];
                 const trackH = resp.isDesktop ? 104 : 80;
                 return (
