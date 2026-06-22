@@ -30,6 +30,4 @@ function hashStr(s: string): number {
   return Math.abs(h);
 }
 
-export function clearWaveCache() {
-  cache.clear();
-}
+

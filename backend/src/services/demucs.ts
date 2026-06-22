@@ -77,7 +77,7 @@ export async function runDemucs(options: DemucsOptions): Promise<StemFile[]> {
     const destPath = path.join(stemDir, `${baseName}-${stemName}.wav`);
 
     if (fs.existsSync(stemPath)) {
-      fs.cpSync(stemPath, destPath);
+      await fs.promises.cp(stemPath, destPath);
       stems.push({
         type: meta.type,
         label: meta.label,

@@ -86,7 +86,7 @@ export function loadProject(id: string): ProjectData | null {
     const raw = storage.getItem(STORAGE_PREFIX + id);
     if (raw) {
       try {
-        return JSON.parse(raw) as ProjectData;
+        return sanitizeProjectData(JSON.parse(raw));
       } catch {}
     }
   }

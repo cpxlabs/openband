@@ -127,7 +127,4 @@ export function getOversampleLabel(value: number): string {
   return map[value] || '2x';
 }
 
-export function formatTruePeak(db: number): string {
-  if (db <= -60) return '-∞ dBTP';
-  return `${db >= 0 ? '+' : ''}${db.toFixed(1)} dBTP`;
-}
+

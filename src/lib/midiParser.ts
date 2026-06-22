@@ -57,7 +57,6 @@ export function parseMidi(buffer: ArrayBuffer): MidiData | null {
     const header = String.fromCharCode(view.getUint8(0), view.getUint8(1), view.getUint8(2), view.getUint8(3));
     if (header !== 'MThd') return null;
 
-    const headerLen = readU32(view, 4);
     const format = readU16(view, 8);
     const numTracks = readU16(view, 10);
     const division = readU16(view, 12);

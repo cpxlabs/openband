@@ -5,7 +5,7 @@ import { upload } from '../middleware/upload';
 
 function safeJsonParse(s: string | undefined): unknown {
   if (!s) return undefined;
-  try { return JSON.parse(s); } catch { return undefined; }
+  try { return JSON.parse(s); } catch (e) { console.error('JSON parse failed:', s.slice(0, 100), e); return undefined; }
 }
 
 const router = Router();

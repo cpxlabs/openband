@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { PEDAL_PRESETS, AMP_PRESETS, CAB_PRESETS } from '../src/lib/types';
+import { PEDAL_PRESETS, AMP_PRESETS, CAB_PRESETS } from '../src/lib/types.ts';
 
 describe('Pedal presets', () => {
   it(`has exactly ${PEDAL_PRESETS.length} presets`, () => {
