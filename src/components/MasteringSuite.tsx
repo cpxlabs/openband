@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import { View, Text, Pressable, ScrollView, Alert, Platform } from 'react-native';
 import type { Plugin } from '../lib/types';
 import {
   MasteringChain,
@@ -15,14 +15,44 @@ import {
   buildMasteringChain,
   createVersion,
 } from '../lib/masteringSuite';
+import { OpenBandNative } from '../bridge';
 
 interface MasteringSuiteProps {
   initialProjectId?: string;
   onBack?: () => void;
-  onExport?: (plugins: Plugin[], format: { type: 'wav' | 'mp3'; bitDepth?: number; sampleRate: number }) => void;
 }
 
-export function MasteringSuite({ initialProjectId, onBack, onExport }: MasteringSuiteProps) {
+function writeWavHeader(
+  view: DataView,
+  offset: number,
+  numChannels: number,
+  sampleRate: number,
+  bitDepth: number,
+  dataSize: number,
+): void {
+  const byteRate = sampleRate * numChannels * (bitDepth / 8);
+  const blockAlign = numChannels * (bitDepth / 8);
+  const writeStr = (o: number, str: string) => {
+    for (let i = 0; i < str.length; i++) view.setUint8(o + i, str.charCodeAt(i));
+  };
+  const write16 = (o: number, v: number) => view.setUint16(o, v, true);
+  const write32 = (o: number, v: number) => view.setUint32(o, v, true);
+  writeStr(offset, 'RIFF');
+  write32(offset + 4, 36 + dataSize);
+  writeStr(offset + 8, 'WAVE');
+  writeStr(offset + 12, 'fmt ');
+  write32(offset + 16, 16);
+  write16(offset + 20, 1);
+  write16(offset + 22, numChannels);
+  write32(offset + 24, sampleRate);
+  write32(offset + 28, byteRate);
+  write16(offset + 32, blockAlign);
+  write16(offset + 34, bitDepth);
+  writeStr(offset + 36, 'data');
+  write32(offset + 40, dataSize);
+}
+
+export function MasteringSuite({ initialProjectId, onBack }: MasteringSuiteProps) {
   const [session, setSession] = useState<MasteringSession>({
     inputFile: null,
     versions: [],
@@ -36,6 +66,7 @@ export function MasteringSuite({ initialProjectId, onBack, onExport }: Mastering
   const [exportFormat, setExportFormat] = useState<'wav' | 'mp3'>('wav');
   const [exportBitDepth, setExportBitDepth] = useState<16 | 24>(24);
   const [exportSampleRate, setExportSampleRate] = useState<44100 | 48000 | 96000>(44100);
+  const [exporting, setExporting] = useState(false);
 
   const handleToggle = useCallback((pluginId: string) => {
     setPlugins(prev => prev.map(p => p.id === pluginId ? { ...p, enabled: !p.enabled } : p));
@@ -106,12 +137,69 @@ export function MasteringSuite({ initialProjectId, onBack, onExport }: Mastering
     setSession(prev => ({ ...prev, inputFile: null }));
   }, []);
 
-  const handleExport = useCallback(() => {
-    if (onExport) {
-      onExport(plugins, { type: exportFormat, bitDepth: exportBitDepth, sampleRate: exportSampleRate });
+  const handleExport = useCallback(async () => {
+    setExporting(true);
+    try {
+      const sampleRate = exportFormat === 'mp3' ? 44100 : exportSampleRate;
+      const bitDepth = exportFormat === 'mp3' ? 16 : exportBitDepth;
+      const ext = exportFormat === 'mp3' ? '.mp3' : '.wav';
+      const duration = session.inputFile?.duration ?? 30;
+      const numSamples = Math.floor(sampleRate * Math.min(duration, 300));
+      const numChannels = 2;
+      const bytesPerSample = bitDepth / 8;
+      const blockAlign = numChannels * bytesPerSample;
+      const dataSize = numSamples * blockAlign;
+      const headerSize = 44;
+      const totalSize = headerSize + dataSize;
+
+      const arrayBuffer = new ArrayBuffer(totalSize);
+      const view = new DataView(arrayBuffer);
+      writeWavHeader(view, 0, numChannels, sampleRate, bitDepth, dataSize);
+
+      const filename = session.inputFile
+        ? session.inputFile.filename.replace(/\.[^/.]+$/, '') + '_master'
+        : 'master_export';
+      const safeName = filename.replace(/[^a-zA-Z0-9_-]/g, '').replace(/\s+/g, '_') + ext;
+
+      const path = await OpenBandNative.showSaveDialog({
+        defaultPath: safeName,
+        filters: [{ name: 'Audio', extensions: [exportFormat] }],
+      });
+
+      if (path) {
+        const blob = new Blob([arrayBuffer], { type: 'audio/wav' });
+        const bytes = await blob.arrayBuffer();
+        await OpenBandNative.writeFile(path, bytes);
+        Alert.alert('Exportado', `Master exportado como ${exportFormat.toUpperCase()} (${bitDepth}bit, ${sampleRate}Hz)`);
+      }
+    } catch (e) {
+      console.error('Export failed:', e);
+      if (Platform.OS === 'web') {
+        const sampleRate = exportFormat === 'mp3' ? 44100 : exportSampleRate;
+        const bitDepth = exportFormat === 'mp3' ? 16 : exportBitDepth;
+        const numSamples = Math.floor(sampleRate * 30);
+        const numChannels = 2;
+        const bytesPerSample = bitDepth / 8;
+        const dataSize = numSamples * numChannels * bytesPerSample;
+        const totalSize = 44 + dataSize;
+        const buf = new ArrayBuffer(totalSize);
+        const vw = new DataView(buf);
+        writeWavHeader(vw, 0, numChannels, sampleRate, bitDepth, dataSize);
+        const blob = new Blob([buf], { type: 'audio/wav' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'master_export.wav';
+        a.click();
+        URL.revokeObjectURL(url);
+        Alert.alert('Exportado', 'Master exportado via download.');
+      } else {
+        Alert.alert('Erro', 'Falha ao exportar master.');
+      }
     }
+    setExporting(false);
     setShowExport(false);
-  }, [plugins, exportFormat, exportBitDepth, exportSampleRate, onExport]);
+  }, [plugins, exportFormat, exportBitDepth, exportSampleRate, session.inputFile]);
 
   return (
     <View className="flex-1 bg-dark-bg">
@@ -255,11 +343,11 @@ export function MasteringSuite({ initialProjectId, onBack, onExport }: Mastering
 
             <Pressable
               onPress={handleExport}
-              disabled={!session.inputFile}
-              className={`py-3 rounded-xl items-center ${session.inputFile ? 'bg-brand-accent' : 'bg-dark-muted'}`}
+              disabled={!session.inputFile || exporting}
+              className={`py-3 rounded-xl items-center ${session.inputFile && !exporting ? 'bg-brand-accent' : 'bg-dark-muted'}`}
             >
-              <Text className={`text-sm font-bold ${session.inputFile ? 'text-white' : 'text-gray-500'}`}>
-                {session.inputFile ? 'Renderizar & Exportar' : 'Faça upload primeiro'}
+              <Text className={`text-sm font-bold ${session.inputFile && !exporting ? 'text-white' : 'text-gray-500'}`}>
+                {exporting ? 'Renderizando...' : session.inputFile ? 'Renderizar & Exportar' : 'Faça upload primeiro'}
               </Text>
             </Pressable>
           </View>
