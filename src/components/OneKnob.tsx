@@ -35,7 +35,8 @@ export function OneKnob({ label, value, onChange, min = 0, max = 100, step = 1, 
     setShowValue(false);
   }, []);
 
-  const pct = ((value - min) / (max - min)) * 100;
+  const range = max - min;
+  const pct = range === 0 ? 0 : ((value - min) / range) * 100;
 
   return (
     <View className="items-center gap-1">

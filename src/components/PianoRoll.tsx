@@ -90,10 +90,6 @@ export function PianoRoll({
   const isWhiteKey = (pitch: number) => WHITE_KEYS.includes(pitch % 12);
 
   const handleGridTap = useCallback((evt: { locationX: number; locationY: number }) => {
-    if (longPressFiredRef.current) {
-      longPressFiredRef.current = false;
-      return;
-    }
     if (draggingRef.current) return;
     const beat = evt.locationX / PX_PER_BEAT;
     const pitchOffset = Math.floor(evt.locationY / ROW_HEIGHT);

@@ -136,9 +136,8 @@ export function Synth({ visible, onClose, bpm }: SynthProps) {
           return { stop: () => { try { source.stop(); } catch {} } };
         }
 
-        const wf: string = oscConfig.waveform;
         const osc = ctx.createOscillator();
-        osc.type = (wf === 'noise' ? 'sawtooth' : wf) as OscillatorType;
+        osc.type = oscConfig.waveform as OscillatorType;
         osc.frequency.value = freq * Math.pow(2, oscConfig.detune / 1200);
 
         const gainNode = ctx.createGain();
@@ -167,6 +166,8 @@ export function Synth({ visible, onClose, bpm }: SynthProps) {
         return { stop: () => { try { osc.stop(); } catch {} } };
       };
 
+      activeNodes.current.forEach(n => n.stop());
+      activeNodes.current = [];
       const s1 = createOsc(preset.osc1);
       const s2 = createOsc(preset.osc2);
       if (s1) stopped.push(s1);

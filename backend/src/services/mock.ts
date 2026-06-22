@@ -4,7 +4,7 @@ import type { StemFile } from '../types';
 
 const MOCK_DIR = path.resolve(process.cwd(), 'stems');
 
-function generateSilentWav(filePath: string, durationSec: number): void {
+async function generateSilentWav(filePath: string, durationSec: number): Promise<void> {
   const sampleRate = 44100;
   const numChannels = 2;
   const bitsPerSample = 16;
@@ -27,7 +27,7 @@ function generateSilentWav(filePath: string, durationSec: number): void {
   buffer.write('data', 36);
   buffer.writeUInt32LE(dataSize, 40);
 
-  fs.writeFileSync(filePath, buffer);
+  await fs.promises.writeFile(filePath, buffer);
 }
 
 export async function runMock(inputPath: string, stemDir: string): Promise<StemFile[]> {
@@ -45,7 +45,7 @@ export async function runMock(inputPath: string, stemDir: string): Promise<StemF
 
   for (const stem of stems) {
     const outPath = path.join(stemDir, stem.filename);
-    generateSilentWav(outPath, duration);
+    await generateSilentWav(outPath, duration);
     stem.size = fs.statSync(outPath).size;
     stem.url = `/api/stems/${stem.filename}`;
   }

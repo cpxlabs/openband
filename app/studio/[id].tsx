@@ -86,7 +86,7 @@ export default function Studio() {
   }>();
   const router = useRouter();
   const projectTitle = (Array.isArray(titleParam) ? titleParam[0] : titleParam) || 'Projeto';
-  const initialBpm = bpmParam ? (parseInt(Array.isArray(bpmParam) ? bpmParam[0] : bpmParam, 10) ?? 120) : 120;
+  const initialBpm = bpmParam ? (parseInt(Array.isArray(bpmParam) ? bpmParam[0] : bpmParam, 10) || 120) : 120;
   const projectKey = Array.isArray(keyParam) ? keyParam[0] : keyParam;
   const player = useAudioPlayer(null);
   const status = useAudioPlayerStatus(player);
@@ -371,7 +371,7 @@ export default function Studio() {
       const sB = JSON.stringify(snapB.trackSends[t.id] ?? {});
       return `${t.name}: vol ${vA}%→${vB}% | pan ${pA}→${pB} | send ${sA}→${sB}`;
     }).join('\n');
-    alert(`A/B — ${snapA.name} vs ${snapB.name}\n\n${msg || 'Nenhuma diferença'} (vol/mute/pan/send)`);
+    Alert.alert(`A/B — ${snapA.name} vs ${snapB.name}`, `${msg || 'Nenhuma diferença'} (vol/mute/pan/send)`);
   }, [tracks, mixSnapshots]);
 
   const handlePluginParamChange = useCallback((pluginId: string, paramId: string, value: number) => {

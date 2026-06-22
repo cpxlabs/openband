@@ -126,7 +126,7 @@ async function renderMixdown(
         gainNode.connect(panNode);
         panNode.connect(offlineCtx.destination);
 
-        source.start(region.start, 0, Math.min(region.duration, duration - region.start));
+        source.start(region.start, 0, Math.min(region.duration, Math.max(0, duration - region.start)));
       } catch {}
     }
   }

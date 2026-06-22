@@ -21,7 +21,8 @@ function ParamRow({
   value: number;
   onChange: (v: number) => void;
 }) {
-  const pct = (value - param.min) / (param.max - param.min) * 100;
+  const range = param.max - param.min;
+  const pct = range === 0 ? 0 : (value - param.min) / range * 100;
   const displayVal = param.step >= 1 ? String(Math.round(value)) : String(value);
 
   return (

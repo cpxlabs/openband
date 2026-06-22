@@ -88,6 +88,7 @@ export function VisualEQ({ bands, onChange, height = 140 }: VisualEQProps) {
   const [showPresets, setShowPresets] = useState(false);
 
   const freqToX = useCallback((freq: number, w: number) => {
+    if (freq <= 0) return 0;
     const minLog = Math.log(20);
     const maxLog = Math.log(20000);
     return ((Math.log(freq) - minLog) / (maxLog - minLog)) * w;

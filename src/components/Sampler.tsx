@@ -118,13 +118,6 @@ export function Sampler({ visible, onClose, onAddToTrack }: SamplerProps) {
     } catch {}
   }, [slots, adsr, getAudioContext]);
 
-  const noteToPitch = useCallback((key: string): number => {
-    const notes: Record<string, number> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
-    const match = key.match(/^([A-G]#?)(\d)$/);
-    if (!match) return 60;
-    return notes[match[1]] + (parseInt(match[2]) + 1) * 12;
-  }, []);
-
   const handleAddToTrack = useCallback(() => {
     const loadedSlots = slots.filter(s => s.data);
     if (loadedSlots.length === 0) return;
