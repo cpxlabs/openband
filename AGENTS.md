@@ -217,26 +217,40 @@ app/
   _layout.tsx          — Root: SafeAreaProvider + AuthProvider + redirect logic
   (auth)/login.tsx    — Login screen (Supabase auth, mock fallback)
   (tabs)/
-    _layout.tsx       — Tab navigator (Feed, Biblioteca) + responsive sidebar drawer
+    _layout.tsx       — Tab navigator (Feed, Biblioteca, Momentos) + responsive sidebar drawer
     index.tsx         — Feed screen with audio playback
     library.tsx       — Library screen with project list + "Separar Stems" button
+    moments.tsx       — Sample pack store / artist moments
+    account.tsx       — Profile + sign-out
+    settings.tsx      — App settings
   extractor.tsx       — Stem separation (select → process → results)
+  mastering/
+    index.tsx         — Mastering suite page (full chain EQ, comp, limiter, LUFS)
   studio/[id].tsx     — DAW-style multi-track mixer with waveform + transport
 
 src/
-  lib/supabase.ts     — Supabase client with mock fallback for dev
-  lib/responsive.ts   — useResponsive hook (mobile/tablet/desktop breakpoints)
+  lib/
+    supabase.ts       — Supabase client with mock fallback for dev
+    responsive.ts     — useResponsive hook (mobile/tablet/desktop breakpoints)
+    midiParser.ts     — MIDI file parser
+    midiSynth.ts      — Web Audio API MIDI synthesizer
+    projectStore.ts   — Project persistence (localStorage + bridge)
+    keyboard.ts       — useKeyboardShortcuts hook
+    automix.ts        — Genre-based auto-mix presets
+    history.ts        — useHistory (undo/redo) hook
+    mastering.ts      — Mastering chain builder
+    types.ts          — Shared types (TrackDef, Plugin, etc.)
   context/
     AuthContext.tsx    — Auth state context (session, user, loading, signOut)
   bridge/            — Desktop bridge (interface, electron, tauri stub, browser fallback, auto-detect)
   components/         — Design system (38 components, see table above)
 
 tests/
-  responsive.test.ts  — Breakpoint & dimension tests (legacy)
-  types.test.ts       — Type structure tests (legacy)
-  presets.test.ts     — Pedal/amp/cab preset count + structure tests (legacy)
   components.test.tsx — Vitest component rendering + interaction tests (129 tests)
   lib.test.ts         — Vitest library function tests (44 tests)
+  responsive.test.ts  — Breakpoint & dimension tests (legacy node:test)
+  types.test.ts       — Type structure tests (legacy node:test)
+  presets.test.ts     — Pedal/amp/cab preset count + structure tests (legacy node:test)
 
 stories/              — Storybook stories for all 38 components
   *.stories.tsx       — Run: `npx storybook dev -p 6006`
@@ -248,11 +262,14 @@ stories/              — Storybook stories for all 38 components
 backend/
   src/
     index.ts          — Express server entry (port 3001)
-    routes/extract.ts — POST /api/extract + GET /api/stems/:filename
+    routes/
+      extract.ts      — POST /api/extract + GET /api/stems/:filename
+      master.ts       — POST /api/master — master bounce processing
     services/
       demucs.ts       — Python Demucs subprocess (htdemucs, 4 stems)
       mock.ts         — Silent WAV fallback generator
-    middleware/upload.ts — Multer config (200MB, audio formats)
+    middleware/
+      upload.ts       — Multer config (200MB, audio formats)
     types.ts          — Shared types
 
 supabase/
