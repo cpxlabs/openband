@@ -290,6 +290,11 @@ export default function Studio() {
     setTracks(tracks.map(t => t.id === trackId ? { ...t, solo: !t.solo } : t));
   }, [tracks, setTracks]);
 
+  const deleteTrack = useCallback((trackId: string) => {
+    setTracks(tracks.filter(t => t.id !== trackId));
+    if (selectedTrackId === trackId) setSelectedTrackId(null);
+  }, [tracks, setTracks, selectedTrackId]);
+
   const setTrackVolume = useCallback((trackId: string, vol: number) => {
     setTracks(tracks.map(t => t.id === trackId ? { ...t, volume: vol } : t));
   }, [tracks, setTracks]);
@@ -616,7 +621,8 @@ export default function Studio() {
     escape: () => { setEditingPlugin(null); setShowRecordOptions(false); setShowBounce(false); setShowSampleBrowser(false); setShowCodeSampler(false); setShowTuner(false); setShowLooper(false); setShowSampler(false); setShowSynth(false); setShowPianoRoll(false); setEditingMidiTrackId(null); },
     toggleMute: selectedTrack ? () => toggleMute(selectedTrack.id) : undefined,
     toggleSolo: selectedTrack ? () => toggleSolo(selectedTrack.id) : undefined,
-  }), [togglePlay, toggleRecording, undoHistory, redoHistory, handleManualSave, selectedTrack, toggleMute, toggleSolo]);
+    delete: selectedTrack ? () => deleteTrack(selectedTrack.id) : undefined,
+  }), [togglePlay, toggleRecording, undoHistory, redoHistory, handleManualSave, selectedTrack, toggleMute, toggleSolo, deleteTrack]);
 
   useKeyboardShortcuts(shortcuts);
 

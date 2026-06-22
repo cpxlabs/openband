@@ -149,6 +149,9 @@ User's project collection:
 - Sign-out with loading state
 - Profile info (member since, location, bio)
 
+### Bug-Fix Rounds (9 completed)
+Ongoing hardening through periodic fix-and-verify cycles. Each round fixes verified bugs (stale closures, O(n²) maps, unused imports, missing error handlers, type gaps, CSP issues, stale state) and runs the full tsc + vitest + build suite before shipping.
+
 ## Project Structure
 
 ```

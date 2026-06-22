@@ -29,6 +29,7 @@ export default function Library() {
       key: config.key,
       bpm: String(config.bpm),
     });
+    setRefreshKey(k => k + 1);
     setShowNewProject(false);
     router.push(`/studio/${projectId}?${params.toString()}`);
   }, [router]);
