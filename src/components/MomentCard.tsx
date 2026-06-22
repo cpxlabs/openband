@@ -64,8 +64,6 @@ export function MomentCard({ moment }: MomentCardProps) {
   const [eqValues, setEqValues] = useState<Record<string, number>>({
     bass: 0, lowMid: 0, mid: 0, highMid: 0, treble: 0,
   });
-  const loadedRef = useRef(false);
-
   const handlePlay = useCallback(() => {
     if (!playerActive) {
       setPlayerActive(true);

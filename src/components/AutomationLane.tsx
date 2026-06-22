@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Pressable } from 'react-native';
 
 export interface AutomationPoint {
   time: number;

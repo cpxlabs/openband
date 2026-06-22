@@ -80,10 +80,12 @@ export const browserBridge: NativeBridge = {
 
   async saveProject(id: string, data: string): Promise<void> {
     localStorage.setItem(`openband_project_${id}`, data);
-    const raw = localStorage.getItem('openband_project_index');
-    const index = raw ? JSON.parse(raw) : {};
-    index[id] = { title: 'Project', lastSaved: Date.now() };
-    localStorage.setItem('openband_project_index', JSON.stringify(index));
+    try {
+      const raw = localStorage.getItem('openband_project_index');
+      const index = raw ? JSON.parse(raw) : {};
+      index[id] = { title: 'Project', lastSaved: Date.now() };
+      localStorage.setItem('openband_project_index', JSON.stringify(index));
+    } catch {}
   },
 
   async loadProject(id: string): Promise<string | null> {
@@ -92,12 +94,14 @@ export const browserBridge: NativeBridge = {
 
   async deleteProject(id: string): Promise<void> {
     localStorage.removeItem(`openband_project_${id}`);
-    const raw = localStorage.getItem('openband_project_index');
-    if (raw) {
-      const index = JSON.parse(raw);
-      delete index[id];
-      localStorage.setItem('openband_project_index', JSON.stringify(index));
-    }
+    try {
+      const raw = localStorage.getItem('openband_project_index');
+      if (raw) {
+        const index = JSON.parse(raw);
+        delete index[id];
+        localStorage.setItem('openband_project_index', JSON.stringify(index));
+      }
+    } catch {}
   },
 
   onMenuAction(_callback: (action: string) => void): void {

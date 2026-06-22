@@ -1,8 +1,10 @@
+import { Platform } from 'react-native';
 import type { MIDINote } from './types';
 
 let audioCtx: AudioContext | null = null;
 
-function getAudioContext(): AudioContext {
+function getAudioContext(): AudioContext | null {
+  if (Platform.OS !== 'web') return null;
   if (!audioCtx) {
     audioCtx = new AudioContext();
   }
@@ -37,6 +39,7 @@ export function playNote(
   filterResonance: number = 0,
 ): string {
   const ctx = getAudioContext();
+  if (!ctx) return '';
   const freq = NOTE_FREQS[note] || 440;
   const vol = Math.max(0.01, velocity / 127) * 0.3;
 
@@ -75,6 +78,7 @@ export function stopNote(id: string): void {
   if (voice) {
     try {
       const ctx = getAudioContext();
+      if (!ctx) { activeVoices.delete(id); return; }
       voice.gainNode.gain.cancelScheduledValues(ctx.currentTime);
       voice.gainNode.gain.setValueAtTime(voice.gainNode.gain.value, ctx.currentTime);
       voice.gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
@@ -100,6 +104,7 @@ export function playMidiNotes(
 ): string[] {
   const ids: string[] = [];
   const ctx = getAudioContext();
+  if (!ctx) return ids;
   const now = ctx.currentTime;
   const beatDuration = 60 / bpm;
 

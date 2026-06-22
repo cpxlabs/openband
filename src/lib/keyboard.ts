@@ -14,7 +14,7 @@ export function useKeyboardShortcuts(shortcuts: ShortcutMap) {
 
     const handler = (e: KeyboardEvent) => {
       const s = shortcutsRef.current;
-      const key = e.key;
+      const key = e.key.toLowerCase();
       const ctrl = e.ctrlKey || e.metaKey;
       const shift = e.shiftKey;
 

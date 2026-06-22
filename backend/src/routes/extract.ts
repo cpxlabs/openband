@@ -53,10 +53,9 @@ router.post('/extract', (req: Request, res: Response) => {
       } catch (e) {
         const message = e instanceof Error ? e.message : 'Erro desconhecido';
 
-        cleanup(req.file?.path);
-
         if (message === 'DEMUCS_NOT_FOUND') {
           const stems = await runMock(req.file.path, STEMS_DIR);
+          cleanup(req.file?.path);
           return res.json({
             jobId: `${Date.now()}`,
             stems,
@@ -65,6 +64,7 @@ router.post('/extract', (req: Request, res: Response) => {
           });
         }
 
+        cleanup(req.file?.path);
         console.error('Extract error:', message);
         res.status(500).json({ error: 'Erro ao processar áudio', ...(isProduction ? {} : { details: message }) });
       }

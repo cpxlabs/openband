@@ -77,7 +77,7 @@ export function saveProject(id: string, data: Omit<ProjectData, 'id' | 'lastSave
   }
   checkBridge().then(available => {
     if (available) saveViaBridge(id, project);
-  });
+  }).catch(() => {});
 }
 
 export function loadProject(id: string): ProjectData | null {
@@ -108,7 +108,7 @@ export function deleteProject(id: string): void {
   }
   checkBridge().then(available => {
     if (available) deleteViaBridge(id);
-  });
+  }).catch(() => {});
 }
 
 export function exportProject(id: string): string | null {
@@ -155,14 +155,19 @@ function sanitizeProjectData(raw: unknown): ProjectData | null {
 export function importProject(json: string): string | null {
   try {
     const parsed = JSON.parse(json);
-    if (parsed && typeof parsed === 'object') {
-      delete parsed.__proto__;
-      delete parsed.constructor;
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      const sanitized: Record<string, unknown> = Object.create(null);
+      for (const key of Object.keys(parsed)) {
+        if (Object.prototype.hasOwnProperty.call(parsed, key)) {
+          sanitized[key] = (parsed as Record<string, unknown>)[key];
+        }
+      }
+      const data = sanitizeProjectData(sanitized);
+      if (!data) return null;
+      saveProject(data.id, data);
+      return data.id;
     }
-    const data = sanitizeProjectData(parsed);
-    if (!data) return null;
-    saveProject(data.id, data);
-    return data.id;
+    return null;
   } catch {
     return null;
   }

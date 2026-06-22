@@ -34,6 +34,15 @@ router.post('/master/bounce', upload.single('audio'), async (req: Request, res: 
     await new Promise<void>((resolve, reject) => {
       const inputStream = fs.createReadStream(req.file!.path);
       const outputStream = fs.createWriteStream(outputPath);
+      let done = false;
+      function cleanup(err?: Error) {
+        if (done) return;
+        done = true;
+        inputStream.destroy();
+        outputStream.destroy();
+        fs.unlink(outputPath, () => {});
+        if (err) reject(err);
+      }
 
       inputStream.pipe(outputStream);
 
@@ -41,11 +50,12 @@ router.post('/master/bounce', upload.single('audio'), async (req: Request, res: 
         fs.unlink(req.file!.path, (err) => {
           if (err) console.error('cleanup error:', err);
         });
+        done = true;
         resolve();
       });
 
-      outputStream.on('error', reject);
-      inputStream.on('error', reject);
+      outputStream.on('error', cleanup);
+      inputStream.on('error', cleanup);
     });
 
     res.json({

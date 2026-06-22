@@ -167,12 +167,24 @@ ipcMain.handle('show-save-dialog', async (_event, options) => {
   return result.canceled ? null : result.filePath ?? null;
 });
 
+const ALLOWED_DIRS = [app.getPath('documents'), app.getPath('userData'), PROJECTS_DIR];
+function isPathAllowed(target: string): boolean {
+  const resolved = path.resolve(target);
+  return ALLOWED_DIRS.some(dir => resolved.startsWith(dir + path.sep) || resolved === dir);
+}
+
 ipcMain.handle('read-file', async (_event, filePath) => {
-  const buffer = await fs.promises.readFile(filePath);
-  return buffer.buffer;
+  if (!isPathAllowed(filePath)) throw new Error('Access denied');
+  try {
+    const buffer = await fs.promises.readFile(filePath);
+    return buffer.buffer;
+  } catch {
+    return null;
+  }
 });
 
 ipcMain.handle('write-file', async (_event, filePath, data) => {
+  if (!isPathAllowed(filePath)) throw new Error('Access denied');
   await fs.promises.writeFile(filePath, Buffer.from(data));
 });
 
@@ -206,23 +218,33 @@ ipcMain.handle('list-projects', async () => {
   return projects.sort((a, b) => b.lastModified - a.lastModified);
 });
 
+function sanitizeProjectId(id: string): string {
+  return path.basename(id).replace(/[^a-zA-Z0-9_-]/g, '');
+}
+
 ipcMain.handle('save-project', async (_event, id, data) => {
   ensureProjectsDir();
-  const filePath = path.join(PROJECTS_DIR, `${id}.openband.json`);
+  const safeId = sanitizeProjectId(id);
+  const filePath = path.join(PROJECTS_DIR, `${safeId}.openband.json`);
   await fs.promises.writeFile(filePath, data, 'utf-8');
 });
 
 ipcMain.handle('load-project', async (_event, id) => {
-  const filePath = path.join(PROJECTS_DIR, `${id}.openband.json`);
-  if (!fs.existsSync(filePath)) return null;
-  return fs.promises.readFile(filePath, 'utf-8');
+  const safeId = sanitizeProjectId(id);
+  const filePath = path.join(PROJECTS_DIR, `${safeId}.openband.json`);
+  try {
+    return await fs.promises.readFile(filePath, 'utf-8');
+  } catch {
+    return null;
+  }
 });
 
 ipcMain.handle('delete-project', async (_event, id) => {
-  const filePath = path.join(PROJECTS_DIR, `${id}.openband.json`);
-  if (fs.existsSync(filePath)) {
+  const safeId = sanitizeProjectId(id);
+  const filePath = path.join(PROJECTS_DIR, `${safeId}.openband.json`);
+  try {
     await fs.promises.unlink(filePath);
-  }
+  } catch {}
 });
 
 app.whenReady().then(createWindow);

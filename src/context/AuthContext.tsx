@@ -82,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     if (isVisitor) {
       setIsVisitor(false);
       setSession(null);
@@ -90,7 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     await supabase.auth.signOut();
-  };
+  }, [isVisitor]);
 
   const signInAsVisitor = useCallback(async () => {
     const s = createVisitorSession();

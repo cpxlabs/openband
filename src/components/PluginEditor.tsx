@@ -209,7 +209,7 @@ function EqEditor({ plugin, onParamChange }: { plugin: Plugin; onParamChange: (i
 function CompressorEditor({ plugin, onParamChange }: { plugin: Plugin; onParamChange: (id: string, v: number) => void }) {
   const threshold = plugin.params.threshold ?? -18;
   const ratio = plugin.params.ratio ?? 4;
-  const reduction = threshold < 0 ? Math.min(threshold, -(Math.abs(threshold) * (1 - 1 / ratio))) : 0;
+  const reduction = threshold < 0 ? threshold * (1 - 1 / ratio) : 0;
 
   return (
     <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
@@ -236,7 +236,7 @@ function CompressorEditor({ plugin, onParamChange }: { plugin: Plugin; onParamCh
           <View className="flex-row items-center gap-1">
             <Text className="text-gray-500 text-[9px]">GR:</Text>
             <Text className="text-[#ff6482] font-mono text-xs font-bold">
-              {reduction <= 0 ? '0.0' : reduction.toFixed(1)} dB
+              {reduction < 0 ? reduction.toFixed(1) : '0.0'} dB
             </Text>
           </View>
           <View className="flex-row items-center gap-1">

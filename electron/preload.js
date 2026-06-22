@@ -12,7 +12,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   loadProject: (id) => ipcRenderer.invoke('load-project', id),
   deleteProject: (id) => ipcRenderer.invoke('delete-project', id),
   onMenuAction: (callback) => {
-    ipcRenderer.on('menu-action', (_event, action) => callback(action));
+    const handler = (_event: Electron.IpcRendererEvent, action: string) => callback(action);
+    ipcRenderer.on('menu-action', handler);
+    return () => ipcRenderer.removeListener('menu-action', handler);
   },
   removeMenuActionListener: () => {
     ipcRenderer.removeAllListeners('menu-action');

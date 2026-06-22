@@ -345,9 +345,10 @@ export default function Extractor() {
                 title="Adicionar todos ao estúdio"
                 icon="+"
                 onPress={() => {
+                  let lastId = '';
                   results.forEach(stem => {
-                    const id = `stem-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-                    saveProject(id, {
+                    lastId = `stem-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+                    saveProject(lastId, {
                       title: stem.label,
                       genre: 'pop', key: 'C', bpm: 120,
                       tracks: [{
@@ -363,7 +364,6 @@ export default function Extractor() {
                       recordSettings: { armed: false, inputSource: 'mic', quality: 'high', sampleRate: 44100, mono: false, preRoll: 0 },
                     });
                   });
-                  const lastId = `stem-${Date.now()}`;
                   router.push(`/studio/${lastId}?title=multi_stems`);
                 }}
               />

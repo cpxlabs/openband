@@ -7,6 +7,7 @@ import masterRoutes from './routes/master';
 import { checkDemucsInstalled } from './services/demucs';
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3001;
 const STEMS_DIR = path.resolve(process.cwd(), 'stems');
 
@@ -65,10 +66,14 @@ app.use('/api', extractRoutes);
 app.use('/api', masterRoutes);
 
 let demucsAvailable: boolean | null = null;
+let demucsCheckPromise: Promise<boolean> | null = null;
 
 app.get('/api/health', async (_req, res) => {
   if (demucsAvailable === null) {
-    demucsAvailable = await checkDemucsInstalled();
+    if (!demucsCheckPromise) {
+      demucsCheckPromise = checkDemucsInstalled().then(r => { demucsAvailable = r; return r; });
+    }
+    demucsAvailable = await demucsCheckPromise;
   }
   res.json({ status: 'ok' });
 });
