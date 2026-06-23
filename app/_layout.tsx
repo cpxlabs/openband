@@ -58,7 +58,9 @@ export default function RootLayout() {
         const resp = await fetch("/sw.js", { method: "HEAD" });
         if (!resp.ok) return;
         await navigator.serviceWorker.register("/sw.js");
-      } catch {}
+      } catch (e) {
+        console.warn('Service worker registration failed:', e);
+      }
     };
     if (document.readyState === "complete") { register(); return; }
     window.addEventListener("load", register);

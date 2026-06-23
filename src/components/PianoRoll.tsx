@@ -81,6 +81,17 @@ export function PianoRoll({
 
   const [selectedNoteId, setSelectedNoteId] = useState<number | null>(null);
   const draggingRef = useRef<{ index: number; startX: number; startY: number; origNote: MIDINote } | null>(null);
+  const gridElRef = useRef<View | null>(null);
+  const lastPointerRef = useRef<{ x: number; y: number } | null>(null);
+
+  const getGridCoords = useCallback((pageX: number, pageY: number) => {
+    const el = gridElRef.current as unknown as HTMLElement | null;
+    if (!el) return { beat: 0, pitch: 0 };
+    const rect = el.getBoundingClientRect();
+    const x = pageX - rect.left;
+    const y = pageY - rect.top;
+    return { x, y };
+  }, []);
 
   const isInScale = useCallback((pitch: number) => {
     const scaleNotes = getScaleNotes(keySignature, scale);
@@ -89,10 +100,12 @@ export function PianoRoll({
 
   const isWhiteKey = (pitch: number) => WHITE_KEYS.includes(pitch % 12);
 
-  const handleGridTap = useCallback((evt: { locationX: number; locationY: number }) => {
-    if (draggingRef.current) return;
-    const beat = evt.locationX / PX_PER_BEAT;
-    const pitchOffset = Math.floor(evt.locationY / ROW_HEIGHT);
+  const handleGridTap = useCallback(() => {
+    if (draggingRef.current || !lastPointerRef.current) return;
+    const { x, y } = lastPointerRef.current;
+    lastPointerRef.current = null;
+    const beat = x / PX_PER_BEAT;
+    const pitchOffset = Math.floor(y / ROW_HEIGHT);
     const pitch = maxPitch - pitchOffset;
 
     if (pitch < 0 || pitch > 127 || beat < 0 || beat > totalBeats) return;
@@ -103,16 +116,7 @@ export function PianoRoll({
     const existingIdx = notes.findIndex(n =>
       n.pitch === pitch && Math.abs(n.start - snappedBeat) < 0.01
     );
-
-    if (existingIdx >= 0) {
-      if (selectedNoteId === existingIdx) {
-        onChange(notes.filter((_, i) => i !== existingIdx));
-        setSelectedNoteId(null);
-      } else {
-        setSelectedNoteId(existingIdx);
-      }
-      return;
-    }
+    if (existingIdx >= 0) return;
 
     const newNote: MIDINote = {
       pitch,
@@ -125,9 +129,10 @@ export function PianoRoll({
     setSelectedNoteId(next.indexOf(newNote));
   }, [notes, onChange, snap, totalBeats, maxPitch, selectedNoteId]);
 
-  const handleGridLongPress = useCallback((evt: { nativeEvent: { locationX: number; locationY: number } }) => {
-    const x = evt.nativeEvent.locationX;
-    const y = evt.nativeEvent.locationY;
+  const handleGridLongPress = useCallback(() => {
+    if (!lastPointerRef.current) return;
+    const { x, y } = lastPointerRef.current;
+    lastPointerRef.current = null;
     const beat = x / PX_PER_BEAT;
     const pitchOffset = Math.floor(y / ROW_HEIGHT);
     const pitch = maxPitch - pitchOffset;
@@ -141,22 +146,20 @@ export function PianoRoll({
     }
   }, [notes, onChange, snap, maxPitch]);
 
-  const handleNoteDragStart = useCallback((index: number, evt: { locationX: number; locationY: number }) => {
+  const handleNoteDragStart = useCallback((index: number, pageX: number, pageY: number) => {
     draggingRef.current = {
       index,
-      startX: evt.locationX,
-      startY: evt.locationY,
+      startX: pageX,
+      startY: pageY,
       origNote: { ...notes[index] },
     };
     setSelectedNoteId(index);
   }, [notes]);
 
-  const handleNoteDragMove = useCallback((clientX: number, clientY: number) => {
-    const grid = gridRef.current?.getScrollableNode?.() as HTMLElement | undefined;
-    if (!draggingRef.current || !grid) return;
-    const rect = grid.getBoundingClientRect();
-    const dx = (clientX - rect.left) - draggingRef.current.startX;
-    const dy = (clientY - rect.top) - draggingRef.current.startY;
+  const handleNoteDragMove = useCallback((pageX: number, pageY: number) => {
+    if (!draggingRef.current) return;
+    const dx = pageX - draggingRef.current.startX;
+    const dy = pageY - draggingRef.current.startY;
 
     const beatDelta = Math.round(dx / (PX_PER_BEAT / 4)) * 0.25;
     const pitchDelta = Math.round(-dy / ROW_HEIGHT);
@@ -179,7 +182,7 @@ export function PianoRoll({
     const onMove = (e: PointerEvent) => {
       if (!draggingRef.current) return;
       e.preventDefault();
-      handleNoteDragMove(e.clientX, e.clientY);
+      handleNoteDragMove(e.pageX, e.pageY);
     };
     const onUp = () => {
       if (!draggingRef.current) return;
@@ -283,7 +286,7 @@ export function PianoRoll({
             onChange(notes.filter((_, i) => i !== idx));
             setSelectedNoteId(null);
           }}
-          onPressIn={(e) => handleNoteDragStart(idx, e.nativeEvent)}
+            onPressIn={(e) => handleNoteDragStart(idx, e.nativeEvent.pageX ?? 0, e.nativeEvent.pageY ?? 0)}
           style={{
             position: 'absolute',
             left,
@@ -379,14 +382,24 @@ export function PianoRoll({
                   scrollEnabled={!draggingRef.current}
                   className="flex-1"
                 >
-                  <Pressable
-                    onPress={(e) => handleGridTap(e.nativeEvent)}
-                    onLongPress={(e) => handleGridLongPress(e)}
+                  <View
+                    ref={gridElRef}
+                    onPointerDown={(e) => {
+                      const el = gridElRef.current as unknown as HTMLElement | null;
+                      if (!el) return;
+                      const rect = el.getBoundingClientRect();
+                      const pp = e.nativeEvent as unknown as PointerEvent;
+                      const elX = pp.clientX - rect.left;
+                      const elY = pp.clientY - rect.top;
+                      lastPointerRef.current = { x: elX, y: elY };
+                    }}
                     style={{ width: totalWidth, height: gridHeight }}
                   >
-                    {renderGrid()}
-                    {renderNotes()}
-                  </Pressable>
+                    <Pressable onPress={handleGridTap} onLongPress={handleGridLongPress}>
+                      {renderGrid()}
+                      {renderNotes()}
+                    </Pressable>
+                  </View>
                 </ScrollView>
               </ScrollView>
             </View>

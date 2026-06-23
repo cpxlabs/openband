@@ -87,7 +87,9 @@ export const browserBridge: NativeBridge = {
       const index = raw ? JSON.parse(raw) : {};
       index[id] = { title: 'Project', lastSaved: Date.now() };
       localStorage.setItem('openband_project_index', JSON.stringify(index));
-    } catch {}
+    } catch (e) {
+      console.warn('Bridge saveProject index update failed:', e);
+    }
   },
 
   async loadProject(id: string): Promise<string | null> {
@@ -103,7 +105,9 @@ export const browserBridge: NativeBridge = {
         delete index[id];
         localStorage.setItem('openband_project_index', JSON.stringify(index));
       }
-    } catch {}
+    } catch (e) {
+      console.warn('Bridge deleteProject index update failed:', e);
+    }
   },
 
   onMenuAction(_callback: (action: string) => void): void {

@@ -73,7 +73,9 @@ export function saveProject(id: string, data: Omit<ProjectData, 'id' | 'lastSave
       const index = listProjectIndex();
       index[id] = { title: data.title, lastSaved: project.lastSaved };
       storage.setItem(INDEX_KEY, JSON.stringify(index));
-    } catch {}
+    } catch (e) {
+      console.warn('Project save failed:', e);
+    }
   }
   checkBridge().then(available => {
     if (available) saveViaBridge(id, project).catch((e: unknown) => {
