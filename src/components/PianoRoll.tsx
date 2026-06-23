@@ -57,6 +57,17 @@ function snapValue(value: number, snap: 'bar' | 'beat' | '16th'): number {
   return Math.round(value / divisions) * divisions;
 }
 
+function posToNote(
+  x: number, y: number,
+  maxPitch: number, totalBeats: number, snap: 'bar' | 'beat' | '16th',
+): { pitch: number; beat: number } | null {
+  const beat = x / PX_PER_BEAT;
+  const pitchOffset = Math.floor(y / ROW_HEIGHT);
+  const pitch = maxPitch - pitchOffset;
+  if (pitch < 0 || pitch > 127 || beat < 0 || beat > totalBeats) return null;
+  return { pitch, beat: snapValue(beat, snap) };
+}
+
 export function PianoRoll({
   notes,
   onChange,
@@ -69,7 +80,7 @@ export function PianoRoll({
   onClose,
   trackName,
 }: PianoRollProps) {
-  const gridRef = useRef<ScrollView>(null);
+  const gridRef = useRef<View>(null);
   const totalBeats = numBars * 4;
   const totalWidth = totalBeats * PX_PER_BEAT;
 
@@ -80,113 +91,141 @@ export function PianoRoll({
   const gridHeight = numKeys * ROW_HEIGHT;
 
   const [selectedNoteId, setSelectedNoteId] = useState<number | null>(null);
-  const draggingRef = useRef<{ index: number; startX: number; startY: number; origNote: MIDINote } | null>(null);
-  const gridElRef = useRef<View | null>(null);
-  const lastPointerRef = useRef<{ x: number; y: number } | null>(null);
-
-  const getGridCoords = useCallback((pageX: number, pageY: number) => {
-    const el = gridElRef.current as unknown as HTMLElement | null;
-    if (!el) return { beat: 0, pitch: 0 };
-    const rect = el.getBoundingClientRect();
-    const x = pageX - rect.left;
-    const y = pageY - rect.top;
-    return { x, y };
-  }, []);
+  const dragRef = useRef<{
+    index: number; startPX: number; startPY: number; origNote: MIDINote;
+  } | null>(null);
+  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const holdPosRef = useRef<{ x: number; y: number } | null>(null);
+  const pressNoteIdx = useRef<number | null>(null);
 
   const isInScale = useCallback((pitch: number) => {
-    const scaleNotes = getScaleNotes(keySignature, scale);
-    return scaleNotes.has(pitch % 12);
+    return getScaleNotes(keySignature, scale).has(pitch % 12);
   }, [keySignature, scale]);
 
   const isWhiteKey = (pitch: number) => WHITE_KEYS.includes(pitch % 12);
 
-  const handleGridTap = useCallback(() => {
-    if (draggingRef.current || !lastPointerRef.current) return;
-    const { x, y } = lastPointerRef.current;
-    lastPointerRef.current = null;
-    const beat = x / PX_PER_BEAT;
-    const pitchOffset = Math.floor(y / ROW_HEIGHT);
-    const pitch = maxPitch - pitchOffset;
-
-    if (pitch < 0 || pitch > 127 || beat < 0 || beat > totalBeats) return;
-
-    const snappedBeat = snapValue(beat, snap);
-    const snappedDuration = snap === 'bar' ? 4 : snap === 'beat' ? 1 : 0.25;
-
-    const existingIdx = notes.findIndex(n =>
-      n.pitch === pitch && Math.abs(n.start - snappedBeat) < 0.01
+  const noteAt = useCallback((pitch: number, beat: number) => {
+    return notes.findIndex(n =>
+      n.pitch === pitch && Math.abs(n.start - beat) < 0.01
     );
-    if (existingIdx >= 0) return;
-
-    const newNote: MIDINote = {
-      pitch,
-      start: Math.max(0, snappedBeat),
-      duration: snappedDuration,
-      velocity: 100,
-    };
-    const next = [...notes, newNote].sort((a, b) => a.start - b.start || b.pitch - a.pitch);
-    onChange(next);
-    setSelectedNoteId(next.indexOf(newNote));
-  }, [notes, onChange, snap, totalBeats, maxPitch, selectedNoteId]);
-
-  const handleGridLongPress = useCallback(() => {
-    if (!lastPointerRef.current) return;
-    const { x, y } = lastPointerRef.current;
-    lastPointerRef.current = null;
-    const beat = x / PX_PER_BEAT;
-    const pitchOffset = Math.floor(y / ROW_HEIGHT);
-    const pitch = maxPitch - pitchOffset;
-
-    const idx = notes.findIndex(n =>
-      n.pitch === pitch && Math.abs(n.start - snapValue(beat, snap)) < 0.01
-    );
-    if (idx >= 0) {
-      onChange(notes.filter((_, i) => i !== idx));
-      setSelectedNoteId(null);
-    }
-  }, [notes, onChange, snap, maxPitch]);
-
-  const handleNoteDragStart = useCallback((index: number, pageX: number, pageY: number) => {
-    draggingRef.current = {
-      index,
-      startX: pageX,
-      startY: pageY,
-      origNote: { ...notes[index] },
-    };
-    setSelectedNoteId(index);
   }, [notes]);
 
-  const handleNoteDragMove = useCallback((pageX: number, pageY: number) => {
-    if (!draggingRef.current) return;
-    const dx = pageX - draggingRef.current.startX;
-    const dy = pageY - draggingRef.current.startY;
+  const getGridXY = useCallback((clientX: number, clientY: number) => {
+    const el = gridRef.current as unknown as HTMLElement | null;
+    if (!el) return { x: 0, y: 0 };
+    const rect = el.getBoundingClientRect();
+    return { x: clientX - rect.left, y: clientY - rect.top };
+  }, []);
 
+  const handlePointerDown = useCallback((e: any) => {
+    const { x, y } = getGridXY(e.nativeEvent.clientX, e.nativeEvent.clientY);
+    const pos = posToNote(x, y, maxPitch, totalBeats, snap);
+    if (!pos) return;
+    const idx = noteAt(pos.pitch, pos.beat);
+    pressNoteIdx.current = idx >= 0 ? idx : null;
+
+    if (idx >= 0) {
+      setSelectedNoteId(idx);
+      dragRef.current = {
+        index: idx,
+        startPX: e.nativeEvent.pageX,
+        startPY: e.nativeEvent.pageY,
+        origNote: { ...notes[idx] },
+      };
+    } else {
+      holdPosRef.current = { x, y };
+      holdTimer.current = setTimeout(() => {
+        if (holdPosRef.current) {
+          const hp = holdPosRef.current;
+          const hpos = posToNote(hp.x, hp.y, maxPitch, totalBeats, snap);
+          if (hpos) {
+            const hidx = noteAt(hpos.pitch, hpos.beat);
+            if (hidx >= 0) {
+              onChange(notes.filter((_, i) => i !== hidx));
+              setSelectedNoteId(null);
+            }
+          }
+          holdPosRef.current = null;
+        }
+      }, 500);
+    }
+  }, [getGridXY, maxPitch, totalBeats, snap, noteAt, notes, onChange]);
+
+  const handlePointerMove = useCallback((e: any) => {
+    if (holdTimer.current) {
+      clearTimeout(holdTimer.current);
+      holdTimer.current = null;
+      holdPosRef.current = null;
+    }
+    if (!dragRef.current) return;
+    const dx = e.nativeEvent.pageX - dragRef.current.startPX;
+    const dy = e.nativeEvent.pageY - dragRef.current.startPY;
     const beatDelta = Math.round(dx / (PX_PER_BEAT / 4)) * 0.25;
     const pitchDelta = Math.round(-dy / ROW_HEIGHT);
 
     const newNote: MIDINote = {
-      ...draggingRef.current.origNote,
-      start: Math.max(0, snapValue(draggingRef.current.origNote.start + beatDelta, snap)),
-      pitch: Math.min(127, Math.max(0, draggingRef.current.origNote.pitch + pitchDelta)),
+      ...dragRef.current.origNote,
+      start: Math.max(0, snapValue(dragRef.current.origNote.start + beatDelta, snap)),
+      pitch: Math.min(127, Math.max(0, dragRef.current.origNote.pitch + pitchDelta)),
     };
-
-    const next = notes.map((n, i) => i === draggingRef.current!.index ? newNote : n);
+    const next = notes.map((n, i) => i === dragRef.current!.index ? newNote : n);
     onChange(next);
   }, [notes, onChange, snap]);
 
-  const handleNoteDragEnd = useCallback(() => {
-    draggingRef.current = null;
-  }, []);
+  const selectedIdRef = useRef(selectedNoteId);
+  selectedIdRef.current = selectedNoteId;
+
+  const handlePointerUp = useCallback((_e: any) => {
+    if (holdTimer.current) {
+      clearTimeout(holdTimer.current);
+      holdTimer.current = null;
+    }
+
+    if (dragRef.current) {
+      if (pressNoteIdx.current !== null) {
+        const idx = pressNoteIdx.current;
+        if (selectedIdRef.current === idx) {
+          onChange(notes.filter((_, i) => i !== idx));
+          setSelectedNoteId(null);
+        } else {
+          setSelectedNoteId(idx);
+        }
+      }
+      dragRef.current = null;
+      pressNoteIdx.current = null;
+      holdPosRef.current = null;
+      return;
+    }
+
+    if (holdPosRef.current) {
+      const { x, y } = holdPosRef.current;
+      holdPosRef.current = null;
+      const pos = posToNote(x, y, maxPitch, totalBeats, snap);
+      if (!pos) { pressNoteIdx.current = null; return; }
+      const snappedDuration = snap === 'bar' ? 4 : snap === 'beat' ? 1 : 0.25;
+      const newNote: MIDINote = {
+        pitch: pos.pitch,
+        start: Math.max(0, pos.beat),
+        duration: snappedDuration,
+        velocity: 100,
+      };
+      const next = [...notes, newNote].sort((a, b) => a.start - b.start || b.pitch - a.pitch);
+      onChange(next);
+      setSelectedNoteId(next.indexOf(newNote));
+    }
+
+    pressNoteIdx.current = null;
+  }, [notes, onChange, snap, maxPitch, totalBeats]);
 
   useEffect(() => {
     const onMove = (e: PointerEvent) => {
-      if (!draggingRef.current) return;
+      if (!dragRef.current) return;
       e.preventDefault();
-      handleNoteDragMove(e.pageX, e.pageY);
+      handlePointerMove({ nativeEvent: { pageX: e.pageX, pageY: e.pageY } });
     };
-    const onUp = () => {
-      if (!draggingRef.current) return;
-      handleNoteDragEnd();
+    const onUp = (e: PointerEvent) => {
+      if (!dragRef.current) return;
+      handlePointerUp({ nativeEvent: { pageX: e.pageX, pageY: e.pageY } });
     };
     window.addEventListener('pointermove', onMove, { passive: false });
     window.addEventListener('pointerup', onUp);
@@ -194,7 +233,7 @@ export function PianoRoll({
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
     };
-  }, [handleNoteDragMove, handleNoteDragEnd]);
+  }, [handlePointerMove, handlePointerUp]);
 
   const renderKeyboard = () => {
     const keys: React.ReactNode[] = [];
@@ -279,14 +318,8 @@ export function PianoRoll({
       const isSelected = selectedNoteId === idx;
 
       return (
-        <Pressable
+        <View
           key={`note-${idx}`}
-          onPress={() => setSelectedNoteId(isSelected ? null : idx)}
-          onLongPress={() => {
-            onChange(notes.filter((_, i) => i !== idx));
-            setSelectedNoteId(null);
-          }}
-            onPressIn={(e) => handleNoteDragStart(idx, e.nativeEvent.pageX ?? 0, e.nativeEvent.pageY ?? 0)}
           style={{
             position: 'absolute',
             left,
@@ -300,12 +333,13 @@ export function PianoRoll({
             borderColor: isSelected ? '#ff375f' : 'rgba(255,255,255,0.2)',
             zIndex: 10,
             opacity: note.velocity / 127,
+            cursor: 'pointer',
           }}
         >
           <Text className="text-[8px] text-white font-semibold px-1" style={{ lineHeight: ROW_HEIGHT - 4 }}>
             {NOTE_NAMES[note.pitch % 12]}{Math.floor(note.pitch / 12) - 1}
           </Text>
-        </Pressable>
+        </View>
       );
     });
   };
@@ -362,8 +396,7 @@ export function PianoRoll({
               <View style={{ height: HEADER_HEIGHT, marginLeft: 0 }} className="border-b border-dark-border bg-dark-surface/50">
                 <ScrollView
                   horizontal
-                  ref={gridRef}
-                  scrollEnabled={!draggingRef.current}
+                  scrollEnabled={!dragRef.current}
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={{ width: totalWidth }}
                 >
@@ -373,32 +406,31 @@ export function PianoRoll({
 
               <ScrollView
                 horizontal
-                scrollEnabled={!draggingRef.current}
+                scrollEnabled={!dragRef.current}
                 showsHorizontalScrollIndicator={false}
                 className="flex-1"
               >
                 <ScrollView
                   showsVerticalScrollIndicator={false}
-                  scrollEnabled={!draggingRef.current}
+                  scrollEnabled={!dragRef.current}
                   className="flex-1"
                 >
                   <View
-                    ref={gridElRef}
-                    onPointerDown={(e) => {
-                      const el = gridElRef.current as unknown as HTMLElement | null;
-                      if (!el) return;
-                      const rect = el.getBoundingClientRect();
-                      const pp = e.nativeEvent as unknown as PointerEvent;
-                      const elX = pp.clientX - rect.left;
-                      const elY = pp.clientY - rect.top;
-                      lastPointerRef.current = { x: elX, y: elY };
+                    ref={gridRef}
+                    onPointerDown={handlePointerDown}
+                    onPointerUp={handlePointerUp}
+                    onPointerMove={handlePointerMove}
+                    onPointerCancel={() => {
+                      if (holdTimer.current) clearTimeout(holdTimer.current);
+                      holdTimer.current = null;
+                      holdPosRef.current = null;
+                      dragRef.current = null;
+                      pressNoteIdx.current = null;
                     }}
                     style={{ width: totalWidth, height: gridHeight }}
                   >
-                    <Pressable onPress={handleGridTap} onLongPress={handleGridLongPress}>
-                      {renderGrid()}
-                      {renderNotes()}
-                    </Pressable>
+                    {renderGrid()}
+                    {renderNotes()}
                   </View>
                 </ScrollView>
               </ScrollView>
