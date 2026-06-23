@@ -109,7 +109,9 @@ export function loadProject(id: string): ProjectData | null {
     if (raw) {
       try {
         return sanitizeProjectData(JSON.parse(raw));
-      } catch {}
+      } catch (e) {
+        console.warn('Failed to parse project data:', e);
+      }
     }
   }
   return null;

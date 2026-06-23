@@ -43,8 +43,10 @@ router.post('/master/bounce', (req: Request, res: Response, next: NextFunction) 
     const outputFilename = `master_${Date.now()}.${outputFormat === 'mp3' ? 'mp3' : 'wav'}`;
     const outputPath = path.resolve(MASTER_DIR, outputFilename);
 
+    if (!req.file) { res.status(400).json({ error: 'Nenhum arquivo enviado.' }); return; }
+    const filePath = req.file.path;
     await new Promise<void>((resolve, reject) => {
-      const inputStream = fs.createReadStream(req.file!.path);
+      const inputStream = fs.createReadStream(filePath);
       const outputStream = fs.createWriteStream(outputPath);
       let done = false;
       function cleanup(err?: Error) {

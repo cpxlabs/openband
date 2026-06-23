@@ -41,7 +41,7 @@ router.post('/extract', (req: Request, res: Response) => {
             })
           : await runMock(req.file.path, STEMS_DIR);
 
-        cleanup(req.file.path);
+        if (req.file) cleanup(req.file.path);
 
         const body: ExtractResponse = {
           jobId: `${Date.now()}`,
@@ -55,8 +55,9 @@ router.post('/extract', (req: Request, res: Response) => {
 
         if (message === 'DEMUCS_NOT_FOUND') {
           try {
+            if (!req.file) throw new Error('No file uploaded');
             const stems = await runMock(req.file.path, STEMS_DIR);
-            cleanup(req.file?.path);
+            cleanup(req.file.path);
             return res.json({
               jobId: `${Date.now()}`,
               stems,

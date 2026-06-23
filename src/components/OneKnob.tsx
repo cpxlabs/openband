@@ -43,7 +43,7 @@ export function OneKnob({ label, value, onChange, min = 0, max = 100, step = 1, 
       <Text className="text-gray-400 text-[9px] font-medium">{label}</Text>
       <Pressable
         onPressIn={handlePressIn}
-        onMoveShouldSetResponder={() => true}
+        onStartShouldSetResponder={() => true}
         onResponderMove={handleMove}
         onResponderRelease={handleRelease}
         className="w-12 h-12 rounded-full items-center justify-center border-2 active:opacity-80"

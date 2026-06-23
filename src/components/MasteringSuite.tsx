@@ -58,15 +58,18 @@ async function fetchAndRenderAudio(url: string, sampleRate: number, duration: nu
   const response = await fetch(url);
   const raw = await response.arrayBuffer();
   const audioCtx = new AudioContext();
-  const decoded = await audioCtx.decodeAudioData(raw);
-  audioCtx.close();
-  const renderLen = Math.ceil(sampleRate * Math.min(duration, decoded.duration));
-  const offlineCtx = new OfflineAudioContext(2, renderLen, sampleRate);
-  const source = offlineCtx.createBufferSource();
-  source.buffer = decoded;
-  source.connect(offlineCtx.destination);
-  source.start(0);
-  return offlineCtx.startRendering();
+  try {
+    const decoded = await audioCtx.decodeAudioData(raw);
+    const renderLen = Math.ceil(sampleRate * Math.min(duration, decoded.duration));
+    const offlineCtx = new OfflineAudioContext(2, renderLen, sampleRate);
+    const source = offlineCtx.createBufferSource();
+    source.buffer = decoded;
+    source.connect(offlineCtx.destination);
+    source.start(0);
+    return offlineCtx.startRendering();
+  } finally {
+    audioCtx.close();
+  }
 }
 
 function audioBufferToWavBlob(buffer: AudioBuffer, bitDepth: number): Blob {

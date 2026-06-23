@@ -58,6 +58,7 @@ const GM_NAMES: Record<number, string> = {
 export function parseMidi(buffer: ArrayBuffer): MidiData | null {
   try {
     const view = new DataView(buffer);
+    if (view.byteLength < 14) return null;
     const header = String.fromCharCode(view.getUint8(0), view.getUint8(1), view.getUint8(2), view.getUint8(3));
     if (header !== 'MThd') return null;
 

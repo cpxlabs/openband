@@ -9,7 +9,9 @@ function getAudioContext(): AudioContext | null {
     audioCtx = new AudioContext();
   }
   if (audioCtx.state === 'suspended') {
-    audioCtx.resume().catch(() => {});
+    audioCtx.resume().catch((e: unknown) => {
+      console.warn('Failed to resume AudioContext:', e);
+    });
   }
   return audioCtx;
 }
@@ -83,7 +85,9 @@ export function stopNote(id: string): void {
       voice.gainNode.gain.setValueAtTime(voice.gainNode.gain.value, ctx.currentTime);
       voice.gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
       setTimeout(() => {
-        try { voice.oscillator.stop(); } catch {}
+        try { voice.oscillator.stop(); } catch (e) {
+          console.warn('Failed to stop oscillator:', e);
+        }
         activeVoices.delete(id);
       }, 60);
     } catch {

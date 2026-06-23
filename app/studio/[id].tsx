@@ -107,7 +107,9 @@ export default function Studio() {
           playsInSilentMode: true,
           allowsRecording: true,
         });
-      } catch {}
+      } catch (e) {
+        console.warn('Failed to set audio mode:', e);
+      }
     })();
   }, []);
 
