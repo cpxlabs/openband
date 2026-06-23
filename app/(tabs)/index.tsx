@@ -3,7 +3,7 @@ import { FlatList, View, Text, Pressable, ScrollView, Share, Platform, Alert } f
 import { useRouter } from 'expo-router';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { Card, Badge, ProgressBar, PageHeader, Avatar } from '../../src/components';
-import { DEMO_AUDIO_URL } from '../../src/lib/constants';
+import { generatePreviewUrl } from '../../src/lib/constants';
 import { GENRES } from '../../src/lib/projectTemplates';
 import { useResponsive } from '../../src/lib/responsive';
 
@@ -74,16 +74,19 @@ export default function Feed() {
     return result;
   }, [posts, genreFilter, sortMode]);
 
-  const handlePlay = useCallback((post: FeedPost) => {
+  const handlePlay = useCallback(async (post: FeedPost) => {
     if (playingId === post.id && player.playing) {
       player.pause();
       setPlayingId(null);
       return;
     }
     currentPostRef.current = post;
-    player.replace(DEMO_AUDIO_URL);
-    player.play();
-    setPlayingId(post.id);
+    const url = await generatePreviewUrl(post.id, post.duration);
+    if (url) {
+      await player.replace(url);
+      player.play();
+      setPlayingId(post.id);
+    }
   }, [playingId, player]);
 
   const handleLike = useCallback((postId: string) => {

@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { View, Text, Pressable, ScrollView, Platform, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAudioPlayer, useAudioPlayerStatus, useAudioRecorder, useAudioRecorderState, AudioModule, setAudioModeAsync, RecordingPresets } from 'expo-audio';
-import { DEMO_AUDIO_URL } from '../../src/lib/constants';
+import { generatePreviewUrl } from '../../src/lib/constants';
 import {
   Metronome,
   RecordOptions,
@@ -230,13 +230,16 @@ export default function Studio() {
   const duration = status.duration || 240;
   const anySolo = useMemo(() => tracks.some(t => t.solo), [tracks]);
 
-  const togglePlay = useCallback(() => {
+  const togglePlay = useCallback(async () => {
     if (isPlaying) { player.pause(); return; }
     if (hasLoadedRef.current) { player.play(); return; }
     hasLoadedRef.current = true;
-    player.replace(DEMO_AUDIO_URL);
-    player.play();
-  }, [isPlaying, player]);
+    const url = await generatePreviewUrl(projectTitle, 30);
+    if (url) {
+      await player.replace(url);
+      player.play();
+    }
+  }, [isPlaying, player, projectTitle]);
 
   const toggleRecording = useCallback(async () => {
     try {

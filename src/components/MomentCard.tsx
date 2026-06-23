@@ -4,7 +4,7 @@ import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { Avatar } from './Avatar';
 import { ProgressBar } from './ProgressBar';
 import { MiniMastering } from './MiniMastering';
-import { DEMO_AUDIO_URL } from '../lib/constants';
+import { generatePreviewUrl } from '../lib/constants';
 
 export interface MomentData {
   id: string;
@@ -30,21 +30,32 @@ interface MomentCardProps {
   moment: MomentData;
 }
 
-function MomentAudioPlayer({ isPlaying, onStatusChange }: {
+function MomentAudioPlayer({ isPlaying, onStatusChange, songTitle, songDuration }: {
   isPlaying: boolean;
   onStatusChange: (playing: boolean, currentTime: number, duration: number) => void;
+  songTitle: string;
+  songDuration: number;
 }) {
-  const player = useAudioPlayer(isPlaying ? DEMO_AUDIO_URL : null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const player = useAudioPlayer(previewUrl);
   const status = useAudioPlayerStatus(player);
   const prevRef = useRef({ playing: false, currentTime: 0, duration: 0 });
 
   useEffect(() => {
-    if (isPlaying) {
+    if (isPlaying && !previewUrl) {
+      generatePreviewUrl(songTitle, Math.min(songDuration, 30)).then(url => {
+        if (url) setPreviewUrl(url);
+      });
+    }
+  }, [isPlaying, previewUrl, songTitle, songDuration]);
+
+  useEffect(() => {
+    if (previewUrl && isPlaying) {
       player.play();
     } else {
       player.pause();
     }
-  }, [isPlaying, player]);
+  }, [isPlaying, player, previewUrl]);
 
   useEffect(() => {
     const p = status.playing;
@@ -155,6 +166,8 @@ export function MomentCard({ moment }: MomentCardProps) {
             <MomentAudioPlayer
               isPlaying={isPlaying}
               onStatusChange={handleStatusChange}
+              songTitle={moment.songTitle}
+              songDuration={moment.songDuration}
             />
           )}
         </View>

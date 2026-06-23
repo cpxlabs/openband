@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useMemo } from 'react';
+import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { View, Text, Pressable, Modal, Platform } from 'react-native';
 
 type WaveformType = 'sawtooth' | 'square' | 'triangle' | 'sine' | 'noise';
@@ -104,6 +104,10 @@ export function Synth({ visible, onClose, bpm }: SynthProps) {
     activeNodes.current = [];
     setPlaying(false);
   }, []);
+
+  useEffect(() => {
+    return () => { stopAll(); };
+  }, [stopAll]);
 
   const playNote = useCallback((note: number) => {
     if (Platform.OS !== 'web') return;

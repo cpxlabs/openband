@@ -19,7 +19,6 @@ import { OpenBandNative } from '../bridge';
 import { DEMO_AUDIO_URL } from '../lib/constants';
 
 interface MasteringSuiteProps {
-  initialProjectId?: string;
   onBack?: () => void;
 }
 
@@ -109,7 +108,7 @@ function audioBufferToWavBlob(buffer: AudioBuffer, bitDepth: number): Blob {
   return new Blob([arrayBuffer], { type: 'audio/wav' });
 }
 
-export function MasteringSuite({ initialProjectId, onBack }: MasteringSuiteProps) {
+export function MasteringSuite({ onBack }: MasteringSuiteProps) {
   const [session, setSession] = useState<MasteringSession>({
     inputFile: null,
     versions: [],
