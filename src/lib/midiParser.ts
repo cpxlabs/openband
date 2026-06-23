@@ -17,6 +17,10 @@ export interface MidiData {
   format: number;
   tracks: MidiTrack[];
   bpm: number;
+  timeDivision: 'metrical' | 'smpte';
+  ticksPerQuarter: number;
+  smpteFps?: number;
+  ticksPerFrame?: number;
 }
 
 function readU16(view: DataView, offset: number): number {
@@ -60,7 +64,19 @@ export function parseMidi(buffer: ArrayBuffer): MidiData | null {
     const format = readU16(view, 8);
     const numTracks = readU16(view, 10);
     const division = readU16(view, 12);
-    const ticksPerQuarter = division & 0x8000 ? 480 : division;
+    let ticksPerQuarter = 480;
+    let timeDivision: 'metrical' | 'smpte' = 'metrical';
+    let smpteFps: number | undefined;
+    let ticksPerFrame: number | undefined;
+
+    if (division & 0x8000) {
+      timeDivision = 'smpte';
+      smpteFps = 256 - (division >> 8);
+      ticksPerFrame = division & 0xFF;
+      ticksPerQuarter = Math.round(smpteFps * ticksPerFrame * 0.5);
+    } else {
+      ticksPerQuarter = division;
+    }
 
     let offset = 14;
     const tracks: MidiTrack[] = [];
@@ -163,7 +179,7 @@ export function parseMidi(buffer: ArrayBuffer): MidiData | null {
     }
 
     if (tracks.length === 0) return null;
-    return { format, tracks, bpm: globalBpm };
+    return { format, tracks, bpm: globalBpm, timeDivision, ticksPerQuarter, smpteFps, ticksPerFrame };
   } catch {
     return null;
   }
@@ -177,11 +193,20 @@ export function ticksToSeconds(ticks: number, bpm: number, ticksPerQuarter: numb
 
 import type { TrackRegion } from './types';
 
-export function midiToTrackRegions(track: MidiTrack, bpm: number, ticksPerQuarter: number = 480): TrackRegion[] {
+export function midiToTrackRegions(
+  track: MidiTrack,
+  bpm: number,
+  ticksPerQuarter: number = 480,
+  smpteFps?: number,
+  ticksPerFrame?: number,
+): TrackRegion[] {
+  const toSeconds = (smpteFps !== undefined && ticksPerFrame !== undefined)
+    ? (t: number) => t / (smpteFps * ticksPerFrame)
+    : (t: number) => ticksToSeconds(t, bpm, ticksPerQuarter);
   const minTick = track.notes.length > 0 ? Math.min(...track.notes.map(n => n.start)) : 0;
   return track.notes.map(n => ({
     id: `midi-${n.note}-${n.start}`,
-    start: ticksToSeconds(n.start - minTick, bpm, ticksPerQuarter),
-    duration: Math.max(ticksToSeconds(n.duration, bpm, ticksPerQuarter), 0.5),
+    start: toSeconds(n.start - minTick),
+    duration: Math.max(toSeconds(n.duration), 0.5),
   }));
 }

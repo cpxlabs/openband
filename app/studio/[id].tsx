@@ -623,11 +623,11 @@ export default function Studio() {
           name: `${trk.name} (${trk.instrument})`,
           color: TRACK_COLORS[(tracks.length + ti) % TRACK_COLORS.length],
           muted: false, solo: false, volume: 75, pan: 0, sends: {}, sidechainSource: null,
-          regions: midiToTrackRegions(trk, midi.bpm),
+          regions: midiToTrackRegions(trk, midi.bpm, midi.ticksPerQuarter, midi.smpteFps, midi.ticksPerFrame),
           midiNotes: trk.notes.map(n => ({
             pitch: n.note,
-            start: n.start / 480,
-            duration: n.duration / 480,
+            start: n.start / midi.ticksPerQuarter,
+            duration: n.duration / midi.ticksPerQuarter,
             velocity: n.velocity,
           })),
           plugins: [] as Plugin[],
@@ -1222,12 +1222,13 @@ export default function Studio() {
       <CodeSampler visible={showCodeSampler} onClose={() => setShowCodeSampler(false)} onRender={handleCodeRender} bpm={metronome.bpm} />
       <PromptSampler visible={showPromptSampler} onClose={() => setShowPromptSampler(false)} onRender={handlePromptMidiRender} bpm={metronome.bpm} />
       <Tuner visible={showTuner} onClose={() => setShowTuner(false)} />
-      <Sampler visible={showSampler} onClose={() => setShowSampler(false)} onAddToTrack={(name) => {
+      <Sampler visible={showSampler} onClose={() => setShowSampler(false)} onAddToTrack={(name, sampleData) => {
         const trackId = `sampler-${Date.now()}`;
         const newTrack: TrackDef = {
           id: trackId, name, color: TRACK_COLORS[tracks.length % TRACK_COLORS.length],
           muted: false, solo: false, volume: 75, pan: 0, sends: {}, sidechainSource: null,
           regions: [{ id: `s-region-${Date.now()}`, start: 0, duration: 30 }], plugins: [], automation: {},
+          samplerData: sampleData,
         };
         setTracks([...tracks, newTrack]);
         setSelectedTrackId(trackId);

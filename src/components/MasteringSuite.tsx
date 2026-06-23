@@ -201,25 +201,35 @@ export function MasteringSuite({ initialProjectId, onBack }: MasteringSuiteProps
   }, []);
 
   const handleUpload = useCallback(() => {
-    const now = Date.now();
-    const input: MasteringInput = {
-      type: inputMode,
-      filename: inputMode === 'single' ? 'mix_final.wav' : 'projeto_stems',
-      size: inputMode === 'single' ? 52428800 : 104857600,
-      sampleRate: 44100,
-      bitDepth: 24,
-      duration: 180,
-      url: DEMO_AUDIO_URL,
-      stems: inputMode === 'stems'
-        ? [
-            { name: 'Drums', url: DEMO_AUDIO_URL },
-            { name: 'Bass', url: DEMO_AUDIO_URL },
-            { name: 'Vocals', url: DEMO_AUDIO_URL },
-            { name: 'Melodies', url: DEMO_AUDIO_URL },
-          ]
-        : undefined,
+    if (Platform.OS !== 'web') return;
+    const inputEl = document.createElement('input');
+    inputEl.type = 'file';
+    inputEl.accept = '.wav,.mp3,.aiff,.flac,.ogg,.m4a';
+    inputEl.onchange = async (e: Event) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      if (file.size > 200 * 1024 * 1024) { Alert.alert('Erro', 'Arquivo muito grande (max 200MB).'); return; }
+      const url = URL.createObjectURL(file);
+      const input: MasteringInput = {
+        type: inputMode,
+        filename: file.name,
+        size: file.size,
+        sampleRate: 44100,
+        bitDepth: 24,
+        duration: 180,
+        url,
+        stems: inputMode === 'stems'
+          ? [
+              { name: 'Drums', url },
+              { name: 'Bass', url },
+              { name: 'Vocals', url },
+              { name: 'Melodies', url },
+            ]
+          : undefined,
+      };
+      setSession(prev => ({ ...prev, inputFile: input }));
     };
-    setSession(prev => ({ ...prev, inputFile: input }));
+    inputEl.click();
   }, [inputMode]);
 
   const handleClearInput = useCallback(() => {

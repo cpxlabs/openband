@@ -1,7 +1,6 @@
-import { useState, useCallback } from 'react';
-import { View, Text, Pressable, ScrollView, TextInput } from 'react-native';
+import { useState, useCallback, useRef } from 'react';
+import { View, Text, Pressable, ScrollView, TextInput, Platform } from 'react-native';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
-import { DEMO_AUDIO_URL } from '../lib/constants';
 
 interface SampleEntry {
   id: string;
@@ -135,23 +134,107 @@ interface SampleBrowserProps {
   onAddSample: (sample: SampleEntry) => void;
 }
 
+function audioBufferToWavBlob(buffer: AudioBuffer): Blob {
+  const numChannels = buffer.numberOfChannels;
+  const sampleRate = buffer.sampleRate;
+  const numSamples = buffer.length;
+  const bytesPerSample = 2;
+  const blockAlign = numChannels * bytesPerSample;
+  const dataSize = numSamples * blockAlign;
+  const headerSize = 44;
+  const totalSize = headerSize + dataSize;
+
+  const arrayBuffer = new ArrayBuffer(totalSize);
+  const view = new DataView(arrayBuffer);
+
+  const writeStr = (o: number, str: string) => {
+    for (let i = 0; i < str.length; i++) view.setUint8(o + i, str.charCodeAt(i));
+  };
+  const write16 = (o: number, v: number) => view.setUint16(o, v, true);
+  const write32 = (o: number, v: number) => view.setUint32(o, v, true);
+
+  writeStr(0, 'RIFF');
+  write32(4, 36 + dataSize);
+  writeStr(8, 'WAVE');
+  writeStr(12, 'fmt ');
+  write32(16, 16);
+  write16(20, 1);
+  write16(22, numChannels);
+  write32(24, sampleRate);
+  write32(28, sampleRate * blockAlign);
+  write16(32, blockAlign);
+  write16(34, bytesPerSample * 8);
+  writeStr(36, 'data');
+  write32(40, dataSize);
+
+  for (let i = 0; i < numSamples; i++) {
+    for (let ch = 0; ch < numChannels; ch++) {
+      const sample = buffer.getChannelData(ch)[i];
+      const offset = headerSize + (i * numChannels + ch) * bytesPerSample;
+      const pcm = Math.max(-32768, Math.min(32767, Math.round(sample * 32767)));
+      view.setInt16(offset, pcm, true);
+    }
+  }
+
+  return new Blob([arrayBuffer], { type: 'audio/wav' });
+}
+
+function hashId(id: string): number {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = ((h << 5) - h) + id.charCodeAt(i);
+  return h;
+}
+
 export function SampleBrowser({ visible, onAddSample }: SampleBrowserProps) {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
   const player = useAudioPlayer(null);
   const status = useAudioPlayerStatus(player);
   const [playingId, setPlayingId] = useState<string | null>(null);
+  const toneCache = useRef<Map<string, string>>(new Map());
+
+  const getToneUrl = useCallback(async (id: string, duration: number): Promise<string> => {
+    const cached = toneCache.current.get(id);
+    if (cached) return cached;
+    if (Platform.OS !== 'web') return '';
+    const sampleRate = 44100;
+    const h = hashId(id);
+    const freq = 110 + Math.abs(h % 880);
+    const oscTypes: OscillatorType[] = ['sine', 'triangle', 'sawtooth', 'square'];
+    const offlineCtx = new OfflineAudioContext(1, Math.ceil(sampleRate * duration), sampleRate);
+    const osc = offlineCtx.createOscillator();
+    const gain = offlineCtx.createGain();
+    osc.type = oscTypes[Math.abs(h) % 4];
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.3, 0);
+    gain.gain.linearRampToValueAtTime(0.3, 0.01);
+    gain.gain.linearRampToValueAtTime(0, duration);
+    osc.connect(gain);
+    gain.connect(offlineCtx.destination);
+    osc.start(0);
+    osc.stop(duration);
+    const buffer = await offlineCtx.startRendering();
+    const blob = audioBufferToWavBlob(buffer);
+    const url = URL.createObjectURL(blob);
+    toneCache.current.set(id, url);
+    return url;
+  }, []);
 
   const handlePlayPreview = useCallback(async (id: string) => {
     if (playingId === id) {
       player.pause();
       setPlayingId(null);
     } else {
-      await player.replace(DEMO_AUDIO_URL);
-      player.play();
-      setPlayingId(id);
+      const sample = SAMPLES.find(s => s.id === id);
+      if (!sample) return;
+      const url = await getToneUrl(id, sample.duration);
+      if (url) {
+        await player.replace(url);
+        player.play();
+        setPlayingId(id);
+      }
     }
-  }, [player, playingId]);
+  }, [player, playingId, getToneUrl]);
 
   const filtered = SAMPLES.filter(s => {
     if (category !== 'all' && s.category !== category) return false;

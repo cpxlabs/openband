@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { View, Text, Pressable, Modal, Platform } from 'react-native';
+import type { SamplerSlotData } from '../lib/types';
 
 interface SampleSlot {
   key: string;
@@ -8,6 +9,33 @@ interface SampleSlot {
   rootKey: number;
   lowKey: number;
   highKey: number;
+}
+
+function audioBufferToWavBlob(buffer: AudioBuffer): Blob {
+  const numChannels = buffer.numberOfChannels;
+  const sampleRate = buffer.sampleRate;
+  const numSamples = buffer.length;
+  const bytesPerSample = 2;
+  const blockAlign = numChannels * bytesPerSample;
+  const dataSize = numSamples * blockAlign;
+  const totalSize = 44 + dataSize;
+  const arrayBuffer = new ArrayBuffer(totalSize);
+  const view = new DataView(arrayBuffer);
+  const w = (o: number, str: string) => { for (let i = 0; i < str.length; i++) view.setUint8(o + i, str.charCodeAt(i)); };
+  w(0, 'RIFF'); view.setUint32(4, 36 + dataSize, true);
+  w(8, 'WAVE'); w(12, 'fmt ');
+  view.setUint32(16, 16, true); view.setUint16(20, 1, true);
+  view.setUint16(22, numChannels, true); view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * blockAlign, true); view.setUint16(32, blockAlign, true);
+  view.setUint16(34, bytesPerSample * 8, true);
+  w(36, 'data'); view.setUint32(40, dataSize, true);
+  for (let i = 0; i < numSamples; i++) {
+    for (let ch = 0; ch < numChannels; ch++) {
+      const offset = 44 + (i * numChannels + ch) * bytesPerSample;
+      view.setInt16(offset, Math.max(-32768, Math.min(32767, Math.round(buffer.getChannelData(ch)[i] * 32767))), true);
+    }
+  }
+  return new Blob([arrayBuffer], { type: 'audio/wav' });
 }
 
 interface ADSR {
@@ -20,7 +48,7 @@ interface ADSR {
 interface SamplerProps {
   visible: boolean;
   onClose: () => void;
-  onAddToTrack: (name: string, sampleData: SampleSlot[]) => void;
+  onAddToTrack: (name: string, sampleData: SamplerSlotData[]) => void;
 }
 
 const DRUM_PADS = [
@@ -61,6 +89,7 @@ export function Sampler({ visible, onClose, onAddToTrack }: SamplerProps) {
   const audioCtx = useRef<AudioContext | null>(null);
 
   const getAudioContext = useCallback(() => {
+    if (Platform.OS !== 'web') return null;
     if (!audioCtx.current) audioCtx.current = new AudioContext();
     if (audioCtx.current.state === 'suspended') audioCtx.current.resume();
     return audioCtx.current;
@@ -83,6 +112,7 @@ export function Sampler({ visible, onClose, onAddToTrack }: SamplerProps) {
         if (!result) { setLoadingSlot(null); return; }
         try {
           const ctx = getAudioContext();
+          if (!ctx) return;
           const buffer = await ctx.decodeAudioData(result as ArrayBuffer);
           setSlots(prev => prev.map((s, i) => i === slotIndex ? { ...s, data: buffer, name: file.name.replace(/\.[^/.]+$/, '') } : s));
         } catch {}
@@ -99,6 +129,7 @@ export function Sampler({ visible, onClose, onAddToTrack }: SamplerProps) {
     if (!slot.data) return;
     try {
       const ctx = getAudioContext();
+      if (!ctx) return;
       const source = ctx.createBufferSource();
       source.buffer = slot.data;
 
@@ -119,9 +150,17 @@ export function Sampler({ visible, onClose, onAddToTrack }: SamplerProps) {
   }, [slots, adsr, getAudioContext]);
 
   const handleAddToTrack = useCallback(() => {
-    const loadedSlots = slots.filter(s => s.data);
+    const loadedSlots = slots.filter((s): s is SampleSlot & { data: AudioBuffer } => s.data !== null);
     if (loadedSlots.length === 0) return;
-    onAddToTrack(mode === 'drum' ? 'Drum Rack' : 'Sampler', loadedSlots);
+    const sampleData: SamplerSlotData[] = loadedSlots.map(slot => {
+      let url = '';
+      if (Platform.OS === 'web') {
+        const blob = audioBufferToWavBlob(slot.data);
+        url = URL.createObjectURL(blob);
+      }
+      return { key: slot.key, name: slot.name, url, rootKey: slot.rootKey, lowKey: slot.lowKey, highKey: slot.highKey };
+    });
+    onAddToTrack(mode === 'drum' ? 'Drum Rack' : 'Sampler', sampleData);
     onClose();
   }, [slots, mode, onAddToTrack, onClose]);
 

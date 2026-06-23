@@ -25,6 +25,7 @@ export interface ProjectData {
 const STORAGE_PREFIX = 'openband_project_';
 const INDEX_KEY = 'openband_project_index';
 
+const pendingBridgeSaves = new Map<string, ProjectData>();
 let bridgeAvailable: boolean | null = null;
 
 async function checkBridge(): Promise<boolean> {
@@ -36,6 +37,27 @@ async function checkBridge(): Promise<boolean> {
     bridgeAvailable = false;
   }
   return bridgeAvailable;
+}
+
+async function flushPendingBridgeSaves(): Promise<void> {
+  if (pendingBridgeSaves.size === 0) return;
+  const ok = await checkBridge();
+  if (!ok) return;
+  for (const [id, project] of pendingBridgeSaves) {
+    try {
+      await saveViaBridge(id, project);
+      pendingBridgeSaves.delete(id);
+    } catch (e) {
+      console.error('Bridge save failed for', id, e);
+    }
+  }
+}
+
+function queueBridgeSave(id: string, project: ProjectData): void {
+  pendingBridgeSaves.set(id, project);
+  flushPendingBridgeSaves().catch((e: unknown) => {
+    console.warn('Bridge flush failed, save queued:', e);
+  });
 }
 
 function getStorage(): Storage | null {
@@ -77,13 +99,7 @@ export function saveProject(id: string, data: Omit<ProjectData, 'id' | 'lastSave
       console.warn('Project save failed:', e);
     }
   }
-  checkBridge().then(available => {
-    if (available) saveViaBridge(id, project).catch((e: unknown) => {
-      console.error('Bridge save failed:', e);
-    });
-  }).catch((e: unknown) => {
-    console.error('Bridge check failed:', e);
-  });
+  queueBridgeSave(id, project);
 }
 
 export function loadProject(id: string): ProjectData | null {
@@ -112,6 +128,11 @@ export function deleteProject(id: string): void {
     delete index[id];
     storage.setItem(INDEX_KEY, JSON.stringify(index));
   }
+  queueBridgeDelete(id);
+}
+
+function queueBridgeDelete(id: string): void {
+  pendingBridgeSaves.delete(id);
   checkBridge().then(available => {
     if (available) deleteViaBridge(id).catch((e: unknown) => {
       console.error('Bridge delete failed:', e);

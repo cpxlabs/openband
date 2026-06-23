@@ -17,6 +17,7 @@ const BIT_DEPTHS: BitDepth[] = [16, 24, 32];
 const SAMPLE_RATES: ExportSampleRate[] = [44100, 48000, 96000];
 
 interface BounceRegion {
+  id?: string;
   start: number;
   duration: number;
   url?: string;
@@ -77,6 +78,23 @@ function writeWavHeader(
   write32(offset + 40, dataSize);
 }
 
+async function generateTone(duration: number, sampleRate: number, frequency: number): Promise<AudioBuffer> {
+  const offlineCtx = new OfflineAudioContext(1, Math.ceil(sampleRate * duration), sampleRate);
+  const osc = offlineCtx.createOscillator();
+  const gain = offlineCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.value = frequency;
+  gain.gain.setValueAtTime(0, 0);
+  gain.gain.linearRampToValueAtTime(0.3, 0.01);
+  gain.gain.setValueAtTime(0.3, Math.max(0, duration - 0.1));
+  gain.gain.linearRampToValueAtTime(0, duration);
+  osc.connect(gain);
+  gain.connect(offlineCtx.destination);
+  osc.start(0);
+  osc.stop(duration);
+  return offlineCtx.startRendering();
+}
+
 async function fetchAudioData(url: string): Promise<AudioBuffer> {
   const parsed = new URL(url, typeof location !== 'undefined' ? location.origin : undefined);
   if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
@@ -114,25 +132,33 @@ async function renderMixdown(
 
   for (const track of audible) {
     for (const region of track.regions) {
-      if (!region.url) continue;
-      try {
-        const audioBuffer = await fetchAudioData(region.url);
+      let audioBuffer: AudioBuffer;
+      if (region.url) {
+        try {
+          audioBuffer = await fetchAudioData(region.url);
+        } catch {
+          console.warn(`Failed to fetch audio for region ${region.id}, generating test tone`);
+          audioBuffer = await generateTone(Math.min(region.duration, duration - region.start), sampleRate, 440);
+        }
+      } else {
+        console.warn(`Region ${region.id} has no audio URL, generating test tone`);
+        audioBuffer = await generateTone(Math.min(region.duration, duration - region.start), sampleRate, 440);
+      }
 
-        const source = offlineCtx.createBufferSource();
-        source.buffer = audioBuffer;
+      const source = offlineCtx.createBufferSource();
+      source.buffer = audioBuffer;
 
-        const gainNode = offlineCtx.createGain();
-        gainNode.gain.value = track.volume / 100;
+      const gainNode = offlineCtx.createGain();
+      gainNode.gain.value = track.volume / 100;
 
-        const panNode = offlineCtx.createStereoPanner();
-        panNode.pan.value = track.pan / 100;
+      const panNode = offlineCtx.createStereoPanner();
+      panNode.pan.value = track.pan / 100;
 
-        source.connect(gainNode);
-        gainNode.connect(panNode);
-        panNode.connect(offlineCtx.destination);
+      source.connect(gainNode);
+      gainNode.connect(panNode);
+      panNode.connect(offlineCtx.destination);
 
-        source.start(region.start, 0, Math.min(region.duration, Math.max(0, duration - region.start)));
-      } catch {}
+      source.start(region.start, 0, Math.min(region.duration, Math.max(0, duration - region.start)));
       processedRegions++;
       onProgress?.(Math.round((processedRegions / totalRegions) * 60));
     }

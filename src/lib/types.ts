@@ -5,6 +5,15 @@ export const EQ_BAND_LABELS: Record<number, string> = {
   0: 'LC', 1: 'LS', 2: 'PK', 3: 'NT', 4: 'HS', 5: 'HC',
 };
 
+export interface SamplerSlotData {
+  key: string;
+  name: string;
+  url: string;
+  rootKey: number;
+  lowKey: number;
+  highKey: number;
+}
+
 export interface TrackDef {
   id: string;
   name: string;
@@ -16,6 +25,7 @@ export interface TrackDef {
   sends: Record<string, number>;
   regions: TrackRegion[];
   midiNotes?: MIDINote[];
+  samplerData?: SamplerSlotData[];
   sidechainSource: string | null;
   plugins: Plugin[];
   automation: Record<string, AutomationPoint[]>;
