@@ -477,6 +477,25 @@ export default function Studio() {
     setSelectedTrackId(trackId);
   }, [tracks, setTracks]);
 
+  const handleAddMidiTrack = useCallback(() => {
+    const trackId = `midi-${Date.now()}`;
+    const newTrack: TrackDef = {
+      id: trackId,
+      name: `MIDI ${tracks.length + 1}`,
+      color: TRACK_COLORS[tracks.length % TRACK_COLORS.length],
+      muted: false,
+      solo: false,
+      volume: 75,
+      pan: 0, sends: {}, sidechainSource: null,
+      regions: [],
+      midiNotes: [],
+      plugins: [],
+      automation: {},
+    };
+    setTracks([...tracks, newTrack]);
+    setSelectedTrackId(trackId);
+  }, [tracks, setTracks]);
+
   const handleImportAudio = useCallback(() => {
     if (Platform.OS !== 'web') {
       Alert.alert('Importar', 'Importação disponível apenas na versão web.');
@@ -840,12 +859,10 @@ export default function Studio() {
                             className={`w-7 h-7 rounded items-center justify-center border ${showAutomation[track.id] ? 'bg-brand-accent/20 border-brand-accent' : 'bg-dark-muted/40 border-dark-border'}`}>
                       <Text className={`text-xs font-bold ${showAutomation[track.id] ? 'text-brand-accent' : 'text-gray-400'}`}>A</Text>
                     </Pressable>
-                    {track.midiNotes && track.midiNotes.length > 0 && (
-                      <Pressable onPress={() => handleOpenPianoRoll(track.id)}
-                        className="w-7 h-7 rounded items-center justify-center border bg-dark-muted/40 border-dark-border">
-                        <Text className="text-xs text-brand-accent font-bold">🎹</Text>
-                      </Pressable>
-                    )}
+                    <Pressable onPress={() => handleOpenPianoRoll(track.id)}
+                      className="w-7 h-7 rounded items-center justify-center border bg-dark-muted/40 border-dark-border">
+                      <Text className="text-xs text-brand-accent font-bold">🎹</Text>
+                    </Pressable>
                 </View>
               </Pressable>
             );
@@ -861,10 +878,15 @@ export default function Studio() {
               <Text className="text-gray-300 text-xs">📁</Text>
               <Text className="text-gray-300 text-[10px] font-semibold">Audio</Text>
             </Pressable>
-            <Pressable onPress={handleMidiImport}
+            <Pressable onPress={handleAddMidiTrack}
               className="h-8 rounded-lg bg-dark-muted items-center justify-center flex-row gap-1 active:opacity-70">
               <Text className="text-gray-300 text-xs">🎹</Text>
               <Text className="text-gray-300 text-[10px] font-semibold">MIDI</Text>
+            </Pressable>
+            <Pressable onPress={handleMidiImport}
+              className="h-8 rounded-lg bg-dark-muted items-center justify-center flex-row gap-1 active:opacity-70">
+              <Text className="text-gray-300 text-xs">📂</Text>
+              <Text className="text-gray-300 text-[10px] font-semibold">Import</Text>
             </Pressable>
           </View>
         </View>

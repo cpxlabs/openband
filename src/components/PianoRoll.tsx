@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, Pressable, ScrollView, Modal } from 'react-native';
 
 export interface MIDINote {
@@ -125,10 +125,9 @@ export function PianoRoll({
     setSelectedNoteId(next.indexOf(newNote));
   }, [notes, onChange, snap, totalBeats, maxPitch, selectedNoteId]);
 
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const longPressPos = useRef<{ x: number; y: number } | null>(null);
-
-  const handleGridLongPress = useCallback((x: number, y: number) => {
+  const handleGridLongPress = useCallback((evt: { nativeEvent: { locationX: number; locationY: number } }) => {
+    const x = evt.nativeEvent.locationX;
+    const y = evt.nativeEvent.locationY;
     const beat = x / PX_PER_BEAT;
     const pitchOffset = Math.floor(y / ROW_HEIGHT);
     const pitch = maxPitch - pitchOffset;
@@ -152,10 +151,12 @@ export function PianoRoll({
     setSelectedNoteId(index);
   }, [notes]);
 
-  const handleNoteDragMove = useCallback((evt: { locationX: number; locationY: number }) => {
-    if (!draggingRef.current) return;
-    const dx = evt.locationX - draggingRef.current.startX;
-    const dy = evt.locationY - draggingRef.current.startY;
+  const handleNoteDragMove = useCallback((clientX: number, clientY: number) => {
+    const grid = gridRef.current?.getScrollableNode?.() as HTMLElement | undefined;
+    if (!draggingRef.current || !grid) return;
+    const rect = grid.getBoundingClientRect();
+    const dx = (clientX - rect.left) - draggingRef.current.startX;
+    const dy = (clientY - rect.top) - draggingRef.current.startY;
 
     const beatDelta = Math.round(dx / (PX_PER_BEAT / 4)) * 0.25;
     const pitchDelta = Math.round(-dy / ROW_HEIGHT);
@@ -173,6 +174,24 @@ export function PianoRoll({
   const handleNoteDragEnd = useCallback(() => {
     draggingRef.current = null;
   }, []);
+
+  useEffect(() => {
+    const onMove = (e: PointerEvent) => {
+      if (!draggingRef.current) return;
+      e.preventDefault();
+      handleNoteDragMove(e.clientX, e.clientY);
+    };
+    const onUp = () => {
+      if (!draggingRef.current) return;
+      handleNoteDragEnd();
+    };
+    window.addEventListener('pointermove', onMove, { passive: false });
+    window.addEventListener('pointerup', onUp);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+  }, [handleNoteDragMove, handleNoteDragEnd]);
 
   const renderKeyboard = () => {
     const keys: React.ReactNode[] = [];
@@ -360,47 +379,14 @@ export function PianoRoll({
                   scrollEnabled={!draggingRef.current}
                   className="flex-1"
                 >
-                  <View
+                  <Pressable
+                    onPress={(e) => handleGridTap(e.nativeEvent)}
+                    onLongPress={(e) => handleGridLongPress(e)}
                     style={{ width: totalWidth, height: gridHeight }}
-                    onStartShouldSetResponder={() => true}
-                    onMoveShouldSetResponder={() => !!draggingRef.current}
-                    onResponderGrant={(e) => {
-                      if (!draggingRef.current) {
-                        longPressPos.current = { x: e.nativeEvent.locationX, y: e.nativeEvent.locationY };
-                        longPressTimer.current = setTimeout(() => {
-                          if (longPressPos.current) {
-                            handleGridLongPress(longPressPos.current.x, longPressPos.current.y);
-                            longPressPos.current = null;
-                          }
-                        }, 500);
-                      }
-                    }}
-                    onResponderRelease={(e) => {
-                      if (longPressTimer.current) {
-                        clearTimeout(longPressTimer.current);
-                        longPressTimer.current = null;
-                      }
-                      if (draggingRef.current) {
-                        handleNoteDragEnd();
-                      } else if (longPressPos.current) {
-                        handleGridTap(e.nativeEvent);
-                      }
-                      longPressPos.current = null;
-                    }}
-                    onResponderMove={(e) => {
-                      if (longPressTimer.current) {
-                        clearTimeout(longPressTimer.current);
-                        longPressTimer.current = null;
-                        longPressPos.current = null;
-                      }
-                      if (draggingRef.current) {
-                        handleNoteDragMove(e.nativeEvent);
-                      }
-                    }}
                   >
                     {renderGrid()}
                     {renderNotes()}
-                  </View>
+                  </Pressable>
                 </ScrollView>
               </ScrollView>
             </View>
