@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, Pressable, Image } from 'react-native';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { Avatar } from './Avatar';
@@ -36,6 +36,7 @@ function MomentAudioPlayer({ isPlaying, onStatusChange }: {
 }) {
   const player = useAudioPlayer(isPlaying ? DEMO_AUDIO_URL : null);
   const status = useAudioPlayerStatus(player);
+  const prevRef = useRef({ playing: false, currentTime: 0, duration: 0 });
 
   useEffect(() => {
     if (isPlaying) {
@@ -46,7 +47,14 @@ function MomentAudioPlayer({ isPlaying, onStatusChange }: {
   }, [isPlaying, player]);
 
   useEffect(() => {
-    onStatusChange(status.playing, status.currentTime ?? 0, status.duration ?? 0);
+    const p = status.playing;
+    const ct = status.currentTime ?? 0;
+    const d = status.duration ?? 0;
+    const prev = prevRef.current;
+    if (p !== prev.playing || Math.abs(ct - prev.currentTime) > 0.01 || Math.abs(d - prev.duration) > 0.01) {
+      prevRef.current = { playing: p, currentTime: ct, duration: d };
+      onStatusChange(p, ct, d);
+    }
   }, [status, onStatusChange]);
 
   return null;

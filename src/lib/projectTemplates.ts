@@ -170,6 +170,6 @@ const ALL_KEYS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B
 
 export const MUSICAL_KEYS = ALL_KEYS.flatMap(k => [k, `${k}m`]);
 
-export function keyLabel(key: string): string {
-  return key;
-}
+export const keyLabel = (k: string) => k;
+
+

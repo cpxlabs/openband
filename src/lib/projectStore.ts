@@ -76,8 +76,12 @@ export function saveProject(id: string, data: Omit<ProjectData, 'id' | 'lastSave
     } catch {}
   }
   checkBridge().then(available => {
-    if (available) saveViaBridge(id, project).catch(() => {});
-  }).catch(() => {});
+    if (available) saveViaBridge(id, project).catch((e: unknown) => {
+      console.error('Bridge save failed:', e);
+    });
+  }).catch((e: unknown) => {
+    console.error('Bridge check failed:', e);
+  });
 }
 
 export function loadProject(id: string): ProjectData | null {
@@ -107,8 +111,12 @@ export function deleteProject(id: string): void {
     storage.setItem(INDEX_KEY, JSON.stringify(index));
   }
   checkBridge().then(available => {
-    if (available) deleteViaBridge(id).catch(() => {});
-  }).catch(() => {});
+    if (available) deleteViaBridge(id).catch((e: unknown) => {
+      console.error('Bridge delete failed:', e);
+    });
+  }).catch((e: unknown) => {
+    console.error('Bridge check failed:', e);
+  });
 }
 
 export function exportProject(id: string): string | null {

@@ -1,6 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { View, Text, Modal, Pressable, Platform, Alert } from 'react-native';
 import { OpenBandNative } from '../bridge';
+import { ProgressBar } from './ProgressBar';
 
 type ExportFormat = 'wav' | 'aiff' | 'flac';
 type BitDepth = 16 | 24 | 32;
@@ -98,12 +99,16 @@ async function renderMixdown(
   tracks: BounceTrack[],
   duration: number,
   sampleRate: ExportSampleRate,
+  onProgress?: (pct: number) => void,
 ): Promise<AudioBuffer> {
   const anySolo = tracks.some(t => t.solo);
   const audible = tracks.filter(t => {
     if (anySolo) return t.solo && !t.muted;
     return !t.muted;
   });
+
+  const totalRegions = audible.reduce((sum, t) => sum + t.regions.length, 0);
+  let processedRegions = 0;
 
   const offlineCtx = new OfflineAudioContext(2, Math.ceil(sampleRate * duration), sampleRate);
 
@@ -128,10 +133,15 @@ async function renderMixdown(
 
         source.start(region.start, 0, Math.min(region.duration, Math.max(0, duration - region.start)));
       } catch {}
+      processedRegions++;
+      onProgress?.(Math.round((processedRegions / totalRegions) * 60));
     }
   }
 
-  return offlineCtx.startRendering();
+  onProgress?.(65);
+  const rendered = await offlineCtx.startRendering();
+  onProgress?.(70);
+  return rendered;
 }
 
 function audioBufferToWavBlob(buffer: AudioBuffer, bitDepth: BitDepth): Blob {
@@ -176,6 +186,13 @@ export function BounceDialog({ visible, onClose, projectTitle, duration, tracks 
   const [bitDepth, setBitDepth] = useState<BitDepth>(24);
   const [sampleRate, setSampleRate] = useState<ExportSampleRate>(48000);
   const [exporting, setExporting] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const progressRef = useRef(0);
+
+  const updateProgress = useCallback((pct: number) => {
+    progressRef.current = pct;
+    setProgress(pct);
+  }, []);
 
   const handleExport = useCallback(async () => {
     if (Platform.OS !== 'web') {
@@ -184,29 +201,38 @@ export function BounceDialog({ visible, onClose, projectTitle, duration, tracks 
       return;
     }
     setExporting(true);
+    setProgress(0);
+    progressRef.current = 0;
     try {
       const ext = FORMATS.find(f => f.key === format)?.ext || '.wav';
       let blob: Blob;
 
       if (tracks.length > 0) {
-        const mixBuffer = await renderMixdown(tracks, Math.min(duration, 300), sampleRate);
+        const mixBuffer = await renderMixdown(tracks, Math.min(duration, 300), sampleRate, updateProgress);
+        updateProgress(75);
         blob = audioBufferToWavBlob(mixBuffer, bitDepth);
+        updateProgress(90);
       } else {
+        updateProgress(50);
         const sampleCount = Math.floor(sampleRate * Math.min(duration, 30));
         const silentBuffer = new Float32Array(sampleCount * 2);
         const rawBuffer = new ArrayBuffer(44 + silentBuffer.length * 2);
         const view = new DataView(rawBuffer);
         writeWavHeader(view, 0, 2, sampleRate, 16, silentBuffer.length * 2);
         blob = new Blob([rawBuffer], { type: 'audio/wav' });
+        updateProgress(80);
       }
 
+      updateProgress(92);
       const filename = `${projectTitle.replace(/[^a-zA-Z0-9_-]/g, '').replace(/\s+/g, '_')}_mix${ext}`;
       const path = await OpenBandNative.showSaveDialog({
         defaultPath: filename,
         filters: [{ name: 'Audio', extensions: [format] }],
       });
       if (path) {
+        updateProgress(96);
         await writeBlobToFile(blob, path);
+        updateProgress(100);
         Alert.alert('Exportado', `Mix exportado como ${format.toUpperCase()} (${bitDepth}bit, ${sampleRate}Hz)`);
       }
     } catch (e) {
@@ -214,7 +240,7 @@ export function BounceDialog({ visible, onClose, projectTitle, duration, tracks 
       Alert.alert('Erro', 'Falha ao exportar mix.');
     }
     setExporting(false);
-  }, [format, bitDepth, sampleRate, projectTitle, duration, tracks]);
+  }, [format, bitDepth, sampleRate, projectTitle, duration, tracks, updateProgress]);
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -253,16 +279,23 @@ export function BounceDialog({ visible, onClose, projectTitle, duration, tracks 
             ))}
           </View>
 
+          {exporting && (
+            <View className="mb-5">
+              <ProgressBar progress={progress} className="mb-2" />
+              <Text className="text-gray-400 text-xs text-center">{progress}%</Text>
+            </View>
+          )}
           <View className="flex-row gap-3">
             <Pressable onPress={onClose}
-              className="flex-1 py-3 rounded-xl border border-dark-border items-center active:opacity-70">
+              className="flex-1 py-3 rounded-xl border border-dark-border items-center active:opacity-70"
+              disabled={exporting}>
               <Text className="text-gray-400 text-sm font-semibold">Cancelar</Text>
             </Pressable>
             <Pressable onPress={handleExport}
               className="flex-1 py-3 rounded-xl bg-brand-primary items-center active:opacity-80 disabled:opacity-50"
               disabled={exporting}>
               <Text className={`text-white text-sm font-bold ${exporting ? 'opacity-70' : ''}`}>
-                {exporting ? 'Renderizando...' : 'Exportar'}
+                {exporting ? 'Exportando...' : 'Exportar'}
               </Text>
             </Pressable>
           </View>

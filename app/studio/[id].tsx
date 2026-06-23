@@ -199,7 +199,7 @@ export default function Studio() {
         genre: genreParam || '',
         key: projectKey || '',
         bpm: metronome.bpm,
-        tracks: tracks as unknown as TrackDef[],
+        tracks,
         groups,
         trackAssignments,
         masterPlugins,

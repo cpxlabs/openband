@@ -4,8 +4,8 @@ import fs from 'fs';
 import multer from 'multer';
 import { upload } from '../middleware/upload';
 
-function safeJsonParse(s: string | undefined): unknown {
-  if (!s) return undefined;
+function safeJsonParse(s: unknown): unknown {
+  if (typeof s !== 'string' || !s) return undefined;
   try { return JSON.parse(s); } catch (e) { console.error('JSON parse failed:', s.slice(0, 100), e); return undefined; }
 }
 
@@ -56,6 +56,9 @@ router.post('/master/bounce', (req: Request, res: Response, next: NextFunction) 
         if (err) reject(err);
       }
 
+      outputStream.on('error', cleanup);
+      inputStream.on('error', cleanup);
+
       inputStream.pipe(outputStream);
 
       outputStream.on('finish', () => {
@@ -65,9 +68,6 @@ router.post('/master/bounce', (req: Request, res: Response, next: NextFunction) 
         done = true;
         resolve();
       });
-
-      outputStream.on('error', cleanup);
-      inputStream.on('error', cleanup);
     });
 
     res.json({
@@ -79,6 +79,7 @@ router.post('/master/bounce', (req: Request, res: Response, next: NextFunction) 
       sampleRate: parsedSampleRate,
       size: (await fs.promises.stat(outputPath)).size,
       pluginStates: pluginStates ? safeJsonParse(pluginStates) : undefined,
+      jobParams: { bitDepth: parsedBitDepth, sampleRate: parsedSampleRate, format: outputFormat },
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Erro desconhecido';

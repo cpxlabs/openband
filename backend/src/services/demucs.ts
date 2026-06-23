@@ -93,10 +93,7 @@ export async function runDemucs(options: DemucsOptions): Promise<StemFile[]> {
   return stems;
 }
 
-let _demucsCache: boolean | null = null;
-
 export async function checkDemucsInstalled(): Promise<boolean> {
-  if (_demucsCache !== null) return _demucsCache;
   try {
     const result = await new Promise<string>((resolve, reject) => {
       execFile(PYTHON_PATH, ['-c', 'import demucs; print("ok")'], {
@@ -107,10 +104,8 @@ export async function checkDemucsInstalled(): Promise<boolean> {
         else resolve(stdout);
       });
     });
-    _demucsCache = result.trim() === 'ok';
-    return _demucsCache;
+    return result.trim() === 'ok';
   } catch {
-    _demucsCache = false;
     return false;
   }
 }

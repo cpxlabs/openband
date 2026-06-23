@@ -3,7 +3,7 @@ import { Router, Request, Response } from 'express';
 const router = Router();
 
 router.post('/generate-midi', (req: Request, res: Response) => {
-  const { prompt, bpm, key } = req.body;
+  const { prompt, bpm, key } = req.body ?? {};
   
   if (!prompt) {
     return res.status(400).json({ error: 'Prompt is required' });

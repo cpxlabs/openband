@@ -9,7 +9,7 @@ function getAudioContext(): AudioContext | null {
     audioCtx = new AudioContext();
   }
   if (audioCtx.state === 'suspended') {
-    audioCtx.resume();
+    audioCtx.resume().catch(() => {});
   }
   return audioCtx;
 }

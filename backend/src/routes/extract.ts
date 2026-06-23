@@ -54,14 +54,18 @@ router.post('/extract', (req: Request, res: Response) => {
         const message = e instanceof Error ? e.message : 'Erro desconhecido';
 
         if (message === 'DEMUCS_NOT_FOUND') {
-          const stems = await runMock(req.file.path, STEMS_DIR);
-          cleanup(req.file?.path);
-          return res.json({
-            jobId: `${Date.now()}`,
-            stems,
-            duration: 30,
-            warning: 'Demucs não instalado. Usando simulação. Para resultados reais: pip install demucs',
-          });
+          try {
+            const stems = await runMock(req.file.path, STEMS_DIR);
+            cleanup(req.file?.path);
+            return res.json({
+              jobId: `${Date.now()}`,
+              stems,
+              duration: 30,
+              warning: 'Demucs não instalado. Usando simulação. Para resultados reais: pip install demucs',
+            });
+          } catch {
+            return res.status(500).json({ error: 'Erro ao processar áudio (fallback falhou)' });
+          }
         }
 
         cleanup(req.file?.path);

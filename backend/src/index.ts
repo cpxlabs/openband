@@ -33,11 +33,18 @@ app.use((_req, res, next) => {
 });
 
 const rateLimitStore: Record<string, { count: number; resetAt: number }> = {};
+const RATE_LIMIT_MAX_ENTRIES = 10000;
 
 setInterval(() => {
   const now = Date.now();
-  for (const [ip, entry] of Object.entries(rateLimitStore)) {
+  const entries = Object.entries(rateLimitStore);
+  for (const [ip, entry] of entries) {
     if (now > entry.resetAt) delete rateLimitStore[ip];
+  }
+  if (Object.keys(rateLimitStore).length > RATE_LIMIT_MAX_ENTRIES) {
+    const sorted = Object.entries(rateLimitStore).sort((a, b) => a[1].resetAt - b[1].resetAt);
+    const toDelete = sorted.slice(0, sorted.length - RATE_LIMIT_MAX_ENTRIES);
+    for (const [ip] of toDelete) delete rateLimitStore[ip];
   }
 }, 60 * 1000);
 
@@ -63,16 +70,12 @@ app.use(express.json({ limit: '1mb' }));
 let demucsCheckPromise: Promise<boolean> | null = null;
 
 app.get('/api/health', async (_req, res) => {
-  try {
-    if (demucsCheckPromise === null) {
-      demucsCheckPromise = checkDemucsInstalled();
-    }
-    await demucsCheckPromise;
-    res.json({ status: 'ok' });
-  } catch {
-    demucsCheckPromise = null;
-    res.json({ status: 'ok', demucs: false });
+  if (demucsCheckPromise === null) {
+    demucsCheckPromise = checkDemucsInstalled();
   }
+  const demucsOk = await demucsCheckPromise;
+  demucsCheckPromise = null;
+  res.json({ status: 'ok', demucs: demucsOk });
 });
 
 app.use('/api', rateLimit(30, 15 * 60 * 1000));

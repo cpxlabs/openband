@@ -44,7 +44,7 @@ export async function runMock(inputPath: string, stemDir: string): Promise<StemF
   for (const stem of stems) {
     const outPath = path.join(stemDir, stem.filename);
     await generateSilentWav(outPath, duration);
-    stem.size = fs.statSync(outPath).size;
+    stem.size = (await fs.promises.stat(outPath)).size;
     stem.url = `/api/stems/${stem.filename}`;
   }
 

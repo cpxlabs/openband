@@ -1,9 +1,5 @@
 export type StemType = 'drums' | 'bass' | 'vocals' | 'other';
 
-export interface ExtractRequest {
-  file: Express.Multer.File;
-}
-
 export interface ExtractResponse {
   jobId: string;
   stems: StemFile[];
