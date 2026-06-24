@@ -90,7 +90,7 @@ export function MomentCard({ moment, testID }: MomentCardProps) {
     setIsPlaying(prev => !prev);
   }, [playerActive]);
 
-  const handleStatusChange = useCallback((playing: boolean, currentTime: number, dur: number) => {
+  const handleStatusChange = useCallback((_playing: boolean, currentTime: number, dur: number) => {
     setDuration(dur);
     setProgress(dur ? (currentTime / dur) * 100 : 0);
   }, []);

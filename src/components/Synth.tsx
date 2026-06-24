@@ -49,7 +49,7 @@ interface SynthPreset {
   arp: ArpConfig;
 }
 
-const WAVEFORMS: WaveformType[] = ['sawtooth', 'square', 'triangle', 'sine', 'noise'];
+
 
 const PRESETS: SynthPreset[] = [
   { name: 'Classic Bass', osc1: { waveform: 'sawtooth', detune: 0, level: 80 }, osc2: { waveform: 'square', detune: -12, level: 30 }, filter: { type: 'lowpass', cutoff: 400, resonance: 30, envAmount: 60 }, adsr: { attack: 10, decay: 200, sustain: 60, release: 300 }, lfo: { rate: 3, depth: 5, target: 'filter' }, arp: { enabled: false, direction: 'up', rate: '1/8', octaves: 1 } },

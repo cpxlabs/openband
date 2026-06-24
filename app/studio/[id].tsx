@@ -492,7 +492,6 @@ export default function Studio() {
       const files = (e.target as HTMLInputElement).files;
       if (!files || files.length === 0) return;
       const newTracks = Array.from(files).map((file, i) => {
-        const ext = file.name.split('.').pop()?.toLowerCase() || 'wav';
         const approxDuration = Math.max(10, Math.round(file.size / 30000));
         return {
           id: `import-${Date.now()}-${i}`,

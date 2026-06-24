@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, Modal, TextInput, ScrollView } from 'react-native';
 
-type CodeToken = 'KICK' | 'SNARE' | 'HH' | 'OH' | 'CLAP' | 'RIM' | 'TOM' | 'CRASH' | 'RIDE' | 'BASS';
+
 type StepUnit = '1/4' | '1/8' | '1/16';
 
 const TOKEN_MAP: Record<string, { label: string; icon: string; color: string; dur: number }> = {

@@ -89,10 +89,9 @@ const SAMPLES: SampleEntry[] = [
   { id: 'hh_vocal_what', name: 'Hip-Hop Vocal "What"', category: 'hiphop', color: 'bg-amber-500', duration: 1 },
 ];
 
-function SampleCard({ sample, onAddToTrack, player, status, playingId, onPlayPreview }: {
+function SampleCard({ sample, onAddToTrack, status, playingId, onPlayPreview }: {
   sample: SampleEntry;
   onAddToTrack: (sample: SampleEntry) => void;
-  player: any;
   status: any;
   playingId: string | null;
   onPlayPreview: (id: string) => void;
@@ -274,7 +273,7 @@ export function SampleBrowser({ visible, onAddSample, testID }: SampleBrowserPro
         <View className="flex-row flex-wrap gap-2">
           {filtered.map(sample => (
             <View key={sample.id} className="w-[calc(50%-4px)]">
-              <SampleCard sample={sample} onAddToTrack={onAddSample} player={player} status={status} playingId={playingId} onPlayPreview={handlePlayPreview} />
+              <SampleCard sample={sample} onAddToTrack={onAddSample} status={status} playingId={playingId} onPlayPreview={handlePlayPreview} />
             </View>
           ))}
           {filtered.length === 0 && (

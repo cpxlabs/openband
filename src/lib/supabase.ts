@@ -83,7 +83,7 @@ function createMockClient() {
         notify('SIGNED_IN', session);
         return { data: { user: session.user, session }, error: null };
       },
-      signUp: async ({ email, password, options }: { email: string; password: string; options?: { data?: Record<string, unknown> } }) => {
+      signUp: async ({ email, password: _password, options }: { email: string; password: string; options?: { data?: Record<string, unknown> } }) => {
         const name = (options?.data?.name as string) ?? email.split('@')[0];
         userStore[email] = { email, name };
         const session = makeMockSession(email, name);

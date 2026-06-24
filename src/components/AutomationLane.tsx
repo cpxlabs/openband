@@ -24,7 +24,6 @@ export function AutomationLane({
   duration,
   color = '#5ac8fa',
   visible,
-  label = 'Volume',
   minValue = 0,
   maxValue = 100,
   testID,
@@ -41,10 +40,6 @@ export function AutomationLane({
     onChange(next);
   }, [points, onChange, minValue, maxValue]);
 
-  const updatePoint = useCallback((index: number, value: number) => {
-    const next = points.map((p, i) => i === index ? { ...p, value: clamp(value, minValue, maxValue) } : p);
-    onChange(next);
-  }, [points, onChange, minValue, maxValue]);
 
   const removePoint = useCallback((index: number) => {
     if (points.length <= 2) return;

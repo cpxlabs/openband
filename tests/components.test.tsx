@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
-import React from 'react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import * as reactNative from 'react-native';
 import Login from '../app/(auth)/login';
 import {
@@ -45,7 +44,6 @@ import {
   Sampler,
   Synth,
   SYNTH_PRESETS,
-  MasteringSuite,
   MasteringChain,
   MasteringVersionManager,
   MasteringUpload,
@@ -955,7 +953,7 @@ describe('KNOB_PRESETS', () => {
   });
 
   it('each preset has all 8 knob types', () => {
-    for (const [name, vals] of Object.entries(KNOB_PRESETS)) {
+    for (const vals of Object.values(KNOB_PRESETS)) {
       expect(Object.keys(vals)).toHaveLength(8);
     }
   });

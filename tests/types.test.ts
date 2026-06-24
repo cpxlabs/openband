@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { PLUGIN_SPECS, type Plugin, type TrackDef, type MixSnapshot, type SendBus, type TrackAmpChain } from '../src/lib/types.ts';
+import { PLUGIN_SPECS, type TrackDef, type MixSnapshot, type SendBus, type TrackAmpChain } from '../src/lib/types.ts';
 
 const PLUGIN_TYPE_LIST = Object.keys(PLUGIN_SPECS);
 
