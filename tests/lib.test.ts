@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { midiNoteToName } from '../src/lib/midiSynth';
-import { GENRES, MUSICAL_KEYS, keyLabel } from '../src/lib/projectTemplates';
+import { GENRES, MUSICAL_KEYS, keyLabel, generateTracksForGenre } from '../src/lib/projectTemplates';
 import { MASTERING_CHAIN_PRESETS, buildMasteringChain, getOversampleLabel } from '../src/lib/mastering';
 import { MASTERING_PLUGIN_DEFS, buildMasteringChain as buildSuiteChain, createVersion, formatFileSize, formatSampleRate } from '../src/lib/masteringSuite';
 
@@ -346,6 +346,169 @@ describe('projectTemplates.ts', () => {
     expect(keyLabel('G')).toBe('G');
     expect(keyLabel('D#')).toBe('D#');
   });
+});
+
+describe('generateTracksForGenre', () => {
+  it('returns tracks matching suggestedTracks count for each genre', () => {
+    for (const genre of GENRES) {
+      const tracks = generateTracksForGenre(genre.id);
+      expect(tracks).toHaveLength(genre.suggestedTracks.length);
+    }
+  });
+
+  it('each track has valid TrackDef fields', () => {
+    const tracks = generateTracksForGenre('rock');
+    for (const t of tracks) {
+      expect(t.id).toBeTruthy();
+      expect(t.name).toBeTruthy();
+      expect(t.color).toMatch(/^bg-/);
+      expect(typeof t.muted).toBe('boolean');
+      expect(typeof t.solo).toBe('boolean');
+      expect(t.volume).toBeGreaterThanOrEqual(0);
+      expect(t.volume).toBeLessThanOrEqual(100);
+      expect(t.pan).toBeGreaterThanOrEqual(-100);
+      expect(t.pan).toBeLessThanOrEqual(100);
+      expect(Array.isArray(t.regions)).toBe(true);
+      expect(Array.isArray(t.plugins)).toBe(true);
+    }
+  });
+
+  it('each track has at least one region with positive duration', () => {
+    const tracks = generateTracksForGenre('edm');
+    for (const t of tracks) {
+      expect(t.regions.length).toBeGreaterThan(0);
+      for (const r of t.regions) {
+        expect(r.start).toBeGreaterThanOrEqual(0);
+        expect(r.duration).toBeGreaterThan(0);
+        expect(r.id).toBeTruthy();
+      }
+    }
+  });
+
+  it('tracks have sequential string IDs', () => {
+    const tracks = generateTracksForGenre('hiphop');
+    tracks.forEach((t, i) => {
+      expect(t.id).toBe(String(i + 1));
+    });
+  });
+
+  it('track names match suggestedTracks from the genre template', () => {
+    const genre = GENRES.find(g => g.id === 'jazz')!;
+    const tracks = generateTracksForGenre('jazz');
+    tracks.forEach((t, i) => {
+      expect(t.name).toBe(genre.suggestedTracks[i].name);
+    });
+  });
+
+  it('track colors match suggestedTracks from the genre template', () => {
+    const genre = GENRES.find(g => g.id === 'metal')!;
+    const tracks = generateTracksForGenre('metal');
+    tracks.forEach((t, i) => {
+      expect(t.color).toBe(genre.suggestedTracks[i].color);
+    });
+  });
+
+  it('returns fallback tracks for unknown genre', () => {
+    const tracks = generateTracksForGenre('nonexistent');
+    expect(tracks).toHaveLength(4);
+    expect(tracks[0].name).toBe('Vocal');
+    expect(tracks[1].name).toBe('Instrumento');
+    expect(tracks[2].name).toBe('Bateria');
+    expect(tracks[3].name).toBe('Baixo');
+  });
+
+  it('returns fallback tracks for empty string genre', () => {
+    const tracks = generateTracksForGenre('');
+    expect(tracks).toHaveLength(4);
+  });
+
+  it('all tracks start unmuted and unsoloed', () => {
+    const tracks = generateTracksForGenre('pop');
+    for (const t of tracks) {
+      expect(t.muted).toBe(false);
+      expect(t.solo).toBe(false);
+    }
+  });
+
+  it('all tracks have empty plugins and automation', () => {
+    const tracks = generateTracksForGenre('lofi');
+    for (const t of tracks) {
+      expect(t.plugins).toHaveLength(0);
+      expect(Object.keys(t.automation)).toHaveLength(0);
+    }
+  });
+
+  it('all 10 genres produce tracks', () => {
+    for (const genre of GENRES) {
+      const tracks = generateTracksForGenre(genre.id);
+      expect(tracks.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('bpm parameter affects region duration', () => {
+    const fast = generateTracksForGenre('pop', 200);
+    const slow = generateTracksForGenre('pop', 60);
+    for (let i = 0; i < fast.length; i++) {
+      expect(fast[i].regions[0].duration).toBeLessThan(slow[i].regions[0].duration);
+    }
+  });
+
+  it('returns empty regions list for genres with no suggestedTracks', () => {
+    const tracks = generateTracksForGenre('');
+    expect(tracks.length).toBeGreaterThan(0);
+  });
+
+  it('generates MIDI notes for melodic tracks with key parameter', () => {
+    const tracks = generateTracksForGenre('edm', 128, 'C');
+    const melodicTracks = tracks.filter(t => t.midiNotes && t.midiNotes.length > 0);
+    expect(melodicTracks.length).toBeGreaterThan(0);
+    for (const t of melodicTracks) {
+      expect(t.midiNotes!.length).toBeGreaterThan(0);
+      for (const n of t.midiNotes!) {
+        expect(n.pitch).toBeGreaterThanOrEqual(0);
+        expect(n.pitch).toBeLessThanOrEqual(127);
+        expect(n.duration).toBeGreaterThan(0);
+        expect(n.velocity).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('different keys produce different MIDI pitches on same track type', () => {
+    const cMajor = generateTracksForGenre('edm', 128, 'C');
+    const fSharp = generateTracksForGenre('edm', 128, 'F#');
+    const bassC = cMajor.find(t => t.midiNotes && t.midiNotes.length > 0)!;
+    const bassF = fSharp.find(t => t.midiNotes && t.midiNotes.length > 0)!;
+    expect(bassC.midiNotes![0].pitch).not.toBe(bassF.midiNotes![0].pitch);
+  });
+
+  it('percussion/drums tracks do not get MIDI notes', () => {
+    const tracks = generateTracksForGenre('rock', 120, 'E');
+    for (const t of tracks) {
+      if (t.name.toLowerCase().includes('bateria') || t.name.includes('Drums') || t.name.includes('Percussão')) {
+        expect(t.midiNotes).toBeUndefined();
+      }
+    }
+  });
+
+  it('Baixo tracks get MIDI notes one octave below root', () => {
+    const tracks = generateTracksForGenre('pop', 120, 'C');
+    const baixo = tracks.find(t => t.name === 'Baixo')!;
+    expect(baixo.midiNotes).toBeDefined();
+    for (const n of baixo.midiNotes!) {
+      expect(n.pitch).toBeLessThan(60);
+    }
+  });
+
+  it('bpm affects MIDI note start times and durations', () => {
+    const slow = generateTracksForGenre('edm', 60, 'C');
+    const fast = generateTracksForGenre('edm', 200, 'C');
+    const slowTrack = slow.find(t => t.midiNotes && t.midiNotes.length > 0)!;
+    const fastTrack = fast.find(t => t.midiNotes && t.midiNotes.length > 0)!;
+    expect(slowTrack.midiNotes![1].start).toBeGreaterThan(fastTrack.midiNotes![1].start);
+    expect(slowTrack.midiNotes![0].duration).toBeGreaterThan(fastTrack.midiNotes![0].duration);
+  });
+
+
 });
 
 describe('mastering.ts', () => {

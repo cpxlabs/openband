@@ -34,6 +34,8 @@ import type { Plugin, MixSnapshot, MetronomeSettings, RecordSettings, TrackDef, 
 import { useResponsive } from '../../src/lib/responsive';
 import { MASTERING_CHAIN_PRESETS, buildMasteringChain } from '../../src/lib/mastering';
 import { autoMix, AUTOMIX_GENRES } from '../../src/lib/automix';
+import { generateTracksForGenre } from '../../src/lib/projectTemplates';
+import { setMasteringInput } from '../../src/lib/masteringBridge';
 import type { AutomationPoint } from '../../src/components/AutomationLane';
 
 type BottomTab = 'mixer' | 'fx' | 'mastering' | 'groups' | 'mixes';
@@ -52,30 +54,6 @@ const GROUP_COLORS = ['#ff6482', '#5ac8fa', '#ffcc00', '#34c759', '#bf5af2', '#f
 const TRACK_COLORS = ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-amber-500', 'bg-pink-500', 'bg-cyan-500'];
 
 type PluginSource = 'mastering' | 'masterRack' | 'track' | null;
-
-const INITIAL_TRACKS: TrackDef[] = [
-  {
-    id: '1', name: 'Voz Principal', color: 'bg-red-500',
-    muted: false, solo: false, volume: 80, pan: 0, sends: {}, sidechainSource: null,
-    regions: [{ id: 'r1', start: 10, duration: 150 }],
-    plugins: [],
-    automation: {},
-  },
-  {
-    id: '2', name: 'Guitarra Base', color: 'bg-blue-500',
-    muted: false, solo: false, volume: 70, pan: 0, sends: {}, sidechainSource: null,
-    regions: [{ id: 'r2', start: 0, duration: 200 }],
-    plugins: [],
-    automation: {},
-  },
-  {
-    id: '3', name: 'Bateria Loop', color: 'bg-green-500',
-    muted: true, solo: false, volume: 90, pan: 0, sends: {}, sidechainSource: null,
-    regions: [{ id: 'r3', start: 0, duration: 100 }, { id: 'r4', start: 100, duration: 100 }],
-    plugins: [],
-    automation: {},
-  },
-];
 
 export default function Studio() {
   const { id, genre: genreParam, key: keyParam, bpm: bpmParam, title: titleParam } = useLocalSearchParams<{
@@ -150,7 +128,7 @@ export default function Studio() {
     redo: redoHistory,
     canUndo,
     canRedo,
-  } = useHistory<TrackDef[]>(INITIAL_TRACKS);
+  } = useHistory<TrackDef[]>(generateTracksForGenre(genreParam || 'pop', initialBpm, projectKey));
 
   const [metronome, setMetronome] = useState<MetronomeSettings>({
     bpm: initialBpm,
@@ -1163,7 +1141,26 @@ export default function Studio() {
               );
             })}
             <Pressable
-              onPress={() => router.push('/mastering')}
+              onPress={() => {
+                const urls = tracks.flatMap(t =>
+                  t.regions.filter(r => r.url).map(r => ({ name: t.name, url: r.url! }))
+                );
+                const previewUrl = generatePreviewUrl(projectTitle, 30);
+                if (urls.length > 0) {
+                  setMasteringInput({
+                    url: urls[0].url,
+                    filename: `${projectTitle}-stems`,
+                    stems: urls,
+                  });
+                } else {
+                  previewUrl.then(url => {
+                    if (url) {
+                      setMasteringInput({ url, filename: projectTitle, stems: tracks.map(t => ({ name: t.name, url })) });
+                    }
+                  });
+                }
+                router.push('/mastering');
+              }}
               className="mt-3 flex-row items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-rose-600/20 to-brand-accent/20 border border-rose-500/30 active:opacity-80"
             >
               <Text className="text-rose-400 text-sm font-bold">Enviar para Mastering Suite</Text>
@@ -1258,8 +1255,8 @@ export default function Studio() {
         snap="beat"
         numBars={8}
         bpm={metronome.bpm}
-        keySignature="C"
-        scale="major"
+        keySignature={projectKey?.replace(/m$/, '') || 'C'}
+        scale={projectKey?.endsWith('m') ? 'minor' : 'major'}
         visible={showPianoRoll}
         onClose={() => { setShowPianoRoll(false); setEditingMidiTrackId(null); }}
         trackName={selectedMidiTrack?.name}

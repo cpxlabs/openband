@@ -17,6 +17,7 @@ import {
 } from '../lib/masteringSuite';
 import { OpenBandNative } from '../bridge';
 import { DEMO_AUDIO_URL } from '../lib/constants';
+import { takeMasteringInput } from '../lib/masteringBridge';
 
 interface MasteringSuiteProps {
   onBack?: () => void;
@@ -109,14 +110,29 @@ function audioBufferToWavBlob(buffer: AudioBuffer, bitDepth: number): Blob {
 }
 
 export function MasteringSuite({ onBack }: MasteringSuiteProps) {
-  const [session, setSession] = useState<MasteringSession>({
-    inputFile: null,
-    versions: [],
-    activeVersionId: null,
-    bypassed: false,
+  const [session, setSession] = useState<MasteringSession>(() => {
+    const pending = takeMasteringInput();
+    if (pending) {
+      return {
+        inputFile: {
+          type: 'stems',
+          filename: pending.filename,
+          size: 0,
+          sampleRate: 44100,
+          bitDepth: 24,
+          duration: 180,
+          url: pending.url,
+          stems: pending.stems,
+        },
+        versions: [],
+        activeVersionId: null,
+        bypassed: false,
+      };
+    }
+    return { inputFile: null, versions: [], activeVersionId: null, bypassed: false };
   });
+  const [inputMode, setInputMode] = useState<'single' | 'stems'>(session.inputFile?.stems ? 'stems' : 'single');
   const [plugins, setPlugins] = useState<Plugin[]>(buildMasteringChain());
-  const [inputMode, setInputMode] = useState<'single' | 'stems'>('single');
   const [editingPluginId, setEditingPluginId] = useState<string | null>(null);
   const editingPlugin = useMemo(() => {
     if (!editingPluginId) return null;

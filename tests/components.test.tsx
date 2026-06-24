@@ -792,14 +792,14 @@ describe('PianoRoll', () => {
     render(
       <PianoRoll notes={notes} onChange={() => {}} snap="beat" numBars={4} bpm={120} visible={true} onClose={() => {}} />
     );
-    expect(screen.getByText('2 notas')).toBeTruthy();
+    expect(screen.getByText('2 notes')).toBeTruthy();
   });
 
   it('shows BPM info', () => {
     render(
       <PianoRoll notes={notes} onChange={() => {}} snap="beat" numBars={4} bpm={120} visible={true} onClose={() => {}} />
     );
-    expect(screen.getByText('120 BPM')).toBeTruthy();
+    expect(screen.getByText('120')).toBeTruthy();
   });
 });
 
