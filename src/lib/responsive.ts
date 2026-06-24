@@ -2,6 +2,16 @@ import { useWindowDimensions, Platform } from 'react-native';
 
 export type Breakpoint = 'mobile' | 'tablet' | 'desktop';
 
+export const LAYOUT_MAX_WIDTHS = {
+  feed: 768,
+  library: 768,
+  moments: 768,
+  extractor: 768,
+  account: 576,
+  settings: 576,
+  login: 448,
+};
+
 export function useResponsive() {
   const { width, height } = useWindowDimensions();
   const breakpoint: Breakpoint = width < 480 ? 'mobile' : width < 1024 ? 'tablet' : 'desktop';
@@ -24,3 +34,4 @@ export function useResponsive() {
     toolbarFontSize: breakpoint === 'mobile' ? 10 : breakpoint === 'tablet' ? 12 : 14,
   };
 }
+

@@ -11,7 +11,7 @@ envolve `useWindowDimensions` do React Native.
 | tablet     | 480–1023px  | false    | true     | false     |
 | desktop    | ≥ 1024px    | false    | false    | true      |
 
-Desktop layout só é ativado em web (`breakpoint === 'desktop' && isWeb`).
+Desktop layout é ativado para todas as plataformas quando `breakpoint === 'desktop'`.
 
 ## API do Hook
 
@@ -45,7 +45,7 @@ Ajustes) seguem o mesmo padrão:
 </View>
 ```
 
-**Larguras máximas usadas:**
+**Larguras máximas usadas (via constante `LAYOUT_MAX_WIDTHS` exportada de `src/lib/responsive.ts`):**
 
 | Tela         | Max-width |
 | ------------ | --------- |
@@ -59,7 +59,7 @@ Ajustes) seguem o mesmo padrão:
 
 ### 2. Tab Navigator + Sidebar (`app/(tabs)/_layout.tsx`)
 
-- **Desktop (web ≥ 1024px):** Sidebar persistente (224px à esquerda), tab bar
+- **Desktop (≥ 1024px):** Sidebar persistente (224px à esquerda), tab bar
   oculto, sem hamburger.
 - **Mobile/Tablet:** Tab bar visível (65px mobile, 72px tablet), hamburger no
   topo abre Sidebar como overlay com backdrop.
@@ -115,19 +115,6 @@ style={{ height: resp.isDesktop ? 104 : 80 }}
 - `BounceDialog.tsx` — `renderMixdown` usa Web Audio API, pula no native.
 - `SampleBrowser.tsx` — caminhos de arquivo locais só na web.
 - `app/_layout.tsx` — service worker só na web.
-
-## Inconsistências Conhecidas
-
-1. **Desktop = web-only.** Um iPad Pro em landscape (1024px+) não recebe o
-   layout desktop (sidebar persistente + tab bar oculto).
-2. **`sm:px-4` em `studio/[id].tsx:975`** usa o breakpoint default do Tailwind
-   (640px), que não coincide com nenhum breakpoint do app (480/1024). Prefira
-   `resp.isMobile` para consistência.
-3. **Max-width variations:** 448px (login), 576px (conta/ajustes), 768px
-   (feed/library/momentos/extractor). Sem constante compartilhada.
-4. **Nenhum teste de responsividade em componentes.** O arquivo
-   `tests/responsive.test.ts` testa apenas os valores do hook, não o layout
-   resultante.
 
 ## Regras
 

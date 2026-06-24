@@ -50,7 +50,7 @@
   "scripts": {
     "lint": "npx tsc --noEmit",
     "test": "npx vitest run",
-    "test:legacy": "npx tsx --test tests/presets.test.ts tests/responsive.test.ts tests/types.test.ts",
+    "test:legacy": "npx tsx --test tests/presets.test.ts tests/types.test.ts",
     "build": "expo export --platform web && cp assets/sw.js dist/sw.js && cp assets/manifest.json dist/manifest.json && mkdir -p dist/assets && cp assets/icon-192.png assets/icon-512.png assets/favicon.png dist/assets/",
     "start": "expo start",
     "android": "expo run:android",

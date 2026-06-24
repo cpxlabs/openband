@@ -28,8 +28,8 @@ function TabIcon({ label, focused }: { label: string; focused: boolean }) {
 export default function TabLayout() {
   const router = useRouter();
   const segments = useSegments();
-  const { breakpoint, isWeb } = useResponsive();
-  const isDesktop = breakpoint === 'desktop' && isWeb;
+  const { breakpoint } = useResponsive();
+  const isDesktop = breakpoint === 'desktop';
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const currentSegment = segments[segments.length - 1] || 'index';

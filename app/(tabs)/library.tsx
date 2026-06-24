@@ -3,7 +3,7 @@ import { View, Text, FlatList, Pressable, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { CardRow, CardIcon, EmptyState, PageHeader, Button, NewProject } from '../../src/components';
 import type { GenreTemplate } from '../../src/lib/projectTemplates';
-import { useResponsive } from '../../src/lib/responsive';
+import { useResponsive, LAYOUT_MAX_WIDTHS } from '../../src/lib/responsive';
 import { listProjectIndex, exportProject, importProject } from '../../src/lib/projectStore';
 import { OpenBandNative } from '../../src/bridge';
 
@@ -110,7 +110,7 @@ export default function Library() {
         data={projects}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: resp.isMobile ? 16 : 24 }}
-        style={resp.isDesktop ? { maxWidth: 768, alignSelf: 'center', width: '100%' } : undefined}
+        style={resp.isDesktop ? { maxWidth: LAYOUT_MAX_WIDTHS.library, alignSelf: 'center', width: '100%' } : undefined}
         ListEmptyComponent={
           <EmptyState
             icon="🎧"

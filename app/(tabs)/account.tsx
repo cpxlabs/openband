@@ -3,7 +3,7 @@ import { View, Text, ScrollView, Alert } from 'react-native';
 import { useAuth } from '../../src/context/AuthContext';
 import { supabase } from '../../src/lib/supabase';
 import { PageHeader, Avatar, Button, TextInput, Divider } from '../../src/components';
-import { useResponsive } from '../../src/lib/responsive';
+import { useResponsive, LAYOUT_MAX_WIDTHS } from '../../src/lib/responsive';
 
 export default function Account() {
   const resp = useResponsive();
@@ -53,7 +53,7 @@ export default function Account() {
 
   return (
     <ScrollView className="flex-1 bg-dark-bg"
-      style={resp.isDesktop ? { maxWidth: 576, alignSelf: 'center', width: '100%' } : undefined}>
+      style={resp.isDesktop ? { maxWidth: LAYOUT_MAX_WIDTHS.account, alignSelf: 'center', width: '100%' } : undefined}>
       <PageHeader title="Conta" subtitle="Suas informações de perfil" />
 
       <View className={`${resp.isMobile ? 'px-4' : 'px-6'} gap-6 pb-8`}>

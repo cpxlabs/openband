@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import React from 'react';
+import * as reactNative from 'react-native';
+import Login from '../app/(auth)/login';
 import {
   Button,
   TextInput,
@@ -1172,5 +1174,33 @@ describe('testID Contract', () => {
   it('renders testID on TrackGroupManager', () => {
     render(<TrackGroupManager groups={[]} tracks={[]} onCreateGroup={() => {}} onRemoveGroup={() => {}} onGroupVolume={() => {}} onGroupMute={() => {}} onAssignTrack={() => {}} trackAssignments={{}} testID="track-group-manager" />);
     expect(screen.getByTestId('track-group-manager')).toBeTruthy();
+  });
+
+  describe('Responsive Layout', () => {
+    it('adapts Login screen layout to mobile dimensions', () => {
+      const spy = vi.spyOn(reactNative, 'useWindowDimensions');
+      spy.mockReturnValue({ width: 375, height: 812, scale: 1, fontScale: 1 });
+
+      const { container } = render(<Login />);
+      const viewElement = container.firstChild?.firstChild;
+      expect(viewElement).toBeTruthy();
+      const styleAttr = (viewElement as HTMLElement).getAttribute('style');
+      expect(styleAttr).toBeNull();
+
+      spy.mockRestore();
+    });
+
+    it('adapts Login screen layout to desktop dimensions', () => {
+      const spy = vi.spyOn(reactNative, 'useWindowDimensions');
+      spy.mockReturnValue({ width: 1200, height: 800, scale: 1, fontScale: 1 });
+
+      const { container } = render(<Login />);
+      const viewElement = container.firstChild?.firstChild;
+      expect(viewElement).toBeTruthy();
+      const styleAttr = (viewElement as HTMLElement).getAttribute('style');
+      expect(styleAttr).toContain('max-width: 448px');
+
+      spy.mockRestore();
+    });
   });
 });

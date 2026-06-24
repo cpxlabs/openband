@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { PageHeader, Card, Button, Badge, ProgressBar } from '../src/components';
 import { DEMO_AUDIO_URL } from '../src/lib/constants';
-import { useResponsive } from '../src/lib/responsive';
+import { useResponsive, LAYOUT_MAX_WIDTHS } from '../src/lib/responsive';
 import { saveProject } from '../src/lib/projectStore';
 import type { TrackDef, TrackRegion } from '../src/lib/types';
 
@@ -226,7 +226,9 @@ export default function Extractor() {
         subtitle="Extraia faixas individuais de qualquer áudio"
       />
 
-      <ScrollView className={`flex-1 ${resp.isMobile ? 'px-4' : resp.isDesktop ? 'px-0 max-w-3xl mx-auto w-full' : 'px-6'}`} contentContainerStyle={{ paddingBottom: 120 }}>
+      <ScrollView className={`flex-1 ${resp.isMobile ? 'px-4' : 'px-6'}`}
+        style={resp.isDesktop ? { maxWidth: LAYOUT_MAX_WIDTHS.extractor, alignSelf: 'center', width: '100%' } : undefined}
+        contentContainerStyle={{ paddingBottom: 120 }}>
         {phase === 'select' && (
           <View>
             <View className="card-elevated p-8 mb-6 items-center border-dashed border-2 border-dark-border active:border-brand-accent">

@@ -5,7 +5,7 @@ import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { Card, Badge, ProgressBar, PageHeader, Avatar } from '../../src/components';
 import { generatePreviewUrl } from '../../src/lib/constants';
 import { GENRES } from '../../src/lib/projectTemplates';
-import { useResponsive } from '../../src/lib/responsive';
+import { useResponsive, LAYOUT_MAX_WIDTHS } from '../../src/lib/responsive';
 
 interface FeedPost {
   id: string;
@@ -163,7 +163,7 @@ export default function Feed() {
         data={filteredPosts}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: resp.isDesktop ? 24 : 0 }}
-        style={resp.isDesktop ? { maxWidth: 768, alignSelf: 'center', width: '100%' } : undefined}
+        style={resp.isDesktop ? { maxWidth: LAYOUT_MAX_WIDTHS.feed, alignSelf: 'center', width: '100%' } : undefined}
         ListEmptyComponent={
           <View className="py-16 items-center">
             <Text className="text-4xl mb-3 opacity-50">🎵</Text>

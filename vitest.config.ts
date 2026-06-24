@@ -6,7 +6,7 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./tests/setup.ts'],
     include: ['tests/**/*.test.{ts,tsx}'],
-    exclude: ['tests/responsive.test.ts', 'tests/types.test.ts', 'tests/presets.test.ts'],
+    exclude: ['tests/types.test.ts', 'tests/presets.test.ts'],
     server: {
       deps: {
         inline: ['react-native'],

@@ -1,6 +1,8 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 
+(global as any).__DEV__ = true;
+
 vi.mock('react-native-reanimated', () => {
   const View = require('react-native').View;
   return {
@@ -51,4 +53,18 @@ vi.mock('expo-audio', () => ({
 
 vi.mock('expo-status-bar', () => ({
   StatusBar: () => null,
+}));
+
+vi.mock('../src/context/AuthContext', () => ({
+  useAuth: () => ({
+    user: null,
+    signOut: vi.fn(),
+    signInAsVisitor: vi.fn(),
+  }),
+}));
+
+vi.mock('expo-secure-store', () => ({
+  getItemAsync: vi.fn(),
+  setItemAsync: vi.fn(),
+  deleteItemAsync: vi.fn(),
 }));

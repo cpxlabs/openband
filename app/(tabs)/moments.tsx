@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { PageHeader, Button, Badge } from '../../src/components';
 import { MomentCard } from '../../src/components';
 import type { MomentData } from '../../src/components/MomentCard';
-import { useResponsive } from '../../src/lib/responsive';
+import { useResponsive, LAYOUT_MAX_WIDTHS } from '../../src/lib/responsive';
 
 const MOCK_MOMENTS: MomentData[] = [
   {
@@ -102,7 +102,7 @@ export default function Moments() {
       )}
 
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }}
-        style={resp.isDesktop ? { maxWidth: 768, alignSelf: 'center', width: '100%' } : undefined}>
+        style={resp.isDesktop ? { maxWidth: LAYOUT_MAX_WIDTHS.moments, alignSelf: 'center', width: '100%' } : undefined}>
         {tab === 'moments' ? (
           <View className={`${resp.isMobile ? 'px-4' : 'px-6'}`}>
             {MOCK_MOMENTS.map(moment => (

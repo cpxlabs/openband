@@ -1,76 +1,132 @@
-import { describe, it } from 'node:test';
-import assert from 'node:assert/strict';
+import { describe, it, expect, vi } from 'vitest';
+import * as reactNative from 'react-native';
+import { useResponsive } from '../src/lib/responsive';
+import { renderHook } from '@testing-library/react';
 
-function getBreakpoint(width: number): string {
-  if (width < 480) return 'mobile';
-  if (width < 1024) return 'tablet';
-  return 'desktop';
-}
+vi.mock('react-native', async (importOriginal) => {
+  const original = await importOriginal<typeof import('react-native')>();
+  return {
+    ...original,
+    useWindowDimensions: vi.fn(),
+    Platform: {
+      ...original.Platform,
+      OS: 'web',
+    },
+  };
+});
 
-function getContentPadding(width: number): number {
-  if (width < 480) return 12;
-  if (width < 1024) return 20;
-  return 32;
-}
+describe('useResponsive', () => {
+  const setWidth = (width: number) => {
+    (reactNative.useWindowDimensions as any).mockReturnValue({ width, height: 800 });
+  };
 
-function getChannelWidth(width: number): number {
-  if (width < 480) return 96;
-  if (width < 1024) return 112;
-  return 136;
-}
+  describe('Responsive breakpoints', () => {
+    it('returns mobile below 480px', () => {
+      for (const w of [0, 320, 479]) {
+        setWidth(w);
+        const { result } = renderHook(() => useResponsive());
+        expect(result.current.breakpoint).toBe('mobile');
+        expect(result.current.isMobile).toBe(true);
+      }
+    });
 
-function getTracksSidebarWidth(width: number): number {
-  if (width < 480) return 100;
-  if (width < 1024) return 144;
-  return 180;
-}
+    it('returns tablet between 480px and 1023px', () => {
+      for (const w of [480, 768, 1023]) {
+        setWidth(w);
+        const { result } = renderHook(() => useResponsive());
+        expect(result.current.breakpoint).toBe('tablet');
+        expect(result.current.isTablet).toBe(true);
+      }
+    });
 
-function getToolbarFontSize(width: number): number {
-  if (width < 480) return 10;
-  if (width < 1024) return 12;
-  return 14;
-}
-
-describe('Responsive breakpoints', () => {
-  it('returns mobile below 480px', () => {
-    for (const w of [0, 320, 479]) {
-      assert.equal(getBreakpoint(w), 'mobile', `${w}px should be mobile`);
-    }
+    it('returns desktop at or above 1024px', () => {
+      for (const w of [1024, 1440, 1920]) {
+        setWidth(w);
+        const { result } = renderHook(() => useResponsive());
+        expect(result.current.breakpoint).toBe('desktop');
+        expect(result.current.isDesktop).toBe(true);
+      }
+    });
   });
 
-  it('returns tablet between 480px and 1023px', () => {
-    for (const w of [480, 768, 1023]) {
-      assert.equal(getBreakpoint(w), 'tablet', `${w}px should be tablet`);
-    }
+  describe('Responsive contentPadding', () => {
+    it('returns 16 for mobile', () => {
+      setWidth(320);
+      const { result } = renderHook(() => useResponsive());
+      expect(result.current.contentPadding).toBe(16);
+    });
+
+    it('returns 24 for tablet', () => {
+      setWidth(768);
+      const { result } = renderHook(() => useResponsive());
+      expect(result.current.contentPadding).toBe(24);
+    });
+
+    it('returns 24 for desktop', () => {
+      setWidth(1440);
+      const { result } = renderHook(() => useResponsive());
+      expect(result.current.contentPadding).toBe(24);
+    });
   });
 
-  it('returns desktop at or above 1024px', () => {
-    for (const w of [1024, 1440, 1920]) {
-      assert.equal(getBreakpoint(w), 'desktop', `${w}px should be desktop`);
-    }
+  describe('Responsive channelWidth', () => {
+    it('returns 96 for mobile', () => {
+      setWidth(320);
+      const { result } = renderHook(() => useResponsive());
+      expect(result.current.channelWidth).toBe(96);
+    });
+
+    it('returns 112 for tablet', () => {
+      setWidth(600);
+      const { result } = renderHook(() => useResponsive());
+      expect(result.current.channelWidth).toBe(112);
+    });
+
+    it('returns 136 for desktop', () => {
+      setWidth(1440);
+      const { result } = renderHook(() => useResponsive());
+      expect(result.current.channelWidth).toBe(136);
+    });
+  });
+
+  describe('Responsive tracksSidebarWidth', () => {
+    it('returns 100 for mobile', () => {
+      setWidth(320);
+      const { result } = renderHook(() => useResponsive());
+      expect(result.current.tracksSidebarWidth).toBe(100);
+    });
+
+    it('returns 144 for tablet', () => {
+      setWidth(600);
+      const { result } = renderHook(() => useResponsive());
+      expect(result.current.tracksSidebarWidth).toBe(144);
+    });
+
+    it('returns 180 for desktop', () => {
+      setWidth(1440);
+      const { result } = renderHook(() => useResponsive());
+      expect(result.current.tracksSidebarWidth).toBe(180);
+    });
+  });
+
+  describe('Responsive toolbarFontSize', () => {
+    it('returns 10 for mobile', () => {
+      setWidth(320);
+      const { result } = renderHook(() => useResponsive());
+      expect(result.current.toolbarFontSize).toBe(10);
+    });
+
+    it('returns 12 for tablet', () => {
+      setWidth(600);
+      const { result } = renderHook(() => useResponsive());
+      expect(result.current.toolbarFontSize).toBe(12);
+    });
+
+    it('returns 14 for desktop', () => {
+      setWidth(1440);
+      const { result } = renderHook(() => useResponsive());
+      expect(result.current.toolbarFontSize).toBe(14);
+    });
   });
 });
 
-describe('Responsive contentPadding', () => {
-  it('returns 12 for mobile', () => assert.equal(getContentPadding(320), 12));
-  it('returns 20 for tablet', () => assert.equal(getContentPadding(768), 20));
-  it('returns 32 for desktop', () => assert.equal(getContentPadding(1440), 32));
-});
-
-describe('Responsive channelWidth', () => {
-  it('returns 96 for mobile', () => assert.equal(getChannelWidth(320), 96));
-  it('returns 112 for tablet', () => assert.equal(getChannelWidth(600), 112));
-  it('returns 136 for desktop', () => assert.equal(getChannelWidth(1440), 136));
-});
-
-describe('Responsive tracksSidebarWidth', () => {
-  it('returns 100 for mobile', () => assert.equal(getTracksSidebarWidth(320), 100));
-  it('returns 144 for tablet', () => assert.equal(getTracksSidebarWidth(600), 144));
-  it('returns 180 for desktop', () => assert.equal(getTracksSidebarWidth(1440), 180));
-});
-
-describe('Responsive toolbarFontSize', () => {
-  it('returns 10 for mobile', () => assert.equal(getToolbarFontSize(320), 10));
-  it('returns 12 for tablet', () => assert.equal(getToolbarFontSize(600), 12));
-  it('returns 14 for desktop', () => assert.equal(getToolbarFontSize(1440), 14));
-});
