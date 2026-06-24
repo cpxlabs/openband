@@ -12,9 +12,10 @@ interface NewProjectProps {
     key: string;
     bpm: number;
   }) => void;
+  testID?: string;
 }
 
-export function NewProject({ visible, onClose, onCreate }: NewProjectProps) {
+export function NewProject({ visible, onClose, onCreate, testID }: NewProjectProps) {
   const [name, setName] = useState('');
   const [selectedGenre, setSelectedGenre] = useState<GenreTemplate>(GENRES[0]);
   const [bpm, setBpm] = useState(selectedGenre.defaultBpm);
@@ -55,7 +56,7 @@ export function NewProject({ visible, onClose, onCreate }: NewProjectProps) {
   if (!visible) return null;
 
   return (
-    <View className="absolute inset-0 z-50 bg-black/70 justify-end">
+    <View testID={testID} className="absolute inset-0 z-50 bg-black/70 justify-end">
       <View className="bg-dark-elevated border-t border-dark-border rounded-t-3xl max-h-[85%]">
         <View className="flex-row items-center justify-between px-5 py-4 border-b border-dark-border">
           <Text className="text-white text-lg font-bold">

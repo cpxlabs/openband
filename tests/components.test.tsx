@@ -107,6 +107,11 @@ describe('Button', () => {
     fireEvent.click(screen.getByText('Disabled'));
     expect(fn).not.toHaveBeenCalled();
   });
+
+  it('renders with testID', () => {
+    render(<Button title="Test" onPress={() => {}} testID="btn-primary" />);
+    expect(screen.getByTestId('btn-primary')).toBeTruthy();
+  });
 });
 
 describe('TextInput', () => {
@@ -124,6 +129,11 @@ describe('TextInput', () => {
     render(<TextInput label="Name" value="John" onChangeText={() => {}} />);
     const input = screen.getByDisplayValue('John');
     expect(input).toBeTruthy();
+  });
+
+  it('renders with testID', () => {
+    render(<TextInput label="Email" testID="input-field-email" />);
+    expect(screen.getByTestId('input-field-email')).toBeTruthy();
   });
 });
 
@@ -176,6 +186,11 @@ describe('Badge', () => {
   it('renders with play variant', () => {
     render(<Badge text="Play" variant="play" />);
     expect(screen.getByText('Play')).toBeTruthy();
+  });
+
+  it('renders with testID', () => {
+    render(<Badge text="Active" variant="active" testID="badge-status-active" />);
+    expect(screen.getByTestId('badge-status-active')).toBeTruthy();
   });
 });
 
@@ -733,6 +748,23 @@ describe('PedalRack', () => {
     render(<PedalRack chain={chain} onChange={() => {}} trackName="Guitar" />);
     expect(screen.getByText(/Pedalboard/)).toBeTruthy();
   });
+
+  it('renders with testID', () => {
+    render(<PedalRack chain={chain} onChange={() => {}} testID="pedal-rack-container" />);
+    expect(screen.getByTestId('pedal-rack-container')).toBeTruthy();
+  });
+
+  it('enforces maximum 6 pedal slots', () => {
+    const fullChain: TrackAmpChain = {
+      pedals: Array.from({ length: 6 }, (_, i) => ({
+        id: `pedal-${i}`, name: `Pedal ${i}`, type: 'overdrive' as const,
+        color: '#ff6482', brand: 'Test', enabled: true, params: {},
+      })),
+      amp: null, cab: null,
+    };
+    render(<PedalRack chain={fullChain} onChange={() => {}} />);
+    expect(screen.getByText('6')).toBeTruthy();
+  });
 });
 
 describe('Sidebar', () => {
@@ -1092,5 +1124,53 @@ describe('MasteringUpload', () => {
     const mockInput = { type: 'single' as const, filename: 'mix_final.wav', size: 52428800, sampleRate: 44100, bitDepth: 24, duration: 180, url: 'test.wav' };
     render(<MasteringUpload input={mockInput} mode="single" onModeChange={() => {}} onUpload={() => {}} onClear={() => {}} />);
     expect(screen.getByText('Trocar')).toBeTruthy();
+  });
+});
+
+describe('testID Contract', () => {
+  it('renders testID on WaveformClip', () => {
+    render(<WaveformClip regionId="r1" duration={4} color="bg-brand-accent" audible={true} testID="waveform-clip-r1" />);
+    expect(screen.getByTestId('waveform-clip-r1')).toBeTruthy();
+  });
+
+  it('renders testID on LufsMeter', () => {
+    render(<LufsMeter isPlaying={false} testID="lufs-meter-display" />);
+    expect(screen.getByTestId('lufs-meter-display')).toBeTruthy();
+  });
+
+  it('renders testID on BounceDialog', () => {
+    render(<BounceDialog visible={true} onClose={() => {}} projectTitle="Test" duration={120} testID="dialog-bounce-export" />);
+    expect(screen.getByTestId('dialog-bounce-export')).toBeTruthy();
+  });
+
+  it('renders testID on PageHeader', () => {
+    render(<PageHeader title="Dashboard" testID="page-header-dashboard" />);
+    expect(screen.getByTestId('page-header-dashboard')).toBeTruthy();
+  });
+
+  it('renders testID on Card', () => {
+    render(<Card testID="card-main"><div>Content</div></Card>);
+    expect(screen.getByTestId('card-main')).toBeTruthy();
+  });
+
+  it('renders testID on Divider', () => {
+    render(<Divider testID="divider-section" />);
+    expect(screen.getByTestId('divider-section')).toBeTruthy();
+  });
+
+  it('renders testID on Metronome', () => {
+    const settings: MetronomeSettings = { bpm: 120, timeSig: [4, 4], accentInterval: 4, volume: 80, enabled: true, countIn: false, countInBars: 2 };
+    render(<Metronome settings={settings} onChange={() => {}} isPlaying={false} testID="metronome-control" />);
+    expect(screen.getByTestId('metronome-control')).toBeTruthy();
+  });
+
+  it('renders testID on MixManager', () => {
+    render(<MixManager snapshots={[]} onSave={() => {}} onLoad={() => {}} onDelete={() => {}} onCompare={() => {}} testID="mix-manager" />);
+    expect(screen.getByTestId('mix-manager')).toBeTruthy();
+  });
+
+  it('renders testID on TrackGroupManager', () => {
+    render(<TrackGroupManager groups={[]} tracks={[]} onCreateGroup={() => {}} onRemoveGroup={() => {}} onGroupVolume={() => {}} onGroupMute={() => {}} onAssignTrack={() => {}} trackAssignments={{}} testID="track-group-manager" />);
+    expect(screen.getByTestId('track-group-manager')).toBeTruthy();
   });
 });

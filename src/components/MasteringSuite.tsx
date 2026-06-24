@@ -21,6 +21,7 @@ import { takeMasteringInput } from '../lib/masteringBridge';
 
 interface MasteringSuiteProps {
   onBack?: () => void;
+  testID?: string;
 }
 
 function writeWavHeader(
@@ -109,7 +110,7 @@ function audioBufferToWavBlob(buffer: AudioBuffer, bitDepth: number): Blob {
   return new Blob([arrayBuffer], { type: 'audio/wav' });
 }
 
-export function MasteringSuite({ onBack }: MasteringSuiteProps) {
+export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
   const [session, setSession] = useState<MasteringSession>(() => {
     const pending = takeMasteringInput();
     if (pending) {
@@ -296,7 +297,7 @@ export function MasteringSuite({ onBack }: MasteringSuiteProps) {
   }, [exportFormat, exportBitDepth, exportSampleRate, session.inputFile]);
 
   return (
-    <View className="flex-1 bg-dark-bg">
+    <View testID={testID} className="flex-1 bg-dark-bg">
       <View className="flex-row items-center justify-between px-4 py-3 border-b border-dark-border">
         <View className="flex-row items-center gap-3">
           {onBack && (

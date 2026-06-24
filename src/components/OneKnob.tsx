@@ -9,9 +9,10 @@ interface OneKnobProps {
   max?: number;
   step?: number;
   unit?: string;
+  testID?: string;
 }
 
-export function OneKnob({ label, value, onChange, min = 0, max = 100, step = 1, unit = '%' }: OneKnobProps) {
+export function OneKnob({ label, value, onChange, min = 0, max = 100, step = 1, unit = '%', testID }: OneKnobProps) {
   const [dragging, setDragging] = useState(false);
   const startY = useRef(0);
   const [showValue, setShowValue] = useState(false);
@@ -39,7 +40,7 @@ export function OneKnob({ label, value, onChange, min = 0, max = 100, step = 1, 
   const pct = range === 0 ? 0 : ((value - min) / range) * 100;
 
   return (
-    <View className="items-center gap-1">
+    <View testID={testID} className="items-center gap-1">
       <Text className="text-gray-400 text-[9px] font-medium">{label}</Text>
       <Pressable
         onPressIn={handlePressIn}
@@ -75,6 +76,7 @@ interface OneKnobProcessorProps {
   type: OneKnobType;
   value: number;
   onChange: (type: OneKnobType, value: number) => void;
+  testID?: string;
 }
 
 const KNOB_LABELS: Record<OneKnobType, string> = {
@@ -88,9 +90,10 @@ const KNOB_LABELS: Record<OneKnobType, string> = {
   telephone: 'Telephone',
 };
 
-export function OneKnobProcessor({ type, value, onChange }: OneKnobProcessorProps) {
+export function OneKnobProcessor({ type, value, onChange, testID }: OneKnobProcessorProps) {
   return (
     <OneKnob
+      testID={testID}
       label={KNOB_LABELS[type]}
       value={value}
       onChange={(v) => onChange(type, v)}

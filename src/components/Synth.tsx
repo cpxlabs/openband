@@ -78,9 +78,10 @@ interface SynthProps {
   visible: boolean;
   onClose: () => void;
   bpm: number;
+  testID?: string;
 }
 
-export function Synth({ visible, onClose, bpm }: SynthProps) {
+export function Synth({ visible, onClose, bpm, testID }: SynthProps) {
   const [presetIndex, setPresetIndex] = useState(0);
   const preset = useMemo(() => PRESETS[presetIndex], [presetIndex]);
   const [showPresets, setShowPresets] = useState(false);
@@ -201,7 +202,7 @@ export function Synth({ visible, onClose, bpm }: SynthProps) {
   }, [preset, bpm, playNote, stopAll]);
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} testID={testID}>
       <View className="flex-1 bg-black/80 justify-center items-center px-2">
         <View className="w-full max-w-md bg-dark-surface rounded-3xl border border-dark-border p-4" style={{ maxHeight: '90%' }}>
           <View className="flex-row items-center justify-between mb-3">

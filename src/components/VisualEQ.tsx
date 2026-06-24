@@ -13,6 +13,7 @@ interface VisualEQProps {
   bands: EqBand[];
   onChange: (index: number, params: Partial<EqBand>) => void;
   height?: number;
+  testID?: string;
 }
 
 const PRESETS: { name: string; bands: EqBand[] }[] = [
@@ -83,7 +84,7 @@ const PRESETS: { name: string; bands: EqBand[] }[] = [
   },
 ];
 
-export function VisualEQ({ bands, onChange, height = 140 }: VisualEQProps) {
+export function VisualEQ({ bands, onChange, height = 140, testID }: VisualEQProps) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [showPresets, setShowPresets] = useState(false);
 
@@ -139,7 +140,7 @@ export function VisualEQ({ bands, onChange, height = 140 }: VisualEQProps) {
   }, [bands]);
 
   return (
-    <View className="bg-dark-bg rounded-xl border border-dark-border overflow-hidden">
+    <View testID={testID} className="bg-dark-bg rounded-xl border border-dark-border overflow-hidden">
       <View className="flex-row items-center justify-between px-3 py-1.5 bg-dark-surface border-b border-dark-border">
         <Text className="text-gray-400 text-[10px] font-medium">Visual EQ</Text>
         <Pressable onPress={() => setShowPresets(!showPresets)} className="px-2 py-0.5 rounded bg-dark-muted active:opacity-70">

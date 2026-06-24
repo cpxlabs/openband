@@ -28,6 +28,7 @@ function formatCount(n: number) {
 
 interface MomentCardProps {
   moment: MomentData;
+  testID?: string;
 }
 
 function MomentAudioPlayer({ isPlaying, onStatusChange, songTitle, songDuration }: {
@@ -71,7 +72,7 @@ function MomentAudioPlayer({ isPlaying, onStatusChange, songTitle, songDuration 
   return null;
 }
 
-export function MomentCard({ moment }: MomentCardProps) {
+export function MomentCard({ moment, testID }: MomentCardProps) {
   const [playerActive, setPlayerActive] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -106,7 +107,7 @@ export function MomentCard({ moment }: MomentCardProps) {
   const progressPercent = duration ? progress : 0;
 
   return (
-    <View className="mb-4 bg-dark-surface rounded-2xl border border-dark-border overflow-hidden">
+    <View testID={testID} className="mb-4 bg-dark-surface rounded-2xl border border-dark-border overflow-hidden">
       <View className="p-4 pb-0">
         <View className="flex-row items-center gap-3 mb-3">
           <Avatar name={moment.artistName} size="md" />

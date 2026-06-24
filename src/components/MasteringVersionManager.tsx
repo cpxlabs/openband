@@ -10,6 +10,7 @@ interface MasteringVersionManagerProps {
   onLoadVersion: (id: string) => void;
   onDeleteVersion: (id: string) => void;
   onToggleBypass: () => void;
+  testID?: string;
 }
 
 export function MasteringVersionManager({
@@ -20,6 +21,7 @@ export function MasteringVersionManager({
   onLoadVersion,
   onDeleteVersion,
   onToggleBypass,
+  testID,
 }: MasteringVersionManagerProps) {
   const [showSave, setShowSave] = useState(false);
   const [newName, setNewName] = useState('');
@@ -36,7 +38,7 @@ export function MasteringVersionManager({
   };
 
   return (
-    <View>
+    <View testID={testID}>
       <View className="flex-row items-center justify-between mb-2">
         <View className="flex-row items-center gap-2">
           <View className="w-1.5 h-1.5 rounded-full bg-cyan-500" />

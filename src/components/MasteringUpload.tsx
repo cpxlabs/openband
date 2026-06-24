@@ -8,11 +8,12 @@ interface MasteringUploadProps {
   onModeChange: (mode: 'single' | 'stems') => void;
   onUpload: () => void;
   onClear: () => void;
+  testID?: string;
 }
 
-export function MasteringUpload({ input, mode, onModeChange, onUpload, onClear }: MasteringUploadProps) {
+export function MasteringUpload({ input, mode, onModeChange, onUpload, onClear, testID }: MasteringUploadProps) {
   return (
-    <View className="bg-dark-surface rounded-xl border border-dark-border p-4">
+    <View testID={testID} className="bg-dark-surface rounded-xl border border-dark-border p-4">
       <View className="flex-row items-center gap-2 mb-3">
         <View className="w-1.5 h-1.5 rounded-full bg-green-500" />
         <Text className="text-gray-400 text-xs font-semibold uppercase tracking-wider">Input</Text>

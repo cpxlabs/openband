@@ -8,6 +8,7 @@ interface ButtonProps {
   disabled?: boolean;
   icon?: string;
   className?: string;
+  testID?: string;
 }
 
 const variantStyles = {
@@ -22,9 +23,10 @@ const textStyles = {
   ghost: 'text-brand-accent',
 };
 
-export function Button({ title, onPress, variant = 'primary', loading, disabled, icon, className = '' }: ButtonProps) {
+export function Button({ title, onPress, variant = 'primary', loading, disabled, icon, className = '', testID }: ButtonProps) {
   return (
     <Pressable
+      testID={testID}
       onPress={onPress}
       disabled={disabled || loading}
       className={`${variantStyles[variant]} rounded-xl p-4 flex-row items-center justify-center gap-2 ${disabled ? 'opacity-50' : ''} ${className}`}

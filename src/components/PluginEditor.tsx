@@ -10,6 +10,7 @@ interface PluginEditorProps {
   onToggle: (pluginId: string) => void;
   onClose: () => void;
   bpm?: number;
+  testID?: string;
 }
 
 function ParamRow({
@@ -685,7 +686,7 @@ const EDITOR_MAP: Record<string, EditorComp> = {
   utility: UtilityEditor,
 };
 
-export function PluginEditor({ plugin, onParamChange, onToggle, onClose, bpm }: PluginEditorProps) {
+export function PluginEditor({ plugin, onParamChange, onToggle, onClose, bpm, testID }: PluginEditorProps) {
   if (!plugin) return null;
 
   const spec = PLUGIN_SPECS[plugin.type];
@@ -697,7 +698,7 @@ export function PluginEditor({ plugin, onParamChange, onToggle, onClose, bpm }: 
   const EditorComponent = EDITOR_MAP[plugin.type] || null;
 
   return (
-    <View className="absolute inset-0 z-50 bg-black/70 justify-end">
+    <View testID={testID} className="absolute inset-0 z-50 bg-black/70 justify-end">
       <View className="bg-dark-elevated border-t border-dark-border rounded-t-3xl max-h-[85%]">
         <View className="flex-row items-center justify-between px-5 py-3 border-b border-dark-border">
           <View className="flex-row items-center gap-3">

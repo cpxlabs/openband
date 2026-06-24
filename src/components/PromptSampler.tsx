@@ -6,9 +6,10 @@ interface PromptSamplerProps {
   onClose: () => void;
   onRender: (data: { prompt: string; bpm: number; key: string }) => void;
   bpm: number;
+  testID?: string;
 }
 
-export function PromptSampler({ visible, onClose, onRender, bpm }: PromptSamplerProps) {
+export function PromptSampler({ visible, onClose, onRender, bpm, testID }: PromptSamplerProps) {
   const [prompt, setPrompt] = useState('');
   const [promptBpm, setPromptBpm] = useState(bpm);
   const [key, setKey] = useState('C Major');
@@ -19,7 +20,7 @@ export function PromptSampler({ visible, onClose, onRender, bpm }: PromptSampler
   }, [onRender, prompt, promptBpm, key, onClose]);
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} testID={testID}>
       <Pressable className="flex-1 bg-black/60 justify-center items-center px-3" onPress={onClose}>
         <Pressable className="w-full max-w-lg bg-dark-surface rounded-3xl border border-dark-border overflow-hidden" onPress={(e) => e.stopPropagation()}>
           <View className="p-5 border-b border-dark-border">

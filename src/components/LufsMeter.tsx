@@ -3,6 +3,7 @@ import { View, Text, Pressable } from 'react-native';
 
 interface LufsMeterProps {
   isPlaying: boolean;
+  testID?: string;
 }
 
 const LUFS_TARGETS = [
@@ -25,7 +26,7 @@ function simulateLoudness(playing: boolean, base: number, target: number, speed:
   return lerp(base, target, speed);
 }
 
-export function LufsMeter({ isPlaying }: LufsMeterProps) {
+export function LufsMeter({ isPlaying, testID }: LufsMeterProps) {
   const [targetIdx, setTargetIdx] = useState(0);
   const target = LUFS_TARGETS[targetIdx];
   const targetRef = useRef(target);
@@ -107,7 +108,7 @@ export function LufsMeter({ isPlaying }: LufsMeterProps) {
   };
 
   return (
-    <View className="mb-3">
+    <View testID={testID} className="mb-3">
       <View className="flex-row items-center justify-between mb-2">
         <View className="flex-row items-center gap-2">
           <View className="w-2 h-2 rounded-full bg-rose-500" />

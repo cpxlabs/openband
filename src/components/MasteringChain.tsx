@@ -8,11 +8,12 @@ interface MasteringChainProps {
   onToggle: (pluginId: string) => void;
   onEdit: (plugin: Plugin) => void;
   onReset: () => void;
+  testID?: string;
 }
 
-export function MasteringChain({ plugins, onToggle, onEdit, onReset }: MasteringChainProps) {
+export function MasteringChain({ plugins, onToggle, onEdit, onReset, testID }: MasteringChainProps) {
   return (
-    <View>
+    <View testID={testID}>
       <View className="flex-row items-center justify-between mb-2">
         <View className="flex-row items-center gap-2">
           <View className="w-1.5 h-1.5 rounded-full bg-rose-500" />

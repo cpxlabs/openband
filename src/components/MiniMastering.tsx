@@ -15,13 +15,14 @@ interface MiniMasteringProps {
   activePreset: number;
   eqValues: Record<string, number>;
   onEqChange: (band: string, value: number) => void;
+  testID?: string;
 }
 
-export function MiniMastering({ onPresetChange, activePreset, eqValues, onEqChange }: MiniMasteringProps) {
+export function MiniMastering({ onPresetChange, activePreset, eqValues, onEqChange, testID }: MiniMasteringProps) {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <View className="rounded-xl bg-dark-surface border border-dark-border overflow-hidden">
+    <View testID={testID} className="rounded-xl bg-dark-surface border border-dark-border overflow-hidden">
       <Pressable onPress={() => setExpanded(!expanded)}
         className="flex-row items-center justify-between px-3 py-2 bg-dark-elevated/30 active:opacity-70">
         <View className="flex-row items-center gap-2">

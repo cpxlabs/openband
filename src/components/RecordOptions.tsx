@@ -6,6 +6,7 @@ interface RecordOptionsProps {
   onChange: (s: RecordSettings) => void;
   visible: boolean;
   onClose: () => void;
+  testID?: string;
 }
 
 const QUALITY_LABELS: Record<string, string> = {
@@ -30,11 +31,11 @@ const INPUT_SOURCES = [
 
 const SAMPLE_RATES = [44100, 48000, 96000];
 
-export function RecordOptions({ settings, onChange, visible, onClose }: RecordOptionsProps) {
+export function RecordOptions({ settings, onChange, visible, onClose, testID }: RecordOptionsProps) {
   if (!visible) return null;
 
   return (
-    <View className="absolute inset-0 z-50 bg-black/60 justify-end">
+    <View testID={testID} className="absolute inset-0 z-50 bg-black/60 justify-end">
       <View className="bg-dark-elevated border-t border-dark-border rounded-t-3xl max-h-[80%]">
         <View className="flex-row items-center justify-between px-5 py-4 border-b border-dark-border">
           <View className="flex-row items-center gap-2">

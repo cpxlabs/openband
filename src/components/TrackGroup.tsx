@@ -19,6 +19,7 @@ interface TrackGroupProps {
   onGroupMute: (groupId: string) => void;
   onAssignTrack: (trackId: string, groupId: string | null) => void;
   trackAssignments: Record<string, string | null>;
+  testID?: string;
 }
 
 const GROUP_COLORS = ['#ff6482', '#5ac8fa', '#ffcc00', '#34c759', '#bf5af2', '#ff9f0a', '#00d4aa'];
@@ -32,11 +33,12 @@ export function TrackGroupManager({
   onGroupMute,
   onAssignTrack,
   trackAssignments,
+  testID,
 }: TrackGroupProps) {
   const [showCreate, setShowCreate] = useState(false);
 
   return (
-    <View className="px-4 py-3">
+    <View testID={testID} className="px-4 py-3">
       <View className="flex-row items-center justify-between mb-3">
         <Text className="label text-gray-300 uppercase">Grupos</Text>
         <Pressable

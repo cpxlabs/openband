@@ -14,13 +14,14 @@ interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   isPersistent: boolean;
+  testID?: string;
 }
 
-export function Sidebar({ currentRoute, onNavigate, isOpen, onClose, isPersistent }: SidebarProps) {
+export function Sidebar({ currentRoute, onNavigate, isOpen, onClose, isPersistent, testID }: SidebarProps) {
   if (!isOpen && !isPersistent) return null;
 
   const sidebarContent = (
-    <View className={`bg-dark-surface border-r border-dark-border h-full ${isPersistent ? 'w-56' : 'w-64'}`}>
+    <View testID={testID} className={`bg-dark-surface border-r border-dark-border h-full ${isPersistent ? 'w-56' : 'w-64'}`}>
       <View className="h-16 border-b border-dark-border items-center justify-center">
         <View className="flex-row items-center gap-2">
           <View className="w-8 h-8 rounded-lg bg-brand-primary items-center justify-center">

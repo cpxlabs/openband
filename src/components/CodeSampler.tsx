@@ -38,9 +38,10 @@ interface CodeSamplerProps {
   onClose: () => void;
   onRender: (tracks: { name: string; tokens: TokenKey[]; unit: StepUnit; bpm: number }[]) => void;
   bpm: number;
+  testID?: string;
 }
 
-export function CodeSampler({ visible, onClose, onRender, bpm }: CodeSamplerProps) {
+export function CodeSampler({ visible, onClose, onRender, bpm, testID }: CodeSamplerProps) {
   const [code, setCode] = useState('KICK SNARE HH KICK SNARE HH KICK SNARE HH KICK SNARE HH');
   const [unit, setUnit] = useState<StepUnit>('1/8');
   const [patternBpm, setPatternBpm] = useState(bpm);
@@ -65,7 +66,7 @@ export function CodeSampler({ visible, onClose, onRender, bpm }: CodeSamplerProp
   const totalDuration = tokens.length * stepSeconds;
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} testID={testID}>
         <Pressable className="flex-1 bg-black/60 justify-center items-center px-3" onPress={onClose}>
           <Pressable className="w-full max-w-lg max-h-[80%] bg-dark-surface rounded-3xl border border-dark-border overflow-hidden">
           <View className="p-5 border-b border-dark-border">

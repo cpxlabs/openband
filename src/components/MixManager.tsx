@@ -9,9 +9,10 @@ interface MixManagerProps {
   onLoad: (id: string) => void;
   onDelete: (id: string) => void;
   onCompare: (idA: string, idB: string) => void;
+  testID?: string;
 }
 
-export function MixManager({ snapshots, activeMixId, onSave, onLoad, onDelete, onCompare }: MixManagerProps) {
+export function MixManager({ snapshots, activeMixId, onSave, onLoad, onDelete, onCompare, testID }: MixManagerProps) {
   const [expanded, setExpanded] = useState(false);
   const [saveName, setSaveName] = useState('');
   const [showSave, setShowSave] = useState(false);
@@ -33,7 +34,7 @@ export function MixManager({ snapshots, activeMixId, onSave, onLoad, onDelete, o
   }, []);
 
   return (
-    <View>
+    <View testID={testID}>
       <Pressable
         onPress={() => setExpanded(!expanded)}
         className="flex-row items-center gap-2 px-3 py-1.5 rounded-lg bg-dark-surface border border-dark-border"

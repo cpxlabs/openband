@@ -4,15 +4,17 @@ import { View, TextInput as RNTextInput, Text, type TextInputProps as RNProps } 
 interface TextInputProps extends RNProps {
   label?: string;
   error?: string | null;
+  testID?: string;
 }
 
-export function TextInput({ label, error, className = '', ...props }: TextInputProps) {
+export function TextInput({ label, error, className = '', testID, ...props }: TextInputProps) {
   const [focused, setFocused] = useState(false);
 
   return (
     <View className="gap-1.5">
       {label && <Text className="label ml-1">{label}</Text>}
       <RNTextInput
+        testID={testID}
         className={`input-field p-4 ${focused ? 'input-field-focused' : ''} ${error ? 'border-red-500' : ''} ${className}`}
         placeholderTextColor="#555"
         onFocus={() => setFocused(true)}

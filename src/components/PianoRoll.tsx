@@ -19,6 +19,7 @@ interface PianoRollProps {
   visible: boolean;
   onClose: () => void;
   trackName?: string;
+  testID?: string;
 }
 
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
@@ -75,7 +76,7 @@ function posToNote(
 
 export function PianoRoll({
   notes, onChange, snap, numBars, bpm,
-  keySignature = 'C', scale = 'major', visible, onClose, trackName,
+  keySignature = 'C', scale = 'major', visible, onClose, trackName, testID,
 }: PianoRollProps) {
   const gridRef = useRef<View>(null);
   const totalBeats = numBars * 4;
@@ -289,7 +290,7 @@ export function PianoRoll({
   };
 
   return (
-    <Modal visible={visible} animationType="fade" transparent>
+    <Modal visible={visible} animationType="fade" transparent testID={testID}>
       <View className="flex-1 bg-black/60 justify-center">
         <View className="flex-1 mx-2 my-3 rounded-2xl overflow-hidden bg-[#121214] border border-[#2a2a2e]">
           <View className="flex-row items-center justify-between px-4 py-3 bg-[#1c1c1e] border-b border-[#2a2a2e]">

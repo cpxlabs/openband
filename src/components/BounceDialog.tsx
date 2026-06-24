@@ -39,6 +39,7 @@ interface BounceDialogProps {
   projectTitle: string;
   duration: number;
   tracks?: BounceTrack[];
+  testID?: string;
 }
 
 async function writeBlobToFile(blob: Blob, filename: string) {
@@ -210,7 +211,7 @@ function audioBufferToWavBlob(buffer: AudioBuffer, bitDepth: BitDepth): Blob {
   return new Blob([arrayBuffer], { type: 'audio/wav' });
 }
 
-export function BounceDialog({ visible, onClose, projectTitle, duration, tracks = [] }: BounceDialogProps) {
+export function BounceDialog({ visible, onClose, projectTitle, duration, tracks = [], testID }: BounceDialogProps) {
   const [format, setFormat] = useState<ExportFormat>('wav');
   const [bitDepth, setBitDepth] = useState<BitDepth>(24);
   const [sampleRate, setSampleRate] = useState<ExportSampleRate>(48000);
@@ -272,7 +273,7 @@ export function BounceDialog({ visible, onClose, projectTitle, duration, tracks 
   }, [format, bitDepth, sampleRate, projectTitle, duration, tracks, updateProgress]);
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} testID={testID}>
         <Pressable className="flex-1 bg-black/60 justify-center items-center px-6" onPress={onClose}>
           <Pressable className="w-full max-w-sm bg-dark-surface rounded-3xl border border-dark-border p-5">
           <Text className="text-white text-lg font-bold mb-1">Exportar Mix</Text>

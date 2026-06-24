@@ -7,6 +7,7 @@ interface PedalRackProps {
   chain: TrackAmpChain;
   onChange: (chain: TrackAmpChain) => void;
   trackName?: string;
+  testID?: string;
 }
 
 function PedalSlot({ pedal, index, onToggle, onReplace, onRemove }:
@@ -199,7 +200,7 @@ function CabSelector({ cab, onSelect, onRemove }:
   );
 }
 
-export function PedalRack({ chain, onChange, trackName }: PedalRackProps) {
+export function PedalRack({ chain, onChange, trackName, testID }: PedalRackProps) {
   const handleTogglePedal = (index: number) => {
     const pedals = [...chain.pedals];
     if (pedals[index]) pedals[index] = { ...pedals[index], enabled: !pedals[index].enabled };
@@ -219,7 +220,7 @@ export function PedalRack({ chain, onChange, trackName }: PedalRackProps) {
   };
 
   return (
-    <View className="relative">
+    <View testID={testID} className="relative">
       <View className="flex-row items-center gap-2 mb-2">
         <Text className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">
           {trackName ? `${trackName} — ` : ''}Pedalboard

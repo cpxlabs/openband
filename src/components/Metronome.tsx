@@ -6,11 +6,12 @@ interface MetronomeProps {
   settings: MetronomeSettings;
   onChange: (s: MetronomeSettings) => void;
   isPlaying: boolean;
+  testID?: string;
 }
 
 const TIME_SIGS: [number, number][] = [[4, 4], [3, 4], [6, 8], [2, 4], [5, 4], [7, 8]];
 
-export function Metronome({ settings, onChange, isPlaying }: MetronomeProps) {
+export function Metronome({ settings, onChange, isPlaying, testID }: MetronomeProps) {
   const [expanded, setExpanded] = useState(false);
   const tapTimes = useRef<number[]>([]);
 
@@ -28,7 +29,7 @@ export function Metronome({ settings, onChange, isPlaying }: MetronomeProps) {
   }, [settings, onChange]);
 
   return (
-    <View>
+    <View testID={testID}>
       <Pressable
         onPress={() => setExpanded(!expanded)}
         className="flex-row items-center gap-2 bg-[#0b0b0d] px-3 py-1.5 rounded-lg border border-dark-border"

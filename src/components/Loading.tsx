@@ -3,11 +3,12 @@ import { View, Text, ActivityIndicator } from 'react-native';
 interface LoadingProps {
   message?: string;
   fullScreen?: boolean;
+  testID?: string;
 }
 
-export function Loading({ message = 'Carregando...', fullScreen = false }: LoadingProps) {
+export function Loading({ message = 'Carregando...', fullScreen = false, testID }: LoadingProps) {
   const content = (
-    <View className="items-center justify-center gap-4">
+    <View testID={testID} className="items-center justify-center gap-4">
       <ActivityIndicator size="large" color="#ff3b30" />
       {message && <Text className="text-gray-400 text-sm font-medium">{message}</Text>}
     </View>

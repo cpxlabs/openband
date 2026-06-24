@@ -8,9 +8,10 @@ interface WaveformClipProps {
   color: string;
   audible: boolean;
   height?: number;
+  testID?: string;
 }
 
-export function WaveformClip({ regionId, duration, color, audible, height = 56 }: WaveformClipProps) {
+export function WaveformClip({ regionId, duration, color, audible, height = 56, testID }: WaveformClipProps) {
   const barCount = Math.max(8, Math.min(80, Math.floor(duration * 0.5)));
   const bars = useMemo(() => generateWaveform(regionId, barCount), [regionId, barCount]);
   const opacity = audible ? 0.85 : 0.2;
@@ -19,7 +20,7 @@ export function WaveformClip({ regionId, duration, color, audible, height = 56 }
   const maxBar = mid - 4;
 
   return (
-    <View className="flex-row items-center overflow-hidden px-0.5" style={{ height, opacity }}>
+    <View testID={testID} className="flex-row items-center overflow-hidden px-0.5" style={{ height, opacity }}>
       {bars.map((val, i) => {
         const barH = Math.max(1, Math.abs(val) * maxBar);
         return (

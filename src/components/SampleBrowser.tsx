@@ -91,7 +91,7 @@ const SAMPLES: SampleEntry[] = [
 
 function SampleCard({ sample, onAddToTrack, player, status, playingId, onPlayPreview }: {
   sample: SampleEntry;
-  onAddToTrack: (s: SampleEntry) => void;
+  onAddToTrack: (sample: SampleEntry) => void;
   player: any;
   status: any;
   playingId: string | null;
@@ -132,6 +132,7 @@ function SampleCard({ sample, onAddToTrack, player, status, playingId, onPlayPre
 interface SampleBrowserProps {
   visible: boolean;
   onAddSample: (sample: SampleEntry) => void;
+  testID?: string;
 }
 
 function audioBufferToWavBlob(buffer: AudioBuffer): Blob {
@@ -185,7 +186,7 @@ function hashId(id: string): number {
   return h;
 }
 
-export function SampleBrowser({ visible, onAddSample }: SampleBrowserProps) {
+export function SampleBrowser({ visible, onAddSample, testID }: SampleBrowserProps) {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
   const player = useAudioPlayer(null);
@@ -245,7 +246,7 @@ export function SampleBrowser({ visible, onAddSample }: SampleBrowserProps) {
   if (!visible) return null;
 
   return (
-    <View className="flex-1">
+    <View testID={testID} className="flex-1">
       <View className="px-4 py-2">
         <View className="bg-dark-elevated rounded-xl border border-dark-border px-3 py-2">
           <TextInput

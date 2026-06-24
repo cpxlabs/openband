@@ -48,7 +48,8 @@ interface ADSR {
 interface SamplerProps {
   visible: boolean;
   onClose: () => void;
-  onAddToTrack: (name: string, sampleData: SamplerSlotData[]) => void;
+  testID?: string;
+  onAddToTrack?: (name: string, data: SamplerSlotData[]) => void;
 }
 
 const DRUM_PADS = [
@@ -70,7 +71,7 @@ const DRUM_PADS = [
   { key: 'D4', label: 'FX', color: '#34c759' },
 ];
 
-export function Sampler({ visible, onClose, onAddToTrack }: SamplerProps) {
+export function Sampler({ visible, onClose, onAddToTrack, testID }: SamplerProps) {
   const [mode, setMode] = useState<'drum' | 'melodic'>('drum');
   const [slots, setSlots] = useState<SampleSlot[]>(
     DRUM_PADS.map((p, i) => ({
@@ -167,12 +168,12 @@ export function Sampler({ visible, onClose, onAddToTrack }: SamplerProps) {
       }
       return { key: slot.key, name: slot.name, url, rootKey: slot.rootKey, lowKey: slot.lowKey, highKey: slot.highKey };
     });
-    onAddToTrack(mode === 'drum' ? 'Drum Rack' : 'Sampler', sampleData);
+    onAddToTrack?.(mode === 'drum' ? 'Drum Rack' : 'Sampler', sampleData);
     onClose();
   }, [slots, mode, onAddToTrack, onClose]);
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} testID={testID}>
       <View className="flex-1 bg-black/80 justify-center items-center px-2">
         <View className="w-full max-w-lg bg-dark-surface rounded-3xl border border-dark-border p-4" style={{ maxHeight: '90%' }}>
           <View className="flex-row items-center justify-between mb-3">

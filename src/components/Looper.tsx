@@ -14,12 +14,13 @@ interface LooperProps {
   onClose: () => void;
   bpm: number;
   onCommitLoop: (slot: number, bars: number) => void;
+  testID?: string;
 }
 
 const SLOT_COLORS = ['#ff6482', '#5ac8fa', '#34c759', '#ff9f0a'];
 const BAR_OPTIONS = [1, 2, 4, 8];
 
-export function Looper({ visible, onClose, bpm, onCommitLoop }: LooperProps) {
+export function Looper({ visible, onClose, bpm, onCommitLoop, testID }: LooperProps) {
   const [slots, setSlots] = useState<LoopSlot[]>(
     Array.from({ length: 4 }, (_, i) => ({
       id: i,
@@ -55,7 +56,7 @@ export function Looper({ visible, onClose, bpm, onCommitLoop }: LooperProps) {
   const beatDuration = useMemo(() => 60 / bpm, [bpm]);
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} testID={testID}>
       <View className="flex-1 bg-black/80 justify-center items-center px-4">
         <View className="w-full max-w-sm bg-dark-surface rounded-3xl border border-dark-border p-5">
           <View className="flex-row items-center justify-between mb-4">

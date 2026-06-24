@@ -19,9 +19,10 @@ interface PluginRackProps {
   onEdit?: (plugin: Plugin) => void;
   trackName?: string;
   maxSlots?: number;
+  testID?: string;
 }
 
-export function PluginRack({ plugins, onChange, onEdit, trackName, maxSlots = 8 }: PluginRackProps) {
+export function PluginRack({ plugins, onChange, onEdit, trackName, maxSlots = 8, testID }: PluginRackProps) {
   const [showAdd, setShowAdd] = useState(false);
 
   const togglePlugin = useCallback((id: string) => {
@@ -62,7 +63,7 @@ export function PluginRack({ plugins, onChange, onEdit, trackName, maxSlots = 8 
   }, [plugins, onChange]);
 
   return (
-    <View className="bg-dark-surface/80 rounded-xl border border-dark-border">
+    <View testID={testID} className="bg-dark-surface/80 rounded-xl border border-dark-border">
       <Pressable
         onPress={() => setShowAdd(!showAdd)}
         className="flex-row items-center justify-between px-3 py-2 border-b border-dark-border/50"

@@ -15,6 +15,7 @@ interface AutomationLaneProps {
   label?: string;
   minValue?: number;
   maxValue?: number;
+  testID?: string;
 }
 
 export function AutomationLane({
@@ -26,6 +27,7 @@ export function AutomationLane({
   label = 'Volume',
   minValue = 0,
   maxValue = 100,
+  testID,
 }: AutomationLaneProps) {
   if (!visible) return null;
 
@@ -55,6 +57,7 @@ export function AutomationLane({
 
   return (
     <View
+      testID={testID}
       onStartShouldSetResponder={() => true}
       onResponderRelease={(e) => {
         const x = e.nativeEvent.locationX;

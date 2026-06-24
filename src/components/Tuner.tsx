@@ -45,9 +45,10 @@ function noteNameFromFreq(freq: number): { name: string; octave: number; cents: 
 interface TunerProps {
   visible: boolean;
   onClose: () => void;
+  testID?: string;
 }
 
-export function Tuner({ visible, onClose }: TunerProps) {
+export function Tuner({ visible, onClose, testID }: TunerProps) {
   const [instrument, setInstrument] = useState<'guitar' | 'bass'>('guitar');
   const [simFreq, setSimFreq] = useState(0);
   const [activeString, setActiveString] = useState(-1);
@@ -79,7 +80,7 @@ export function Tuner({ visible, onClose }: TunerProps) {
   const centsBarWidth = Math.max(0, 100 - Math.abs(note.cents) * 2);
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} testID={testID}>
         <Pressable className="flex-1 bg-black/70 justify-center items-center px-4" onPress={onClose}>
           <Pressable className="w-full max-w-sm bg-dark-surface rounded-3xl border border-dark-border p-6">
           <View className="flex-row items-center justify-between mb-4">
