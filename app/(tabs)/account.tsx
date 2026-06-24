@@ -52,10 +52,11 @@ export default function Account() {
   };
 
   return (
-    <ScrollView className="flex-1 bg-dark-bg">
+    <ScrollView className="flex-1 bg-dark-bg"
+      style={resp.isDesktop ? { maxWidth: 576, alignSelf: 'center', width: '100%' } : undefined}>
       <PageHeader title="Conta" subtitle="Suas informações de perfil" />
 
-      <View className={`${resp.isMobile ? 'px-4' : resp.isDesktop ? 'max-w-xl mx-auto w-full px-0' : 'px-6'} gap-6 pb-8`}>
+      <View className={`${resp.isMobile ? 'px-4' : 'px-6'} gap-6 pb-8`}>
         <View className="items-center py-6">
           <Avatar name={currentName} size="lg" />
           <Text className="text-white text-xl font-bold mt-4">{currentName}</Text>

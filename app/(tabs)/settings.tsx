@@ -17,10 +17,11 @@ export default function Settings() {
   const profile = MOCK_PROFILE;
 
   return (
-    <ScrollView className="flex-1 bg-dark-bg">
+    <ScrollView className="flex-1 bg-dark-bg"
+      style={resp.isDesktop ? { maxWidth: 576, alignSelf: 'center', width: '100%' } : undefined}>
       <PageHeader title="Configurações" subtitle="Personalize sua experiência" />
 
-      <View className={`${resp.isMobile ? 'px-4' : resp.isDesktop ? 'max-w-xl mx-auto w-full px-0' : 'px-6'} gap-6 pb-8`}>
+      <View className={`${resp.isMobile ? 'px-4' : 'px-6'} gap-6 pb-8`}>
         <View className="items-center py-6 gap-3">
           <Avatar name={profile.name} size="lg" />
           <View className="items-center">

@@ -101,9 +101,10 @@ export default function Moments() {
         </View>
       )}
 
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }}>
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }}
+        style={resp.isDesktop ? { maxWidth: 768, alignSelf: 'center', width: '100%' } : undefined}>
         {tab === 'moments' ? (
-          <View className={`${resp.isMobile ? 'px-4' : 'px-6 max-w-3xl mx-auto'}`}>
+          <View className={`${resp.isMobile ? 'px-4' : 'px-6'}`}>
             {MOCK_MOMENTS.map(moment => (
               <MomentCard key={moment.id} moment={moment} />
             ))}

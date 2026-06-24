@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { View, Text, Pressable, ScrollView, Platform, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAudioPlayer, useAudioPlayerStatus, useAudioRecorder, useAudioRecorderState, AudioModule, setAudioModeAsync, RecordingPresets } from 'expo-audio';
-import { generatePreviewUrl } from '../../src/lib/constants';
+import { renderTracksToUrl } from '../../src/lib/midiSynth';
 import {
   Metronome,
   RecordOptions,
@@ -212,12 +212,12 @@ export default function Studio() {
     if (isPlaying) { player.pause(); return; }
     if (hasLoadedRef.current) { player.play(); return; }
     hasLoadedRef.current = true;
-    const url = await generatePreviewUrl(projectTitle, 30);
+    const url = await renderTracksToUrl(tracks, initialBpm);
     if (url) {
       await player.replace(url);
       player.play();
     }
-  }, [isPlaying, player, projectTitle]);
+  }, [isPlaying, player, tracks, initialBpm]);
 
   const toggleRecording = useCallback(async () => {
     try {
@@ -552,7 +552,6 @@ export default function Studio() {
       
       const result = await response.json();
       
-      // Create track
       const trackId = `gen-${Date.now()}`;
       const newTrack: TrackDef = {
         id: trackId,
@@ -973,7 +972,7 @@ export default function Studio() {
                 <Text className={`${resp.isMobile ? 'text-[9px]' : 'text-[10px]'} text-gray-400`}>+Send</Text>
               </Pressable>
             </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-1 px-2 sm:px-4">
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} className={`flex-1 ${resp.isMobile ? 'px-2' : 'px-4'}`}>
               <View className="flex-row gap-3 py-2">
                 {tracks.map((track) => {
                   const effVol = getEffectiveVolume(track.id);
@@ -1145,7 +1144,6 @@ export default function Studio() {
                 const urls = tracks.flatMap(t =>
                   t.regions.filter(r => r.url).map(r => ({ name: t.name, url: r.url! }))
                 );
-                const previewUrl = generatePreviewUrl(projectTitle, 30);
                 if (urls.length > 0) {
                   setMasteringInput({
                     url: urls[0].url,
@@ -1153,7 +1151,7 @@ export default function Studio() {
                     stems: urls,
                   });
                 } else {
-                  previewUrl.then(url => {
+                  renderTracksToUrl(tracks, initialBpm).then(url => {
                     if (url) {
                       setMasteringInput({ url, filename: projectTitle, stems: tracks.map(t => ({ name: t.name, url })) });
                     }

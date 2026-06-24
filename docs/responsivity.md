@@ -23,7 +23,7 @@ const resp = useResponsive();
 // resp.isLandscape        — width > height
 // resp.isWeb              — Platform.OS === 'web'
 // resp.sidebarWidth       — 0 / 0 / 64
-// resp.contentPadding     — 12 / 20 / 32
+// resp.contentPadding     — 16 / 24 / 24
 // resp.channelWidth       — 96 / 112 / 136
 // resp.tracksSidebarWidth — 100 / 144 / 180
 // resp.toolbarFontSize    — 10 / 12 / 14
