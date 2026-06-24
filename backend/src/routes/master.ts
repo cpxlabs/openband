@@ -11,7 +11,7 @@ function safeJsonParse(s: unknown): unknown {
 
 const router = Router();
 
-const MASTER_DIR = path.resolve(process.cwd(), 'masters');
+const MASTER_DIR = process.env.VERCEL ? '/tmp/masters' : path.resolve(process.cwd(), 'masters');
 
 if (!fs.existsSync(MASTER_DIR)) {
   fs.mkdirSync(MASTER_DIR, { recursive: true });

@@ -3,8 +3,13 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "cleanUrls": true,
-  "framework": null,
+  "functions": {
+    "api/index.ts": {
+      "runtime": "@vercel/node@5",
+      "maxDuration": 30
+    }
+  },
   "rewrites": [
-    { "source": "/:path*", "destination": "/" }
+    { "source": "/((?!api/).*)", "destination": "/" }
   ]
 }

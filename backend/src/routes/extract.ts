@@ -8,7 +8,7 @@ import type { ExtractResponse, ErrorResponse } from '../types';
 
 const router = Router();
 
-const STEMS_DIR = path.resolve(process.cwd(), 'stems');
+const STEMS_DIR = process.env.VERCEL ? '/tmp/stems' : path.resolve(process.cwd(), 'stems');
 
 const isProduction = process.env.NODE_ENV === 'production';
 
