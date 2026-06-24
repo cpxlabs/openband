@@ -6,5 +6,8 @@
       "mode": "subagent",
       "permission": { "read": "allow", "bash": "allow", "edit": "deny" }
     }
+  },
+  "compaction": {
+    "auto": true
   }
 }

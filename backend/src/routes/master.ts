@@ -34,7 +34,7 @@ router.post('/master/bounce', (req: Request, res: Response, next: NextFunction) 
       return res.status(400).json({ error: 'Nenhum arquivo de áudio enviado.' });
     }
 
-    const { bitDepth, sampleRate, format, pluginStates } = req.body;
+    const { bitDepth, sampleRate, format, pluginStates } = req.body || {};
 
     const parsedBitDepth = (() => { const v = parseInt(bitDepth, 10); return Number.isNaN(v) ? 24 : v; })();
     const parsedSampleRate = (() => { const v = parseInt(sampleRate, 10); return Number.isNaN(v) ? 44100 : v; })();
@@ -43,8 +43,7 @@ router.post('/master/bounce', (req: Request, res: Response, next: NextFunction) 
     const outputFilename = `master_${Date.now()}.${outputFormat === 'mp3' ? 'mp3' : 'wav'}`;
     const outputPath = path.resolve(MASTER_DIR, outputFilename);
 
-    if (!req.file) { res.status(400).json({ error: 'Nenhum arquivo enviado.' }); return; }
-    const filePath = req.file.path;
+    const filePath = req.file!.path;
     await new Promise<void>((resolve, reject) => {
       const inputStream = fs.createReadStream(filePath);
       const outputStream = fs.createWriteStream(outputPath);

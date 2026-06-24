@@ -106,7 +106,11 @@ export function Synth({ visible, onClose, bpm }: SynthProps) {
   }, []);
 
   useEffect(() => {
-    return () => { stopAll(); };
+    return () => {
+      stopAll();
+      audioCtxRef.current?.close().catch(() => {});
+      audioCtxRef.current = null;
+    };
   }, [stopAll]);
 
   const playNote = useCallback((note: number) => {
@@ -137,7 +141,7 @@ export function Synth({ visible, onClose, bpm }: SynthProps) {
           filter.connect(gain);
           gain.connect(ctx.destination);
           source.start(now);
-          return { stop: () => { try { source.stop(); } catch {} } };
+          return { stop: () => { try { source.stop(); } catch { console.warn('Noise source stop error'); } } };
         }
 
         const osc = ctx.createOscillator();
@@ -167,7 +171,7 @@ export function Synth({ visible, onClose, bpm }: SynthProps) {
 
         osc.start(now);
         osc.stop(now + dur + 0.05);
-        return { stop: () => { try { osc.stop(); } catch {} } };
+        return { stop: () => { try { osc.stop(); } catch { console.warn('Osc stop error'); } } };
       };
 
       activeNodes.current.forEach(n => n.stop());
@@ -178,7 +182,9 @@ export function Synth({ visible, onClose, bpm }: SynthProps) {
       if (s2) stopped.push(s2);
       activeNodes.current = stopped;
       setPlaying(true);
-    } catch {}
+    } catch (e) {
+      console.warn('Synth playNote error:', e);
+    }
   }, [getCtx, preset]);
 
   const playArp = useCallback(() => {

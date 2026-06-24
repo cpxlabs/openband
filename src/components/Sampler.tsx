@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, Pressable, Modal, Platform } from 'react-native';
 import type { SamplerSlotData } from '../lib/types';
 
@@ -88,6 +88,13 @@ export function Sampler({ visible, onClose, onAddToTrack }: SamplerProps) {
 
   const audioCtx = useRef<AudioContext | null>(null);
 
+  useEffect(() => {
+    return () => {
+      audioCtx.current?.close();
+      audioCtx.current = null;
+    };
+  }, []);
+
   const getAudioContext = useCallback(() => {
     if (Platform.OS !== 'web') return null;
     if (!audioCtx.current) audioCtx.current = new AudioContext();
@@ -115,7 +122,7 @@ export function Sampler({ visible, onClose, onAddToTrack }: SamplerProps) {
           if (!ctx) return;
           const buffer = await ctx.decodeAudioData(result as ArrayBuffer);
           setSlots(prev => prev.map((s, i) => i === slotIndex ? { ...s, data: buffer, name: file.name.replace(/\.[^/.]+$/, '') } : s));
-        } catch {}
+        } catch (e) { console.warn('Failed to decode audio:', e); }
         setLoadingSlot(null);
       };
       reader.readAsArrayBuffer(file);
@@ -146,7 +153,7 @@ export function Sampler({ visible, onClose, onAddToTrack }: SamplerProps) {
       source.connect(gainNode);
       gainNode.connect(ctx.destination);
       source.start(now);
-    } catch {}
+    } catch (e) { console.warn('Failed to preview sample:', e); }
   }, [slots, adsr, getAudioContext]);
 
   const handleAddToTrack = useCallback(() => {

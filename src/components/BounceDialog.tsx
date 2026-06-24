@@ -96,6 +96,7 @@ async function generateTone(duration: number, sampleRate: number, frequency: num
 }
 
 async function fetchAudioData(url: string): Promise<AudioBuffer> {
+  if (Platform.OS !== 'web') throw new Error('AudioContext not available on native');
   const parsed = new URL(url, typeof location !== 'undefined' ? location.origin : undefined);
   if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
     throw new Error('Invalid URL scheme');
@@ -108,9 +109,11 @@ async function fetchAudioData(url: string): Promise<AudioBuffer> {
   const response = await fetch(url, { credentials: 'omit' });
   const arrayBuffer = await response.arrayBuffer();
   const audioCtx = new AudioContext();
-  const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-  audioCtx.close();
-  return audioBuffer;
+  try {
+    return await audioCtx.decodeAudioData(arrayBuffer);
+  } finally {
+    audioCtx.close();
+  }
 }
 
 async function renderMixdown(
