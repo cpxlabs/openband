@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "dependencies": {
+    "@google/gemini-cli": "^0.47.0",
     "@supabase/supabase-js": "^2.50.0",
     "cors": "^2.8.5",
     "expo": "~56.0.12",
