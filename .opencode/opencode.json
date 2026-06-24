@@ -1,0 +1,10 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "agent": {
+    "code-review": {
+      "description": "Reviews staged/uncommitted code for bugs, dead code, empty catches, security issues, and project convention violations. Use when the user asks for a code review or before committing.",
+      "mode": "subagent",
+      "permission": { "read": "allow", "bash": "allow", "edit": "deny" }
+    }
+  }
+}

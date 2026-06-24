@@ -2,6 +2,8 @@
 
 > This project uses a structured **Plan → Act → Check → Repeat** loop. Every change goes through all three phases before moving on.
 
+**ALWAYS commit and push after completing changes.** Do not wait to be asked.
+
 ---
 
 ## Pre-flight
@@ -17,6 +19,7 @@ Before starting any task:
 - [ ] Read the exact Expo SDK docs at https://docs.expo.dev/versions/v56.0.0/ before using any Expo API
 - [ ] Check `docs/supabase.md` when setting up or modifying Supabase integration
 - [ ] Check git log (`git log --oneline -10`) to understand recent context
+- [ ] Run code review via the `code-review` agent before every commit
 
 ---
 
