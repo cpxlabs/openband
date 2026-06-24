@@ -1,9 +1,9 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import { WaveformClip } from '../src/components';
-import { View } from 'react-native';
+import type { Meta, StoryObj } from "@storybook/react";
+import { WaveformClip } from "../src/components";
+import { View } from "react-native";
 
 const meta: Meta<typeof WaveformClip> = {
-  title: 'WaveformClip',
+  title: "WaveformClip",
   component: WaveformClip,
   decorators: [
     (Story) => (
@@ -19,9 +19,9 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    regionId: 'region-1',
+    regionId: "region-1",
     duration: 8,
-    color: 'bg-brand-accent',
+    color: "bg-brand-accent",
     audible: true,
     height: 56,
   },
@@ -29,9 +29,9 @@ export const Default: Story = {
 
 export const Muted: Story = {
   args: {
-    regionId: 'region-2',
+    regionId: "region-2",
     duration: 4,
-    color: 'bg-gray-500',
+    color: "bg-gray-500",
     audible: false,
     height: 40,
   },

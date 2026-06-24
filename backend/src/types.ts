@@ -1,4 +1,4 @@
-export type StemType = 'drums' | 'bass' | 'vocals' | 'other';
+export type StemType = "drums" | "bass" | "vocals" | "other";
 
 export interface ExtractResponse {
   jobId: string;

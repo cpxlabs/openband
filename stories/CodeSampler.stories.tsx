@@ -1,12 +1,12 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import { CodeSampler } from '../src/components';
+import type { Meta, StoryObj } from "@storybook/react";
+import { CodeSampler } from "../src/components";
 
 const meta: Meta<typeof CodeSampler> = {
-  title: 'CodeSampler',
+  title: "CodeSampler",
   component: CodeSampler,
   args: {
     visible: true,
-    onClose: () => alert('Close'),
+    onClose: () => alert("Close"),
     onRender: (tracks) => alert(`Rendered ${tracks.length} tracks`),
     bpm: 140,
   },

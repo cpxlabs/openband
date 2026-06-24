@@ -1,9 +1,9 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import { ProgressBar } from '../src/components';
-import { View } from 'react-native';
+import type { Meta, StoryObj } from "@storybook/react";
+import { ProgressBar } from "../src/components";
+import { View } from "react-native";
 
 const meta: Meta<typeof ProgressBar> = {
-  title: 'ProgressBar',
+  title: "ProgressBar",
   component: ProgressBar,
   decorators: [
     (Story) => (
@@ -38,6 +38,6 @@ export const Full: Story = {
 export const CustomClass: Story = {
   args: {
     progress: 65,
-    className: 'w-48',
+    className: "w-48",
   },
 };

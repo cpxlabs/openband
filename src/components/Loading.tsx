@@ -1,4 +1,4 @@
-import { View, Text, ActivityIndicator } from 'react-native';
+import { View, Text, ActivityIndicator } from "react-native";
 
 interface LoadingProps {
   message?: string;
@@ -6,16 +6,26 @@ interface LoadingProps {
   testID?: string;
 }
 
-export function Loading({ message = 'Carregando...', fullScreen = false, testID }: LoadingProps) {
+export function Loading({
+  message = "Carregando...",
+  fullScreen = false,
+  testID,
+}: LoadingProps) {
   const content = (
     <View testID={testID} className="items-center justify-center gap-4">
       <ActivityIndicator size="large" color="#ff3b30" />
-      {message && <Text className="text-gray-400 text-sm font-medium">{message}</Text>}
+      {message && (
+        <Text className="text-gray-400 text-sm font-medium">{message}</Text>
+      )}
     </View>
   );
 
   if (fullScreen) {
-    return <View className="flex-1 bg-dark-bg items-center justify-center">{content}</View>;
+    return (
+      <View className="flex-1 bg-dark-bg items-center justify-center">
+        {content}
+      </View>
+    );
   }
 
   return content;

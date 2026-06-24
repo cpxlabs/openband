@@ -1,5 +1,5 @@
-import type { Plugin } from './types';
-import { getDefaultParams } from './types';
+import type { Plugin } from "./types";
+import { getDefaultParams } from "./types";
 
 export interface MasteringVersion {
   id: string;
@@ -17,7 +17,7 @@ export interface MasteringSession {
 }
 
 export interface MasteringInput {
-  type: 'single' | 'stems';
+  type: "single" | "stems";
   filename: string;
   size: number;
   sampleRate: number;
@@ -27,14 +27,54 @@ export interface MasteringInput {
   stems?: { name: string; url: string }[];
 }
 
-export const MASTERING_PLUGIN_DEFS: { name: string; type: Plugin['type']; color: string; description: string }[] = [
-  { name: 'Parametric EQ', type: 'eq', color: '#5ac8fa', description: 'EQ cirúrgico de 8 bandas' },
-  { name: 'Compressor', type: 'compressor', color: '#ff9500', description: 'Compressão VCA / glue' },
-  { name: 'Tape Saturation', type: 'tapeSaturator', color: '#ff453a', description: 'Saturação harmônica de fita' },
-  { name: 'Baxandall EQ & Stereo Wider', type: 'stereoImager', color: '#00d4aa', description: 'Shelf EQ + imagem estéreo M/S' },
-  { name: 'De-esser & Air', type: 'deesser', color: '#ff9f0a', description: 'Controle de sibilância + top-end air' },
-  { name: 'Clipper', type: 'clipper', color: '#ff6482', description: 'Hard/Soft clipping pré-limiter' },
-  { name: 'Limiter', type: 'truePeakLimiter', color: '#ff375f', description: 'Brickwall limiter + LUFS metering' },
+export const MASTERING_PLUGIN_DEFS: {
+  name: string;
+  type: Plugin["type"];
+  color: string;
+  description: string;
+}[] = [
+  {
+    name: "Parametric EQ",
+    type: "eq",
+    color: "#5ac8fa",
+    description: "EQ cirúrgico de 8 bandas",
+  },
+  {
+    name: "Compressor",
+    type: "compressor",
+    color: "#ff9500",
+    description: "Compressão VCA / glue",
+  },
+  {
+    name: "Tape Saturation",
+    type: "tapeSaturator",
+    color: "#ff453a",
+    description: "Saturação harmônica de fita",
+  },
+  {
+    name: "Baxandall EQ & Stereo Wider",
+    type: "stereoImager",
+    color: "#00d4aa",
+    description: "Shelf EQ + imagem estéreo M/S",
+  },
+  {
+    name: "De-esser & Air",
+    type: "deesser",
+    color: "#ff9f0a",
+    description: "Controle de sibilância + top-end air",
+  },
+  {
+    name: "Clipper",
+    type: "clipper",
+    color: "#ff6482",
+    description: "Hard/Soft clipping pré-limiter",
+  },
+  {
+    name: "Limiter",
+    type: "truePeakLimiter",
+    color: "#ff375f",
+    description: "Brickwall limiter + LUFS metering",
+  },
 ];
 
 export function buildMasteringChain(): Plugin[] {
@@ -48,12 +88,16 @@ export function buildMasteringChain(): Plugin[] {
   }));
 }
 
-export function createVersion(plugins: Plugin[], name: string, notes: string): MasteringVersion {
+export function createVersion(
+  plugins: Plugin[],
+  name: string,
+  notes: string,
+): MasteringVersion {
   return {
     id: `v-${Date.now()}`,
     name,
     created: Date.now(),
-    plugins: plugins.map(p => ({ ...p, params: { ...p.params } })),
+    plugins: plugins.map((p) => ({ ...p, params: { ...p.params } })),
     notes,
   };
 }

@@ -106,23 +106,23 @@ mkdir -p dist
 
 ## Profiles Reference
 
-| Profile | Type | Use Case |
-|---------|------|----------|
-| `development` | Development build | Debugging, testing native modules |
-| `preview` | APK | Sharing test builds, installing directly |
-| `production` | AAB (default) | Play Store submission |
+| Profile       | Type              | Use Case                                 |
+| ------------- | ----------------- | ---------------------------------------- |
+| `development` | Development build | Debugging, testing native modules        |
+| `preview`     | APK               | Sharing test builds, installing directly |
+| `production`  | AAB (default)     | Play Store submission                    |
 
 ---
 
 ## Troubleshooting
 
-| Problem | Solution |
-|---------|----------|
-| `Not logged in` | Run `npx eas login` |
-| `Project not found` | Run `npx eas init` to register on EAS |
-| `Build fails` | Check build logs in Expo dashboard or run `npx eas build:list` |
+| Problem                   | Solution                                                             |
+| ------------------------- | -------------------------------------------------------------------- |
+| `Not logged in`           | Run `npx eas login`                                                  |
+| `Project not found`       | Run `npx eas init` to register on EAS                                |
+| `Build fails`             | Check build logs in Expo dashboard or run `npx eas build:list`       |
 | Need a different keystore | EAS manages keystores automatically; or upload your own in dashboard |
-| APK too large | Enable ProGuard in `android/app/build.gradle` after prebuild |
+| APK too large             | Enable ProGuard in `android/app/build.gradle` after prebuild         |
 
 ---
 

@@ -1,4 +1,4 @@
-import type { TrackDef } from './types';
+import type { TrackDef } from "./types";
 
 interface MixPreset {
   vol: number;

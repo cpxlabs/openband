@@ -1,12 +1,12 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import { Synth } from '../src/components';
+import type { Meta, StoryObj } from "@storybook/react";
+import { Synth } from "../src/components";
 
 const meta: Meta<typeof Synth> = {
-  title: 'Synth',
+  title: "Synth",
   component: Synth,
   args: {
     visible: true,
-    onClose: () => alert('Close'),
+    onClose: () => alert("Close"),
     bpm: 120,
   },
 };

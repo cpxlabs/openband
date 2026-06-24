@@ -1,4 +1,4 @@
-import { View, Text } from 'react-native';
+import { View, Text } from "react-native";
 
 interface PageHeaderProps {
   title: string;
@@ -9,8 +9,12 @@ interface PageHeaderProps {
 export function PageHeader({ title, subtitle, testID }: PageHeaderProps) {
   return (
     <View testID={testID} className="px-4 pb-4">
-      <Text className="text-white text-3xl font-bold tracking-tight">{title}</Text>
-      {subtitle && <Text className="text-gray-500 text-sm mt-1">{subtitle}</Text>}
+      <Text className="text-white text-3xl font-bold tracking-tight">
+        {title}
+      </Text>
+      {subtitle && (
+        <Text className="text-gray-500 text-sm mt-1">{subtitle}</Text>
+      )}
     </View>
   );
 }

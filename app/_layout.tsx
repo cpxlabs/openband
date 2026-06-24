@@ -17,7 +17,7 @@ function RootLayoutProtected() {
 
   useEffect(() => {
     if (loading) return;
-    const inAuthGroup = segments[0] === '(auth)';
+    const inAuthGroup = segments[0] === "(auth)";
 
     if (!session && !inAuthGroup) {
       router.replace("/login");
@@ -37,8 +37,8 @@ function RootLayoutProtected() {
   return (
     <Stack
       screenOptions={{
-        headerStyle: { backgroundColor: '#18181c' },
-        headerTintColor: '#fff',
+        headerStyle: { backgroundColor: "#18181c" },
+        headerTintColor: "#fff",
         headerShadowVisible: false,
       }}
     >
@@ -52,17 +52,25 @@ function RootLayoutProtected() {
 
 export default function RootLayout() {
   useEffect(() => {
-    if (Platform.OS !== "web" || !("serviceWorker" in navigator) || (window as any).electronAPI) return;
+    if (
+      Platform.OS !== "web" ||
+      !("serviceWorker" in navigator) ||
+      (window as any).electronAPI
+    )
+      return;
     const register = async () => {
       try {
         const resp = await fetch("/sw.js", { method: "HEAD" });
         if (!resp.ok) return;
         await navigator.serviceWorker.register("/sw.js");
       } catch (e) {
-        console.warn('Service worker registration failed:', e);
+        console.warn("Service worker registration failed:", e);
       }
     };
-    if (document.readyState === "complete") { register(); return; }
+    if (document.readyState === "complete") {
+      register();
+      return;
+    }
     window.addEventListener("load", register);
     return () => window.removeEventListener("load", register);
   }, []);
@@ -72,7 +80,10 @@ export default function RootLayout() {
       <Head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
         <link rel="apple-touch-icon" href="/assets/icon-192.png" />
       </Head>
       <View className="flex-1 bg-dark-bg">

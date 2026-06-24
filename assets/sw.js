@@ -12,17 +12,23 @@ const PRECACHE = [
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE).then((cache) => {
-      return Promise.allSettled(PRECACHE.map((url) => cache.add(url).catch(() => {})));
-    })
+      return Promise.allSettled(
+        PRECACHE.map((url) => cache.add(url).catch(() => {})),
+      );
+    }),
   );
   self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
-    )
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(
+          keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)),
+        ),
+      ),
   );
   self.clients.claim();
 });
@@ -33,12 +39,13 @@ self.addEventListener("fetch", (event) => {
 
   if (url.origin !== self.location.origin) return;
 
-  const isAsset = url.pathname.startsWith("/_expo/") || url.pathname.startsWith("/assets/");
+  const isAsset =
+    url.pathname.startsWith("/_expo/") || url.pathname.startsWith("/assets/");
   const isPage = url.pathname === "/" || url.pathname === "/index.html";
 
   if (isAsset) {
     event.respondWith(
-      caches.match(request).then((cached) => cached || fetch(request))
+      caches.match(request).then((cached) => cached || fetch(request)),
     );
     return;
   }
@@ -51,12 +58,10 @@ self.addEventListener("fetch", (event) => {
           caches.open(CACHE).then((cache) => cache.put(request, clone));
           return response;
         })
-        .catch(() => caches.match(request))
+        .catch(() => caches.match(request)),
     );
     return;
   }
 
-  event.respondWith(
-    fetch(request).catch(() => caches.match("/index.html"))
-  );
+  event.respondWith(fetch(request).catch(() => caches.match("/index.html")));
 });

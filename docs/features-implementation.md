@@ -5,6 +5,7 @@ Build plan to close feature gaps against [BandLab](https://www.bandlab.com/featu
 ---
 
 ## Phase 1: Audio Recording + Time-Stretch
+
 **Effort:** Medium-High · **Impact:** Critical — enables recording
 
 ### Task 1.1: Connect `RecordOptions` UI to `expo-audio` recording API
@@ -12,23 +13,34 @@ Build plan to close feature gaps against [BandLab](https://www.bandlab.com/featu
 **Reference:** [expo-audio Recording docs](https://docs.expo.dev/versions/v56.0.0/sdk/audio/#recording-sounds)
 
 **Files to modify:**
+
 - `app/studio/[id].tsx` — Wire `toggleRecording()` to call `audioRecorder.prepareToRecordAsync()` + `record()`
 - `src/components/RecordOptions.tsx` — Already takes settings; ensure quality/sampleRate presets map to `RecordingPresets`
 - `src/lib/types.ts` — `RecordSettings` already defined; may need `recordingUri` field
 
 **Implementation sketch:**
+
 ```tsx
 const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
 const recorderState = useAudioRecorderState(audioRecorder);
 
 if (isRecording) {
   await audioRecorder.stop();
-  setTracks([...tracks, {
-    id: `rec-${Date.now()}`,
-    name: 'Recording',
-    regions: [{ id: `r-${Date.now()}`, start: 0, duration: recorderState.durationMillis / 1000 }],
-    // ... color, plugins, etc
-  }]);
+  setTracks([
+    ...tracks,
+    {
+      id: `rec-${Date.now()}`,
+      name: "Recording",
+      regions: [
+        {
+          id: `r-${Date.now()}`,
+          start: 0,
+          duration: recorderState.durationMillis / 1000,
+        },
+      ],
+      // ... color, plugins, etc
+    },
+  ]);
 } else {
   await audioRecorder.prepareToRecordAsync();
   audioRecorder.record();
@@ -42,13 +54,21 @@ if (isRecording) {
 **Reference:** `expo-audio` `player.playbackRate` (range: 0.1–2.0) + `setPlaybackRate(rate, pitchCorrectionQuality)`
 
 **Files to modify:**
+
 - `app/studio/[id].tsx` — Add rate slider to transport toolbar
 - `src/components/PluginEditor.tsx` — Or expose as a per-track "Utility" plugin param
 
 ```tsx
 <View className="flex-row items-center gap-1">
   <Text className="text-gray-500 text-[9px]">0.5x</Text>
-  <Slider value={playbackRate} onValueChange={(v) => { player.playbackRate = v; }} min={0.1} max={2.0} />
+  <Slider
+    value={playbackRate}
+    onValueChange={(v) => {
+      player.playbackRate = v;
+    }}
+    min={0.1}
+    max={2.0}
+  />
   <Text className="text-gray-500 text-[9px]">2x</Text>
 </View>
 ```
@@ -58,6 +78,7 @@ if (isRecording) {
 ---
 
 ## Phase 2: Piano Roll MIDI Editor
+
 **Effort:** High · **Impact:** Critical — enables MIDI editing
 
 ### Task 2.1: Piano roll component
@@ -67,10 +88,11 @@ if (isRecording) {
 **New file:** `src/components/PianoRoll.tsx`
 
 **Interface:**
+
 ```tsx
 interface MIDINote {
-  pitch: number;    // 0-127 (C0–G9)
-  start: number;    // in beats
+  pitch: number; // 0-127 (C0–G9)
+  start: number; // in beats
   duration: number; // in beats
   velocity: number; // 0-127
 }
@@ -78,7 +100,7 @@ interface MIDINote {
 interface PianoRollProps {
   notes: MIDINote[];
   onChange: (notes: MIDINote[]) => void;
-  snap: 'bar' | 'beat' | '16th';
+  snap: "bar" | "beat" | "16th";
   numBars: number;
   bpm: number;
   keySignature: string;
@@ -89,6 +111,7 @@ interface PianoRollProps {
 ```
 
 **Features to ship (v1):**
+
 1. Grid with note names (C0–B8) on Y axis, time on X axis
 2. Draw/add notes by tapping empty cells
 3. Drag to move/resize notes
@@ -113,6 +136,7 @@ interface PianoRollProps {
 ---
 
 ## Phase 3: Sampler + Virtual Synth
+
 **Effort:** High · **Impact:** High — enables virtual instruments
 
 ### Task 3.1: Sampler instrument
@@ -122,6 +146,7 @@ interface PianoRollProps {
 **New file:** `src/components/Sampler.tsx`
 
 **Features (v1):**
+
 1. Drag WAV file → map to key range
 2. ADSR envelope (attack, decay, sustain, release)
 3. Pitch tracking across keyboard
@@ -137,6 +162,7 @@ interface PianoRollProps {
 **New file:** `src/components/Synth.tsx`
 
 **Features (v1):**
+
 1. 2 oscillators: saw, square, triangle, sine, noise
 2. Filter: LP/HP/BP with cutoff + resonance
 3. ADSR envelope (amp + filter)
@@ -149,6 +175,7 @@ interface PianoRollProps {
 ---
 
 ## Phase 4: Collaboration Basics
+
 **Effort:** Medium · **Impact:** Medium — enables sharing
 
 ### Task 4.1: Project export/import as JSON
@@ -156,6 +183,7 @@ interface PianoRollProps {
 **Reference:** BandLab cloud sharing, Cubasis DAWproject
 
 **Files:**
+
 - `src/lib/projectStore.ts` — Add `exportProject()` and `importProject()`
 - `app/(tabs)/library.tsx` — Share button → copy JSON / download file
 
@@ -176,12 +204,14 @@ function importProject(json: string): string {
 **Reference:** Supabase Realtime + Storage
 
 **Files:**
+
 - `src/lib/supabase.ts` — Add `projects` CRUD
 - `app/(tabs)/library.tsx` — "Published" tab
 
 ---
 
 ## Phase 5: Visual EQ + One-Knob Simplifiers
+
 **Effort:** Medium · **Impact:** Medium — faster mixing
 
 ### Task 5.1: Visual EQ component
@@ -191,6 +221,7 @@ function importProject(json: string): string {
 **New file:** `src/components/VisualEQ.tsx`
 
 **Features (v1):**
+
 1. Interactive frequency response curve (touch-drag bands)
 2. 4–8 parametric bands with freq/gain/Q
 3. Real-time spectrum overlay (from `useAudioSampleListener`)
@@ -203,6 +234,7 @@ function importProject(json: string): string {
 **New file:** `src/components/OneKnob.tsx`
 
 **Features (v1):**
+
 1. Single dial → multi-effect chain
 2. Types: Warmth, Presence, Bass Boost, Air, Room, Punch, Lo-Fi, Telephone
 3. Each maps to EQ + compressor + reverb combos
@@ -210,6 +242,7 @@ function importProject(json: string): string {
 ---
 
 ## Phase 6: Sidechain + Looper
+
 **Effort:** Medium · **Impact:** Medium — creative tools
 
 ### Task 6.1: Sidechain routing
@@ -217,6 +250,7 @@ function importProject(json: string): string {
 **Reference:** Cubasis 3.3, standard DAW practice
 
 **Files:**
+
 - `src/lib/types.ts` — Add `sidechainSource: string | null` to `TrackDef`
 - `app/studio/[id].tsx` — Source selector per track
 - `src/components/PluginEditor.tsx` — Compressor sidechain filter
@@ -230,6 +264,7 @@ function importProject(json: string): string {
 **New file:** `src/components/Looper.tsx`
 
 **Features (v1):**
+
 1. Record 1–8 bars, loop on stop
 2. Overdub layers
 3. 4 independent loop slots
@@ -237,6 +272,7 @@ function importProject(json: string): string {
 ---
 
 ## Phase 7: AI Tools + Polish
+
 **Effort:** Low-Medium · **Impact:** Low-Medium
 
 ### Task 7.1: AutoMix
@@ -248,10 +284,26 @@ function importProject(json: string): string {
 ```tsx
 function autoMix(tracks: TrackDef[], genre: string): TrackDef[] {
   const presets: Record<string, { vol: number; pan: number }[]> = {
-    rock:   [{ vol: 85, pan: 0 }, { vol: 70, pan: -30 }, { vol: 80, pan: 0 }],
-    hiphop: [{ vol: 90, pan: 0 }, { vol: 65, pan: 0 }, { vol: 75, pan: 0 }],
-    edm:    [{ vol: 95, pan: 0 }, { vol: 60, pan: 0 }, { vol: 70, pan: 0 }],
-    lofi:   [{ vol: 75, pan: 0 }, { vol: 80, pan: -15 }, { vol: 65, pan: 15 }],
+    rock: [
+      { vol: 85, pan: 0 },
+      { vol: 70, pan: -30 },
+      { vol: 80, pan: 0 },
+    ],
+    hiphop: [
+      { vol: 90, pan: 0 },
+      { vol: 65, pan: 0 },
+      { vol: 75, pan: 0 },
+    ],
+    edm: [
+      { vol: 95, pan: 0 },
+      { vol: 60, pan: 0 },
+      { vol: 70, pan: 0 },
+    ],
+    lofi: [
+      { vol: 75, pan: 0 },
+      { vol: 80, pan: -15 },
+      { vol: 65, pan: 15 },
+    ],
   };
   return tracks.map((t, i) => ({
     ...t,
@@ -265,27 +317,27 @@ function autoMix(tracks: TrackDef[], genre: string): TrackDef[] {
 
 ## Sprint Roadmap
 
-| Sprint | Phases | Deliverables |
-|--------|--------|-------------|
-| 1 | Phase 1 | Audio recording working, time-stretch slider in transport |
-| 2–3 | Phase 2 | PianoRoll component with note editing + MIDI playback |
-| 4–5 | Phase 3 | Sampler + Synth components with 20+ presets |
-| 6 | Phase 4 + 5 | Project JSON export/import, VisualEQ, OneKnob |
-| 7 | Phase 6 + 7 | Sidechain routing, Looper, AutoMix |
+| Sprint | Phases      | Deliverables                                              |
+| ------ | ----------- | --------------------------------------------------------- |
+| 1      | Phase 1     | Audio recording working, time-stretch slider in transport |
+| 2–3    | Phase 2     | PianoRoll component with note editing + MIDI playback     |
+| 4–5    | Phase 3     | Sampler + Synth components with 20+ presets               |
+| 6      | Phase 4 + 5 | Project JSON export/import, VisualEQ, OneKnob             |
+| 7      | Phase 6 + 7 | Sidechain routing, Looper, AutoMix                        |
 
 ---
 
 ## Effort Summary
 
-| Phase | Tasks | Effort | User Impact | Depends On |
-|-------|-------|--------|-------------|------------|
-| 1 | Recording + Time-Stretch | Medium-High | **Critical** | — |
-| 2 | Piano Roll | High | **Critical** | Phase 1 (synth playback) |
-| 3 | Sampler + Synth | High | High | Phase 2 |
-| 4 | Collaboration | Medium | Medium | — |
-| 5 | Visual EQ + One Knobs | Medium | Medium | — |
-| 6 | Sidechain + Looper | Medium | Medium | Phase 1 |
-| 7 | AI Tools | Low-Medium | Low-Medium | — |
+| Phase | Tasks                    | Effort      | User Impact  | Depends On               |
+| ----- | ------------------------ | ----------- | ------------ | ------------------------ |
+| 1     | Recording + Time-Stretch | Medium-High | **Critical** | —                        |
+| 2     | Piano Roll               | High        | **Critical** | Phase 1 (synth playback) |
+| 3     | Sampler + Synth          | High        | High         | Phase 2                  |
+| 4     | Collaboration            | Medium      | Medium       | —                        |
+| 5     | Visual EQ + One Knobs    | Medium      | Medium       | —                        |
+| 6     | Sidechain + Looper       | Medium      | Medium       | Phase 1                  |
+| 7     | AI Tools                 | Low-Medium  | Low-Medium   | —                        |
 
 ## Current Status
 
@@ -303,11 +355,11 @@ function autoMix(tracks: TrackDef[], genre: string): TrackDef[] {
 
 **Needs implementation (6 gaps):**
 
-| # | Feature | Phase | Sprint |
-|---|---------|-------|--------|
-| 1 | Time-stretch / pitch-shift | 1 | 1 |
-| 2 | Virtual instruments (synth) | 3 | 4–5 |
-| 3 | Sampler / Slicing | 3 | 4–5 |
-| 4 | Collaboration / sharing | 4 | 6 |
-| 5 | AutoMix (AI) | 7 | 7 |
-| 6 | Chord track | — | TBD |
+| #   | Feature                     | Phase | Sprint |
+| --- | --------------------------- | ----- | ------ |
+| 1   | Time-stretch / pitch-shift  | 1     | 1      |
+| 2   | Virtual instruments (synth) | 3     | 4–5    |
+| 3   | Sampler / Slicing           | 3     | 4–5    |
+| 4   | Collaboration / sharing     | 4     | 6      |
+| 5   | AutoMix (AI)                | 7     | 7      |
+| 6   | Chord track                 | —     | TBD    |

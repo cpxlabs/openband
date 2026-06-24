@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import { useState } from "react";
+import { View, Text, Pressable, ScrollView } from "react-native";
 
 interface GroupDef {
   id: string;
@@ -22,7 +22,15 @@ interface TrackGroupProps {
   testID?: string;
 }
 
-const GROUP_COLORS = ['#ff6482', '#5ac8fa', '#ffcc00', '#34c759', '#bf5af2', '#ff9f0a', '#00d4aa'];
+const GROUP_COLORS = [
+  "#ff6482",
+  "#5ac8fa",
+  "#ffcc00",
+  "#34c759",
+  "#bf5af2",
+  "#ff9f0a",
+  "#00d4aa",
+];
 
 export function TrackGroupManager({
   groups,
@@ -45,32 +53,51 @@ export function TrackGroupManager({
           onPress={() => setShowCreate(!showCreate)}
           className="px-3 py-1.5 rounded-lg bg-dark-surface border border-dark-border active:opacity-70"
         >
-          <Text className="text-brand-accent text-xs font-bold">{showCreate ? '−' : '+ Grupo'}</Text>
+          <Text className="text-brand-accent text-xs font-bold">
+            {showCreate ? "−" : "+ Grupo"}
+          </Text>
         </Pressable>
       </View>
 
       {groups.length === 0 && !showCreate && (
         <View className="py-6 items-center">
           <Text className="text-gray-600 text-xs">Nenhum grupo criado</Text>
-          <Text className="text-gray-700 text-[9px] mt-1">Agrupe tracks para controle em bus</Text>
+          <Text className="text-gray-700 text-[9px] mt-1">
+            Agrupe tracks para controle em bus
+          </Text>
         </View>
       )}
 
       {showCreate && (
         <View className="bg-dark-surface rounded-xl border border-dark-border p-3 mb-3">
-          <Text className="text-gray-300 text-xs font-semibold mb-2">Criar Grupo</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-2">
+          <Text className="text-gray-300 text-xs font-semibold mb-2">
+            Criar Grupo
+          </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            className="mb-2"
+          >
             <View className="flex-row gap-1.5">
-              {tracks.map(t => {
+              {tracks.map((t) => {
                 const assigned = trackAssignments[t.id];
                 return (
                   <Pressable
                     key={t.id}
-                    onPress={() => onAssignTrack(t.id, assigned ? null : `new-${groups.length}`)}
-                    className={`px-2.5 py-2 rounded-lg border ${assigned ? 'bg-brand-accent/10 border-brand-accent' : 'bg-dark-elevated border-dark-border'}`}
+                    onPress={() =>
+                      onAssignTrack(
+                        t.id,
+                        assigned ? null : `new-${groups.length}`,
+                      )
+                    }
+                    className={`px-2.5 py-2 rounded-lg border ${assigned ? "bg-brand-accent/10 border-brand-accent" : "bg-dark-elevated border-dark-border"}`}
                   >
                     <View className={`w-2 h-2 rounded-full mb-1 ${t.color}`} />
-                    <Text className={`text-[9px] ${assigned ? 'text-brand-accent' : 'text-gray-400'}`}>{t.name}</Text>
+                    <Text
+                      className={`text-[9px] ${assigned ? "text-brand-accent" : "text-gray-400"}`}
+                    >
+                      {t.name}
+                    </Text>
                   </Pressable>
                 );
               })}
@@ -78,7 +105,9 @@ export function TrackGroupManager({
           </ScrollView>
           <Pressable
             onPress={() => {
-              const selected = Object.entries(trackAssignments).filter(([, g]) => g && g.startsWith('new')).map(([tId]) => tId);
+              const selected = Object.entries(trackAssignments)
+                .filter(([, g]) => g && g.startsWith("new"))
+                .map(([tId]) => tId);
               if (selected.length === 0) return;
               onCreateGroup(`Grupo ${groups.length + 1}`, selected);
               setShowCreate(false);
@@ -95,28 +124,44 @@ export function TrackGroupManager({
           key={g.id}
           className="flex-row items-center gap-3 bg-dark-surface rounded-xl border border-dark-border p-3 mb-2"
         >
-          <View className="w-2 h-10 rounded-full" style={{ backgroundColor: GROUP_COLORS[gi % GROUP_COLORS.length] }} />
+          <View
+            className="w-2 h-10 rounded-full"
+            style={{ backgroundColor: GROUP_COLORS[gi % GROUP_COLORS.length] }}
+          />
           <View className="flex-1">
             <View className="flex-row items-center gap-2">
               <Text className="text-white text-sm font-bold">{g.name}</Text>
               <Pressable
                 onPress={() => onGroupMute(g.id)}
-                className={`px-2 py-0.5 rounded-md border ${g.muted ? 'bg-amber-500/20 border-amber-500/50' : 'border-dark-border'}`}
+                className={`px-2 py-0.5 rounded-md border ${g.muted ? "bg-amber-500/20 border-amber-500/50" : "border-dark-border"}`}
               >
-                <Text className={`text-[9px] font-bold ${g.muted ? 'text-amber-400' : 'text-gray-500'}`}>M</Text>
+                <Text
+                  className={`text-[9px] font-bold ${g.muted ? "text-amber-400" : "text-gray-500"}`}
+                >
+                  M
+                </Text>
               </Pressable>
             </View>
             <View className="flex-row gap-1 mt-1.5">
-              {g.trackIds.map(tId => {
-                const t = tracks.find(tr => tr.id === tId);
+              {g.trackIds.map((tId) => {
+                const t = tracks.find((tr) => tr.id === tId);
                 return t ? (
-                  <View key={tId} className={`w-1.5 h-1.5 rounded-full ${t.color}`} />
+                  <View
+                    key={tId}
+                    className={`w-1.5 h-1.5 rounded-full ${t.color}`}
+                  />
                 ) : null;
               })}
             </View>
             <View className="flex-row items-center gap-2 mt-1.5">
               <View className="flex-1 h-1.5 bg-dark-border rounded-full overflow-hidden">
-                <View className="h-full rounded-full" style={{ width: `${g.volume}%`, backgroundColor: GROUP_COLORS[gi % GROUP_COLORS.length] }} />
+                <View
+                  className="h-full rounded-full"
+                  style={{
+                    width: `${g.volume}%`,
+                    backgroundColor: GROUP_COLORS[gi % GROUP_COLORS.length],
+                  }}
+                />
               </View>
               <Pressable
                 onPress={() => onGroupVolume(g.id, Math.max(0, g.volume - 5))}
@@ -124,7 +169,9 @@ export function TrackGroupManager({
               >
                 <Text className="text-gray-400 text-[9px]">−</Text>
               </Pressable>
-              <Text className="text-gray-500 font-mono text-[9px] w-7 text-right">{g.volume}%</Text>
+              <Text className="text-gray-500 font-mono text-[9px] w-7 text-right">
+                {g.volume}%
+              </Text>
               <Pressable
                 onPress={() => onGroupVolume(g.id, Math.min(100, g.volume + 5))}
                 className="w-5 h-5 rounded bg-dark-elevated items-center justify-center active:opacity-70"
@@ -145,8 +192,11 @@ export function TrackGroupManager({
   );
 }
 
-export function getGroupVolume(groups: { id: string; volume: number; muted: boolean; trackIds: string[] }[], trackId: string): { volume: number; muted: boolean } | null {
-  const group = groups.find(g => g.trackIds.includes(trackId));
+export function getGroupVolume(
+  groups: { id: string; volume: number; muted: boolean; trackIds: string[] }[],
+  trackId: string,
+): { volume: number; muted: boolean } | null {
+  const group = groups.find((g) => g.trackIds.includes(trackId));
   if (!group) return null;
   return { volume: group.volume, muted: group.muted };
 }

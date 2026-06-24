@@ -1,5 +1,5 @@
-import { useCallback } from 'react';
-import { View, Pressable } from 'react-native';
+import { useCallback } from "react";
+import { View, Pressable } from "react-native";
 
 export interface AutomationPoint {
   time: number;
@@ -22,7 +22,7 @@ export function AutomationLane({
   points,
   onChange,
   duration,
-  color = '#5ac8fa',
+  color = "#5ac8fa",
   visible,
   minValue = 0,
   maxValue = 100,
@@ -32,23 +32,31 @@ export function AutomationLane({
 
   const totalWidth = duration * 2.4;
 
-  const addPoint = useCallback((time: number) => {
-    const exists = points.some(p => Math.abs(p.time - time) < 0.5);
-    if (exists) return;
-    const value = Math.round((minValue + maxValue) / 2);
-    const next = [...points, { time, value: clamp(value, minValue, maxValue) }].sort((a, b) => a.time - b.time);
-    onChange(next);
-  }, [points, onChange, minValue, maxValue]);
+  const addPoint = useCallback(
+    (time: number) => {
+      const exists = points.some((p) => Math.abs(p.time - time) < 0.5);
+      if (exists) return;
+      const value = Math.round((minValue + maxValue) / 2);
+      const next = [
+        ...points,
+        { time, value: clamp(value, minValue, maxValue) },
+      ].sort((a, b) => a.time - b.time);
+      onChange(next);
+    },
+    [points, onChange, minValue, maxValue],
+  );
 
-
-  const removePoint = useCallback((index: number) => {
-    if (points.length <= 2) return;
-    onChange(points.filter((_, i) => i !== index));
-  }, [points, onChange]);
+  const removePoint = useCallback(
+    (index: number) => {
+      if (points.length <= 2) return;
+      onChange(points.filter((_, i) => i !== index));
+    },
+    [points, onChange],
+  );
 
   const lineY = 12;
   const range = maxValue - minValue;
-  const norm = (v: number) => range === 0 ? 0 : (v - minValue) / range;
+  const norm = (v: number) => (range === 0 ? 0 : (v - minValue) / range);
 
   return (
     <View
@@ -76,14 +84,17 @@ export function AutomationLane({
               left: x,
               top: y - 6,
               backgroundColor: color,
-              borderColor: 'white',
+              borderColor: "white",
             }}
           />
         );
       })}
 
       {points.length >= 2 && (
-        <View className="absolute inset-0 flex-row items-end" style={{ paddingBottom: 2 }}>
+        <View
+          className="absolute inset-0 flex-row items-end"
+          style={{ paddingBottom: 2 }}
+        >
           {Array.from({ length: Math.floor(totalWidth) }, (_, i) => {
             const t = i / 2.4;
             let lo = 0;
@@ -95,7 +106,8 @@ export function AutomationLane({
             }
             const p0 = points[lo];
             const p1 = points[hi];
-            const frac = p0.time === p1.time ? 1 : (t - p0.time) / (p1.time - p0.time);
+            const frac =
+              p0.time === p1.time ? 1 : (t - p0.time) / (p1.time - p0.time);
             const val = p0.value + (p1.value - p0.value) * frac;
             const y = norm(val) * 12;
             return (

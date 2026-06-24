@@ -1,12 +1,12 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import { Tuner } from '../src/components';
+import type { Meta, StoryObj } from "@storybook/react";
+import { Tuner } from "../src/components";
 
 const meta: Meta<typeof Tuner> = {
-  title: 'Tuner',
+  title: "Tuner",
   component: Tuner,
   args: {
     visible: true,
-    onClose: () => alert('Close tuner'),
+    onClose: () => alert("Close tuner"),
   },
 };
 

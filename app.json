@@ -41,11 +41,7 @@
         "apple-touch-icon": "/assets/icon-192.png"
       }
     },
-    "plugins": [
-      "expo-audio",
-      "expo-asset",
-      "expo-router"
-    ],
+    "plugins": ["expo-audio", "expo-asset", "expo-router"],
     "cli": {
       "appVersionSource": "remote"
     },

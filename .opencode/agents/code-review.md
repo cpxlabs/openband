@@ -16,6 +16,7 @@ You are a strict code reviewer for the OpenBand project (React Native + Expo web
 3. Scan each changed file for:
 
 ### Frontend (app/ + src/)
+
 - **Empty catch blocks** — every catch must log or handle the error
 - **Unused imports/variables** — remove them
 - **AudioContext leaks** — every `new AudioContext()` must have matching `.close()` (try/finally)
@@ -27,17 +28,20 @@ You are a strict code reviewer for the OpenBand project (React Native + Expo web
 - **No dead code** — unused state, props, or files
 
 ### Backend (backend/src/)
+
 - **Null safety** — always guard `req.file`, `req.body` before accessing
 - **Path traversal** — validate filename params (reject `..`, `/`, `\`, `\0`)
 - **Error messages** — don't leak stack traces in production (`isProduction` guard)
 
 ### Tests
+
 - **Must pass** — `npx vitest run` and `npx tsc --noEmit` must succeed with zero errors
 - **No React imports in lib tests** — lib tests are pure Node.js
 
 ## Output
 
 For each issue found, report:
+
 - File path and line number
 - Severity: `ERROR` (will break build/runtime) | `WARN` (code quality) | `STYLE` (convention)
 - What the problem is and how to fix it

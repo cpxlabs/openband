@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { Platform } from 'react-native';
+import { useEffect, useRef } from "react";
+import { Platform } from "react-native";
 
 interface ShortcutMap {
   [key: string]: (() => void) | undefined;
@@ -10,7 +10,7 @@ export function useKeyboardShortcuts(shortcuts: ShortcutMap) {
   shortcutsRef.current = shortcuts;
 
   useEffect(() => {
-    if (Platform.OS !== 'web') return;
+    if (Platform.OS !== "web") return;
 
     const handler = (e: KeyboardEvent) => {
       const s = shortcutsRef.current;
@@ -18,21 +18,65 @@ export function useKeyboardShortcuts(shortcuts: ShortcutMap) {
       const ctrl = e.ctrlKey || e.metaKey;
       const shift = e.shiftKey;
 
-      if (ctrl && !shift && key === 'z') { s.undo?.(); e.preventDefault(); return; }
-      if (ctrl && shift && key === 'z') { s.redo?.(); e.preventDefault(); return; }
-      if (ctrl && !shift && key === 'y') { s.redo?.(); e.preventDefault(); return; }
-      if (ctrl && key === 's') { s.save?.(); e.preventDefault(); return; }
-      if (ctrl && key === 'b') { s.bounce?.(); e.preventDefault(); return; }
+      if (ctrl && !shift && key === "z") {
+        s.undo?.();
+        e.preventDefault();
+        return;
+      }
+      if (ctrl && shift && key === "z") {
+        s.redo?.();
+        e.preventDefault();
+        return;
+      }
+      if (ctrl && !shift && key === "y") {
+        s.redo?.();
+        e.preventDefault();
+        return;
+      }
+      if (ctrl && key === "s") {
+        s.save?.();
+        e.preventDefault();
+        return;
+      }
+      if (ctrl && key === "b") {
+        s.bounce?.();
+        e.preventDefault();
+        return;
+      }
 
-      if (key === ' ') { s.play?.(); e.preventDefault(); return; }
-      if (key === 'm' || key === 'M') { s.toggleMute?.(); e.preventDefault(); return; }
-      if (key === 's' || key === 'S') { s.toggleSolo?.(); e.preventDefault(); return; }
-      if (key === 'r' || key === 'R') { s.record?.(); e.preventDefault(); return; }
-      if (key === 'Delete' || key === 'Backspace') { s.delete?.(); e.preventDefault(); return; }
-      if (key === 'Escape') { s.escape?.(); e.preventDefault(); return; }
+      if (key === " ") {
+        s.play?.();
+        e.preventDefault();
+        return;
+      }
+      if (key === "m" || key === "M") {
+        s.toggleMute?.();
+        e.preventDefault();
+        return;
+      }
+      if (key === "s" || key === "S") {
+        s.toggleSolo?.();
+        e.preventDefault();
+        return;
+      }
+      if (key === "r" || key === "R") {
+        s.record?.();
+        e.preventDefault();
+        return;
+      }
+      if (key === "Delete" || key === "Backspace") {
+        s.delete?.();
+        e.preventDefault();
+        return;
+      }
+      if (key === "Escape") {
+        s.escape?.();
+        e.preventDefault();
+        return;
+      }
     };
 
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
   }, []);
 }

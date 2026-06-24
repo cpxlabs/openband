@@ -1,24 +1,28 @@
-import { useState } from 'react';
-import { Tabs, useRouter, useSegments, type Href } from 'expo-router';
-import { Text, View, Pressable, type ViewStyle } from 'react-native';
-import { useResponsive } from '../../src/lib/responsive';
-import { Sidebar } from '../../src/components/Sidebar';
+import { useState } from "react";
+import { Tabs, useRouter, useSegments, type Href } from "expo-router";
+import { Text, View, Pressable, type ViewStyle } from "react-native";
+import { useResponsive } from "../../src/lib/responsive";
+import { Sidebar } from "../../src/components/Sidebar";
 
 function TabIcon({ label, focused }: { label: string; focused: boolean }) {
   const { breakpoint } = useResponsive();
   const icons: Record<string, string> = {
-    Feed: '♫',
-    Momentos: '♡',
-    Biblioteca: '☰',
-    Conta: '●',
-    Ajustes: '⚙',
+    Feed: "♫",
+    Momentos: "♡",
+    Biblioteca: "☰",
+    Conta: "●",
+    Ajustes: "⚙",
   };
   return (
     <View className="items-center justify-center gap-0.5 px-1">
-      <Text className={`${breakpoint === 'mobile' ? 'text-xl' : 'text-2xl'} ${focused ? 'text-brand-primary' : 'text-gray-500'}`}>
-        {icons[label] || '●'}
+      <Text
+        className={`${breakpoint === "mobile" ? "text-xl" : "text-2xl"} ${focused ? "text-brand-primary" : "text-gray-500"}`}
+      >
+        {icons[label] || "●"}
       </Text>
-      <Text className={`${breakpoint === 'mobile' ? 'text-[10px]' : 'text-xs'} font-medium ${focused ? 'text-brand-primary' : 'text-gray-500'}`}>
+      <Text
+        className={`${breakpoint === "mobile" ? "text-[10px]" : "text-xs"} font-medium ${focused ? "text-brand-primary" : "text-gray-500"}`}
+      >
         {label}
       </Text>
     </View>
@@ -29,18 +33,18 @@ export default function TabLayout() {
   const router = useRouter();
   const segments = useSegments();
   const { breakpoint } = useResponsive();
-  const isDesktop = breakpoint === 'desktop';
+  const isDesktop = breakpoint === "desktop";
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const currentSegment = segments[segments.length - 1] || 'index';
+  const currentSegment = segments[segments.length - 1] || "index";
   const routeNameMap: Record<string, string> = {
-    index: 'Feed',
-    moments: 'Momentos',
-    library: 'Biblioteca',
-    account: 'Conta',
-    settings: 'Ajustes',
+    index: "Feed",
+    moments: "Momentos",
+    library: "Biblioteca",
+    account: "Conta",
+    settings: "Ajustes",
   };
-  const pageTitle = routeNameMap[currentSegment] || 'OpenBand';
+  const pageTitle = routeNameMap[currentSegment] || "OpenBand";
 
   const handleNavigate = (route: string) => {
     router.replace(`/(tabs)/${route}` as Href);
@@ -77,48 +81,58 @@ export default function TabLayout() {
           screenOptions={{
             headerShown: false,
             tabBarStyle: {
-              backgroundColor: '#18181c',
+              backgroundColor: "#18181c",
               borderTopWidth: 1,
-              borderTopColor: '#26262b',
-              display: isDesktop ? 'none' : 'flex',
-              height: breakpoint === 'tablet' ? 72 : 65,
+              borderTopColor: "#26262b",
+              display: isDesktop ? "none" : "flex",
+              height: breakpoint === "tablet" ? 72 : 65,
               paddingBottom: 8,
               paddingTop: 6,
-              paddingHorizontal: breakpoint === 'tablet' ? 24 : 12,
+              paddingHorizontal: breakpoint === "tablet" ? 24 : 12,
             } as ViewStyle,
-            tabBarActiveTintColor: '#ff3b30',
-            tabBarInactiveTintColor: '#888',
+            tabBarActiveTintColor: "#ff3b30",
+            tabBarInactiveTintColor: "#888",
             tabBarShowLabel: false,
           }}
         >
           <Tabs.Screen
             name="index"
             options={{
-              tabBarIcon: ({ focused }) => <TabIcon label="Feed" focused={focused} />,
+              tabBarIcon: ({ focused }) => (
+                <TabIcon label="Feed" focused={focused} />
+              ),
             }}
           />
           <Tabs.Screen
             name="moments"
             options={{
-              tabBarIcon: ({ focused }) => <TabIcon label="Momentos" focused={focused} />,
+              tabBarIcon: ({ focused }) => (
+                <TabIcon label="Momentos" focused={focused} />
+              ),
             }}
           />
           <Tabs.Screen
             name="library"
             options={{
-              tabBarIcon: ({ focused }) => <TabIcon label="Biblioteca" focused={focused} />,
+              tabBarIcon: ({ focused }) => (
+                <TabIcon label="Biblioteca" focused={focused} />
+              ),
             }}
           />
           <Tabs.Screen
             name="account"
             options={{
-              tabBarIcon: ({ focused }) => <TabIcon label="Conta" focused={focused} />,
+              tabBarIcon: ({ focused }) => (
+                <TabIcon label="Conta" focused={focused} />
+              ),
             }}
           />
           <Tabs.Screen
             name="settings"
             options={{
-              tabBarIcon: ({ focused }) => <TabIcon label="Ajustes" focused={focused} />,
+              tabBarIcon: ({ focused }) => (
+                <TabIcon label="Ajustes" focused={focused} />
+              ),
             }}
           />
         </Tabs>

@@ -1,9 +1,9 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import { NewProject } from '../src/components';
-import { View } from 'react-native';
+import type { Meta, StoryObj } from "@storybook/react";
+import { NewProject } from "../src/components";
+import { View } from "react-native";
 
 const meta: Meta<typeof NewProject> = {
-  title: 'NewProject',
+  title: "NewProject",
   component: NewProject,
   decorators: [
     (Story) => (
@@ -21,6 +21,11 @@ export const Visible: Story = {
   args: {
     visible: true,
     onClose: () => {},
-    onCreate: (config: { name: string; genre: any; key: string; bpm: number }) => alert(`Create: ${config.name}`),
+    onCreate: (config: {
+      name: string;
+      genre: any;
+      key: string;
+      bpm: number;
+    }) => alert(`Create: ${config.name}`),
   },
 };

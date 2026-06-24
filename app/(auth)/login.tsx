@@ -1,37 +1,43 @@
-import { useState } from 'react';
-import { View, Text, KeyboardAvoidingView, Platform, Pressable } from 'react-native';
-import { Button, TextInput } from '../../src/components';
-import { supabase } from '../../src/lib/supabase';
-import { useResponsive, LAYOUT_MAX_WIDTHS } from '../../src/lib/responsive';
-import { VISITOR_MODE } from '../../src/lib/flags';
-import { useAuth } from '../../src/context/AuthContext';
+import { useState } from "react";
+import {
+  View,
+  Text,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+} from "react-native";
+import { Button, TextInput } from "../../src/components";
+import { supabase } from "../../src/lib/supabase";
+import { useResponsive, LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive";
+import { VISITOR_MODE } from "../../src/lib/flags";
+import { useAuth } from "../../src/context/AuthContext";
 
 export default function Login() {
   const resp = useResponsive();
   const { signInAsVisitor } = useAuth();
   const [isSignUp, setIsSignUp] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
     if (!email.trim() || !password.trim() || (isSignUp && !name.trim())) {
-      setError('Preencha todos os campos.');
+      setError("Preencha todos os campos.");
       return;
     }
     if (isSignUp) {
       if (password.length < 8) {
-        setError('Senha deve ter no mínimo 8 caracteres.');
+        setError("Senha deve ter no mínimo 8 caracteres.");
         return;
       }
       if (!/[A-Z]/.test(password)) {
-        setError('Senha deve conter pelo menos uma letra maiúscula.');
+        setError("Senha deve conter pelo menos uma letra maiúscula.");
         return;
       }
       if (!/[0-9]/.test(password)) {
-        setError('Senha deve conter pelo menos um número.');
+        setError("Senha deve conter pelo menos um número.");
         return;
       }
     }
@@ -46,11 +52,14 @@ export default function Login() {
         });
         if (error) setError(error.message);
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
         if (error) setError(error.message);
       }
     } catch {
-      setError('Ocorreu um erro inesperado. Tente novamente.');
+      setError("Ocorreu um erro inesperado. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -59,17 +68,29 @@ export default function Login() {
   return (
     <KeyboardAvoidingView
       className="flex-1 bg-dark-bg"
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <View className={`flex-1 justify-center ${resp.isDesktop ? 'mx-auto w-full px-0' : 'px-8'}`}
-        style={resp.isDesktop ? { maxWidth: LAYOUT_MAX_WIDTHS.login, alignSelf: 'center', width: '100%' } : undefined}>
+      <View
+        className={`flex-1 justify-center ${resp.isDesktop ? "mx-auto w-full px-0" : "px-8"}`}
+        style={
+          resp.isDesktop
+            ? {
+                maxWidth: LAYOUT_MAX_WIDTHS.login,
+                alignSelf: "center",
+                width: "100%",
+              }
+            : undefined
+        }
+      >
         <View className="items-center mb-12">
           <View className="w-20 h-20 rounded-2xl bg-brand-primary items-center justify-center mb-6 shadow-lg shadow-brand-primary/30">
             <Text className="text-white text-4xl">♫</Text>
           </View>
-          <Text className="text-white text-4xl font-bold tracking-tight">OpenBand</Text>
+          <Text className="text-white text-4xl font-bold tracking-tight">
+            OpenBand
+          </Text>
           <Text className="text-gray-500 text-sm mt-2">
-            {isSignUp ? 'Crie sua conta' : 'Entre para criar música'}
+            {isSignUp ? "Crie sua conta" : "Entre para criar música"}
           </Text>
         </View>
 
@@ -99,7 +120,7 @@ export default function Login() {
             secureTextEntry
             onChangeText={setPassword}
             value={password}
-            autoComplete={isSignUp ? 'new-password' : 'current-password'}
+            autoComplete={isSignUp ? "new-password" : "current-password"}
           />
         </View>
 
@@ -110,12 +131,24 @@ export default function Login() {
         )}
 
         <View className="mt-6">
-          <Button title={isSignUp ? 'Criar conta' : 'Entrar'} onPress={handleSubmit} loading={loading} />
+          <Button
+            title={isSignUp ? "Criar conta" : "Entrar"}
+            onPress={handleSubmit}
+            loading={loading}
+          />
         </View>
 
-        <Pressable onPress={() => { setIsSignUp(!isSignUp); setError(null); }} className="mt-4">
+        <Pressable
+          onPress={() => {
+            setIsSignUp(!isSignUp);
+            setError(null);
+          }}
+          className="mt-4"
+        >
           <Text className="text-gray-500 text-sm text-center">
-            {isSignUp ? 'Já tem uma conta? Entre' : 'Não tem conta? Cadastre-se'}
+            {isSignUp
+              ? "Já tem uma conta? Entre"
+              : "Não tem conta? Cadastre-se"}
           </Text>
         </Pressable>
 

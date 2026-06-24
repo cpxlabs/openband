@@ -370,11 +370,11 @@ After setup, verify everything works:
 
 ## 10. Troubleshooting
 
-| Problem | Solution |
-|---------|----------|
-| `AuthApiError: invalid API key` | Check `.env` — `EXPO_PUBLIC_SUPABASE_ANON_KEY` must be the anon key, not `service_role` key |
-| `relation "public.profiles" does not exist` | Run `supabase/schema.sql` in SQL Editor |
-| `new row violates row-level security` | RLS policies are missing — apply the policies from section 5 |
-| Mock auth works but real auth doesn't | Set up `.env` with valid credentials |
-| File upload fails | Check `storage.buckets` exist and RLS upload policies are set |
-| `expo-secure-store` error on web | Web uses `localStorage` — handled automatically in `src/lib/supabase.ts` |
+| Problem                                     | Solution                                                                                    |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `AuthApiError: invalid API key`             | Check `.env` — `EXPO_PUBLIC_SUPABASE_ANON_KEY` must be the anon key, not `service_role` key |
+| `relation "public.profiles" does not exist` | Run `supabase/schema.sql` in SQL Editor                                                     |
+| `new row violates row-level security`       | RLS policies are missing — apply the policies from section 5                                |
+| Mock auth works but real auth doesn't       | Set up `.env` with valid credentials                                                        |
+| File upload fails                           | Check `storage.buckets` exist and RLS upload policies are set                               |
+| `expo-secure-store` error on web            | Web uses `localStorage` — handled automatically in `src/lib/supabase.ts`                    |

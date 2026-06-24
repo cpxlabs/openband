@@ -1,10 +1,10 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import { AutomationLane } from '../src/components';
-import type { AutomationPoint } from '../src/components/AutomationLane';
-import { View } from 'react-native';
+import type { Meta, StoryObj } from "@storybook/react";
+import { AutomationLane } from "../src/components";
+import type { AutomationPoint } from "../src/components/AutomationLane";
+import { View } from "react-native";
 
 const meta: Meta<typeof AutomationLane> = {
-  title: 'AutomationLane',
+  title: "AutomationLane",
   component: AutomationLane,
   decorators: [
     (Story) => (
@@ -24,11 +24,11 @@ export const Empty: Story = {
       { time: 0, value: 50 },
       { time: 8, value: 50 },
     ],
-    onChange: (pts: AutomationPoint[]) => console.log('Points', pts),
+    onChange: (pts: AutomationPoint[]) => console.log("Points", pts),
     duration: 8,
-    color: '#5ac8fa',
+    color: "#5ac8fa",
     visible: true,
-    label: 'Volume',
+    label: "Volume",
     minValue: 0,
     maxValue: 100,
   },
@@ -43,11 +43,11 @@ export const WithPoints: Story = {
       { time: 6, value: 90 },
       { time: 8, value: 40 },
     ],
-    onChange: (pts: AutomationPoint[]) => console.log('Points', pts),
+    onChange: (pts: AutomationPoint[]) => console.log("Points", pts),
     duration: 8,
-    color: '#ff6482',
+    color: "#ff6482",
     visible: true,
-    label: 'Filter Cutoff',
+    label: "Filter Cutoff",
     minValue: 0,
     maxValue: 100,
   },

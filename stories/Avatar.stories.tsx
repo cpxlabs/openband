@@ -1,9 +1,9 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import { Avatar } from '../src/components';
-import { View } from 'react-native';
+import type { Meta, StoryObj } from "@storybook/react";
+import { Avatar } from "../src/components";
+import { View } from "react-native";
 
 const meta: Meta<typeof Avatar> = {
-  title: 'Avatar',
+  title: "Avatar",
   component: Avatar,
   decorators: [
     (Story) => (
@@ -19,21 +19,21 @@ type Story = StoryObj<typeof meta>;
 
 export const Small: Story = {
   args: {
-    name: 'Alice',
-    size: 'sm',
+    name: "Alice",
+    size: "sm",
   },
 };
 
 export const Medium: Story = {
   args: {
-    name: 'Bob',
-    size: 'md',
+    name: "Bob",
+    size: "md",
   },
 };
 
 export const Large: Story = {
   args: {
-    name: 'Carol',
-    size: 'lg',
+    name: "Carol",
+    size: "lg",
   },
 };

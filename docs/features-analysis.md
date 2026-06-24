@@ -8,48 +8,48 @@ Current feature inventory against [BandLab](https://www.bandlab.com/features) (w
 
 ## Feature Inventory
 
-| # | Feature | OpenBand | BandLab Free | BandLab Pro/Max | Cubasis 3.8 | Priority | Notes |
-|---|---------|----------|-------------|-----------------|-------------|----------|-------|
-| 1 | Multi-track DAW | ✅ | ✅ | ✅ | ✅ | — | All three support multi-track |
-| 2 | **Audio recording** | ✅ | ✅ | ✅ | ✅ | — | Uses `expo-audio` `useAudioRecorder` |
-| 3 | **MIDI import** | ✅ | ✅ | ✅ | ✅ | — | Uses `parseMidi()` + `midiToTrackRegions()` |
-| 4 | **MIDI editor (piano roll)** | ✅ | ✅ | ✅ | ✅ | — | PianoRoll component with note add/move/resize/delete, snap, scale highlighting |
-| 5 | **Virtual instruments** | ❌ | ✅ Sampler | ✅ | ✅ Micrologue, MicroSonic, MiniSampler | **High** | BandLab: Sampler + synth; Cubasis: Micrologue ARP, MicroSonic (1100+ sounds), MiniSampler |
-| 6 | **Drum machine / Step sequencer** | ✅ CodeSampler | ✅ Beat Maker | ✅ | ❌ | — | OpenBand's CodeSampler is token-based; BandLab's Beat Maker is grid-based |
-| 7 | **Auto-Pitch / Vocal Tuner** | ✅ autoPitch plugin | ⚠️ basic | ✅ 18 AutoPitch effects | ✅ Waves Tune Real-Time (IAP) | — | OpenBand: 6 presets; BandLab Pro: 18 effects; Cubasis: 3rd-party IAP |
-| 8 | **Noise Gate** | ✅ noiseGate plugin | ⚠️ | ✅ | ✅ | — | OpenBand: 5 presets |
-| 9 | **Bass Mono** | ✅ bassMono plugin | ❌ | ❌ | ❌ | Low | Unique to OpenBand |
-| 10 | **Stereo Widener** | ✅ stereoWidener plugin | ❌ | ❌ | ✅ | Low | Cubasis via Master Strip |
-| 11 | **Sampler / Slicing** | ⚠️ Sample Browser | ✅ Sampler | ✅ | ✅ MiniSampler | **High** | OpenBand can browse/add samples but no slicing/warping |
-| 12 | **Chord track / helper** | ❌ | ❌ | ❌ | ✅ | Medium | Cubasis: chord track with progression tools |
-| 13 | **Collaboration / sharing** | ❌ | ✅ | ✅ | ❌ | **High** | BandLab: invite collaborators, cloud sync, comments; Cubasis: DAWproject export |
-| 14 | **Looper / Overdub** | ✅ | ✅ | ✅ | ✅ | — | Looper component with record, loop, overdub layers, 4 independent slots |
-| 15 | **Time-stretch / pitch-shift** | ❌ | ✅ | ✅ | ✅ | Medium | `player.playbackRate` available in `expo-audio` but not exposed in UI |
-| 16 | **Automation** | ✅ Volume lanes | ✅ | ✅ | ✅ | — | OpenBand: volume only; BandLab: volume + pan + effects; Cubasis: full |
-| 17 | **Plugin system** | ✅ 19 types | ✅ limited | ✅ 9+ effects | ✅ AUv3 (iOS) | — | See plugin table below |
-| 18 | **Guitar pedal board** | ✅ 16 pedal presets | ❌ | ❌ | ✅ Amp Rack | — | OpenBand: famous pedals; Cubasis 3.8: Amp Rack with amp sim |
-| 19 | **Amp + Cab modeling** | ✅ 20 amps, 10 cabs | ❌ | ❌ | ⚠️ Amp Rack | — | OpenBand: more amp models; Cubasis: newer amp sim in 3.8 |
-| 20 | **Mastering presets** | ✅ 10 chains | ✅ 4 presets | ✅ 8 presets + EQ | ✅ Master Strip Suite | — | BandLab: intensity slider + Mastering EQ (Max); Cubasis: 4 processors |
-| 21 | **LUFS metering** | ✅ LufsMeter | ❌ | ❌ | ✅ | — | Cubasis: Master Strip includes loudness meter |
-| 22 | **A/B mix snapshots** | ✅ MixManager | ❌ | ❌ | ✅ | — | Cubasis: mixer snapshot save/load |
-| 23 | **Send buses** | ✅ up to 20 | ✅ | ✅ | ✅ | — | All three support sends |
-| 24 | **Social feed** | ✅ Feed + Moments | ✅ | ✅ | ❌ | — | BandLab: 100M+ creator community |
-| 25 | **Stem separation** | ✅ 4 stems | ✅ 4 stems | ✅ | ❌ | — | Both use AI; BandLab: "Splitter"; OpenBand: Demucs backend |
-| 26 | **Export / Bounce** | ✅ BounceDialog (desktop save dialog via bridge) | ✅ | ✅ | ✅ WAV, AIFF, MP3 | — | BandLab: audio + video export; Cubasis: mixdown to MP3 since 3.6. OpenBand desktop: native save dialog via `OpenBandNative.showSaveDialog()` |
-| 27 | **Project save/load** | ✅ localStorage auto-save | ✅ cloud sync | ✅ | ✅ | — | OpenBand: local only; BandLab: cloud; Cubasis: local + DAWproject |
-| 28 | **Sample browser** | ✅ SampleBrowser | ✅ Loop Lib | ✅ | ✅ MediaBay | — | Cubasis 3.0: redesigned MediaBay |
-| 29 | **Track grouping** | ✅ TrackGroupManager | ✅ | ✅ | ✅ Group Tracks | — | All three support group/bus tracks |
-| 30 | **Video export** | ❌ | ❌ | ❌ | ⚠️ | Low | BandLab: video export for TikTok/IG; Cubasis: mixdown only |
-| 31 | **AI tools** | ❌ | ❌ | ✅ AutoMix, Voice Cleaner | ❌ | Medium | BandLab Pro: AI mixing/mastering; OpenBand: none |
-| 32 | **Keyboard shortcuts** | ✅ play/record/undo/redo/save | ✅ | ✅ | ✅ | — | Cubasis 3.2: keyboard shortcut support |
-| 33 | **Responsive layout** | ✅ mobile/tablet/desktop | ✅ | ✅ | ⚠️ | — | Cubasis 3.0: UI scale presets; 3.8: portrait mode + windowing |
-| 34 | **Sidebar drawer nav** | ✅ persistent/overlay | ✅ | ✅ | ✅ | — | |
-| 35 | **Tuner** | ✅ chromatic tuner | ✅ | ✅ | ✅ | — | Cubasis 3.8: built-in tuner |
-| 36 | **Metronome / Click** | ✅ Metronome | ✅ | ✅ | ✅ | — | OpenBand: BPM, time sig, count-in |
-| 37 | **Waveform visualization** | ✅ WaveformClip | ✅ | ✅ | ✅ | — | |
-| 38 | **Audio unit / AUv3** | ❌ | ❌ | ❌ | ✅ iOS only | Low | Cubasis: 3rd-party plugin support |
-| 39 | **Sidechain** | ✅ | ❌ | ❌ | ✅ | — | Per-track sidechain source selector, compressor sidechain filter |
-| 40 | **MIDI Learn / MCU** | ❌ | ❌ | ❌ | ✅ | Low | Cubasis 3.3: MIDI Learn + Mackie Control/HUI |
+| #   | Feature                           | OpenBand                                         | BandLab Free  | BandLab Pro/Max           | Cubasis 3.8                            | Priority | Notes                                                                                                                                        |
+| --- | --------------------------------- | ------------------------------------------------ | ------------- | ------------------------- | -------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Multi-track DAW                   | ✅                                               | ✅            | ✅                        | ✅                                     | —        | All three support multi-track                                                                                                                |
+| 2   | **Audio recording**               | ✅                                               | ✅            | ✅                        | ✅                                     | —        | Uses `expo-audio` `useAudioRecorder`                                                                                                         |
+| 3   | **MIDI import**                   | ✅                                               | ✅            | ✅                        | ✅                                     | —        | Uses `parseMidi()` + `midiToTrackRegions()`                                                                                                  |
+| 4   | **MIDI editor (piano roll)**      | ✅                                               | ✅            | ✅                        | ✅                                     | —        | PianoRoll component with note add/move/resize/delete, snap, scale highlighting                                                               |
+| 5   | **Virtual instruments**           | ❌                                               | ✅ Sampler    | ✅                        | ✅ Micrologue, MicroSonic, MiniSampler | **High** | BandLab: Sampler + synth; Cubasis: Micrologue ARP, MicroSonic (1100+ sounds), MiniSampler                                                    |
+| 6   | **Drum machine / Step sequencer** | ✅ CodeSampler                                   | ✅ Beat Maker | ✅                        | ❌                                     | —        | OpenBand's CodeSampler is token-based; BandLab's Beat Maker is grid-based                                                                    |
+| 7   | **Auto-Pitch / Vocal Tuner**      | ✅ autoPitch plugin                              | ⚠️ basic      | ✅ 18 AutoPitch effects   | ✅ Waves Tune Real-Time (IAP)          | —        | OpenBand: 6 presets; BandLab Pro: 18 effects; Cubasis: 3rd-party IAP                                                                         |
+| 8   | **Noise Gate**                    | ✅ noiseGate plugin                              | ⚠️            | ✅                        | ✅                                     | —        | OpenBand: 5 presets                                                                                                                          |
+| 9   | **Bass Mono**                     | ✅ bassMono plugin                               | ❌            | ❌                        | ❌                                     | Low      | Unique to OpenBand                                                                                                                           |
+| 10  | **Stereo Widener**                | ✅ stereoWidener plugin                          | ❌            | ❌                        | ✅                                     | Low      | Cubasis via Master Strip                                                                                                                     |
+| 11  | **Sampler / Slicing**             | ⚠️ Sample Browser                                | ✅ Sampler    | ✅                        | ✅ MiniSampler                         | **High** | OpenBand can browse/add samples but no slicing/warping                                                                                       |
+| 12  | **Chord track / helper**          | ❌                                               | ❌            | ❌                        | ✅                                     | Medium   | Cubasis: chord track with progression tools                                                                                                  |
+| 13  | **Collaboration / sharing**       | ❌                                               | ✅            | ✅                        | ❌                                     | **High** | BandLab: invite collaborators, cloud sync, comments; Cubasis: DAWproject export                                                              |
+| 14  | **Looper / Overdub**              | ✅                                               | ✅            | ✅                        | ✅                                     | —        | Looper component with record, loop, overdub layers, 4 independent slots                                                                      |
+| 15  | **Time-stretch / pitch-shift**    | ❌                                               | ✅            | ✅                        | ✅                                     | Medium   | `player.playbackRate` available in `expo-audio` but not exposed in UI                                                                        |
+| 16  | **Automation**                    | ✅ Volume lanes                                  | ✅            | ✅                        | ✅                                     | —        | OpenBand: volume only; BandLab: volume + pan + effects; Cubasis: full                                                                        |
+| 17  | **Plugin system**                 | ✅ 19 types                                      | ✅ limited    | ✅ 9+ effects             | ✅ AUv3 (iOS)                          | —        | See plugin table below                                                                                                                       |
+| 18  | **Guitar pedal board**            | ✅ 16 pedal presets                              | ❌            | ❌                        | ✅ Amp Rack                            | —        | OpenBand: famous pedals; Cubasis 3.8: Amp Rack with amp sim                                                                                  |
+| 19  | **Amp + Cab modeling**            | ✅ 20 amps, 10 cabs                              | ❌            | ❌                        | ⚠️ Amp Rack                            | —        | OpenBand: more amp models; Cubasis: newer amp sim in 3.8                                                                                     |
+| 20  | **Mastering presets**             | ✅ 10 chains                                     | ✅ 4 presets  | ✅ 8 presets + EQ         | ✅ Master Strip Suite                  | —        | BandLab: intensity slider + Mastering EQ (Max); Cubasis: 4 processors                                                                        |
+| 21  | **LUFS metering**                 | ✅ LufsMeter                                     | ❌            | ❌                        | ✅                                     | —        | Cubasis: Master Strip includes loudness meter                                                                                                |
+| 22  | **A/B mix snapshots**             | ✅ MixManager                                    | ❌            | ❌                        | ✅                                     | —        | Cubasis: mixer snapshot save/load                                                                                                            |
+| 23  | **Send buses**                    | ✅ up to 20                                      | ✅            | ✅                        | ✅                                     | —        | All three support sends                                                                                                                      |
+| 24  | **Social feed**                   | ✅ Feed + Moments                                | ✅            | ✅                        | ❌                                     | —        | BandLab: 100M+ creator community                                                                                                             |
+| 25  | **Stem separation**               | ✅ 4 stems                                       | ✅ 4 stems    | ✅                        | ❌                                     | —        | Both use AI; BandLab: "Splitter"; OpenBand: Demucs backend                                                                                   |
+| 26  | **Export / Bounce**               | ✅ BounceDialog (desktop save dialog via bridge) | ✅            | ✅                        | ✅ WAV, AIFF, MP3                      | —        | BandLab: audio + video export; Cubasis: mixdown to MP3 since 3.6. OpenBand desktop: native save dialog via `OpenBandNative.showSaveDialog()` |
+| 27  | **Project save/load**             | ✅ localStorage auto-save                        | ✅ cloud sync | ✅                        | ✅                                     | —        | OpenBand: local only; BandLab: cloud; Cubasis: local + DAWproject                                                                            |
+| 28  | **Sample browser**                | ✅ SampleBrowser                                 | ✅ Loop Lib   | ✅                        | ✅ MediaBay                            | —        | Cubasis 3.0: redesigned MediaBay                                                                                                             |
+| 29  | **Track grouping**                | ✅ TrackGroupManager                             | ✅            | ✅                        | ✅ Group Tracks                        | —        | All three support group/bus tracks                                                                                                           |
+| 30  | **Video export**                  | ❌                                               | ❌            | ❌                        | ⚠️                                     | Low      | BandLab: video export for TikTok/IG; Cubasis: mixdown only                                                                                   |
+| 31  | **AI tools**                      | ❌                                               | ❌            | ✅ AutoMix, Voice Cleaner | ❌                                     | Medium   | BandLab Pro: AI mixing/mastering; OpenBand: none                                                                                             |
+| 32  | **Keyboard shortcuts**            | ✅ play/record/undo/redo/save                    | ✅            | ✅                        | ✅                                     | —        | Cubasis 3.2: keyboard shortcut support                                                                                                       |
+| 33  | **Responsive layout**             | ✅ mobile/tablet/desktop                         | ✅            | ✅                        | ⚠️                                     | —        | Cubasis 3.0: UI scale presets; 3.8: portrait mode + windowing                                                                                |
+| 34  | **Sidebar drawer nav**            | ✅ persistent/overlay                            | ✅            | ✅                        | ✅                                     | —        |                                                                                                                                              |
+| 35  | **Tuner**                         | ✅ chromatic tuner                               | ✅            | ✅                        | ✅                                     | —        | Cubasis 3.8: built-in tuner                                                                                                                  |
+| 36  | **Metronome / Click**             | ✅ Metronome                                     | ✅            | ✅                        | ✅                                     | —        | OpenBand: BPM, time sig, count-in                                                                                                            |
+| 37  | **Waveform visualization**        | ✅ WaveformClip                                  | ✅            | ✅                        | ✅                                     | —        |                                                                                                                                              |
+| 38  | **Audio unit / AUv3**             | ❌                                               | ❌            | ❌                        | ✅ iOS only                            | Low      | Cubasis: 3rd-party plugin support                                                                                                            |
+| 39  | **Sidechain**                     | ✅                                               | ❌            | ❌                        | ✅                                     | —        | Per-track sidechain source selector, compressor sidechain filter                                                                             |
+| 40  | **MIDI Learn / MCU**              | ❌                                               | ❌            | ❌                        | ✅                                     | Low      | Cubasis 3.3: MIDI Learn + Mackie Control/HUI                                                                                                 |
 
 **Key:** ✅ = Shipped | ⚠️ = Partial / In progress | ❌ = Not implemented
 
@@ -60,6 +60,7 @@ Current feature inventory against [BandLab](https://www.bandlab.com/features) (w
 ### BandLab ([blog.bandlab.com](https://blog.bandlab.com/))
 
 **Free tier** (all users):
+
 - Multi-track audio/MIDI DAW, Mix Editor, 4-stem Splitter
 - Sampler, Beat Maker (step sequencer), Looper
 - 4 Mastering presets (Universal, Fire, Clarity, Tape)
@@ -67,6 +68,7 @@ Current feature inventory against [BandLab](https://www.bandlab.com/features) (w
 - Cloud sync (unlimited projects)
 
 **Pro/Max tier** ($):
+
 - AI tools: AutoMix (genre-based volume/pan), Voice Cleaner, FX Preset Generator (text → FX chain)
 - 9 effects: Visual EQ, One Knobs (8 types), Vocal Verb, Shimmer, Bit, Clean Limiter, Gater, Shaper, Multi-Band Comp
 - 18 AutoPitch effects (Essentials, Hip Hop, Hyperpop, Sci-Fi)
@@ -77,18 +79,21 @@ Current feature inventory against [BandLab](https://www.bandlab.com/features) (w
 ### Cubasis 3.8 ([steinberg.net/cubasis](https://www.steinberg.net/cubasis/) / [Sound On Sound review](https://www.soundonsound.com/reviews/steinberg-cubasis-38))
 
 **Built-in instruments:**
+
 - Micrologue (virtual analog synth with ARP)
 - MicroSonic (1100+ pro sounds), MiniSampler
 - Iconica Sketch (34 orchestral instruments, 140 articulations)
 - LoFi Piano (vintage mic recordings — since 3.6)
 
 **Built-in effects:**
+
 - Amp Rack (guitar amp sim + effects — since 3.8)
 - Master Strip Suite (EQ, Comp, Limiter, Ducker, Loudness Meter)
 - 75+ effects presets (since 3.0)
 - 64 I/O audio channels
 
 **DAW features:**
+
 - Tempo + signature track (since 3.7)
 - MIDI Learn + Mackie Control/HUI (since 3.3)
 - Sidechain support (since 3.3)
@@ -103,52 +108,52 @@ Current feature inventory against [BandLab](https://www.bandlab.com/features) (w
 
 ## Plugin Comparison
 
-| Category | OpenBand | BandLab | Cubasis |
-|----------|----------|---------|---------|
-| EQ | ✅ 8-band | ✅ Visual EQ | ✅ Channel EQ |
-| Compressor | ✅ | ⚠️ One Knob | ✅ |
-| Limiter | ✅ | ✅ Clean Limiter | ✅ Master Strip |
-| Distortion | ✅ | — | ✅ Amp Rack |
-| Reverb | ✅ | ✅ Vocal Verb, Shimmer | ✅ |
-| Delay | ✅ | — | ✅ |
-| Filter | ✅ | — | ✅ |
-| Modulation | ✅ | — | ✅ |
-| Utility | ✅ | — | — |
-| Multiband Compressor | ✅ | ✅ Multi-Band Comp | ✅ |
-| Stereo Imager | ✅ | — | ✅ |
-| DeEsser | ✅ | — | ✅ |
-| Tape Saturator | ✅ | — | — |
-| True Peak Limiter | ✅ | — | ✅ |
-| Noise Gate | ✅ | — | ✅ |
-| Auto-Pitch | ✅ | ✅ 18 types | ⚠️ Waves IAP |
-| Bass Mono | ✅ | — | — |
-| Stereo Widener | ✅ | — | ✅ |
-| One Knob simplifiers | ❌ | ✅ 8 types | ❌ |
-| Visual EQ | ❌ | ✅ | ❌ |
-| Vocal Verb | ❌ | ✅ | ❌ |
-| Gater / Shaper | ❌ | ✅ | ❌ |
-| Amp Rack | ❌ | ❌ | ✅ |
-| **Total** | **19** | ~12 | ~15+AUv3 |
+| Category             | OpenBand  | BandLab                | Cubasis         |
+| -------------------- | --------- | ---------------------- | --------------- |
+| EQ                   | ✅ 8-band | ✅ Visual EQ           | ✅ Channel EQ   |
+| Compressor           | ✅        | ⚠️ One Knob            | ✅              |
+| Limiter              | ✅        | ✅ Clean Limiter       | ✅ Master Strip |
+| Distortion           | ✅        | —                      | ✅ Amp Rack     |
+| Reverb               | ✅        | ✅ Vocal Verb, Shimmer | ✅              |
+| Delay                | ✅        | —                      | ✅              |
+| Filter               | ✅        | —                      | ✅              |
+| Modulation           | ✅        | —                      | ✅              |
+| Utility              | ✅        | —                      | —               |
+| Multiband Compressor | ✅        | ✅ Multi-Band Comp     | ✅              |
+| Stereo Imager        | ✅        | —                      | ✅              |
+| DeEsser              | ✅        | —                      | ✅              |
+| Tape Saturator       | ✅        | —                      | —               |
+| True Peak Limiter    | ✅        | —                      | ✅              |
+| Noise Gate           | ✅        | —                      | ✅              |
+| Auto-Pitch           | ✅        | ✅ 18 types            | ⚠️ Waves IAP    |
+| Bass Mono            | ✅        | —                      | —               |
+| Stereo Widener       | ✅        | —                      | ✅              |
+| One Knob simplifiers | ❌        | ✅ 8 types             | ❌              |
+| Visual EQ            | ❌        | ✅                     | ❌              |
+| Vocal Verb           | ❌        | ✅                     | ❌              |
+| Gater / Shaper       | ❌        | ✅                     | ❌              |
+| Amp Rack             | ❌        | ❌                     | ✅              |
+| **Total**            | **19**    | ~12                    | ~15+AUv3        |
 
 ---
 
 ## Responsive Breakpoints
 
-| Breakpoint | Width | Tab Bar | Sidebar | Content Padding | Channel Width | Track Height |
-|-----------|-------|---------|---------|----------------|---------------|-------------|
-| Mobile | <480px | Bottom tabs | Hamburger overlay | 12px | 96px | 80px |
-| Tablet | 480–1023px | Bottom tabs | Hamburger overlay | 20px | 112px | 80px |
-| Desktop | ≥1024px | Hidden | Persistent left (180px) | 32px | 136px | 104px |
+| Breakpoint | Width      | Tab Bar     | Sidebar                 | Content Padding | Channel Width | Track Height |
+| ---------- | ---------- | ----------- | ----------------------- | --------------- | ------------- | ------------ |
+| Mobile     | <480px     | Bottom tabs | Hamburger overlay       | 12px            | 96px          | 80px         |
+| Tablet     | 480–1023px | Bottom tabs | Hamburger overlay       | 20px            | 112px         | 80px         |
+| Desktop    | ≥1024px    | Hidden      | Persistent left (180px) | 32px            | 136px         | 104px        |
 
 ---
 
 ## Test Suite (39 tests)
 
-| File | Tests | What it covers |
-|------|-------|----------------|
-| `tests/responsive.test.ts` | 15 | Breakpoints (mobile/tablet/desktop), contentPadding, channelWidth, tracksSidebarWidth, toolbarFontSize |
-| `tests/types.test.ts` | 13 | TrackDef, MixSnapshot, SendBus, Plugin union (19 types), TrackAmpChain structure |
-| `tests/presets.test.ts` | 11 | Pedal count (16), Amp count (20), Cab count (10), brand distribution, type coverage |
+| File                       | Tests | What it covers                                                                                         |
+| -------------------------- | ----- | ------------------------------------------------------------------------------------------------------ |
+| `tests/responsive.test.ts` | 15    | Breakpoints (mobile/tablet/desktop), contentPadding, channelWidth, tracksSidebarWidth, toolbarFontSize |
+| `tests/types.test.ts`      | 13    | TrackDef, MixSnapshot, SendBus, Plugin union (19 types), TrackAmpChain structure                       |
+| `tests/presets.test.ts`    | 11    | Pedal count (16), Amp count (20), Cab count (10), brand distribution, type coverage                    |
 
 ```bash
 npm test        # Run all 39 tests
@@ -170,11 +175,13 @@ These two features unlock the most basic music production workflows currently mi
 **Reference:** [expo-audio Recording docs](https://docs.expo.dev/versions/v56.0.0/sdk/audio/#recording-sounds)
 
 **Files to modify:**
+
 - `app/studio/[id].tsx` — Wire `toggleRecording()` to call `audioRecorder.prepareToRecordAsync()` + `record()`
 - `src/components/RecordOptions.tsx` — Already takes settings; ensure quality/sampleRate presets map to `RecordingPresets`
 - `src/lib/types.ts` — `RecordSettings` already defined; may need `recordingUri` field
 
 **Implementation sketch:**
+
 ```tsx
 // In studio/[id].tsx
 const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
@@ -184,11 +191,21 @@ const recorderState = useAudioRecorderState(audioRecorder);
 if (isRecording) {
   await audioRecorder.stop();
   // Create new track from recording URI
-  setTracks([...tracks, {
-    id: `rec-${Date.now()}`, name: 'Recording',
-    regions: [{ id: `r-${Date.now()}`, start: 0, duration: recorderState.durationMillis / 1000 }],
-    // ...
-  }]);
+  setTracks([
+    ...tracks,
+    {
+      id: `rec-${Date.now()}`,
+      name: "Recording",
+      regions: [
+        {
+          id: `r-${Date.now()}`,
+          start: 0,
+          duration: recorderState.durationMillis / 1000,
+        },
+      ],
+      // ...
+    },
+  ]);
 } else {
   await audioRecorder.prepareToRecordAsync();
   audioRecorder.record();
@@ -202,6 +219,7 @@ if (isRecording) {
 **Reference:** `expo-audio` `player.playbackRate` (range: 0.1–2.0) + `setPlaybackRate(rate, pitchCorrectionQuality)`
 
 **Files to modify:**
+
 - `app/studio/[id].tsx` — Add rate slider to transport toolbar
 - `src/components/PluginEditor.tsx` — Or expose as a per-track "Utility" plugin param
 
@@ -209,7 +227,14 @@ if (isRecording) {
 // Example rate slider in transport
 <View className="flex-row items-center gap-1">
   <Text className="text-gray-500 text-[9px]">0.5x</Text>
-  <Slider value={playbackRate} onValueChange={(v) => { player.playbackRate = v; }} min={0.1} max={2.0} />
+  <Slider
+    value={playbackRate}
+    onValueChange={(v) => {
+      player.playbackRate = v;
+    }}
+    min={0.1}
+    max={2.0}
+  />
   <Text className="text-gray-500 text-[9px]">2x</Text>
 </View>
 ```
@@ -229,11 +254,12 @@ Cubasis and BandLab both have full piano roll editors. This is the **highest-imp
 **New file:** `src/components/PianoRoll.tsx`
 
 **Interface:**
+
 ```tsx
 interface PianoRollProps {
-  notes: MIDINote[];        // { pitch: 0-127, start: number, duration: number, velocity: 0-127 }
+  notes: MIDINote[]; // { pitch: 0-127, start: number, duration: number, velocity: 0-127 }
   onChange: (notes: MIDINote[]) => void;
-  snap: 'bar' | 'beat' | '16th';
+  snap: "bar" | "beat" | "16th";
   numBars: number;
   bpm: number;
   keySignature: string;
@@ -244,6 +270,7 @@ interface PianoRollProps {
 ```
 
 **Features to ship:**
+
 1. Grid with note names (C0–B8) on Y axis, time on X axis
 2. Draw/add notes by tapping empty cells
 3. Drag to move/resize notes
@@ -258,6 +285,7 @@ interface PianoRollProps {
 **Reference:** `expo-audio` `useAudioPlayer` + `useAudioSampleListener`
 
 **Files:**
+
 - `src/lib/midiSynth.ts` — Simple MIDI → audio synthesis (use Web Audio API oscillators on web, or fallback tone generator)
 - `app/studio/[id].tsx` — Wire PianoRoll edits to track regions
 
@@ -277,6 +305,7 @@ interface PianoRollProps {
 **New file:** `src/components/Sampler.tsx`
 
 **Features:**
+
 1. Drag WAV file → map to key range
 2. ADSR envelope (attack, decay, sustain, release)
 3. Pitch tracking across keyboard
@@ -292,6 +321,7 @@ interface PianoRollProps {
 **New file:** `src/components/Synth.tsx`
 
 **Features:**
+
 1. Oscillators: saw, square, triangle, sine, noise (2 oscillators)
 2. Filter: low-pass, high-pass, band-pass with cutoff + resonance
 3. ADSR envelope (amp + filter)
@@ -310,6 +340,7 @@ interface PianoRollProps {
 **Reference:** BandLab cloud sharing, Cubasis DAWproject
 
 **Files:**
+
 - `src/lib/projectStore.ts` — Add `exportProject()` and `importProject()` methods
 - `app/(tabs)/library.tsx` — Share button → copy JSON to clipboard / download file
 
@@ -332,6 +363,7 @@ function importProject(json: string): string {
 **Reference:** Supabase Realtime + Storage
 
 **Files:**
+
 - `src/lib/supabase.ts` — Add `projects` CRUD operations
 - `app/(tabs)/library.tsx` — "Published" tab showing community projects
 
@@ -348,6 +380,7 @@ BandLab's Visual EQ and One Knob effects are popular because they're fast and vi
 **New file:** `src/components/VisualEQ.tsx`
 
 **Features:**
+
 1. Interactive frequency response curve (touch-drag bands)
 2. 4–8 parametric bands with freq/gain/Q
 3. Real-time spectrum overlay (from `useAudioSampleListener`)
@@ -360,6 +393,7 @@ BandLab's Visual EQ and One Knob effects are popular because they're fast and vi
 **New file:** `src/components/OneKnob.tsx`
 
 **Features:**
+
 1. Single dial controls a multi-effect chain
 2. Types: Warmth, Presence, Bass Boost, Air, Room, Punch, Lo-Fi, Telephone
 3. Each maps to combinations of EQ + compressor + reverb params
@@ -373,6 +407,7 @@ BandLab's Visual EQ and One Knob effects are popular because they're fast and vi
 **Reference:** Cubasis 3.3 sidechain, standard DAW practice
 
 **Files:**
+
 - `src/lib/types.ts` — Add `sidechainSource: string | null` to `TrackDef`
 - `app/studio/[id].tsx` — Sidechain source selector per track
 - `src/components/PluginEditor.tsx` — Compressor sidechain filter
@@ -386,6 +421,7 @@ BandLab's Visual EQ and One Knob effects are popular because they're fast and vi
 **New file:** `src/components/Looper.tsx`
 
 **Features:**
+
 1. Record 1–8 bars
 2. Loop immediately on stop
 3. Overdub layers
@@ -405,8 +441,16 @@ BandLab's Visual EQ and One Knob effects are popular because they're fast and vi
 function autoMix(tracks: TrackDef[], genre: string): TrackDef[] {
   // Genre-based presets for volume + pan
   const presets: Record<string, { vol: number; pan: number }[]> = {
-    rock: [{ vol: 85, pan: 0 }, { vol: 70, pan: -30 }, { vol: 80, pan: 0 }],
-    hiphop: [{ vol: 90, pan: 0 }, { vol: 65, pan: 0 }, { vol: 75, pan: 0 }],
+    rock: [
+      { vol: 85, pan: 0 },
+      { vol: 70, pan: -30 },
+      { vol: 80, pan: 0 },
+    ],
+    hiphop: [
+      { vol: 90, pan: 0 },
+      { vol: 65, pan: 0 },
+      { vol: 75, pan: 0 },
+    ],
     // ...
   };
   return tracks.map((t, i) => ({
@@ -421,15 +465,15 @@ function autoMix(tracks: TrackDef[], genre: string): TrackDef[] {
 
 ## Effort Summary
 
-| Phase | Tasks | Effort | User Impact | Depends On |
-|-------|-------|--------|-------------|------------|
-| 1 | Recording + Time-Stretch | Medium-High | **Critical** — enables recording | — |
-| 2 | Piano Roll | High | **Critical** — enables MIDI editing | Phase 1 (synth playback) |
-| 3 | Sampler + Synth | High | High — enables virtual instruments | Phase 2 |
-| 4 | Collaboration | Medium | Medium — sharing | — |
-| 5 | Visual EQ + One Knobs | Medium | Medium — faster mixing | — |
-| 6 | Sidechain + Looper | Medium | Medium — creative tools | Phase 1 |
-| 7 | AI Tools | Low-Medium | Low-Medium — nice-to-have | — |
+| Phase | Tasks                    | Effort      | User Impact                         | Depends On               |
+| ----- | ------------------------ | ----------- | ----------------------------------- | ------------------------ |
+| 1     | Recording + Time-Stretch | Medium-High | **Critical** — enables recording    | —                        |
+| 2     | Piano Roll               | High        | **Critical** — enables MIDI editing | Phase 1 (synth playback) |
+| 3     | Sampler + Synth          | High        | High — enables virtual instruments  | Phase 2                  |
+| 4     | Collaboration            | Medium      | Medium — sharing                    | —                        |
+| 5     | Visual EQ + One Knobs    | Medium      | Medium — faster mixing              | —                        |
+| 6     | Sidechain + Looper       | Medium      | Medium — creative tools             | Phase 1                  |
+| 7     | AI Tools                 | Low-Medium  | Low-Medium — nice-to-have           | —                        |
 
 **Recommended sprint order:**
 

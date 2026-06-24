@@ -1,10 +1,10 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import { RecordOptions } from '../src/components';
-import type { RecordSettings } from '../src/lib/types';
-import { View } from 'react-native';
+import type { Meta, StoryObj } from "@storybook/react";
+import { RecordOptions } from "../src/components";
+import type { RecordSettings } from "../src/lib/types";
+import { View } from "react-native";
 
 const meta: Meta<typeof RecordOptions> = {
-  title: 'RecordOptions',
+  title: "RecordOptions",
   component: RecordOptions,
   decorators: [
     (Story) => (
@@ -20,8 +20,8 @@ type Story = StoryObj<typeof meta>;
 
 const defaultSettings: RecordSettings = {
   armed: true,
-  inputSource: 'mic',
-  quality: 'high',
+  inputSource: "mic",
+  quality: "high",
   sampleRate: 48000,
   mono: false,
   preRoll: 2,
@@ -30,7 +30,7 @@ const defaultSettings: RecordSettings = {
 export const Visible: Story = {
   args: {
     settings: defaultSettings,
-    onChange: (s: RecordSettings) => console.log('Settings', s),
+    onChange: (s: RecordSettings) => console.log("Settings", s),
     visible: true,
     onClose: () => {},
   },

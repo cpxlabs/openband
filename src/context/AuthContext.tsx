@@ -1,6 +1,12 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { Session, User } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
+import { Session, User } from "@supabase/supabase-js";
+import { supabase } from "../lib/supabase";
 
 interface AuthContextType {
   session: Session | null;
@@ -11,21 +17,21 @@ interface AuthContextType {
   signInAsVisitor: () => Promise<void>;
 }
 
-const VISITOR_EMAIL = 'admin@openband.app';
-const VISITOR_ID = '00000000-0000-0000-0000-000000000000';
+const VISITOR_EMAIL = "admin@openband.app";
+const VISITOR_ID = "00000000-0000-0000-0000-000000000000";
 
 function createVisitorUser(): User {
   return {
     id: VISITOR_ID,
-    aud: 'authenticated',
-    role: 'authenticated',
+    aud: "authenticated",
+    role: "authenticated",
     email: VISITOR_EMAIL,
     email_confirmed_at: new Date().toISOString(),
-    phone: '',
+    phone: "",
     confirmed_at: new Date().toISOString(),
     last_sign_in_at: new Date().toISOString(),
-    app_metadata: { provider: 'email', providers: ['email'] },
-    user_metadata: { name: 'Admin' },
+    app_metadata: { provider: "email", providers: ["email"] },
+    user_metadata: { name: "Admin" },
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     is_anonymous: true,
@@ -36,11 +42,11 @@ function createVisitorUser(): User {
 
 function createVisitorSession(): Session {
   return {
-    access_token: 'visitor-token',
-    refresh_token: 'visitor-refresh',
+    access_token: "visitor-token",
+    refresh_token: "visitor-refresh",
     expires_in: 86400,
     expires_at: Math.floor(Date.now() / 1000) + 86400,
-    token_type: 'bearer',
+    token_type: "bearer",
     provider_token: null,
     provider_refresh_token: null,
     user: createVisitorUser(),
@@ -65,19 +71,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let cancelled = false;
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (cancelled) return;
-      setSession(session);
-      setUser(session?.user ?? null);
-    }).catch(() => {
-      if (cancelled) return;
-      setSession(null);
-      setUser(null);
-    }).finally(() => {
-      if (!cancelled) setLoading(false);
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        if (cancelled) return;
+        setSession(session);
+        setUser(session?.user ?? null);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setSession(null);
+        setUser(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       if (cancelled) return;
       setSession(session);
       setUser(session?.user ?? null);
@@ -109,7 +121,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ session, user, loading, isVisitor, signOut, signInAsVisitor }}>
+    <AuthContext.Provider
+      value={{ session, user, loading, isVisitor, signOut, signInAsVisitor }}
+    >
       {children}
     </AuthContext.Provider>
   );

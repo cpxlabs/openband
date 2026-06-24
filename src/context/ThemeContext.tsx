@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Platform } from 'react-native';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { Platform } from "react-native";
 
-type Theme = 'dark' | 'light';
+type Theme = "dark" | "light";
 
 interface ThemeContextType {
   theme: Theme;
@@ -10,24 +10,25 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: 'dark',
+  theme: "dark",
   toggleTheme: () => {},
   setTheme: () => {},
 });
 
 function applyTheme(theme: Theme) {
-  if (Platform.OS === 'web' && typeof document !== 'undefined') {
-    document.documentElement.setAttribute('data-theme', theme);
-    document.body.style.backgroundColor = theme === 'dark' ? '#0f0f11' : '#ffffff';
-    document.body.style.color = theme === 'dark' ? '#ffffff' : '#000000';
+  if (Platform.OS === "web" && typeof document !== "undefined") {
+    document.documentElement.setAttribute("data-theme", theme);
+    document.body.style.backgroundColor =
+      theme === "dark" ? "#0f0f11" : "#ffffff";
+    document.body.style.color = theme === "dark" ? "#ffffff" : "#000000";
   }
 }
 
 function loadInitialTheme(): Theme {
-  if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
-    return (localStorage.getItem('openband_theme') as Theme) ?? 'dark';
+  if (Platform.OS === "web" && typeof localStorage !== "undefined") {
+    return (localStorage.getItem("openband_theme") as Theme) ?? "dark";
   }
-  return 'dark';
+  return "dark";
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
@@ -35,13 +36,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     applyTheme(theme);
-    if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
-      localStorage.setItem('openband_theme', theme);
+    if (Platform.OS === "web" && typeof localStorage !== "undefined") {
+      localStorage.setItem("openband_theme", theme);
     }
   }, [theme]);
 
   const toggleTheme = () => {
-    setThemeState(prev => (prev === 'dark' ? 'light' : 'dark'));
+    setThemeState((prev) => (prev === "dark" ? "light" : "dark"));
   };
 
   const setTheme = (t: Theme) => {

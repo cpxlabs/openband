@@ -1,9 +1,9 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import { OneKnob } from '../src/components';
-import { View } from 'react-native';
+import type { Meta, StoryObj } from "@storybook/react";
+import { OneKnob } from "../src/components";
+import { View } from "react-native";
 
 const meta: Meta<typeof OneKnob> = {
-  title: 'OneKnob',
+  title: "OneKnob",
   component: OneKnob,
   decorators: [
     (Story) => (
@@ -19,12 +19,12 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    label: 'Warmth',
+    label: "Warmth",
     value: 60,
-    onChange: (v: number) => console.log('Value', v),
+    onChange: (v: number) => console.log("Value", v),
     min: 0,
     max: 100,
     step: 1,
-    unit: '%',
+    unit: "%",
   },
 };

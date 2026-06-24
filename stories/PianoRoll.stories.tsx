@@ -1,10 +1,10 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import { PianoRoll } from '../src/components';
-import type { MIDINote } from '../src/components/PianoRoll';
-import { View } from 'react-native';
+import type { Meta, StoryObj } from "@storybook/react";
+import { PianoRoll } from "../src/components";
+import type { MIDINote } from "../src/components/PianoRoll";
+import { View } from "react-native";
 
 const meta: Meta<typeof PianoRoll> = {
-  title: 'PianoRoll',
+  title: "PianoRoll",
   component: PianoRoll,
   decorators: [
     (Story) => (
@@ -33,14 +33,14 @@ const mockNotes: MIDINote[] = [
 export const Default: Story = {
   args: {
     notes: mockNotes,
-    onChange: (notes: MIDINote[]) => console.log('Notes', notes.length),
-    snap: 'beat',
+    onChange: (notes: MIDINote[]) => console.log("Notes", notes.length),
+    snap: "beat",
     numBars: 4,
     bpm: 120,
-    keySignature: 'C',
-    scale: 'major',
+    keySignature: "C",
+    scale: "major",
     visible: true,
     onClose: () => {},
-    trackName: 'Synth Lead',
+    trackName: "Synth Lead",
   },
 };

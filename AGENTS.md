@@ -65,51 +65,52 @@ Before starting any task:
 
 Available in `src/components/`:
 
-| Component | Props | Usage |
-|-----------|-------|-------|
-| `Button` | `title, onPress, variant, loading, disabled, icon` | `variant: 'primary'\|'secondary'\|'ghost'` |
-| `TextInput` | `label, error, ...TextInputProps` | Wraps RN TextInput with label + error |
-| `Card` | `children, onPress, activeBorder, elevated` | Container with dark surface styling |
-| `CardRow` | `children, onPress` | Horizontal card list item |
-| `CardIcon` | `icon: string` | Emoji/text icon in gradient box |
-| `Badge` | `text, icon, variant` | `variant: 'default'\|'play'\|'active'` |
-| `Avatar` | `name, size` | `size: 'sm'\|'md'\|'lg'` |
-| `Divider` | `label?, className?` | Horizontal line with optional label |
-| `Loading` | `message?, fullScreen?` | Spinner + message |
-| `EmptyState` | `icon, title, subtitle?, action?` | Centered empty state |
-| `ProgressBar` | `progress, className?` | 0-100 progress fill |
-| `PageHeader` | `title, subtitle?` | Standard page header |
-| `Sidebar` | `currentRoute, onNavigate, isOpen, onClose, isPersistent` | Left drawer nav (persistent on desktop, overlay on mobile) |
-| `PedalRack` | `chain, onChange, trackName` | 6-slot guitar pedalboard with amp + cab selectors |
-| `Tuner` | `visible, onClose` | Chromatic tuner overlay |
-| `CodeSampler` | `visible, onClose, onRender, bpm` | Token-based beat sequencer |
-| `MomentCard` | `moment: MomentData` | Artist moment card for social feed |
-| `MiniMastering` | `onPresetChange, activePreset, eqValues, onEqChange` | Quick mastering chain presets + EQ |
-| `LufsMeter` | `isPlaying` | Loudness meter (LUFS) |
-| `BounceDialog` | `visible, onClose, projectTitle, duration` | Export/stem bounce dialog |
-| `MixManager` | `snapshots, activeMixId, onSave, onLoad, onDelete, onCompare` | A/B mix snapshot manager |
-| `PluginRack` | `plugins, onChange, onEdit, trackName` | Plugin chain per track |
-| `MasterRack` | `plugins, onChange, onEdit` | Master bus plugin chain |
-| `PluginEditor` | `plugin, onParamChange, onToggle, onClose` | Deep plugin parameter editor (all 19 types) |
-| `AutomationLane` | `points, onChange, duration, color, visible, label, minValue, maxValue` | Volume/param automation curve editor |
-| `TrackGroupManager` | `groups, tracks, onCreateGroup, onRemoveGroup, onGroupVolume, onGroupMute, onAssignTrack, trackAssignments` | Track grouping with shared volume/mute |
-| `WaveformClip` | `regionId, duration, color, audible, height` | Waveform visualization for audio clips |
-| `SampleBrowser` | `visible, onAddSample` | Browse and add sample packs |
-| `RecordOptions` | `settings, onChange, visible, onClose` | Recording settings (source, quality, sample rate) |
-| `Metronome` | `settings, onChange, isPlaying` | BPM/tempo click track |
-| `NewProject` | `visible, onClose, onCreate` | New project creation modal |
-| `PianoRoll` | `notes, onChange, visible, onClose, bpm, numBars?, snap?, keySignature?, scale?` | MIDI note piano roll editor |
-| `Looper` | `visible, onClose, bpm, onCommitLoop` | Live loop recording/playback |
-| `VisualEQ` | `frequencies, onChange?, height?` | Visual equalizer display |
-| `OneKnob` | `label, value, onChange, min?, max?, step?, type?` | Single-knob control (19 types) |
-| `Sampler` | `visible, onClose, onAddToTrack` | Audio sample player |
-| `Synth` | `visible, onClose, bpm` | Synthesizer with presets |
-| `MasteringSuite` | `audioUri, onExport, onClose, visible` | Full mastering chain with EQ, comp, limiter, LUFS |
-| `MasteringChain` | `plugins, onToggle, onReset` | Mastering chain slot UI with ON/OFF toggles |
-| `MasteringVersionManager` | `versions, activeId, onSelect, onSave, onDelete, onBypass` | A/B version compare + snapshot management |
-| `MasteringUpload` | `input, onInputChange, mode` | Upload/drop zone for audio files and stems |
+| Component                 | Props                                                                                                       | Usage                                                      |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `Button`                  | `title, onPress, variant, loading, disabled, icon`                                                          | `variant: 'primary'\|'secondary'\|'ghost'`                 |
+| `TextInput`               | `label, error, ...TextInputProps`                                                                           | Wraps RN TextInput with label + error                      |
+| `Card`                    | `children, onPress, activeBorder, elevated`                                                                 | Container with dark surface styling                        |
+| `CardRow`                 | `children, onPress`                                                                                         | Horizontal card list item                                  |
+| `CardIcon`                | `icon: string`                                                                                              | Emoji/text icon in gradient box                            |
+| `Badge`                   | `text, icon, variant`                                                                                       | `variant: 'default'\|'play'\|'active'`                     |
+| `Avatar`                  | `name, size`                                                                                                | `size: 'sm'\|'md'\|'lg'`                                   |
+| `Divider`                 | `label?, className?`                                                                                        | Horizontal line with optional label                        |
+| `Loading`                 | `message?, fullScreen?`                                                                                     | Spinner + message                                          |
+| `EmptyState`              | `icon, title, subtitle?, action?`                                                                           | Centered empty state                                       |
+| `ProgressBar`             | `progress, className?`                                                                                      | 0-100 progress fill                                        |
+| `PageHeader`              | `title, subtitle?`                                                                                          | Standard page header                                       |
+| `Sidebar`                 | `currentRoute, onNavigate, isOpen, onClose, isPersistent`                                                   | Left drawer nav (persistent on desktop, overlay on mobile) |
+| `PedalRack`               | `chain, onChange, trackName`                                                                                | 6-slot guitar pedalboard with amp + cab selectors          |
+| `Tuner`                   | `visible, onClose`                                                                                          | Chromatic tuner overlay                                    |
+| `CodeSampler`             | `visible, onClose, onRender, bpm`                                                                           | Token-based beat sequencer                                 |
+| `MomentCard`              | `moment: MomentData`                                                                                        | Artist moment card for social feed                         |
+| `MiniMastering`           | `onPresetChange, activePreset, eqValues, onEqChange`                                                        | Quick mastering chain presets + EQ                         |
+| `LufsMeter`               | `isPlaying`                                                                                                 | Loudness meter (LUFS)                                      |
+| `BounceDialog`            | `visible, onClose, projectTitle, duration`                                                                  | Export/stem bounce dialog                                  |
+| `MixManager`              | `snapshots, activeMixId, onSave, onLoad, onDelete, onCompare`                                               | A/B mix snapshot manager                                   |
+| `PluginRack`              | `plugins, onChange, onEdit, trackName`                                                                      | Plugin chain per track                                     |
+| `MasterRack`              | `plugins, onChange, onEdit`                                                                                 | Master bus plugin chain                                    |
+| `PluginEditor`            | `plugin, onParamChange, onToggle, onClose`                                                                  | Deep plugin parameter editor (all 19 types)                |
+| `AutomationLane`          | `points, onChange, duration, color, visible, label, minValue, maxValue`                                     | Volume/param automation curve editor                       |
+| `TrackGroupManager`       | `groups, tracks, onCreateGroup, onRemoveGroup, onGroupVolume, onGroupMute, onAssignTrack, trackAssignments` | Track grouping with shared volume/mute                     |
+| `WaveformClip`            | `regionId, duration, color, audible, height`                                                                | Waveform visualization for audio clips                     |
+| `SampleBrowser`           | `visible, onAddSample`                                                                                      | Browse and add sample packs                                |
+| `RecordOptions`           | `settings, onChange, visible, onClose`                                                                      | Recording settings (source, quality, sample rate)          |
+| `Metronome`               | `settings, onChange, isPlaying`                                                                             | BPM/tempo click track                                      |
+| `NewProject`              | `visible, onClose, onCreate`                                                                                | New project creation modal                                 |
+| `PianoRoll`               | `notes, onChange, visible, onClose, bpm, numBars?, snap?, keySignature?, scale?`                            | MIDI note piano roll editor                                |
+| `Looper`                  | `visible, onClose, bpm, onCommitLoop`                                                                       | Live loop recording/playback                               |
+| `VisualEQ`                | `frequencies, onChange?, height?`                                                                           | Visual equalizer display                                   |
+| `OneKnob`                 | `label, value, onChange, min?, max?, step?, type?`                                                          | Single-knob control (19 types)                             |
+| `Sampler`                 | `visible, onClose, onAddToTrack`                                                                            | Audio sample player                                        |
+| `Synth`                   | `visible, onClose, bpm`                                                                                     | Synthesizer with presets                                   |
+| `MasteringSuite`          | `audioUri, onExport, onClose, visible`                                                                      | Full mastering chain with EQ, comp, limiter, LUFS          |
+| `MasteringChain`          | `plugins, onToggle, onReset`                                                                                | Mastering chain slot UI with ON/OFF toggles                |
+| `MasteringVersionManager` | `versions, activeId, onSelect, onSave, onDelete, onBypass`                                                  | A/B version compare + snapshot management                  |
+| `MasteringUpload`         | `input, onInputChange, mode`                                                                                | Upload/drop zone for audio files and stems                 |
 
 CSS component classes (from `global.css`):
+
 - `card`, `card-elevated` — container styles
 - `btn-secondary` — button style
 - `input-field`, `input-field-focused` — input styles
@@ -120,15 +121,16 @@ CSS component classes (from `global.css`):
 
 All native desktop capabilities **must** go through `src/bridge/` — **never** use `require('fs')`, Electron `ipcRenderer`, or Tauri APIs in frontend code.
 
-| File | Role |
-|------|------|
-| `interface.ts` | Contract — `NativeBridge` interface with all method signatures |
-| `electron.ts` | Electron impl — delegates to `window.electronAPI` (exposed via preload) |
-| `tauri.ts` | Tauri stub — placeholder for future migration (all methods warn + return null) |
-| `browser.ts` | Browser fallback — uses `localStorage`, `document.createElement`, etc. |
-| `index.ts` | Auto-detect: `electronAPI` → Electron, `__TAURI__` → Tauri, else browser |
+| File           | Role                                                                           |
+| -------------- | ------------------------------------------------------------------------------ |
+| `interface.ts` | Contract — `NativeBridge` interface with all method signatures                 |
+| `electron.ts`  | Electron impl — delegates to `window.electronAPI` (exposed via preload)        |
+| `tauri.ts`     | Tauri stub — placeholder for future migration (all methods warn + return null) |
+| `browser.ts`   | Browser fallback — uses `localStorage`, `document.createElement`, etc.         |
+| `index.ts`     | Auto-detect: `electronAPI` → Electron, `__TAURI__` → Tauri, else browser       |
 
 **Usage in frontend:**
+
 ```ts
 import { OpenBandNative } from '@bridge';
 const path = await OpenBandNative.showOpenDialog({ filters: [...] });

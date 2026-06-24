@@ -5,11 +5,11 @@
 Todas as dimensões vêm do hook `useResponsive` em `src/lib/responsive.ts`, que
 envolve `useWindowDimensions` do React Native.
 
-| Breakpoint | Largura     | isMobile | isTablet | isDesktop |
-| ---------- | ----------- | -------- | -------- | --------- |
-| mobile     | < 480px     | true     | false    | false     |
-| tablet     | 480–1023px  | false    | true     | false     |
-| desktop    | ≥ 1024px    | false    | false    | true      |
+| Breakpoint | Largura    | isMobile | isTablet | isDesktop |
+| ---------- | ---------- | -------- | -------- | --------- |
+| mobile     | < 480px    | true     | false    | false     |
+| tablet     | 480–1023px | false    | true     | false     |
+| desktop    | ≥ 1024px   | false    | false    | true      |
 
 Desktop layout é ativado para todas as plataformas quando `breakpoint === 'desktop'`.
 
@@ -37,9 +37,17 @@ Todas as telas de conteúdo (Feed, Biblioteca, Momentos, Extractor, Conta,
 Ajustes) seguem o mesmo padrão:
 
 ```tsx
-<View className={`flex-1 bg-dark-bg ${resp.isMobile ? 'pt-4 px-4' : 'pt-12 px-6'}`}>
+<View
+  className={`flex-1 bg-dark-bg ${resp.isMobile ? "pt-4 px-4" : "pt-12 px-6"}`}
+>
   {/* conteúdo com largura máxima no desktop */}
-  <ScrollView style={resp.isDesktop ? { maxWidth: 768, alignSelf: 'center', width: '100%' } : undefined}>
+  <ScrollView
+    style={
+      resp.isDesktop
+        ? { maxWidth: 768, alignSelf: "center", width: "100%" }
+        : undefined
+    }
+  >
     ...
   </ScrollView>
 </View>
@@ -47,15 +55,15 @@ Ajustes) seguem o mesmo padrão:
 
 **Larguras máximas usadas (via constante `LAYOUT_MAX_WIDTHS` exportada de `src/lib/responsive.ts`):**
 
-| Tela         | Max-width |
-| ------------ | --------- |
-| Feed         | 768px     |
-| Biblioteca   | 768px     |
-| Momentos     | 768px     |
-| Extractor    | 768px     |
-| Conta        | 576px     |
-| Ajustes      | 576px     |
-| Login        | 448px     |
+| Tela       | Max-width |
+| ---------- | --------- |
+| Feed       | 768px     |
+| Biblioteca | 768px     |
+| Momentos   | 768px     |
+| Extractor  | 768px     |
+| Conta      | 576px     |
+| Ajustes    | 576px     |
+| Login      | 448px     |
 
 ### 2. Tab Navigator + Sidebar (`app/(tabs)/_layout.tsx`)
 
@@ -84,21 +92,25 @@ runtime — não há media queries no `global.css` e não há custom breakpoints
 ### Padrões de código
 
 **Pattern 1 — Template literal com ternário (mais comum):**
+
 ```tsx
 className={`${resp.isMobile ? 'px-4' : resp.isDesktop ? 'max-w-xl mx-auto w-full px-0' : 'px-6'}`}
 ```
 
 **Pattern 2 — Inline style condicional (desktop centering):**
+
 ```tsx
 style={resp.isDesktop ? { maxWidth: 768, alignSelf: 'center', width: '100%' } : undefined}
 ```
 
 **Pattern 3 — Boolean toggle para mobile vs resto:**
+
 ```tsx
 className={`${resp.isMobile ? 'px-4' : 'px-6'}`}
 ```
 
 **Pattern 4 — Valores numéricos do hook:**
+
 ```tsx
 style={{ height: resp.isDesktop ? 104 : 80 }}
 ```

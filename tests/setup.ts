@@ -1,10 +1,10 @@
-import '@testing-library/jest-dom';
-import { vi } from 'vitest';
+import "@testing-library/jest-dom";
+import { vi } from "vitest";
 
 (global as any).__DEV__ = true;
 
-vi.mock('react-native-reanimated', () => {
-  const View = require('react-native').View;
+vi.mock("react-native-reanimated", () => {
+  const View = require("react-native").View;
   return {
     default: {
       createAnimatedComponent: (comp: any) => comp,
@@ -27,7 +27,7 @@ vi.mock('react-native-reanimated', () => {
   };
 });
 
-vi.mock('expo-router', () => ({
+vi.mock("expo-router", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),
   useSegments: () => [],
   useLocalSearchParams: () => ({}),
@@ -35,7 +35,7 @@ vi.mock('expo-router', () => ({
   Stack: { Screen: vi.fn() },
 }));
 
-vi.mock('expo-audio', () => ({
+vi.mock("expo-audio", () => ({
   useAudioPlayer: () => ({
     play: vi.fn(),
     pause: vi.fn(),
@@ -51,11 +51,11 @@ vi.mock('expo-audio', () => ({
   }),
 }));
 
-vi.mock('expo-status-bar', () => ({
+vi.mock("expo-status-bar", () => ({
   StatusBar: () => null,
 }));
 
-vi.mock('../src/context/AuthContext', () => ({
+vi.mock("../src/context/AuthContext", () => ({
   useAuth: () => ({
     user: null,
     signOut: vi.fn(),
@@ -63,7 +63,7 @@ vi.mock('../src/context/AuthContext', () => ({
   }),
 }));
 
-vi.mock('expo-secure-store', () => ({
+vi.mock("expo-secure-store", () => ({
   getItemAsync: vi.fn(),
   setItemAsync: vi.fn(),
   deleteItemAsync: vi.fn(),

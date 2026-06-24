@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { useState, useEffect, useRef } from "react";
+import { View, Text, Pressable } from "react-native";
 
 interface LufsMeterProps {
   isPlaying: boolean;
@@ -7,10 +7,10 @@ interface LufsMeterProps {
 }
 
 const LUFS_TARGETS = [
-  { name: 'Streaming', integrated: -14, shortTerm: -18, label: '-14 LUFS' },
-  { name: 'Broadcast', integrated: -16, shortTerm: -20, label: '-16 LUFS' },
-  { name: 'EBU R128', integrated: -23, shortTerm: -27, label: '-23 LUFS' },
-  { name: 'Custom', integrated: -12, shortTerm: -16, label: '-12 LUFS' },
+  { name: "Streaming", integrated: -14, shortTerm: -18, label: "-14 LUFS" },
+  { name: "Broadcast", integrated: -16, shortTerm: -20, label: "-16 LUFS" },
+  { name: "EBU R128", integrated: -23, shortTerm: -27, label: "-23 LUFS" },
+  { name: "Custom", integrated: -12, shortTerm: -16, label: "-12 LUFS" },
 ];
 
 const MIN_LUFS = -36;
@@ -21,7 +21,12 @@ function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t;
 }
 
-function simulateLoudness(playing: boolean, base: number, target: number, speed: number) {
+function simulateLoudness(
+  playing: boolean,
+  base: number,
+  target: number,
+  speed: number,
+) {
   if (!playing) return lerp(base, -30, 0.05);
   return lerp(base, target, speed);
 }
@@ -53,11 +58,11 @@ export function LufsMeter({ isPlaying, testID }: LufsMeterProps) {
         setIntegrated(integratedRef.current);
         setShortTerm(shortTermRef.current);
         setTruePeak(truePeakRef.current);
-        setHistory(prev => {
+        setHistory((prev) => {
           const next = [...prev, -30];
           return next.length > 30 ? next.slice(-30) : next;
         });
-        setAvgLoudness(prev => lerp(prev, -30, 0.02));
+        setAvgLoudness((prev) => lerp(prev, -30, 0.02));
       }, 200);
       return () => clearInterval(decay);
     }
@@ -73,21 +78,40 @@ export function LufsMeter({ isPlaying, testID }: LufsMeterProps) {
       const drift = Math.sin(time * 0.3) * 1.5 + Math.sin(time * 0.7) * 0.5;
       const transient = Math.random() < 0.05 ? Math.random() * 3 : 0;
 
-      integratedRef.current = simulateLoudness(true, integratedRef.current, baseIntegrated + drift * 0.3, 0.08);
-      shortTermRef.current = simulateLoudness(true, shortTermRef.current, baseShortTerm + drift + transient, 0.12);
-      truePeakRef.current = simulateLoudness(true, truePeakRef.current, baseTruePeak + transient * 0.5 - drift * 0.3, 0.15);
-      lraRef.current = lerp(lraRef.current, baseLra + Math.abs(drift) * 0.5, 0.05);
+      integratedRef.current = simulateLoudness(
+        true,
+        integratedRef.current,
+        baseIntegrated + drift * 0.3,
+        0.08,
+      );
+      shortTermRef.current = simulateLoudness(
+        true,
+        shortTermRef.current,
+        baseShortTerm + drift + transient,
+        0.12,
+      );
+      truePeakRef.current = simulateLoudness(
+        true,
+        truePeakRef.current,
+        baseTruePeak + transient * 0.5 - drift * 0.3,
+        0.15,
+      );
+      lraRef.current = lerp(
+        lraRef.current,
+        baseLra + Math.abs(drift) * 0.5,
+        0.05,
+      );
 
       setIntegrated(integratedRef.current);
       setShortTerm(shortTermRef.current);
       setTruePeak(truePeakRef.current);
       setLra(lraRef.current);
-      setHistory(prev => {
+      setHistory((prev) => {
         const next = [...prev, shortTermRef.current];
         return next.length > 30 ? next.slice(-30) : next;
       });
       const h = integratedRef.current;
-      setAvgLoudness(prev => lerp(prev, h, 0.1));
+      setAvgLoudness((prev) => lerp(prev, h, 0.1));
     }, 200);
 
     return () => clearInterval(tick);
@@ -99,12 +123,12 @@ export function LufsMeter({ isPlaying, testID }: LufsMeterProps) {
 
   const barSegments = 36;
   const getBarColor = (db: number) => {
-    if (db >= -3) return '#ff453a';
-    if (db >= -8) return '#ff9f0a';
-    if (db >= -14) return '#ffcc00';
-    if (db >= -20) return '#30d158';
-    if (db >= -28) return '#34c759';
-    return '#30d158';
+    if (db >= -3) return "#ff453a";
+    if (db >= -8) return "#ff9f0a";
+    if (db >= -14) return "#ffcc00";
+    if (db >= -20) return "#30d158";
+    if (db >= -28) return "#34c759";
+    return "#30d158";
   };
 
   return (
@@ -119,9 +143,13 @@ export function LufsMeter({ isPlaying, testID }: LufsMeterProps) {
             <Pressable
               key={t.name}
               onPress={() => setTargetIdx(i)}
-              className={`px-2 py-0.5 rounded-md border ${i === targetIdx ? 'bg-rose-500/20 border-rose-500/50' : 'bg-dark-surface border-dark-border'}`}
+              className={`px-2 py-0.5 rounded-md border ${i === targetIdx ? "bg-rose-500/20 border-rose-500/50" : "bg-dark-surface border-dark-border"}`}
             >
-              <Text className={`text-[8px] font-bold ${i === targetIdx ? 'text-rose-400' : 'text-gray-500'}`}>{t.name}</Text>
+              <Text
+                className={`text-[8px] font-bold ${i === targetIdx ? "text-rose-400" : "text-gray-500"}`}
+              >
+                {t.name}
+              </Text>
             </Pressable>
           ))}
         </View>
@@ -136,7 +164,10 @@ export function LufsMeter({ isPlaying, testID }: LufsMeterProps) {
                 <View
                   key={i}
                   className="flex-1 mx-[0.5px] rounded-sm"
-                  style={{ backgroundColor: getBarColor(db), opacity: 0.15 + (i / barSegments) * 0.3 }}
+                  style={{
+                    backgroundColor: getBarColor(db),
+                    opacity: 0.15 + (i / barSegments) * 0.3,
+                  }}
                 />
               );
             })}
@@ -169,7 +200,9 @@ export function LufsMeter({ isPlaying, testID }: LufsMeterProps) {
           />
 
           <View className="absolute -top-1 -right-1 bg-rose-500/20 rounded-lg px-1.5 py-0.5 border border-rose-500/30">
-            <Text className="text-rose-400 font-mono text-[8px] font-bold">{target.label}</Text>
+            <Text className="text-rose-400 font-mono text-[8px] font-bold">
+              {target.label}
+            </Text>
           </View>
         </View>
 
@@ -182,17 +215,31 @@ export function LufsMeter({ isPlaying, testID }: LufsMeterProps) {
 
         <View className="flex-row gap-3">
           {[
-            { label: 'Integrated', value: integrated, color: 'text-white' },
-            { label: 'Short-Term', value: shortTerm, color: 'text-cyan-400' },
-            { label: 'True Peak', value: truePeak, color: 'text-rose-400', unit: 'dBTP' },
-            { label: 'LRA', value: lra, color: 'text-yellow-400', unit: 'LU' },
-          ].map(m => {
-            const display = m.value <= -40 ? '-∞' : `${m.value >= 0 ? '+' : ''}${m.value.toFixed(1)}`;
+            { label: "Integrated", value: integrated, color: "text-white" },
+            { label: "Short-Term", value: shortTerm, color: "text-cyan-400" },
+            {
+              label: "True Peak",
+              value: truePeak,
+              color: "text-rose-400",
+              unit: "dBTP",
+            },
+            { label: "LRA", value: lra, color: "text-yellow-400", unit: "LU" },
+          ].map((m) => {
+            const display =
+              m.value <= -40
+                ? "-∞"
+                : `${m.value >= 0 ? "+" : ""}${m.value.toFixed(1)}`;
             return (
               <View key={m.label} className="flex-1 items-center">
-                <Text className="text-gray-600 text-[8px] font-medium">{m.label}</Text>
-                <Text className={`${m.color} font-mono text-sm font-bold`}>{display}</Text>
-                <Text className="text-gray-600 text-[7px]">{m.unit || 'LUFS'}</Text>
+                <Text className="text-gray-600 text-[8px] font-medium">
+                  {m.label}
+                </Text>
+                <Text className={`${m.color} font-mono text-sm font-bold`}>
+                  {display}
+                </Text>
+                <Text className="text-gray-600 text-[7px]">
+                  {m.unit || "LUFS"}
+                </Text>
               </View>
             );
           })}
@@ -202,14 +249,22 @@ export function LufsMeter({ isPlaying, testID }: LufsMeterProps) {
       {history.length > 1 && (
         <View className="h-8 bg-[#0b0b0d] rounded-lg border border-dark-border overflow-hidden px-1 flex-row items-end">
           {history.map((val, i) => {
-            const pct = Math.max(0, Math.min(100, ((val - MIN_LUFS) / RANGE) * 100));
+            const pct = Math.max(
+              0,
+              Math.min(100, ((val - MIN_LUFS) / RANGE) * 100),
+            );
             return (
               <View
                 key={i}
                 className="flex-1 mx-[0.5px] rounded-sm"
                 style={{
                   height: `${pct}%`,
-                  backgroundColor: val > target.integrated + 3 ? '#ff453a' : val > target.integrated - 3 ? '#30d158' : '#5ac8fa',
+                  backgroundColor:
+                    val > target.integrated + 3
+                      ? "#ff453a"
+                      : val > target.integrated - 3
+                        ? "#30d158"
+                        : "#5ac8fa",
                   opacity: 0.5 + (i / history.length) * 0.4,
                 }}
               />
@@ -221,10 +276,12 @@ export function LufsMeter({ isPlaying, testID }: LufsMeterProps) {
       <View className="flex-row items-center justify-between mt-1.5">
         <View className="flex-row items-center gap-2">
           <Text className="text-gray-600 text-[9px]">Loudness Range:</Text>
-          <Text className="text-yellow-400 font-mono text-xs font-bold">{lra.toFixed(1)} LU</Text>
+          <Text className="text-yellow-400 font-mono text-xs font-bold">
+            {lra.toFixed(1)} LU
+          </Text>
         </View>
         <Text className="text-gray-700 text-[8px]">
-          {isPlaying ? '⚡ Analyzing' : '⏸ Paused'}
+          {isPlaying ? "⚡ Analyzing" : "⏸ Paused"}
         </Text>
       </View>
     </View>

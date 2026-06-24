@@ -1,6 +1,15 @@
-import { Platform } from 'react-native';
-import { OpenBandNative } from '../bridge';
-import type { Plugin, MixSnapshot, MetronomeSettings, RecordSettings, TrackDef, GroupDef, SendBus, TrackAmpChain } from './types';
+import { Platform } from "react-native";
+import { OpenBandNative } from "../bridge";
+import type {
+  Plugin,
+  MixSnapshot,
+  MetronomeSettings,
+  RecordSettings,
+  TrackDef,
+  GroupDef,
+  SendBus,
+  TrackAmpChain,
+} from "./types";
 
 export interface ProjectData {
   id: string;
@@ -22,8 +31,8 @@ export interface ProjectData {
   lastSaved: number;
 }
 
-const STORAGE_PREFIX = 'openband_project_';
-const INDEX_KEY = 'openband_project_index';
+const STORAGE_PREFIX = "openband_project_";
+const INDEX_KEY = "openband_project_index";
 
 const pendingBridgeSaves = new Map<string, ProjectData>();
 let bridgeAvailable: boolean | null = null;
@@ -48,7 +57,7 @@ async function flushPendingBridgeSaves(): Promise<void> {
       await saveViaBridge(id, project);
       pendingBridgeSaves.delete(id);
     } catch (e) {
-      console.error('Bridge save failed for', id, e);
+      console.error("Bridge save failed for", id, e);
     }
   }
 }
@@ -56,15 +65,17 @@ async function flushPendingBridgeSaves(): Promise<void> {
 function queueBridgeSave(id: string, project: ProjectData): void {
   pendingBridgeSaves.set(id, project);
   flushPendingBridgeSaves().catch((e: unknown) => {
-    console.warn('Bridge flush failed, save queued:', e);
+    console.warn("Bridge flush failed, save queued:", e);
   });
 }
 
 function getStorage(): Storage | null {
-  if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
+  if (Platform.OS === "web" && typeof localStorage !== "undefined") {
     return localStorage;
   }
-  console.warn('[projectStore] No storage available on this platform — project data will not persist');
+  console.warn(
+    "[projectStore] No storage available on this platform — project data will not persist",
+  );
   return null;
 }
 
@@ -86,7 +97,10 @@ async function deleteViaBridge(id: string): Promise<void> {
   await OpenBandNative.deleteProject(id);
 }
 
-export function saveProject(id: string, data: Omit<ProjectData, 'id' | 'lastSaved'>): void {
+export function saveProject(
+  id: string,
+  data: Omit<ProjectData, "id" | "lastSaved">,
+): void {
   const project: ProjectData = { ...data, id, lastSaved: Date.now() };
   const storage = getStorage();
   if (storage) {
@@ -96,7 +110,7 @@ export function saveProject(id: string, data: Omit<ProjectData, 'id' | 'lastSave
       index[id] = { title: data.title, lastSaved: project.lastSaved };
       storage.setItem(INDEX_KEY, JSON.stringify(index));
     } catch (e) {
-      console.warn('Project save failed:', e);
+      console.warn("Project save failed:", e);
     }
   }
   queueBridgeSave(id, project);
@@ -110,15 +124,17 @@ export function loadProject(id: string): ProjectData | null {
       try {
         return sanitizeProjectData(JSON.parse(raw));
       } catch (e) {
-        console.warn('Failed to parse project data:', e);
+        console.warn("Failed to parse project data:", e);
       }
     }
   }
   return null;
 }
 
-export async function loadProjectFromBridge(id: string): Promise<ProjectData | null> {
-  if (!await checkBridge()) return null;
+export async function loadProjectFromBridge(
+  id: string,
+): Promise<ProjectData | null> {
+  if (!(await checkBridge())) return null;
   return loadViaBridge(id);
 }
 
@@ -135,13 +151,16 @@ export function deleteProject(id: string): void {
 
 function queueBridgeDelete(id: string): void {
   pendingBridgeSaves.delete(id);
-  checkBridge().then(available => {
-    if (available) deleteViaBridge(id).catch((e: unknown) => {
-      console.error('Bridge delete failed:', e);
+  checkBridge()
+    .then((available) => {
+      if (available)
+        deleteViaBridge(id).catch((e: unknown) => {
+          console.error("Bridge delete failed:", e);
+        });
+    })
+    .catch((e: unknown) => {
+      console.error("Bridge check failed:", e);
     });
-  }).catch((e: unknown) => {
-    console.error('Bridge check failed:', e);
-  });
 }
 
 export function exportProject(id: string): string | null {
@@ -151,44 +170,67 @@ export function exportProject(id: string): string | null {
 }
 
 function sanitizeProjectData(raw: unknown): ProjectData | null {
-  if (!raw || typeof raw !== 'object') return null;
+  if (!raw || typeof raw !== "object") return null;
   const data = raw as Record<string, unknown>;
-  if (typeof data.id !== 'string' && data.id !== undefined) return null;
-  if (typeof data.title !== 'string') return null;
-  if (typeof data.bpm !== 'number') return null;
+  if (typeof data.id !== "string" && data.id !== undefined) return null;
+  if (typeof data.title !== "string") return null;
+  if (typeof data.bpm !== "number") return null;
   return {
-    id: data.id as string || `import-${Date.now()}`,
+    id: (data.id as string) || `import-${Date.now()}`,
     title: data.title as string,
-    genre: typeof data.genre === 'string' ? data.genre : '',
-    key: typeof data.key === 'string' ? data.key : 'C',
+    genre: typeof data.genre === "string" ? data.genre : "",
+    key: typeof data.key === "string" ? data.key : "C",
     bpm: data.bpm as number,
     tracks: Array.isArray(data.tracks) ? data.tracks : [],
     groups: Array.isArray(data.groups) ? data.groups : [],
-    trackAssignments: typeof data.trackAssignments === 'object' && data.trackAssignments !== null
-      ? (data.trackAssignments as Record<string, string | null>)
-      : {},
+    trackAssignments:
+      typeof data.trackAssignments === "object" &&
+      data.trackAssignments !== null
+        ? (data.trackAssignments as Record<string, string | null>)
+        : {},
     masterPlugins: Array.isArray(data.masterPlugins) ? data.masterPlugins : [],
-    masteringChain: Array.isArray(data.masteringChain) ? data.masteringChain : [],
+    masteringChain: Array.isArray(data.masteringChain)
+      ? data.masteringChain
+      : [],
     sendBuses: Array.isArray(data.sendBuses) ? data.sendBuses : [],
-    trackAmpChains: typeof data.trackAmpChains === 'object' && data.trackAmpChains !== null
-      ? (data.trackAmpChains as Record<string, TrackAmpChain>)
-      : {},
+    trackAmpChains:
+      typeof data.trackAmpChains === "object" && data.trackAmpChains !== null
+        ? (data.trackAmpChains as Record<string, TrackAmpChain>)
+        : {},
     mixSnapshots: Array.isArray(data.mixSnapshots) ? data.mixSnapshots : [],
-    activeMixId: typeof data.activeMixId === 'string' ? data.activeMixId : undefined,
-    metronome: typeof data.metronome === 'object' && data.metronome !== null
-      ? (data.metronome as ProjectData['metronome'])
-      : { bpm: 120, timeSig: [4, 4] as [number, number], accentInterval: 4, volume: 0.5, enabled: false, countIn: false, countInBars: 2 },
-    recordSettings: typeof data.recordSettings === 'object' && data.recordSettings !== null
-      ? (data.recordSettings as ProjectData['recordSettings'])
-      : { armed: false, inputSource: 'mic', quality: 'high', sampleRate: 44100, mono: false, preRoll: 0 },
-    lastSaved: typeof data.lastSaved === 'number' ? data.lastSaved : Date.now(),
+    activeMixId:
+      typeof data.activeMixId === "string" ? data.activeMixId : undefined,
+    metronome:
+      typeof data.metronome === "object" && data.metronome !== null
+        ? (data.metronome as ProjectData["metronome"])
+        : {
+            bpm: 120,
+            timeSig: [4, 4] as [number, number],
+            accentInterval: 4,
+            volume: 0.5,
+            enabled: false,
+            countIn: false,
+            countInBars: 2,
+          },
+    recordSettings:
+      typeof data.recordSettings === "object" && data.recordSettings !== null
+        ? (data.recordSettings as ProjectData["recordSettings"])
+        : {
+            armed: false,
+            inputSource: "mic",
+            quality: "high",
+            sampleRate: 44100,
+            mono: false,
+            preRoll: 0,
+          },
+    lastSaved: typeof data.lastSaved === "number" ? data.lastSaved : Date.now(),
   };
 }
 
 export function importProject(json: string): string | null {
   try {
     const parsed = JSON.parse(json);
-    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
       const sanitized: Record<string, unknown> = Object.create(null);
       for (const key of Object.keys(parsed)) {
         if (Object.prototype.hasOwnProperty.call(parsed, key)) {
@@ -206,7 +248,10 @@ export function importProject(json: string): string | null {
   }
 }
 
-export function listProjectIndex(): Record<string, { title: string; lastSaved: number }> {
+export function listProjectIndex(): Record<
+  string,
+  { title: string; lastSaved: number }
+> {
   const storage = getStorage();
   if (!storage) return {};
   const raw = storage.getItem(INDEX_KEY);

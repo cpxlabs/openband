@@ -1,11 +1,11 @@
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import { View, Text, Pressable, ScrollView } from "react-native";
 
 const NAV_ITEMS = [
-  { key: 'index', label: 'Feed', icon: '♫' },
-  { key: 'moments', label: 'Momentos', icon: '♡' },
-  { key: 'library', label: 'Biblioteca', icon: '☰' },
-  { key: 'account', label: 'Conta', icon: '●' },
-  { key: 'settings', label: 'Ajustes', icon: '⚙' },
+  { key: "index", label: "Feed", icon: "♫" },
+  { key: "moments", label: "Momentos", icon: "♡" },
+  { key: "library", label: "Biblioteca", icon: "☰" },
+  { key: "account", label: "Conta", icon: "●" },
+  { key: "settings", label: "Ajustes", icon: "⚙" },
 ];
 
 interface SidebarProps {
@@ -17,17 +17,29 @@ interface SidebarProps {
   testID?: string;
 }
 
-export function Sidebar({ currentRoute, onNavigate, isOpen, onClose, isPersistent, testID }: SidebarProps) {
+export function Sidebar({
+  currentRoute,
+  onNavigate,
+  isOpen,
+  onClose,
+  isPersistent,
+  testID,
+}: SidebarProps) {
   if (!isOpen && !isPersistent) return null;
 
   const sidebarContent = (
-    <View testID={testID} className={`bg-dark-surface border-r border-dark-border h-full ${isPersistent ? 'w-56' : 'w-64'}`}>
+    <View
+      testID={testID}
+      className={`bg-dark-surface border-r border-dark-border h-full ${isPersistent ? "w-56" : "w-64"}`}
+    >
       <View className="h-16 border-b border-dark-border items-center justify-center">
         <View className="flex-row items-center gap-2">
           <View className="w-8 h-8 rounded-lg bg-brand-primary items-center justify-center">
             <Text className="text-white text-sm">♫</Text>
           </View>
-          <Text className="text-white font-bold text-base tracking-tight">OpenBand</Text>
+          <Text className="text-white font-bold text-base tracking-tight">
+            OpenBand
+          </Text>
         </View>
       </View>
 
@@ -43,21 +55,29 @@ export function Sidebar({ currentRoute, onNavigate, isOpen, onClose, isPersisten
               }}
               className={`flex-row items-center gap-3 px-3 py-2.5 rounded-xl mb-1 active:opacity-70 ${
                 isActive
-                  ? 'bg-brand-primary/15 border border-brand-primary/30'
-                  : 'border border-transparent'
+                  ? "bg-brand-primary/15 border border-brand-primary/30"
+                  : "border border-transparent"
               }`}
             >
-              <View className={`w-8 h-8 rounded-lg items-center justify-center ${
-                isActive ? 'bg-brand-primary/20' : 'bg-dark-muted/40'
-              }`}>
-                <Text className={`text-base ${isActive ? 'text-brand-primary' : 'text-gray-400'}`}>
+              <View
+                className={`w-8 h-8 rounded-lg items-center justify-center ${
+                  isActive ? "bg-brand-primary/20" : "bg-dark-muted/40"
+                }`}
+              >
+                <Text
+                  className={`text-base ${isActive ? "text-brand-primary" : "text-gray-400"}`}
+                >
                   {item.icon}
                 </Text>
               </View>
-              <Text className={`text-sm font-semibold ${isActive ? 'text-brand-primary' : 'text-gray-300'}`}>
+              <Text
+                className={`text-sm font-semibold ${isActive ? "text-brand-primary" : "text-gray-300"}`}
+              >
                 {item.label}
               </Text>
-              {isActive && <View className="w-1.5 h-1.5 rounded-full bg-brand-primary ml-auto" />}
+              {isActive && (
+                <View className="w-1.5 h-1.5 rounded-full bg-brand-primary ml-auto" />
+              )}
             </Pressable>
           );
         })}
@@ -69,7 +89,9 @@ export function Sidebar({ currentRoute, onNavigate, isOpen, onClose, isPersisten
             <Text className="text-white text-xs">U</Text>
           </View>
           <View className="flex-1">
-            <Text className="text-gray-400 text-[10px] font-medium">OpenBand</Text>
+            <Text className="text-gray-400 text-[10px] font-medium">
+              OpenBand
+            </Text>
             <Text className="text-gray-600 text-[9px]">v1.0.0</Text>
           </View>
         </View>

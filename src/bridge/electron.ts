@@ -1,10 +1,17 @@
-import type { NativeBridge, OpenDialogOptions, SaveDialogOptions, ProjectMeta } from './interface';
+import type {
+  NativeBridge,
+  OpenDialogOptions,
+  SaveDialogOptions,
+  ProjectMeta,
+} from "./interface";
 
 const api: NativeBridge | null =
-  typeof window !== 'undefined' ? ((window as any).electronAPI as NativeBridge ?? null) : null;
+  typeof window !== "undefined"
+    ? (((window as any).electronAPI as NativeBridge) ?? null)
+    : null;
 
 function requireAPI(): NativeBridge {
-  if (!api) throw new Error('electronAPI not available');
+  if (!api) throw new Error("electronAPI not available");
   return api;
 }
 

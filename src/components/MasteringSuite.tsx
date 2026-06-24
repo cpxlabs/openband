@@ -1,23 +1,30 @@
-import { useCallback, useState, useMemo } from 'react';
-import { View, Text, Pressable, ScrollView, Alert, Platform } from 'react-native';
-import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
-import type { Plugin } from '../lib/types';
+import { useCallback, useState, useMemo } from "react";
+import {
+  View,
+  Text,
+  Pressable,
+  ScrollView,
+  Alert,
+  Platform,
+} from "react-native";
+import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
+import type { Plugin } from "../lib/types";
 import {
   MasteringChain,
   MasteringVersionManager,
   MasteringUpload,
   LufsMeter,
   PluginEditor,
-} from '../components';
+} from "../components";
 import {
   MasteringInput,
   MasteringSession,
   buildMasteringChain,
   createVersion,
-} from '../lib/masteringSuite';
-import { OpenBandNative } from '../bridge';
-import { DEMO_AUDIO_URL } from '../lib/constants';
-import { takeMasteringInput } from '../lib/masteringBridge';
+} from "../lib/masteringSuite";
+import { OpenBandNative } from "../bridge";
+import { DEMO_AUDIO_URL } from "../lib/constants";
+import { takeMasteringInput } from "../lib/masteringBridge";
 
 interface MasteringSuiteProps {
   onBack?: () => void;
@@ -35,14 +42,15 @@ function writeWavHeader(
   const byteRate = sampleRate * numChannels * (bitDepth / 8);
   const blockAlign = numChannels * (bitDepth / 8);
   const writeStr = (o: number, str: string) => {
-    for (let i = 0; i < str.length; i++) view.setUint8(o + i, str.charCodeAt(i));
+    for (let i = 0; i < str.length; i++)
+      view.setUint8(o + i, str.charCodeAt(i));
   };
   const write16 = (o: number, v: number) => view.setUint16(o, v, true);
   const write32 = (o: number, v: number) => view.setUint32(o, v, true);
-  writeStr(offset, 'RIFF');
+  writeStr(offset, "RIFF");
   write32(offset + 4, 36 + dataSize);
-  writeStr(offset + 8, 'WAVE');
-  writeStr(offset + 12, 'fmt ');
+  writeStr(offset + 8, "WAVE");
+  writeStr(offset + 12, "fmt ");
   write32(offset + 16, 16);
   write16(offset + 20, 1);
   write16(offset + 22, numChannels);
@@ -50,18 +58,25 @@ function writeWavHeader(
   write32(offset + 28, byteRate);
   write16(offset + 32, blockAlign);
   write16(offset + 34, bitDepth);
-  writeStr(offset + 36, 'data');
+  writeStr(offset + 36, "data");
   write32(offset + 40, dataSize);
 }
 
-async function fetchAndRenderAudio(url: string, sampleRate: number, duration: number): Promise<AudioBuffer> {
-  if (Platform.OS !== 'web') throw new Error('AudioContext unavailable on native');
+async function fetchAndRenderAudio(
+  url: string,
+  sampleRate: number,
+  duration: number,
+): Promise<AudioBuffer> {
+  if (Platform.OS !== "web")
+    throw new Error("AudioContext unavailable on native");
   const response = await fetch(url);
   const raw = await response.arrayBuffer();
   const audioCtx = new AudioContext();
   try {
     const decoded = await audioCtx.decodeAudioData(raw);
-    const renderLen = Math.ceil(sampleRate * Math.min(duration, decoded.duration));
+    const renderLen = Math.ceil(
+      sampleRate * Math.min(duration, decoded.duration),
+    );
     const offlineCtx = new OfflineAudioContext(2, renderLen, sampleRate);
     const source = offlineCtx.createBufferSource();
     source.buffer = decoded;
@@ -94,10 +109,16 @@ function audioBufferToWavBlob(buffer: AudioBuffer, bitDepth: number): Blob {
       const offset = headerSize + (i * numChannels + ch) * bytesPerSample;
 
       if (bitDepth === 16) {
-        const pcm = Math.max(-32768, Math.min(32767, Math.round(sample * 32767)));
+        const pcm = Math.max(
+          -32768,
+          Math.min(32767, Math.round(sample * 32767)),
+        );
         view.setInt16(offset, pcm, true);
       } else if (bitDepth === 24) {
-        const pcm = Math.max(-8388608, Math.min(8388607, Math.round(sample * 8388607)));
+        const pcm = Math.max(
+          -8388608,
+          Math.min(8388607, Math.round(sample * 8388607)),
+        );
         view.setInt8(offset, pcm & 0xff);
         view.setInt8(offset + 1, (pcm >> 8) & 0xff);
         view.setInt8(offset + 2, (pcm >> 16) & 0xff);
@@ -107,7 +128,7 @@ function audioBufferToWavBlob(buffer: AudioBuffer, bitDepth: number): Blob {
     }
   }
 
-  return new Blob([arrayBuffer], { type: 'audio/wav' });
+  return new Blob([arrayBuffer], { type: "audio/wav" });
 }
 
 export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
@@ -116,7 +137,7 @@ export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
     if (pending) {
       return {
         inputFile: {
-          type: 'stems',
+          type: "stems",
           filename: pending.filename,
           size: 0,
           sampleRate: 44100,
@@ -130,24 +151,36 @@ export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
         bypassed: false,
       };
     }
-    return { inputFile: null, versions: [], activeVersionId: null, bypassed: false };
+    return {
+      inputFile: null,
+      versions: [],
+      activeVersionId: null,
+      bypassed: false,
+    };
   });
-  const [inputMode, setInputMode] = useState<'single' | 'stems'>(session.inputFile?.stems ? 'stems' : 'single');
+  const [inputMode, setInputMode] = useState<"single" | "stems">(
+    session.inputFile?.stems ? "stems" : "single",
+  );
   const [plugins, setPlugins] = useState<Plugin[]>(buildMasteringChain());
   const [editingPluginId, setEditingPluginId] = useState<string | null>(null);
   const editingPlugin = useMemo(() => {
     if (!editingPluginId) return null;
-    return plugins.find(p => p.id === editingPluginId) ?? null;
+    return plugins.find((p) => p.id === editingPluginId) ?? null;
   }, [editingPluginId, plugins]);
   const [showExport, setShowExport] = useState(false);
-  const [exportFormat, setExportFormat] = useState<'wav' | 'mp3'>('wav');
+  const [exportFormat, setExportFormat] = useState<"wav" | "mp3">("wav");
   const [exportBitDepth, setExportBitDepth] = useState<16 | 24>(24);
-  const [exportSampleRate, setExportSampleRate] = useState<44100 | 48000 | 96000>(44100);
+  const [exportSampleRate, setExportSampleRate] = useState<
+    44100 | 48000 | 96000
+  >(44100);
   const [exporting, setExporting] = useState(false);
   const [seekBarWidth, setSeekBarWidth] = useState(0);
 
   const audioSource = useMemo(() => {
-    if (session.inputFile?.url && !session.inputFile.url.startsWith('audio://')) {
+    if (
+      session.inputFile?.url &&
+      !session.inputFile.url.startsWith("audio://")
+    ) {
       return session.inputFile.url;
     }
     return DEMO_AUDIO_URL;
@@ -164,70 +197,98 @@ export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
     }
   }, [player, playerStatus.playing]);
 
-  const handleSeek = useCallback((pct: number) => {
-    if (playerStatus.duration) {
-      player.seekTo(pct * playerStatus.duration);
-    }
-  }, [player, playerStatus.duration]);
+  const handleSeek = useCallback(
+    (pct: number) => {
+      if (playerStatus.duration) {
+        player.seekTo(pct * playerStatus.duration);
+      }
+    },
+    [player, playerStatus.duration],
+  );
 
   function formatTime(s: number): string {
     const m = Math.floor(s / 60);
     const sec = Math.floor(s % 60);
-    return `${m}:${sec.toString().padStart(2, '0')}`;
+    return `${m}:${sec.toString().padStart(2, "0")}`;
   }
 
   const handleToggle = useCallback((pluginId: string) => {
-    setPlugins(prev => prev.map(p => p.id === pluginId ? { ...p, enabled: !p.enabled } : p));
+    setPlugins((prev) =>
+      prev.map((p) => (p.id === pluginId ? { ...p, enabled: !p.enabled } : p)),
+    );
   }, []);
 
-  const handleParamChange = useCallback((pluginId: string, paramId: string, value: number) => {
-    setPlugins(prev => prev.map(p =>
-      p.id === pluginId ? { ...p, params: { ...p.params, [paramId]: value } } : p
-    ));
-  }, []);
+  const handleParamChange = useCallback(
+    (pluginId: string, paramId: string, value: number) => {
+      setPlugins((prev) =>
+        prev.map((p) =>
+          p.id === pluginId
+            ? { ...p, params: { ...p.params, [paramId]: value } }
+            : p,
+        ),
+      );
+    },
+    [],
+  );
 
   const handleReset = useCallback(() => {
     setPlugins(buildMasteringChain());
   }, []);
 
-  const handleSaveVersion = useCallback((name: string, notes: string) => {
-    const version = createVersion(plugins, name, notes);
-    setSession(prev => ({
-      ...prev,
-      versions: [...prev.versions, version],
-      activeVersionId: version.id,
-    }));
-  }, [plugins]);
+  const handleSaveVersion = useCallback(
+    (name: string, notes: string) => {
+      const version = createVersion(plugins, name, notes);
+      setSession((prev) => ({
+        ...prev,
+        versions: [...prev.versions, version],
+        activeVersionId: version.id,
+      }));
+    },
+    [plugins],
+  );
 
-  const handleLoadVersion = useCallback((id: string) => {
-    const version = session.versions.find(v => v.id === id);
-    if (version) {
-      setPlugins(version.plugins.map(p => ({ ...p, params: { ...p.params } })));
-      setSession(prev => ({ ...prev, activeVersionId: id, bypassed: false }));
-    }
-  }, [session.versions]);
+  const handleLoadVersion = useCallback(
+    (id: string) => {
+      const version = session.versions.find((v) => v.id === id);
+      if (version) {
+        setPlugins(
+          version.plugins.map((p) => ({ ...p, params: { ...p.params } })),
+        );
+        setSession((prev) => ({
+          ...prev,
+          activeVersionId: id,
+          bypassed: false,
+        }));
+      }
+    },
+    [session.versions],
+  );
 
   const handleDeleteVersion = useCallback((id: string) => {
-    setSession(prev => ({
+    setSession((prev) => ({
       ...prev,
-      versions: prev.versions.filter(v => v.id !== id),
-      activeVersionId: prev.activeVersionId === id ? null : prev.activeVersionId,
+      versions: prev.versions.filter((v) => v.id !== id),
+      activeVersionId:
+        prev.activeVersionId === id ? null : prev.activeVersionId,
     }));
   }, []);
 
   const handleToggleBypass = useCallback(() => {
-    setSession(prev => ({ ...prev, bypassed: !prev.bypassed }));
+    setSession((prev) => ({ ...prev, bypassed: !prev.bypassed }));
   }, []);
 
   const handleUpload = useCallback(() => {
-    if (Platform.OS !== 'web') return;
-    const inputEl = document.createElement('input');
-    inputEl.type = 'file';
-    inputEl.accept = '.wav,.mp3,.aiff,.flac,.ogg,.m4a';
+    if (Platform.OS !== "web") return;
+    const inputEl = document.createElement("input");
+    inputEl.type = "file";
+    inputEl.accept = ".wav,.mp3,.aiff,.flac,.ogg,.m4a";
     inputEl.onchange = async (e: Event) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
-      if (file.size > 200 * 1024 * 1024) { Alert.alert('Erro', 'Arquivo muito grande (max 200MB).'); return; }
+      if (file.size > 200 * 1024 * 1024) {
+        Alert.alert("Erro", "Arquivo muito grande (max 200MB).");
+        return;
+      }
       const url = URL.createObjectURL(file);
       const input: MasteringInput = {
         type: inputMode,
@@ -237,36 +298,40 @@ export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
         bitDepth: 24,
         duration: 180,
         url,
-        stems: inputMode === 'stems'
-          ? [
-              { name: 'Drums', url },
-              { name: 'Bass', url },
-              { name: 'Vocals', url },
-              { name: 'Melodies', url },
-            ]
-          : undefined,
+        stems:
+          inputMode === "stems"
+            ? [
+                { name: "Drums", url },
+                { name: "Bass", url },
+                { name: "Vocals", url },
+                { name: "Melodies", url },
+              ]
+            : undefined,
       };
-      setSession(prev => ({ ...prev, inputFile: input }));
+      setSession((prev) => ({ ...prev, inputFile: input }));
     };
     inputEl.click();
   }, [inputMode]);
 
   const handleClearInput = useCallback(() => {
     player.pause();
-    setSession(prev => ({ ...prev, inputFile: null }));
+    setSession((prev) => ({ ...prev, inputFile: null }));
   }, [player]);
 
   const handleExport = useCallback(async () => {
-    if (Platform.OS !== 'web') {
-      Alert.alert('Indisponível', 'Exportação está disponível apenas na versão web.');
+    if (Platform.OS !== "web") {
+      Alert.alert(
+        "Indisponível",
+        "Exportação está disponível apenas na versão web.",
+      );
       setExporting(false);
       return;
     }
     setExporting(true);
     try {
-      const sr = exportFormat === 'mp3' ? 44100 : exportSampleRate;
-      const bd = exportFormat === 'mp3' ? 16 : exportBitDepth;
-      const ext = exportFormat === 'mp3' ? '.mp3' : '.wav';
+      const sr = exportFormat === "mp3" ? 44100 : exportSampleRate;
+      const bd = exportFormat === "mp3" ? 16 : exportBitDepth;
+      const ext = exportFormat === "mp3" ? ".mp3" : ".wav";
       const sourceUrl = session.inputFile?.url || DEMO_AUDIO_URL;
       const duration = session.inputFile?.duration ?? 30;
 
@@ -274,23 +339,27 @@ export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
       const blob = audioBufferToWavBlob(rendered, bd);
 
       const filename = session.inputFile
-        ? session.inputFile.filename.replace(/\.[^/.]+$/, '') + '_master'
-        : 'master_export';
-      const safeName = filename.replace(/[^a-zA-Z0-9_-]/g, '').replace(/\s+/g, '_') + ext;
+        ? session.inputFile.filename.replace(/\.[^/.]+$/, "") + "_master"
+        : "master_export";
+      const safeName =
+        filename.replace(/[^a-zA-Z0-9_-]/g, "").replace(/\s+/g, "_") + ext;
 
       const path = await OpenBandNative.showSaveDialog({
         defaultPath: safeName,
-        filters: [{ name: 'Audio', extensions: [exportFormat] }],
+        filters: [{ name: "Audio", extensions: [exportFormat] }],
       });
 
       if (path) {
         const bytes = await blob.arrayBuffer();
         await OpenBandNative.writeFile(path, bytes);
-        Alert.alert('Exportado', `Master exportado com áudio (${bd}bit, ${sr}Hz)`);
+        Alert.alert(
+          "Exportado",
+          `Master exportado com áudio (${bd}bit, ${sr}Hz)`,
+        );
       }
     } catch (e) {
-      console.error('Export failed:', e);
-      Alert.alert('Erro', 'Falha ao exportar master.');
+      console.error("Export failed:", e);
+      Alert.alert("Erro", "Falha ao exportar master.");
     }
     setExporting(false);
     setShowExport(false);
@@ -301,13 +370,20 @@ export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
       <View className="flex-row items-center justify-between px-4 py-3 border-b border-dark-border">
         <View className="flex-row items-center gap-3">
           {onBack && (
-            <Pressable onPress={onBack} className="w-8 h-8 rounded-lg bg-dark-surface items-center justify-center active:opacity-70">
+            <Pressable
+              onPress={onBack}
+              className="w-8 h-8 rounded-lg bg-dark-surface items-center justify-center active:opacity-70"
+            >
               <Text className="text-gray-400 text-lg">←</Text>
             </Pressable>
           )}
           <View>
-            <Text className="text-white text-base font-bold">Mastering Suite</Text>
-            <Text className="text-gray-500 text-[10px] uppercase tracking-wider">OpenBand</Text>
+            <Text className="text-white text-base font-bold">
+              Mastering Suite
+            </Text>
+            <Text className="text-gray-500 text-[10px] uppercase tracking-wider">
+              OpenBand
+            </Text>
           </View>
         </View>
         <Pressable
@@ -318,7 +394,10 @@ export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
         </Pressable>
       </View>
 
-      <ScrollView className="flex-1 px-4 pt-3 pb-6" showsVerticalScrollIndicator={false}>
+      <ScrollView
+        className="flex-1 px-4 pt-3 pb-6"
+        showsVerticalScrollIndicator={false}
+      >
         <MasteringUpload
           input={session.inputFile}
           mode={inputMode}
@@ -334,19 +413,24 @@ export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
               className="w-10 h-10 rounded-full bg-brand-accent items-center justify-center active:opacity-80"
             >
               <Text className="text-white text-lg">
-                {playerStatus.playing ? '⏸' : '▶'}
+                {playerStatus.playing ? "⏸" : "▶"}
               </Text>
             </Pressable>
             <View className="flex-1">
-              <View className="h-2 bg-dark-muted rounded-full overflow-hidden"
-                onLayout={(e) => setSeekBarWidth(e.nativeEvent.layout.width)}>
+              <View
+                className="h-2 bg-dark-muted rounded-full overflow-hidden"
+                onLayout={(e) => setSeekBarWidth(e.nativeEvent.layout.width)}
+              >
                 <Pressable
                   onPress={(e) => {
                     const x = e.nativeEvent.locationX;
                     handleSeek(seekBarWidth > 0 ? x / seekBarWidth : 0);
                   }}
                   className="h-full"
-                  style={{ width: `${playerStatus.duration > 0 ? (playerStatus.currentTime / playerStatus.duration) * 100 : 0}%`, backgroundColor: '#007aff' }}
+                  style={{
+                    width: `${playerStatus.duration > 0 ? (playerStatus.currentTime / playerStatus.duration) * 100 : 0}%`,
+                    backgroundColor: "#007aff",
+                  }}
                 />
               </View>
               <View className="flex-row justify-between mt-1">
@@ -354,7 +438,9 @@ export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
                   {formatTime(playerStatus.currentTime)}
                 </Text>
                 <Text className="text-gray-500 text-[10px] font-mono">
-                  {playerStatus.isLoaded ? formatTime(playerStatus.duration) : '--:--'}
+                  {playerStatus.isLoaded
+                    ? formatTime(playerStatus.duration)
+                    : "--:--"}
                 </Text>
               </View>
             </View>
@@ -389,13 +475,17 @@ export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
         <View className="mt-4 mb-8">
           <View className="flex-row items-center gap-2 mb-2">
             <View className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-            <Text className="text-gray-400 text-xs font-semibold uppercase tracking-wider">Export</Text>
+            <Text className="text-gray-400 text-xs font-semibold uppercase tracking-wider">
+              Export
+            </Text>
           </View>
           <Pressable
             onPress={() => setShowExport(true)}
             className="bg-purple-600/30 rounded-xl border border-purple-500/30 p-4 items-center active:opacity-80"
           >
-            <Text className="text-white text-sm font-bold">Exportar Master</Text>
+            <Text className="text-white text-sm font-bold">
+              Exportar Master
+            </Text>
             <Text className="text-gray-400 text-[10px] mt-1">
               WAV {exportBitDepth}-bit / {exportSampleRate / 1000}kHz
             </Text>
@@ -407,40 +497,59 @@ export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
         <View className="absolute inset-0 z-50 bg-black/70 justify-end">
           <View className="bg-dark-elevated border-t border-dark-border rounded-t-3xl p-5">
             <View className="flex-row items-center justify-between mb-4">
-              <Text className="text-white text-base font-bold">Exportar Master</Text>
-              <Pressable onPress={() => setShowExport(false)} className="w-8 h-8 rounded-full bg-dark-surface items-center justify-center">
+              <Text className="text-white text-base font-bold">
+                Exportar Master
+              </Text>
+              <Pressable
+                onPress={() => setShowExport(false)}
+                className="w-8 h-8 rounded-full bg-dark-surface items-center justify-center"
+              >
                 <Text className="text-gray-400 text-lg">✕</Text>
               </Pressable>
             </View>
 
             <View className="mb-4">
-              <Text className="text-gray-400 text-xs font-medium mb-2">Formato</Text>
+              <Text className="text-gray-400 text-xs font-medium mb-2">
+                Formato
+              </Text>
               <View className="flex-row gap-2">
-                {(['wav', 'mp3'] as const).map(f => (
+                {(["wav", "mp3"] as const).map((f) => (
                   <Pressable
                     key={f}
                     onPress={() => setExportFormat(f)}
-                    className={`flex-1 py-3 rounded-xl items-center border ${exportFormat === f ? 'bg-brand-accent/20 border-brand-accent' : 'bg-dark-surface border-dark-border'}`}
+                    className={`flex-1 py-3 rounded-xl items-center border ${exportFormat === f ? "bg-brand-accent/20 border-brand-accent" : "bg-dark-surface border-dark-border"}`}
                   >
-                    <Text className={`text-xs font-bold uppercase ${exportFormat === f ? 'text-brand-accent' : 'text-gray-400'}`}>{f}</Text>
+                    <Text
+                      className={`text-xs font-bold uppercase ${exportFormat === f ? "text-brand-accent" : "text-gray-400"}`}
+                    >
+                      {f}
+                    </Text>
                   </Pressable>
                 ))}
               </View>
             </View>
 
-            {exportFormat === 'wav' && (
+            {exportFormat === "wav" && (
               <View className="mb-4">
-                <Text className="text-gray-400 text-xs font-medium mb-2">Bit Depth</Text>
+                <Text className="text-gray-400 text-xs font-medium mb-2">
+                  Bit Depth
+                </Text>
                 <View className="flex-row gap-2">
-                  {([16, 24] as const).map(b => (
+                  {([16, 24] as const).map((b) => (
                     <Pressable
                       key={b}
                       onPress={() => setExportBitDepth(b)}
-                      className={`flex-1 py-3 rounded-xl items-center border ${exportBitDepth === b ? 'bg-brand-accent/20 border-brand-accent' : 'bg-dark-surface border-dark-border'}`}
+                      className={`flex-1 py-3 rounded-xl items-center border ${exportBitDepth === b ? "bg-brand-accent/20 border-brand-accent" : "bg-dark-surface border-dark-border"}`}
                     >
-                      <Text className={`text-xs font-bold ${exportBitDepth === b ? 'text-brand-accent' : 'text-gray-400'}`}>{b}-bit</Text>
-                      <Text className={`text-[8px] ${exportBitDepth === b ? 'text-brand-accent/70' : 'text-gray-600'}`}>
-                        {b === 16 ? 'Com dithering' : 'Alta resolução'}
+                      <Text
+                        className={`text-xs font-bold ${exportBitDepth === b ? "text-brand-accent" : "text-gray-400"}`}
+                      >
+                        {b}-bit
+                      </Text>
+                      <Text
+                        className={`text-[8px] ${exportBitDepth === b ? "text-brand-accent/70" : "text-gray-600"}`}
+                      >
+                        {b === 16 ? "Com dithering" : "Alta resolução"}
                       </Text>
                     </Pressable>
                   ))}
@@ -448,23 +557,31 @@ export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
               </View>
             )}
 
-            {exportFormat === 'mp3' && (
+            {exportFormat === "mp3" && (
               <View className="mb-4 bg-dark-surface rounded-xl border border-dark-border p-3">
                 <Text className="text-gray-400 text-xs">MP3 320 kbps CBR</Text>
-                <Text className="text-gray-600 text-[10px] mt-0.5">Para distribuição rápida</Text>
+                <Text className="text-gray-600 text-[10px] mt-0.5">
+                  Para distribuição rápida
+                </Text>
               </View>
             )}
 
             <View className="mb-4">
-              <Text className="text-gray-400 text-xs font-medium mb-2">Sample Rate</Text>
+              <Text className="text-gray-400 text-xs font-medium mb-2">
+                Sample Rate
+              </Text>
               <View className="flex-row gap-2">
-                {([44100, 48000, 96000] as const).map(r => (
+                {([44100, 48000, 96000] as const).map((r) => (
                   <Pressable
                     key={r}
                     onPress={() => setExportSampleRate(r)}
-                    className={`flex-1 py-3 rounded-xl items-center border ${exportSampleRate === r ? 'bg-brand-accent/20 border-brand-accent' : 'bg-dark-surface border-dark-border'}`}
+                    className={`flex-1 py-3 rounded-xl items-center border ${exportSampleRate === r ? "bg-brand-accent/20 border-brand-accent" : "bg-dark-surface border-dark-border"}`}
                   >
-                    <Text className={`text-xs font-bold ${exportSampleRate === r ? 'text-brand-accent' : 'text-gray-400'}`}>{r / 1000}kHz</Text>
+                    <Text
+                      className={`text-xs font-bold ${exportSampleRate === r ? "text-brand-accent" : "text-gray-400"}`}
+                    >
+                      {r / 1000}kHz
+                    </Text>
                   </Pressable>
                 ))}
               </View>
@@ -473,10 +590,16 @@ export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
             <Pressable
               onPress={handleExport}
               disabled={!session.inputFile || exporting}
-              className={`py-3 rounded-xl items-center ${session.inputFile && !exporting ? 'bg-brand-accent' : 'bg-dark-muted'}`}
+              className={`py-3 rounded-xl items-center ${session.inputFile && !exporting ? "bg-brand-accent" : "bg-dark-muted"}`}
             >
-              <Text className={`text-sm font-bold ${session.inputFile && !exporting ? 'text-white' : 'text-gray-500'}`}>
-                {exporting ? 'Renderizando...' : session.inputFile ? 'Renderizar & Exportar' : 'Faça upload primeiro'}
+              <Text
+                className={`text-sm font-bold ${session.inputFile && !exporting ? "text-white" : "text-gray-500"}`}
+              >
+                {exporting
+                  ? "Renderizando..."
+                  : session.inputFile
+                    ? "Renderizar & Exportar"
+                    : "Faça upload primeiro"}
               </Text>
             </Pressable>
           </View>

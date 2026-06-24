@@ -1,9 +1,9 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import { Card, CardRow, CardIcon } from '../src/components';
-import { Text, View } from 'react-native';
+import type { Meta, StoryObj } from "@storybook/react";
+import { Card, CardRow, CardIcon } from "../src/components";
+import { Text, View } from "react-native";
 
 const meta: Meta<typeof Card> = {
-  title: 'Card',
+  title: "Card",
   component: Card,
   decorators: [
     (Story) => (
@@ -20,7 +20,9 @@ type Story = StoryObj<typeof meta>;
 const cardContent = (
   <View className="p-4">
     <Text className="text-white font-bold">Card Title</Text>
-    <Text className="text-gray-400 text-sm mt-1">This is a card component used for grouping content.</Text>
+    <Text className="text-gray-400 text-sm mt-1">
+      This is a card component used for grouping content.
+    </Text>
   </View>
 );
 
@@ -47,7 +49,7 @@ export const ActiveBorder: Story = {
 export const Pressable: Story = {
   args: {
     children: (
-      <CardRow onPress={() => alert('Row pressed')}>
+      <CardRow onPress={() => alert("Row pressed")}>
         <CardIcon icon="🎵" />
         <View className="ml-3">
           <Text className="text-white font-semibold">Track Name</Text>

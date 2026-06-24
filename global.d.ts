@@ -1,4 +1,4 @@
-declare module '*.css';
+declare module "*.css";
 
 interface ElectronAPI {
   showOpenDialog(options: any): Promise<string | null>;

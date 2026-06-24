@@ -1,24 +1,24 @@
-import 'react-native-url-polyfill/auto';
-import * as SecureStore from 'expo-secure-store';
-import { createClient, type Session } from '@supabase/supabase-js';
-import { Platform } from 'react-native';
+import "react-native-url-polyfill/auto";
+import * as SecureStore from "expo-secure-store";
+import { createClient, type Session } from "@supabase/supabase-js";
+import { Platform } from "react-native";
 
 const ExpoSecureStoreAdapter = {
   getItem: async (key: string) => {
-    if (Platform.OS === 'web') {
+    if (Platform.OS === "web") {
       return window.sessionStorage.getItem(key);
     }
     return SecureStore.getItemAsync(key);
   },
   setItem: async (key: string, value: string) => {
-    if (Platform.OS === 'web') {
+    if (Platform.OS === "web") {
       window.sessionStorage.setItem(key, value);
       return;
     }
     return SecureStore.setItemAsync(key, value);
   },
   removeItem: async (key: string) => {
-    if (Platform.OS === 'web') {
+    if (Platform.OS === "web") {
       window.sessionStorage.removeItem(key);
       return;
     }
@@ -27,12 +27,12 @@ const ExpoSecureStoreAdapter = {
 };
 
 function createMockClient() {
-  let mockSession: Session | null = makeMockSession('dev@openband.app', 'Dev');
+  let mockSession: Session | null = makeMockSession("dev@openband.app", "Dev");
   type AuthListener = (event: string, session: Session | null) => void;
   const listeners = new Set<AuthListener>();
 
   const userStore: Record<string, { email: string; name: string }> = {
-    'dev@openband.app': { email: 'dev@openband.app', name: 'Dev' },
+    "dev@openband.app": { email: "dev@openband.app", name: "Dev" },
   };
 
   function notify(event: string, session: Session | null) {
@@ -41,18 +41,18 @@ function createMockClient() {
 
   function makeMockSession(email: string, name?: string): Session {
     return {
-      access_token: 'mock-token',
-      refresh_token: 'mock-refresh',
+      access_token: "mock-token",
+      refresh_token: "mock-refresh",
       expires_in: 86400,
       expires_at: Math.floor(Date.now() / 1000) + 86400,
-      token_type: 'bearer',
+      token_type: "bearer",
       user: {
-        id: 'mock-user-id',
-        aud: 'authenticated',
-        role: 'authenticated',
+        id: "mock-user-id",
+        aud: "authenticated",
+        role: "authenticated",
         email: email,
         app_metadata: {},
-        user_metadata: { name: name ?? email.split('@')[0] },
+        user_metadata: { name: name ?? email.split("@")[0] },
         identities: [],
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -61,18 +61,22 @@ function createMockClient() {
   }
 
   return {
-    from: () => { throw new Error('Mock client does not support database queries'); },
+    from: () => {
+      throw new Error("Mock client does not support database queries");
+    },
     auth: {
       getSession: async () => ({ data: { session: mockSession }, error: null }),
       onAuthStateChange: (callback: AuthListener) => {
         listeners.add(callback);
         return {
-          data: { subscription: { unsubscribe: () => listeners.delete(callback) } },
+          data: {
+            subscription: { unsubscribe: () => listeners.delete(callback) },
+          },
         };
       },
       signOut: async () => {
         mockSession = null;
-        notify('SIGNED_OUT', null);
+        notify("SIGNED_OUT", null);
         return { error: null };
       },
       signInWithPassword: async ({ email }: { email: string }) => {
@@ -80,15 +84,23 @@ function createMockClient() {
         const name = existing?.name;
         const session = makeMockSession(email, name);
         mockSession = session;
-        notify('SIGNED_IN', session);
+        notify("SIGNED_IN", session);
         return { data: { user: session.user, session }, error: null };
       },
-      signUp: async ({ email, password: _password, options }: { email: string; password: string; options?: { data?: Record<string, unknown> } }) => {
-        const name = (options?.data?.name as string) ?? email.split('@')[0];
+      signUp: async ({
+        email,
+        password: _password,
+        options,
+      }: {
+        email: string;
+        password: string;
+        options?: { data?: Record<string, unknown> };
+      }) => {
+        const name = (options?.data?.name as string) ?? email.split("@")[0];
         userStore[email] = { email, name };
         const session = makeMockSession(email, name);
         mockSession = session;
-        notify('SIGNED_IN', session);
+        notify("SIGNED_IN", session);
         return { data: { user: session.user, session }, error: null };
       },
       updateUser: async (attributes: { data?: { name?: string } }) => {
@@ -99,7 +111,10 @@ function createMockClient() {
           };
           const email = mockSession.user.email;
           if (email) {
-            userStore[email] = { ...userStore[email], name: attributes.data.name };
+            userStore[email] = {
+              ...userStore[email],
+              name: attributes.data.name,
+            };
           }
         }
         return { data: { user: mockSession?.user ?? null }, error: null };
@@ -111,13 +126,14 @@ function createMockClient() {
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
-export const supabase = supabaseUrl && supabaseAnonKey
-  ? createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        storage: ExpoSecureStoreAdapter,
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: false,
-      },
-    })
-  : (createMockClient() as unknown as ReturnType<typeof createClient>);
+export const supabase =
+  supabaseUrl && supabaseAnonKey
+    ? createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          storage: ExpoSecureStoreAdapter,
+          autoRefreshToken: true,
+          persistSession: true,
+          detectSessionInUrl: false,
+        },
+      })
+    : (createMockClient() as unknown as ReturnType<typeof createClient>);

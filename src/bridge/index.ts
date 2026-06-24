@@ -1,12 +1,17 @@
-import type { NativeBridge } from './interface';
-import { electronBridge } from './electron';
-import { tauriBridge } from './tauri';
-import { browserBridge } from './browser';
+import type { NativeBridge } from "./interface";
+import { electronBridge } from "./electron";
+import { tauriBridge } from "./tauri";
+import { browserBridge } from "./browser";
 
-export type { NativeBridge, OpenDialogOptions, SaveDialogOptions, ProjectMeta } from './interface';
+export type {
+  NativeBridge,
+  OpenDialogOptions,
+  SaveDialogOptions,
+  ProjectMeta,
+} from "./interface";
 
 function detectBridge(): NativeBridge {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return browserBridge;
   }
 

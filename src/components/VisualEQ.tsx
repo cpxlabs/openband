@@ -1,5 +1,5 @@
-import { useState, useCallback, useMemo } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { useState, useCallback, useMemo } from "react";
+import { View, Text, Pressable } from "react-native";
 
 interface EqBand {
   freq: number;
@@ -18,7 +18,7 @@ interface VisualEQProps {
 
 const PRESETS: { name: string; bands: EqBand[] }[] = [
   {
-    name: 'Flat',
+    name: "Flat",
     bands: [
       { freq: 30, gain: 0, q: 0.71, type: 3, enabled: 0 },
       { freq: 120, gain: 0, q: 0.71, type: 1, enabled: 0 },
@@ -31,7 +31,7 @@ const PRESETS: { name: string; bands: EqBand[] }[] = [
     ],
   },
   {
-    name: 'Voice',
+    name: "Voice",
     bands: [
       { freq: 30, gain: 0, q: 0.71, type: 3, enabled: 0 },
       { freq: 120, gain: 0.5, q: 0.71, type: 1, enabled: 1 },
@@ -44,7 +44,7 @@ const PRESETS: { name: string; bands: EqBand[] }[] = [
     ],
   },
   {
-    name: 'Guitar',
+    name: "Guitar",
     bands: [
       { freq: 30, gain: 0, q: 0.71, type: 3, enabled: 0 },
       { freq: 80, gain: 2, q: 0.6, type: 1, enabled: 1 },
@@ -57,7 +57,7 @@ const PRESETS: { name: string; bands: EqBand[] }[] = [
     ],
   },
   {
-    name: 'Bass',
+    name: "Bass",
     bands: [
       { freq: 30, gain: 4, q: 0.71, type: 3, enabled: 0 },
       { freq: 60, gain: 3, q: 0.5, type: 1, enabled: 1 },
@@ -70,7 +70,7 @@ const PRESETS: { name: string; bands: EqBand[] }[] = [
     ],
   },
   {
-    name: 'Master',
+    name: "Master",
     bands: [
       { freq: 30, gain: -1, q: 0.71, type: 3, enabled: 0 },
       { freq: 60, gain: -0.5, q: 0.71, type: 1, enabled: 1 },
@@ -84,7 +84,12 @@ const PRESETS: { name: string; bands: EqBand[] }[] = [
   },
 ];
 
-export function VisualEQ({ bands, onChange, height = 140, testID }: VisualEQProps) {
+export function VisualEQ({
+  bands,
+  onChange,
+  height = 140,
+  testID,
+}: VisualEQProps) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [showPresets, setShowPresets] = useState(false);
 
@@ -99,11 +104,14 @@ export function VisualEQ({ bands, onChange, height = 140, testID }: VisualEQProp
     return ((18 - gain) / 36) * h;
   }, []);
 
-  const applyPreset = useCallback((presetBands: EqBand[]) => {
-    presetBands.forEach((band, i) => {
-      if (i < bands.length) onChange(i, band);
-    });
-  }, [bands, onChange]);
+  const applyPreset = useCallback(
+    (presetBands: EqBand[]) => {
+      presetBands.forEach((band, i) => {
+        if (i < bands.length) onChange(i, band);
+      });
+    },
+    [bands, onChange],
+  );
 
   const w = 320;
   const h = height;
@@ -128,9 +136,13 @@ export function VisualEQ({ bands, onChange, height = 140, testID }: VisualEQProp
         } else if (type === 4) {
           contribution = g * Math.exp(-0.5 * Math.pow(Math.log2(ratio) * 2, 2));
         } else if (type === 0) {
-          if (freq < f) contribution = g * 0.5 * (1 + Math.cos(Math.PI * Math.log2(ratio) / 2));
+          if (freq < f)
+            contribution =
+              g * 0.5 * (1 + Math.cos((Math.PI * Math.log2(ratio)) / 2));
         } else if (type === 5) {
-          if (freq > f) contribution = g * 0.5 * (1 + Math.cos(Math.PI * Math.log2(ratio) / 2));
+          if (freq > f)
+            contribution =
+              g * 0.5 * (1 + Math.cos((Math.PI * Math.log2(ratio)) / 2));
         }
         totalGain += contribution;
       }
@@ -140,18 +152,29 @@ export function VisualEQ({ bands, onChange, height = 140, testID }: VisualEQProp
   }, [bands]);
 
   return (
-    <View testID={testID} className="bg-dark-bg rounded-xl border border-dark-border overflow-hidden">
+    <View
+      testID={testID}
+      className="bg-dark-bg rounded-xl border border-dark-border overflow-hidden"
+    >
       <View className="flex-row items-center justify-between px-3 py-1.5 bg-dark-surface border-b border-dark-border">
         <Text className="text-gray-400 text-[10px] font-medium">Visual EQ</Text>
-        <Pressable onPress={() => setShowPresets(!showPresets)} className="px-2 py-0.5 rounded bg-dark-muted active:opacity-70">
+        <Pressable
+          onPress={() => setShowPresets(!showPresets)}
+          className="px-2 py-0.5 rounded bg-dark-muted active:opacity-70"
+        >
           <Text className="text-gray-400 text-[9px]">Presets</Text>
         </Pressable>
       </View>
 
       {showPresets && (
         <View className="flex-row flex-wrap gap-1 px-3 py-2 bg-dark-surface/50 border-b border-dark-border">
-          {PRESETS.map(p => (
-            <Pressable key={p.name} onPress={() => { applyPreset(p.bands); setShowPresets(false); }}
+          {PRESETS.map((p) => (
+            <Pressable
+              key={p.name}
+              onPress={() => {
+                applyPreset(p.bands);
+                setShowPresets(false);
+              }}
               className="px-2 py-0.5 rounded bg-dark-muted border border-dark-border active:opacity-70"
             >
               <Text className="text-gray-300 text-[9px]">{p.name}</Text>
@@ -170,20 +193,36 @@ export function VisualEQ({ bands, onChange, height = 140, testID }: VisualEQProp
           const y = e.nativeEvent.locationY;
           const minLog = Math.log(20);
           const maxLog = Math.log(20000);
-          const freq = Math.round(Math.exp(minLog + (x / w) * (maxLog - minLog)));
+          const freq = Math.round(
+            Math.exp(minLog + (x / w) * (maxLog - minLog)),
+          );
           const gain = Math.round((18 - (y / h) * 36) / 0.5) * 0.5;
-          onChange(dragIndex, { freq: Math.max(20, Math.min(20000, freq)), gain: Math.max(-18, Math.min(18, gain)) });
+          onChange(dragIndex, {
+            freq: Math.max(20, Math.min(20000, freq)),
+            gain: Math.max(-18, Math.min(18, gain)),
+          });
         }}
         onResponderRelease={() => setDragIndex(null)}
       >
         {/* 0dB line */}
-        <View className="absolute left-0 right-0" style={{ top: h / 2, height: 1, backgroundColor: '#444' }} />
+        <View
+          className="absolute left-0 right-0"
+          style={{ top: h / 2, height: 1, backgroundColor: "#444" }}
+        />
 
         {/* Grid lines */}
-        {[50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000].map(f => {
+        {[50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000].map((f) => {
           const isEven = f >= 1000;
           return (
-            <View key={f} className="absolute top-0 bottom-0" style={{ left: freqToX(f, w), width: 1, backgroundColor: isEven ? '#333' : '#222' }} />
+            <View
+              key={f}
+              className="absolute top-0 bottom-0"
+              style={{
+                left: freqToX(f, w),
+                width: 1,
+                backgroundColor: isEven ? "#333" : "#222",
+              }}
+            />
           );
         })}
 
@@ -198,7 +237,7 @@ export function VisualEQ({ bands, onChange, height = 140, testID }: VisualEQProp
                 left: `${(i / 99) * 100}%`,
                 width: `${100 / 99}%`,
                 height: `${barHeight}%`,
-                backgroundColor: seg.gain >= 0 ? '#22c55e' : '#ef4444',
+                backgroundColor: seg.gain >= 0 ? "#22c55e" : "#ef4444",
                 opacity: 0.6,
               }}
             />
@@ -218,8 +257,8 @@ export function VisualEQ({ bands, onChange, height = 140, testID }: VisualEQProp
               style={{
                 left: bx,
                 top: by,
-                backgroundColor: dragIndex === i ? '#fff' : '#5ac8fa',
-                borderColor: 'white',
+                backgroundColor: dragIndex === i ? "#fff" : "#5ac8fa",
+                borderColor: "white",
               }}
             />
           );

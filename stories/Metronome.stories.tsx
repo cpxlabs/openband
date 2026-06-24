@@ -1,10 +1,10 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import { Metronome } from '../src/components';
-import type { MetronomeSettings } from '../src/lib/types';
-import { View } from 'react-native';
+import type { Meta, StoryObj } from "@storybook/react";
+import { Metronome } from "../src/components";
+import type { MetronomeSettings } from "../src/lib/types";
+import { View } from "react-native";
 
 const meta: Meta<typeof Metronome> = {
-  title: 'Metronome',
+  title: "Metronome",
   component: Metronome,
   decorators: [
     (Story) => (
@@ -31,7 +31,7 @@ const defaultSettings: MetronomeSettings = {
 export const Stopped: Story = {
   args: {
     settings: defaultSettings,
-    onChange: (s: MetronomeSettings) => console.log('Metronome', s),
+    onChange: (s: MetronomeSettings) => console.log("Metronome", s),
     isPlaying: false,
   },
 };
@@ -39,7 +39,7 @@ export const Stopped: Story = {
 export const Playing: Story = {
   args: {
     settings: { ...defaultSettings, bpm: 140 },
-    onChange: (s: MetronomeSettings) => console.log('Metronome', s),
+    onChange: (s: MetronomeSettings) => console.log("Metronome", s),
     isPlaying: true,
   },
 };

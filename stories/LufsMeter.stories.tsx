@@ -1,9 +1,9 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import { LufsMeter } from '../src/components';
-import { View } from 'react-native';
+import type { Meta, StoryObj } from "@storybook/react";
+import { LufsMeter } from "../src/components";
+import { View } from "react-native";
 
 const meta: Meta<typeof LufsMeter> = {
-  title: 'LufsMeter',
+  title: "LufsMeter",
   component: LufsMeter,
   decorators: [
     (Story) => (

@@ -1,9 +1,9 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import { Sidebar } from '../src/components';
-import { View } from 'react-native';
+import type { Meta, StoryObj } from "@storybook/react";
+import { Sidebar } from "../src/components";
+import { View } from "react-native";
 
 const meta: Meta<typeof Sidebar> = {
-  title: 'Sidebar',
+  title: "Sidebar",
   component: Sidebar,
   decorators: [
     (Story) => (
@@ -19,7 +19,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Persistent: Story = {
   args: {
-    currentRoute: 'library',
+    currentRoute: "library",
     onNavigate: (route: string) => alert(`Navigate to ${route}`),
     isOpen: true,
     onClose: () => {},
@@ -29,7 +29,7 @@ export const Persistent: Story = {
 
 export const Overlay: Story = {
   args: {
-    currentRoute: 'index',
+    currentRoute: "index",
     onNavigate: (route: string) => alert(`Navigate to ${route}`),
     isOpen: true,
     onClose: () => {},

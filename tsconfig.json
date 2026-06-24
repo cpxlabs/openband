@@ -6,15 +6,9 @@
     "noUnusedParameters": true,
     "allowImportingTsExtensions": true,
     "paths": {
-      "@/*": [
-        "./src/*"
-      ],
-      "@bridge": [
-        "./src/bridge/index"
-      ],
-      "@bridge/*": [
-        "./src/bridge/*"
-      ]
+      "@/*": ["./src/*"],
+      "@bridge": ["./src/bridge/index"],
+      "@bridge/*": ["./src/bridge/*"]
     }
   },
   "include": [
@@ -23,9 +17,5 @@
     ".expo/types/**/*.d.ts",
     "nativewind-env.d.ts"
   ],
-  "exclude": [
-    "backend",
-    "api",
-    "node_modules"
-  ]
+  "exclude": ["backend", "api", "node_modules"]
 }

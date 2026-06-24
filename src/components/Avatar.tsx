@@ -1,23 +1,30 @@
-import { View, Text } from 'react-native';
+import { View, Text } from "react-native";
 
 interface AvatarProps {
   name: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: "sm" | "md" | "lg";
   testID?: string;
 }
 
 const sizes = {
-  sm: 'w-8 h-8 text-sm',
-  md: 'w-12 h-12 text-xl',
-  lg: 'w-16 h-16 text-2xl',
+  sm: "w-8 h-8 text-sm",
+  md: "w-12 h-12 text-xl",
+  lg: "w-16 h-16 text-2xl",
 };
 
-export function Avatar({ name, size = 'md', testID }: AvatarProps) {
+export function Avatar({ name, size = "md", testID }: AvatarProps) {
   const initial = name.charAt(0).toUpperCase();
 
   return (
-    <View testID={testID} className={`${sizes[size]} rounded-2xl bg-brand-primary/30 items-center justify-center`}>
-      <Text className={`${sizes[size]} text-white font-bold text-center leading-none`}>{initial}</Text>
+    <View
+      testID={testID}
+      className={`${sizes[size]} rounded-2xl bg-brand-primary/30 items-center justify-center`}
+    >
+      <Text
+        className={`${sizes[size]} text-white font-bold text-center leading-none`}
+      >
+        {initial}
+      </Text>
     </View>
   );
 }
