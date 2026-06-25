@@ -235,29 +235,13 @@ create policy "Authenticated users can create posts"
 
 -- Users can update/delete own posts
 create policy "Users can manage own posts"
-"dependencies": {
-  "react": "19.2.3",
-  "react-native": "...",
-  ...
-},
-"dependencies": {
-  "react": "19.2.3",
-  "react-native": "...",
-  ...
-},
-"dependencies": {
-  "react": "19.2.3",
-  "react-native": "...",
-  ...
-},
-"dependencies": {
-  "react": "19.2.3",
-  "react-native": "...",
-  ...
-},
-fix   on public.posts for update with check (auth.uid() = user_id);
+  on public.posts for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
 create policy "Users can delete own posts"
-  on public.posts for delete using (auth.uid() = user_id);
+  on public.posts for delete
+  using (auth.uid() = user_id);
 ```
 
 ---

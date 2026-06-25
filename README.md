@@ -15,7 +15,7 @@ Built with **Expo Router**, **TypeScript**, **NativeWind v4 (Tailwind CSS v3)**,
 | Audio            | [`expo-audio`](https://docs.expo.dev/versions/v56.0.0/sdk/audio/) (SDK 56)                             |
 | Audio Processing | [Demucs](https://github.com/facebookresearch/demucs) (HTDEMUCS model) via Python subprocess            |
 | Desktop          | [Electron 35](https://www.electronjs.org/) with swappable bridge (`src/bridge/`)                       |
-| Testing          | [Vitest](https://vitest.dev/) (173 tests) + legacy `node:test` (39 tests)                              |
+| Testing          | [Vitest](https://vitest.dev/) (269 tests) + legacy `node:test` (24 tests) + Playwright E2E (5 tests) |
 
 ## Getting Started
 
@@ -337,7 +337,7 @@ npm run build             # Production web export (output: dist/)
 npm run desktop           # Build + launch Electron desktop app
 npm run desktop:dev       # Hot-reload dev (Expo + Electron concurrently)
 npx tsc --noEmit          # TypeScript check
-npx vitest run            # Run 173 component + lib tests
+npx vitest run            # Run 269 component + lib tests
 cd backend && npm run dev # Backend dev server (port 3001)
 ```
 

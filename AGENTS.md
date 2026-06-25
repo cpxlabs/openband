@@ -251,11 +251,13 @@ src/
   components/         — Design system (38 components, see table above)
 
 tests/
-  components.test.tsx — Vitest component rendering + interaction tests (129 tests)
-  lib.test.ts         — Vitest library function tests (44 tests)
-  responsive.test.ts  — Breakpoint & dimension tests (legacy node:test)
-  types.test.ts       — Type structure tests (legacy node:test)
-  presets.test.ts     — Pedal/amp/cab preset count + structure tests (legacy node:test)
+  components.test.tsx — Vitest component rendering + interaction tests (145 tests)
+  components2.test.tsx — Vitest additional component tests (20 tests)
+  screens.test.tsx  — Vitest screen-level tests (27 tests)
+  lib.test.ts        — Vitest library function tests (62 tests)
+  responsive.test.ts — Vitest breakpoint & dimension tests (15 tests)
+  types.test.ts      — Legacy node:test type structure tests (12 tests)
+  presets.test.ts    — Legacy node:test preset count + structure tests (12 tests)
 
 stories/              — Storybook stories for all 38 components
   *.stories.tsx       — Run: `npx storybook dev -p 6006`

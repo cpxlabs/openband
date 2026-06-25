@@ -5,59 +5,67 @@ import type {
   ProjectMeta,
 } from "./interface";
 
+let stubWarned = false;
+function warnStub(_method: string) {
+  if (!stubWarned) {
+    console.warn("[Tauri stub] Tauri bridge not available. Using browser fallback.");
+    stubWarned = true;
+  }
+}
+
 export const tauriBridge: NativeBridge = {
   async showOpenDialog(_options: OpenDialogOptions): Promise<string | null> {
-    console.warn("[Tauri stub] showOpenDialog not yet implemented");
+    warnStub("showOpenDialog");
     return null;
   },
 
   async showSaveDialog(_options: SaveDialogOptions): Promise<string | null> {
-    console.warn("[Tauri stub] showSaveDialog not yet implemented");
+    warnStub("showSaveDialog");
     return null;
   },
 
   async readFile(_path: string): Promise<ArrayBuffer> {
-    console.warn("[Tauri stub] readFile not yet implemented");
+    warnStub("readFile");
     throw new Error("Tauri bridge not implemented");
   },
 
   async writeFile(_path: string, _data: ArrayBuffer | string): Promise<void> {
-    console.warn("[Tauri stub] writeFile not yet implemented");
+    warnStub("writeFile");
   },
 
   async getDocumentsPath(): Promise<string> {
-    console.warn("[Tauri stub] getDocumentsPath not yet implemented");
+    warnStub("getDocumentsPath");
     return "/mock/documents";
   },
 
   async getAppDataPath(): Promise<string> {
-    console.warn("[Tauri stub] getAppDataPath not yet implemented");
+    warnStub("getAppDataPath");
     return "/mock/appdata";
   },
 
   async listProjects(): Promise<ProjectMeta[]> {
-    console.warn("[Tauri stub] listProjects not yet implemented");
+    warnStub("listProjects");
     return [];
   },
 
   async saveProject(_id: string, _data: string): Promise<void> {
-    console.warn("[Tauri stub] saveProject not yet implemented");
+    warnStub("saveProject");
   },
 
   async loadProject(_id: string): Promise<string | null> {
-    console.warn("[Tauri stub] loadProject not yet implemented");
+    warnStub("loadProject");
     return null;
   },
 
   async deleteProject(_id: string): Promise<void> {
-    console.warn("[Tauri stub] deleteProject not yet implemented");
+    warnStub("deleteProject");
   },
 
   onMenuAction(_callback: (action: string) => void): void {
-    console.warn("[Tauri stub] onMenuAction not yet implemented");
+    warnStub("onMenuAction");
   },
 
   removeMenuActionListener(): void {
-    console.warn("[Tauri stub] removeMenuActionListener not yet implemented");
+    warnStub("removeMenuActionListener");
   },
 };

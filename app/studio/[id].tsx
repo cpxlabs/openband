@@ -839,7 +839,7 @@ export default function Studio() {
           },
         );
 
-        if (!response.ok) throw new Error("Failed to generate MIDI");
+        if (!response.ok) throw new Error(`Failed to generate MIDI (${response.status}): ${await response.text()}`);
 
         const result = await response.json();
 

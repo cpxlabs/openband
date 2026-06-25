@@ -162,9 +162,9 @@ async function renderMixdown(
       if (region.url) {
         try {
           audioBuffer = await fetchAudioData(region.url);
-        } catch {
+        } catch (e) {
           console.warn(
-            `Failed to fetch audio for region ${region.id}, generating test tone`,
+            `Failed to fetch audio for region ${region.id}:`, e,
           );
           audioBuffer = await generateTone(
             Math.min(region.duration, duration - region.start),

@@ -147,17 +147,17 @@ Current feature inventory against [BandLab](https://www.bandlab.com/features) (w
 
 ---
 
-## Test Suite (39 tests)
+## Test Suite
 
-| File                       | Tests | What it covers                                                                                         |
-| -------------------------- | ----- | ------------------------------------------------------------------------------------------------------ |
-| `tests/responsive.test.ts` | 15    | Breakpoints (mobile/tablet/desktop), contentPadding, channelWidth, tracksSidebarWidth, toolbarFontSize |
-| `tests/types.test.ts`      | 13    | TrackDef, MixSnapshot, SendBus, Plugin union (19 types), TrackAmpChain structure                       |
-| `tests/presets.test.ts`    | 11    | Pedal count (16), Amp count (20), Cab count (10), brand distribution, type coverage                    |
+Vitest (269 tests across 5 files): `components.test.tsx` (145), `components2.test.tsx` (20), `screens.test.tsx` (27), `lib.test.ts` (62), `responsive.test.ts` (15).
+
+Legacy `node:test` (24 tests): `types.test.ts` (12), `presets.test.ts` (12).
+
+Playwright E2E (5 tests): `e2e/smoke.spec.ts`.
 
 ```bash
-npm test        # Run all 39 tests
-npx tsc --noEmit # TypeScript check (must pass before build)
+npm test             # Run 269 vitest tests
+npx tsc --noEmit     # TypeScript check (must pass before build)
 ```
 
 ---

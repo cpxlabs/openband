@@ -55,7 +55,7 @@ export default function RootLayout() {
     if (
       Platform.OS !== "web" ||
       !("serviceWorker" in navigator) ||
-      (window as any).electronAPI
+      window.electronAPI
     )
       return;
     const register = async () => {

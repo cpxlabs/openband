@@ -97,8 +97,8 @@ export async function runDemucs(options: DemucsOptions): Promise<StemFile[]> {
         size,
         url: `/api/stems/${baseName}-${stemName}.wav`,
       });
-    } catch {
-      console.warn(`Stem ${stemName} not found at ${stemPath}, skipping`);
+    } catch (e) {
+      console.warn(`Stem ${stemName} error at ${stemPath}:`, e);
     }
   }
 
@@ -123,7 +123,8 @@ export async function checkDemucsInstalled(): Promise<boolean> {
       );
     });
     return result.trim() === "ok";
-  } catch {
+  } catch (e) {
+    console.warn("checkDemucsInstalled failed:", e);
     return false;
   }
 }

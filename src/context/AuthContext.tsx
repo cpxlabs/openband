@@ -38,7 +38,7 @@ function createVisitorUser(): User {
     is_anonymous: true,
     identities: [],
     factors: [],
-  } as User;
+  };
 }
 
 function createVisitorSession(): Session {
@@ -51,7 +51,7 @@ function createVisitorSession(): Session {
     provider_token: null,
     provider_refresh_token: null,
     user: createVisitorUser(),
-  } as Session;
+  };
 }
 
 const AuthContext = createContext<AuthContextType>({

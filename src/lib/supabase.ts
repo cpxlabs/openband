@@ -1,6 +1,6 @@
 import "react-native-url-polyfill/auto";
 import * as SecureStore from "expo-secure-store";
-import { createClient, type Session } from "@supabase/supabase-js";
+import { createClient, type Session, type SupabaseClient } from "@supabase/supabase-js";
 import { Platform } from "react-native";
 
 const ExpoSecureStoreAdapter = {
@@ -26,7 +26,7 @@ const ExpoSecureStoreAdapter = {
   },
 };
 
-function createMockClient() {
+function createMockClient(): SupabaseClient<any, any, any, any, any> {
   let mockSession: Session | null = makeMockSession("dev@openband.app", "Dev");
   type AuthListener = (event: string, session: Session | null) => void;
   const listeners = new Set<AuthListener>();
@@ -120,7 +120,7 @@ function createMockClient() {
         return { data: { user: mockSession?.user ?? null }, error: null };
       },
     },
-  };
+  } as unknown as SupabaseClient<any, any, any, any, any>;
 }
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -136,4 +136,4 @@ export const supabase =
           detectSessionInUrl: false,
         },
       })
-    : (createMockClient() as unknown as ReturnType<typeof createClient>);
+    : createMockClient();

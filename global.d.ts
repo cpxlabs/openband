@@ -1,8 +1,21 @@
 declare module "*.css";
 
+interface OpenDialogOptions {
+  title?: string;
+  defaultPath?: string;
+  filters?: { name: string; extensions: string[] }[];
+  multiple?: boolean;
+}
+
+interface SaveDialogOptions {
+  title?: string;
+  defaultPath?: string;
+  filters?: { name: string; extensions: string[] }[];
+}
+
 interface ElectronAPI {
-  showOpenDialog(options: any): Promise<string | null>;
-  showSaveDialog(options: any): Promise<string | null>;
+  showOpenDialog(options: OpenDialogOptions): Promise<string | null>;
+  showSaveDialog(options: SaveDialogOptions): Promise<string | null>;
   readFile(path: string): Promise<ArrayBuffer>;
   writeFile(path: string, data: ArrayBuffer | string): Promise<void>;
   getDocumentsPath(): Promise<string>;
@@ -17,4 +30,5 @@ interface ElectronAPI {
 
 interface Window {
   electronAPI?: ElectronAPI;
+  __TAURI__?: unknown;
 }

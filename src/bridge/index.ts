@@ -15,11 +15,11 @@ function detectBridge(): NativeBridge {
     return browserBridge;
   }
 
-  if ((window as any).electronAPI) {
+  if (window.electronAPI) {
     return electronBridge;
   }
 
-  if ((window as any).__TAURI__) {
+  if (window.__TAURI__) {
     return tauriBridge;
   }
 
