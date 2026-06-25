@@ -48,7 +48,18 @@ vi.mock("../src/lib/supabase", () => ({
 
 vi.mock("../src/bridge", () => ({
   OpenBandNative: {
-    showSaveDialog: vi.fn(), writeFile: vi.fn(), getDocumentsPath: vi.fn(),
+    showOpenDialog: vi.fn(),
+    showSaveDialog: vi.fn(),
+    readFile: vi.fn(),
+    writeFile: vi.fn(),
+    getDocumentsPath: vi.fn(),
+    getAppDataPath: vi.fn(),
+    listProjects: vi.fn(),
+    saveProject: vi.fn(),
+    loadProject: vi.fn(),
+    deleteProject: vi.fn(),
+    onMenuAction: vi.fn(),
+    removeMenuActionListener: vi.fn(),
   },
 }));
 
@@ -89,7 +100,7 @@ beforeEach(() => {
   mockThemeFn.mockReturnValue({
     theme: "dark", setTheme: mockSetTheme, toggleTheme: vi.fn(),
   });
-  mockAuthFn.mockReturnValue({ user: null, signOut: mockSignOut });
+  mockAuthFn.mockReturnValue({ user: null, signOut: mockSignOut, signInAsVisitor: vi.fn() });
 });
 
 describe("Extractor Screen", () => {
@@ -242,6 +253,7 @@ describe("Account Screen", () => {
     mockAuthFn.mockReturnValue({
       user: { email: "test@openband.app", user_metadata: { name: "Test User" } },
       signOut: mockSignOut,
+      signInAsVisitor: vi.fn(),
     });
     render(<Account />);
     expect(screen.getByText("test@openband.app")).toBeTruthy();
@@ -252,6 +264,7 @@ describe("Account Screen", () => {
     mockAuthFn.mockReturnValue({
       user: { email: "test@openband.app", user_metadata: { name: "Test User" } },
       signOut: mockSignOut,
+      signInAsVisitor: vi.fn(),
     });
     render(<Account />);
     expect(screen.getByText("Salvar")).toBeTruthy();
@@ -271,6 +284,7 @@ describe("Account Screen", () => {
     mockAuthFn.mockReturnValue({
       user: { email: "test@openband.app", user_metadata: { name: "Old Name" } },
       signOut: mockSignOut,
+      signInAsVisitor: vi.fn(),
     });
     render(<Account />);
     const input = screen.getByDisplayValue("Old Name");
@@ -284,6 +298,7 @@ describe("Account Screen", () => {
     mockAuthFn.mockReturnValue({
       user: { email: "test@openband.app", user_metadata: { name: "Same Name" } },
       signOut: mockSignOut,
+      signInAsVisitor: vi.fn(),
     });
     render(<Account />);
     fireEvent.click(screen.getByText("Salvar"));

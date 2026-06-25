@@ -4,9 +4,18 @@ import { PromptSampler, MasteringSuite } from "../src/components";
 
 vi.mock("../src/bridge", () => ({
   OpenBandNative: {
+    showOpenDialog: vi.fn(),
     showSaveDialog: vi.fn(),
+    readFile: vi.fn(),
     writeFile: vi.fn(),
     getDocumentsPath: vi.fn(),
+    getAppDataPath: vi.fn(),
+    listProjects: vi.fn(),
+    saveProject: vi.fn(),
+    loadProject: vi.fn(),
+    deleteProject: vi.fn(),
+    onMenuAction: vi.fn(),
+    removeMenuActionListener: vi.fn(),
   },
 }));
 
@@ -25,11 +34,8 @@ vi.mock("../src/lib/masteringSuite", () => ({
     { id: "master-1", name: "Compressor", type: "compressor", enabled: true, params: { threshold: -20, ratio: 4, attack: 5, release: 100 }, color: "#ff9500" },
     { id: "master-6", name: "Limiter", type: "truePeakLimiter", enabled: false, params: { ceiling: -1, release: 50 }, color: "#ff375f" },
   ],
-  createVersion: (plugins: any[], name: string, notes: string) => ({
-    id: "v-1", name, created: Date.now(),
-    plugins: plugins.map((p: any) => ({ ...p, params: { ...p.params } })), notes,
-  }),
-  formatFileSize: (b: number) => `${(b / 1024).toFixed(0)} KB`,
+  createVersion: vi.fn(),
+  formatFileSize: vi.fn(() => "50 KB"),
   formatSampleRate: (r: number) => `${(r / 1000).toFixed(1)}kHz`,
   MasteringInput: class {},
   MasteringSession: class {},
