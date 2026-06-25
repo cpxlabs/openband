@@ -88,7 +88,7 @@ router.post(
         inputStream.pipe(outputStream);
 
         outputStream.on("finish", () => {
-          fs.unlink(req.file!.path, (err) => {
+          fs.unlink(filePath, (err) => {
             if (err) console.error("cleanup error:", err);
           });
           done = true;

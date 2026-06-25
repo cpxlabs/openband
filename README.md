@@ -171,6 +171,14 @@ Ongoing hardening through periodic fix-and-verify cycles. Each round fixes verif
 **Round 11 — Code review sweep 2 (23 issues found, 10 fixed):**
 
 **Round 12 — Code review sweep 3 (11 issues found, 7 fixed):**
+
+**Round 13 — Code review sweep 4 (10 issues found, all fixed):**
+- Replaced `req.file!.path` with `filePath` in `master.ts`
+- Added error logging to empty catch blocks in `account.tsx` and `AuthContext.tsx`
+- Fixed circular import in `MasteringSuite.tsx` (direct imports instead of barrel)
+- Changed `Sidebar` import to barrel in `_layout.tsx`
+- Removed unused `React` default imports in `AuthContext.tsx` and `ThemeContext.tsx`
+- Moved misplaced `import type { TrackRegion }` to top of `midiParser.ts`
 - Removed `import.meta.url` from `backend/src/services/demucs.ts` — fixes backend `tsc` build (TS1343)
 - Fixed health endpoint Demucs caching: cached result persists across requests instead of re-running every time
 - Added error logging to silent catch blocks in `browser.ts`, `projectStore.ts`, `midiParser.ts`

@@ -1,3 +1,5 @@
+import type { TrackRegion } from "./types";
+
 export interface MidiNote {
   channel: number;
   note: number;
@@ -271,8 +273,6 @@ export function parseMidi(buffer: ArrayBuffer): MidiData | null {
     return null;
   }
 }
-
-import type { TrackRegion } from "./types";
 
 export function ticksToSeconds(
   ticks: number,

@@ -52,7 +52,8 @@ export default function Account() {
           setSigningOut(true);
           try {
             await signOut();
-          } catch {
+          } catch (e) {
+            console.error("Sign out failed:", e);
             setSigningOut(false);
           }
         },

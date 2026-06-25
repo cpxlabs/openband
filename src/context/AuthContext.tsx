@@ -1,9 +1,10 @@
-import React, {
+import {
   createContext,
   useContext,
   useEffect,
   useState,
   useCallback,
+  type ReactNode,
 } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
@@ -62,7 +63,7 @@ const AuthContext = createContext<AuthContextType>({
   signInAsVisitor: async () => {},
 });
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isVisitor, setIsVisitor] = useState(false);
@@ -78,8 +79,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
       })
-      .catch(() => {
+      .catch((e) => {
         if (cancelled) return;
+        console.warn("Auth getSession failed:", e);
         setSession(null);
         setUser(null);
       })

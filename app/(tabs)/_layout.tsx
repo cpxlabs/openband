@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Tabs, useRouter, useSegments, type Href } from "expo-router";
 import { Text, View, Pressable, type ViewStyle } from "react-native";
 import { useResponsive } from "../../src/lib/responsive";
-import { Sidebar } from "../../src/components/Sidebar";
+import { Sidebar } from "../../src/components";
 
 function TabIcon({ label, focused }: { label: string; focused: boolean }) {
   const { breakpoint } = useResponsive();

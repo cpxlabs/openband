@@ -9,13 +9,11 @@ import {
 } from "react-native";
 import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
 import type { Plugin } from "../lib/types";
-import {
-  MasteringChain,
-  MasteringVersionManager,
-  MasteringUpload,
-  LufsMeter,
-  PluginEditor,
-} from "../components";
+import { MasteringChain } from "./MasteringChain";
+import { MasteringVersionManager } from "./MasteringVersionManager";
+import { MasteringUpload } from "./MasteringUpload";
+import { LufsMeter } from "./LufsMeter";
+import { PluginEditor } from "./PluginEditor";
 import {
   MasteringInput,
   MasteringSession,
