@@ -374,7 +374,8 @@ export default function Studio() {
         audioRecorder.record();
         setIsRecording(true);
       }
-    } catch {
+    } catch (e) {
+      console.warn("Recording failed:", e);
       Alert.alert("Erro", "Falha ao gravar áudio.");
       setIsRecording(false);
     }
@@ -853,12 +854,12 @@ export default function Studio() {
           pan: 0,
           sends: {},
           sidechainSource: null,
-          regions: result.midiData.map((n: any) => ({
+          regions: result.midiData.map((n: { start: number; duration: number; note: number }) => ({
             id: `reg-${Date.now()}-${n.start}`,
             start: n.start * (60 / result.bpm),
             duration: n.duration * (60 / result.bpm),
           })),
-          midiNotes: result.midiData.map((n: any) => ({
+          midiNotes: result.midiData.map((n: { start: number; duration: number; note: number }) => ({
             pitch: n.note,
             start: n.start,
             duration: n.duration,
@@ -871,6 +872,7 @@ export default function Studio() {
         setTracks([...tracks, newTrack]);
         setSelectedTrackId(trackId);
       } catch (err) {
+        console.warn("MIDI generation failed:", err);
         Alert.alert("Erro", "Falha ao gerar MIDI.");
       }
     },

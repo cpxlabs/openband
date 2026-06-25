@@ -8,6 +8,10 @@ export interface MIDINote {
   velocity: number;
 }
 
+interface PointerHandlerArgs {
+  nativeEvent: { clientX: number; clientY: number; pageX: number; pageY: number };
+}
+
 interface PianoRollProps {
   notes: MIDINote[];
   onChange: (notes: MIDINote[]) => void;
@@ -152,7 +156,7 @@ export function PianoRoll({
   }, []);
 
   const handlePointerDown = useCallback(
-    (e: any) => {
+    (e: PointerHandlerArgs) => {
       const { x, y } = getGridXY(e.nativeEvent.clientX, e.nativeEvent.clientY);
       const pos = posToNote(x, y, maxPitch, totalBeats, snap);
       if (!pos) return;
@@ -188,7 +192,7 @@ export function PianoRoll({
   );
 
   const handlePointerMove = useCallback(
-    (e: any) => {
+    (e: PointerHandlerArgs) => {
       if (holdTimer.current) {
         clearTimeout(holdTimer.current);
         holdTimer.current = null;
@@ -214,7 +218,7 @@ export function PianoRoll({
         ),
       };
       onChange(
-        notes.map((n, i) => (i === dragRef.current!.index ? newNote : n)),
+        notes.map((n, i) => (i === dragRef.current?.index ? newNote : n)),
       );
     },
     [notes, onChange, snap],
@@ -224,7 +228,7 @@ export function PianoRoll({
   selectedIdRef.current = selectedNoteId;
 
   const handlePointerUp = useCallback(
-    (_e: any) => {
+    (_e: PointerHandlerArgs) => {
       if (holdTimer.current) {
         clearTimeout(holdTimer.current);
         holdTimer.current = null;
@@ -276,11 +280,11 @@ export function PianoRoll({
     const onMove = (e: PointerEvent) => {
       if (!dragRef.current) return;
       e.preventDefault();
-      handlePointerMove({ nativeEvent: { pageX: e.pageX, pageY: e.pageY } });
+      handlePointerMove({ nativeEvent: { pageX: e.pageX, pageY: e.pageY, clientX: e.clientX, clientY: e.clientY } });
     };
     const onUp = (e: PointerEvent) => {
       if (!dragRef.current) return;
-      handlePointerUp({ nativeEvent: { pageX: e.pageX, pageY: e.pageY } });
+      handlePointerUp({ nativeEvent: { pageX: e.pageX, pageY: e.pageY, clientX: e.clientX, clientY: e.clientY } });
     };
     window.addEventListener("pointermove", onMove, { passive: false });
     window.addEventListener("pointerup", onUp);
@@ -541,9 +545,9 @@ export function PianoRoll({
                 >
                   <View
                     ref={gridRef}
-                    onPointerDown={handlePointerDown}
-                    onPointerUp={handlePointerUp}
-                    onPointerMove={handlePointerMove}
+                    onPointerDown={handlePointerDown as any}
+                    onPointerUp={handlePointerUp as any}
+                    onPointerMove={handlePointerMove as any}
                     onPointerCancel={() => {
                       if (holdTimer.current) clearTimeout(holdTimer.current);
                       holdTimer.current = null;

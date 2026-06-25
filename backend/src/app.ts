@@ -93,7 +93,8 @@ app.get("/api/health", async (_req, res) => {
   if (demucsCached === null) {
     try {
       demucsCached = await checkDemucsInstalled();
-    } catch {
+    } catch (e) {
+      console.error("Demucs check failed:", e);
       demucsCached = false;
     }
   }

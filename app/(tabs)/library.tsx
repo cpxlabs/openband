@@ -72,7 +72,8 @@ export default function Library() {
         await OpenBandNative.writeFile(path, json);
         Alert.alert("Exportado", "Projeto exportado com sucesso.");
       }
-    } catch {
+    } catch (e) {
+      console.warn("Export failed:", e);
       Alert.alert("Erro", "Falha ao exportar projeto.");
     }
   }, []);
@@ -95,7 +96,8 @@ export default function Library() {
       } else {
         Alert.alert("Erro", "Arquivo de projeto inválido.");
       }
-    } catch {
+    } catch (e) {
+      console.warn("Import failed:", e);
       Alert.alert("Erro", "Falha ao importar projeto.");
     }
   }, [router]);

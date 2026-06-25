@@ -70,7 +70,8 @@ router.post("/extract", (req: Request, res: Response) => {
               warning:
                 "Demucs não instalado. Usando simulação. Para resultados reais: pip install demucs",
             });
-          } catch {
+          } catch (e) {
+            console.error("Stem processing error:", e);
             return res
               .status(500)
               .json({ error: "Erro ao processar áudio (fallback falhou)" });

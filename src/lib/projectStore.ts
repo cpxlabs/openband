@@ -42,7 +42,8 @@ async function checkBridge(): Promise<boolean> {
   try {
     await OpenBandNative.getDocumentsPath();
     bridgeAvailable = true;
-  } catch {
+  } catch (e) {
+    console.warn("bridge detection failed:", e);
     bridgeAvailable = false;
   }
   return bridgeAvailable;

@@ -107,7 +107,8 @@ export function stopNote(id: string): void {
         }
         activeVoices.delete(id);
       }, 60);
-    } catch {
+    } catch (e) {
+      console.warn("midiSynth error:", e);
       activeVoices.delete(id);
     }
   }

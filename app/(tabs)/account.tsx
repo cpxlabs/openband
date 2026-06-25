@@ -35,7 +35,8 @@ export default function Account() {
       if (error) {
         Alert.alert("Erro", error.message);
       }
-    } catch {
+    } catch (e) {
+      console.warn("Update user failed:", e);
       Alert.alert("Erro", "Não foi possível salvar.");
     } finally {
       setSaving(false);

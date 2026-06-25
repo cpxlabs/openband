@@ -268,7 +268,7 @@ export function Synth({ visible, onClose, bpm, testID }: SynthProps) {
   useEffect(() => {
     return () => {
       stopAll();
-      audioCtxRef.current?.close().catch(() => {});
+      audioCtxRef.current?.close().catch((e) => console.warn("AudioContext close failed:", e));
       audioCtxRef.current = null;
     };
   }, [stopAll]);
@@ -308,8 +308,8 @@ export function Synth({ visible, onClose, bpm, testID }: SynthProps) {
               stop: () => {
                 try {
                   source.stop();
-                } catch {
-                  console.warn("Noise source stop error");
+                } catch (e) {
+                  console.warn("Noise source stop error:", e);
                 }
               },
             };
@@ -353,8 +353,8 @@ export function Synth({ visible, onClose, bpm, testID }: SynthProps) {
             stop: () => {
               try {
                 osc.stop();
-              } catch {
-                console.warn("Osc stop error");
+              } catch (e) {
+                console.warn("Osc stop error:", e);
               }
             },
           };

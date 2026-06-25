@@ -1,26 +1,19 @@
 import { describe, it, expect, vi } from "vitest";
-import * as reactNative from "react-native";
 import { useResponsive } from "../src/lib/responsive";
 import { renderHook } from "@testing-library/react";
 
-vi.mock("react-native", async (importOriginal) => {
-  const original = await importOriginal<typeof import("react-native")>();
-  return {
-    ...original,
-    useWindowDimensions: vi.fn(),
-    Platform: {
-      ...original.Platform,
-      OS: "web",
-    },
-  };
-});
+const { mockUseWindowDimensions } = vi.hoisted(() => ({
+  mockUseWindowDimensions: vi.fn(),
+}));
+
+vi.mock("react-native", () => ({
+  useWindowDimensions: mockUseWindowDimensions,
+  Platform: { OS: "web" },
+}));
 
 describe("useResponsive", () => {
   const setWidth = (width: number) => {
-    (reactNative.useWindowDimensions as any).mockReturnValue({
-      width,
-      height: 800,
-    });
+    mockUseWindowDimensions.mockReturnValue({ width, height: 800 });
   };
 
   describe("Responsive breakpoints", () => {

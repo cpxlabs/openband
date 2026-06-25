@@ -471,7 +471,7 @@ function SampleCard({
 }: {
   sample: SampleEntry;
   onAddToTrack: (sample: SampleEntry) => void;
-  status: any;
+  status: { isLoaded: boolean; playing: boolean };
   playingId: string | null;
   onPlayPreview: (id: string) => void;
 }) {

@@ -34,11 +34,19 @@ router.post(
             return res
               .status(413)
               .json({ error: "Arquivo muito grande. Máximo 200MB." });
-          return res
-            .status(400)
-            .json({ error: `Erro no upload: ${err.message}` });
+          return res.status(400).json({
+            error: "Erro no upload.",
+            ...(process.env.NODE_ENV === "production"
+              ? {}
+              : { details: err.message }),
+          });
         }
-        return res.status(400).json({ error: err.message });
+        return res.status(400).json({
+          error: "Erro no upload.",
+          ...(process.env.NODE_ENV === "production"
+            ? {}
+            : { details: err instanceof Error ? err.message : String(err) }),
+        });
       }
       next();
     });
