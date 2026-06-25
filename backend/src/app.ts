@@ -87,15 +87,17 @@ function rateLimit(maxRequests: number, windowMs: number) {
 
 app.use(express.json({ limit: "1mb" }));
 
-let demucsCheckPromise: Promise<boolean> | null = null;
+let demucsCached: boolean | null = null;
 
 app.get("/api/health", async (_req, res) => {
-  if (demucsCheckPromise === null) {
-    demucsCheckPromise = checkDemucsInstalled();
+  if (demucsCached === null) {
+    try {
+      demucsCached = await checkDemucsInstalled();
+    } catch {
+      demucsCached = false;
+    }
   }
-  const demucsOk = await demucsCheckPromise;
-  demucsCheckPromise = null;
-  res.json({ status: "ok", demucs: demucsOk });
+  res.json({ status: "ok", demucs: demucsCached });
 });
 
 app.use("/api", rateLimit(30, 15 * 60 * 1000));

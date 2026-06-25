@@ -266,7 +266,8 @@ export function parseMidi(buffer: ArrayBuffer): MidiData | null {
       smpteFps,
       ticksPerFrame,
     };
-  } catch {
+  } catch (e) {
+    console.warn("[midiParser] parseMidi failed:", e);
     return null;
   }
 }

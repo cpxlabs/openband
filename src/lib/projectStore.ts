@@ -93,7 +93,8 @@ async function loadViaBridge(id: string): Promise<ProjectData | null> {
   if (!raw) return null;
   try {
     return JSON.parse(raw) as ProjectData;
-  } catch {
+  } catch (e) {
+    console.warn("[projectStore] loadViaBridge parse failed:", e);
     return null;
   }
 }
@@ -248,7 +249,8 @@ export function importProject(json: string): string | null {
       return data.id;
     }
     return null;
-  } catch {
+  } catch (e) {
+    console.warn("[projectStore] importProject failed:", e);
     return null;
   }
 }
@@ -263,7 +265,8 @@ export function listProjectIndex(): Record<
   if (!raw) return {};
   try {
     return JSON.parse(raw);
-  } catch {
+  } catch (e) {
+    console.warn("[projectStore] listProjectIndex parse failed:", e);
     return {};
   }
 }

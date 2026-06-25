@@ -100,7 +100,8 @@ export const browserBridge: NativeBridge = {
         name: meta.title,
         lastModified: meta.lastSaved,
       }));
-    } catch {
+    } catch (e) {
+      console.warn("[bridge] listProjects parse failed:", e);
       return [];
     }
   },

@@ -1,11 +1,7 @@
 import { execFile } from "child_process";
 import path from "path";
-import { fileURLToPath } from "url";
 import fs from "fs";
 import type { StemFile } from "../types";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const DEMUCS_MODEL = "htdemucs";
 
@@ -19,10 +15,16 @@ function ensureDir(dir: string) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
-const PYTHON_PATH =
-  process.env.PYTHON_PATH && process.env.PYTHON_PATH.startsWith("/")
-    ? process.env.PYTHON_PATH
-    : path.resolve(__dirname, "../.venv/bin/python3");
+const PYTHON_PATH = (() => {
+  const env = process.env.PYTHON_PATH;
+  if (env) {
+    if (path.isAbsolute(env)) return env;
+    console.warn(
+      `[demucs] PYTHON_PATH="${env}" is not absolute — using default .venv path`,
+    );
+  }
+  return path.resolve(process.cwd(), ".venv/bin/python3");
+})();
 
 function execPython(args: string[]): Promise<string> {
   return new Promise((resolve, reject) => {

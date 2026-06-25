@@ -169,6 +169,13 @@ Ongoing hardening through periodic fix-and-verify cycles. Each round fixes verif
 **Round 10 — Code review sweep (29 issues found, 13 fixed):**
 
 **Round 11 — Code review sweep 2 (23 issues found, 10 fixed):**
+
+**Round 12 — Code review sweep 3 (11 issues found, 7 fixed):**
+- Removed `import.meta.url` from `backend/src/services/demucs.ts` — fixes backend `tsc` build (TS1343)
+- Fixed health endpoint Demucs caching: cached result persists across requests instead of re-running every time
+- Added error logging to silent catch blocks in `browser.ts`, `projectStore.ts`, `midiParser.ts`
+- Added warning when `PYTHON_PATH` env var is set but not absolute
+- Removed redundant non-null assertion in `master.ts`
 - Added `Platform.OS !== "web"` guard to `OfflineAudioContext` in `constants.ts` and `BounceDialog.tsx`
 - Added `disposeAudioContext()` call in studio cleanup effect
 - Added error logging to empty catch block in `electron/main.js` delete-project handler

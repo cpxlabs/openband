@@ -66,7 +66,7 @@ router.post(
       const outputFilename = `master_${Date.now()}.${outputFormat === "mp3" ? "mp3" : "wav"}`;
       const outputPath = path.resolve(MASTER_DIR, outputFilename);
 
-      const filePath = req.file!.path;
+      const filePath = req.file.path;
       await new Promise<void>((resolve, reject) => {
         const inputStream = fs.createReadStream(filePath);
         const outputStream = fs.createWriteStream(outputPath);
