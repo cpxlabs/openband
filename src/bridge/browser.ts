@@ -18,6 +18,7 @@ function createBlobDownload(
   URL.revokeObjectURL(url);
 }
 
+const MAX_UPLOAD_CACHE = 10;
 const uploadCache = new Map<string, ArrayBuffer>();
 let uploadCounter = 0;
 
@@ -41,6 +42,10 @@ function createFileUpload(accept: string): Promise<string | null> {
         }
         const key = `_upload_${++uploadCounter}_${file.name}`;
         uploadCache.set(key, buf);
+        if (uploadCache.size > MAX_UPLOAD_CACHE) {
+          const first = uploadCache.keys().next().value;
+          if (first !== undefined) uploadCache.delete(first);
+        }
         resolve(key);
       };
       reader.onerror = () => resolve(null);

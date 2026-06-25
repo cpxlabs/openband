@@ -229,11 +229,11 @@ export default function Feed() {
         setPlayingId(null);
         return;
       }
-      currentPostRef.current = post;
       const url = await generatePreviewUrl(post.id, post.duration);
       if (url) {
         await player.replace(url);
         player.play();
+        currentPostRef.current = post;
         setPlayingId(post.id);
       }
     },

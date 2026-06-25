@@ -267,7 +267,11 @@ ipcMain.handle("delete-project", async (_event, id) => {
   const filePath = path.join(PROJECTS_DIR, `${safeId}.openband.json`);
   try {
     await fs.promises.unlink(filePath);
-  } catch {}
+    return true;
+  } catch (e) {
+    console.error("Failed to delete project:", e);
+    return false;
+  }
 });
 
 app.whenReady().then(createWindow);

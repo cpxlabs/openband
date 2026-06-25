@@ -17,7 +17,7 @@ import {
   setAudioModeAsync,
   RecordingPresets,
 } from "expo-audio";
-import { renderTracksToUrl } from "../../src/lib/midiSynth";
+import { renderTracksToUrl, disposeAudioContext } from "../../src/lib/midiSynth";
 import {
   Metronome,
   RecordOptions,
@@ -147,6 +147,9 @@ export default function Studio() {
         console.warn("Failed to set audio mode:", e);
       }
     })();
+    return () => {
+      disposeAudioContext();
+    };
   }, []);
 
   const resp = useResponsive();
@@ -825,8 +828,9 @@ export default function Studio() {
   const handlePromptMidiRender = useCallback(
     async (data: { prompt: string; bpm: number; key: string }) => {
       try {
+        const apiBase = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3001";
         const response = await fetch(
-          "http://localhost:3001/api/generate-midi",
+          `${apiBase}/api/generate-midi`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },

@@ -1,3 +1,5 @@
+import { Platform } from "react-native";
+
 export const DEMO_AUDIO_URL =
   "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
 
@@ -19,6 +21,7 @@ export async function generatePreviewUrl(
   const h = hashStr(key);
   const freq = 110 + Math.abs(h % 880);
   const types: OscillatorType[] = ["sine", "triangle", "sawtooth", "square"];
+  if (Platform.OS !== "web") return "";
   const ctx = new OfflineAudioContext(1, Math.ceil(sr * duration), sr);
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();

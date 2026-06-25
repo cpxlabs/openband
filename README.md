@@ -167,6 +167,15 @@ User's project collection:
 Ongoing hardening through periodic fix-and-verify cycles. Each round fixes verified bugs (stale closures, O(n²) maps, unused imports, missing error handlers, type gaps, CSP issues, stale state) and runs the full tsc + vitest + build suite before shipping.
 
 **Round 10 — Code review sweep (29 issues found, 13 fixed):**
+
+**Round 11 — Code review sweep 2 (23 issues found, 10 fixed):**
+- Added `Platform.OS !== "web"` guard to `OfflineAudioContext` in `constants.ts` and `BounceDialog.tsx`
+- Added `disposeAudioContext()` call in studio cleanup effect
+- Added error logging to empty catch block in `electron/main.js` delete-project handler
+- Cached warning flag in `projectStore.ts` to suppress repeated `console.warn`
+- Fixed stale ref in `app/(tabs)/index.tsx` — moved `currentPostRef.current` after successful `await`
+- Added LRU eviction for `uploadCache` in `browser.ts` (max 10 entries)
+- Replaced hardcoded `http://localhost:3001` with configurable `EXPO_PUBLIC_API_URL` environment variable
 - Fixed ESM `__dirname` compatibility in `backend/src/services/demucs.ts`
 - Removed dead dependencies (`@google/gemini-cli`, `react-native-worklets`, `express`, `cors`, `multer`) from root `package.json`
 - Added `.slice()` to `generateWaveform()` cache return to prevent mutation corruption
@@ -356,6 +365,7 @@ The bridge auto-detects Electron, Tauri (future), or browser — swap the backen
 ```env
 EXPO_PUBLIC_SUPABASE_URL=https://seu-projeto.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=sua-chave-anonima-aqui
+EXPO_PUBLIC_API_URL=http://localhost:3001
 ```
 
 No `.env` required for development — the app falls back to a mock auth client.

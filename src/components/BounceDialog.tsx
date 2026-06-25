@@ -85,6 +85,7 @@ async function generateTone(
   sampleRate: number,
   frequency: number,
 ): Promise<AudioBuffer> {
+  if (Platform.OS !== "web") throw new Error("AudioContext not available on native");
   const offlineCtx = new OfflineAudioContext(
     1,
     Math.ceil(sampleRate * duration),

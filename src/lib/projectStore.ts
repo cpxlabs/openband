@@ -69,13 +69,18 @@ function queueBridgeSave(id: string, project: ProjectData): void {
   });
 }
 
+let storageWarned = false;
+
 function getStorage(): Storage | null {
   if (Platform.OS === "web" && typeof localStorage !== "undefined") {
     return localStorage;
   }
-  console.warn(
-    "[projectStore] No storage available on this platform — project data will not persist",
-  );
+  if (!storageWarned) {
+    storageWarned = true;
+    console.warn(
+      "[projectStore] No storage available on this platform — project data will not persist",
+    );
+  }
   return null;
 }
 
