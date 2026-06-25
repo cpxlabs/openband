@@ -1,7 +1,11 @@
 import { execFile } from "child_process";
 import path from "path";
+import { fileURLToPath } from "url";
 import fs from "fs";
 import type { StemFile } from "../types";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const DEMUCS_MODEL = "htdemucs";
 
@@ -18,7 +22,7 @@ function ensureDir(dir: string) {
 const PYTHON_PATH =
   process.env.PYTHON_PATH && process.env.PYTHON_PATH.startsWith("/")
     ? process.env.PYTHON_PATH
-    : path.resolve(__dirname, "../../.venv/bin/python3");
+    : path.resolve(__dirname, "../.venv/bin/python3");
 
 function execPython(args: string[]): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -53,7 +57,7 @@ export async function runDemucs(options: DemucsOptions): Promise<StemFile[]> {
 
   await fs.promises
     .rm(demucsOut, { recursive: true, force: true })
-    .catch(() => {});
+    .catch((e) => console.warn("failed to clean demucs output:", e));
 
   onProgress?.("Iniciando Demucs (htdemucs)...", 10);
 

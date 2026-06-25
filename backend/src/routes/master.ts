@@ -1,4 +1,4 @@
-import { Router, Request, Response, NextFunction } from "express";
+import { Router, Request, Response } from "express";
 import path from "path";
 import fs from "fs";
 import multer from "multer";
@@ -26,7 +26,7 @@ if (!fs.existsSync(MASTER_DIR)) {
 
 router.post(
   "/master/bounce",
-  (req: Request, res: Response, next: NextFunction) => {
+  (req: Request, res: Response, next) => {
     upload.single("audio")(req, res, (err) => {
       if (err) {
         if (err instanceof multer.MulterError) {
@@ -131,7 +131,6 @@ router.post(
 router.get("/master/download/:filename", (req: Request, res: Response) => {
   const filename = req.params.filename;
   if (
-    filename.includes("..") ||
     filename.includes("/") ||
     filename.includes("\\") ||
     filename.includes("\0")

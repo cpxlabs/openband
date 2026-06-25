@@ -271,6 +271,8 @@ export function parseMidi(buffer: ArrayBuffer): MidiData | null {
   }
 }
 
+import type { TrackRegion } from "./types";
+
 export function ticksToSeconds(
   ticks: number,
   bpm: number,
@@ -280,8 +282,6 @@ export function ticksToSeconds(
   const safeTpq = Math.max(1, ticksPerQuarter);
   return (ticks / safeTpq) * (60 / safeBpm);
 }
-
-import type { TrackRegion } from "./types";
 
 export function midiToTrackRegions(
   track: MidiTrack,

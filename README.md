@@ -162,9 +162,19 @@ User's project collection:
 - Sign-out with loading state
 - Profile info (member since, location, bio)
 
-### Bug-Fix Rounds (9 completed)
+### Bug-Fix Rounds (10 completed)
 
 Ongoing hardening through periodic fix-and-verify cycles. Each round fixes verified bugs (stale closures, O(n²) maps, unused imports, missing error handlers, type gaps, CSP issues, stale state) and runs the full tsc + vitest + build suite before shipping.
+
+**Round 10 — Code review sweep (29 issues found, 13 fixed):**
+- Fixed ESM `__dirname` compatibility in `backend/src/services/demucs.ts`
+- Removed dead dependencies (`@google/gemini-cli`, `react-native-worklets`, `express`, `cors`, `multer`) from root `package.json`
+- Added `.slice()` to `generateWaveform()` cache return to prevent mutation corruption
+- Removed overly restrictive `filename.includes("..")` path check in extract/master routes
+- Removed unused `NextFunction` import in `master.ts`
+- Moved misplaced `import type { TrackRegion }` to top of `midiParser.ts`
+- Added error logging to empty catch blocks in `demucs.ts` rm, `login.tsx`
+- Removed code comment in `generator.ts` per self-documenting convention
 
 ## Project Structure
 

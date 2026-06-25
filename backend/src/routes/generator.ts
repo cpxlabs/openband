@@ -9,7 +9,6 @@ router.post("/generate-midi", (req: Request, res: Response) => {
     return res.status(400).json({ error: "Prompt is required" });
   }
 
-  // Mock response: A simple C major sequence
   const mockMidiData = [
     { note: 60, start: 0, duration: 1 }, // C4
     { note: 62, start: 1, duration: 1 }, // D4

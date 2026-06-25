@@ -3,7 +3,7 @@ const cache = new Map<string, number[]>();
 
 export function generateWaveform(seed: string, count: number): number[] {
   const key = `${seed}-${count}`;
-  if (cache.has(key)) return cache.get(key)!;
+  if (cache.has(key)) return cache.get(key)!.slice();
   if (cache.size >= MAX_CACHE_SIZE) {
     const firstKey = cache.keys().next().value;
     if (firstKey !== undefined) cache.delete(firstKey);

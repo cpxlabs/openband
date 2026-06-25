@@ -58,7 +58,8 @@ export default function Login() {
         });
         if (error) setError(error.message);
       }
-    } catch {
+    } catch (e) {
+      console.error("Login error:", e);
       setError("Ocorreu um erro inesperado. Tente novamente.");
     } finally {
       setLoading(false);
