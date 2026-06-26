@@ -100,7 +100,7 @@ beforeEach(() => {
   mockThemeFn.mockReturnValue({
     theme: "dark", setTheme: mockSetTheme, toggleTheme: vi.fn(),
   });
-  mockAuthFn.mockReturnValue({ user: null, signOut: mockSignOut, signInAsVisitor: vi.fn() });
+  mockAuthFn.mockReturnValue({ session: null, user: null, loading: false, isVisitor: false, visitorId: null, signOut: mockSignOut, signInAsVisitor: vi.fn(), convertVisitorToAccount: vi.fn() });
 });
 
 describe("Extractor Screen", () => {
@@ -251,9 +251,9 @@ describe("Account Screen", () => {
 
   it("shows user name and email when logged in", () => {
     mockAuthFn.mockReturnValue({
-      user: { email: "test@openband.app", user_metadata: { name: "Test User" } },
-      signOut: mockSignOut,
-      signInAsVisitor: vi.fn(),
+      session: null, user: { email: "test@openband.app", user_metadata: { name: "Test User" } },
+      loading: false, isVisitor: false, visitorId: null,
+      signOut: mockSignOut, signInAsVisitor: vi.fn(), convertVisitorToAccount: vi.fn(),
     });
     render(<Account />);
     expect(screen.getByText("test@openband.app")).toBeTruthy();
@@ -262,9 +262,9 @@ describe("Account Screen", () => {
 
   it("shows save button for name editing", () => {
     mockAuthFn.mockReturnValue({
-      user: { email: "test@openband.app", user_metadata: { name: "Test User" } },
-      signOut: mockSignOut,
-      signInAsVisitor: vi.fn(),
+      session: null, user: { email: "test@openband.app", user_metadata: { name: "Test User" } },
+      loading: false, isVisitor: false, visitorId: null,
+      signOut: mockSignOut, signInAsVisitor: vi.fn(), convertVisitorToAccount: vi.fn(),
     });
     render(<Account />);
     expect(screen.getByText("Salvar")).toBeTruthy();
@@ -282,9 +282,9 @@ describe("Account Screen", () => {
 
   it("calls updateUser when Salvar is pressed with a new name", async () => {
     mockAuthFn.mockReturnValue({
-      user: { email: "test@openband.app", user_metadata: { name: "Old Name" } },
-      signOut: mockSignOut,
-      signInAsVisitor: vi.fn(),
+      session: null, user: { email: "test@openband.app", user_metadata: { name: "Old Name" } },
+      loading: false, isVisitor: false, visitorId: null,
+      signOut: mockSignOut, signInAsVisitor: vi.fn(), convertVisitorToAccount: vi.fn(),
     });
     render(<Account />);
     const input = screen.getByDisplayValue("Old Name");
@@ -296,9 +296,9 @@ describe("Account Screen", () => {
 
   it("does not call updateUser when name is unchanged", () => {
     mockAuthFn.mockReturnValue({
-      user: { email: "test@openband.app", user_metadata: { name: "Same Name" } },
-      signOut: mockSignOut,
-      signInAsVisitor: vi.fn(),
+      session: null, user: { email: "test@openband.app", user_metadata: { name: "Same Name" } },
+      loading: false, isVisitor: false, visitorId: null,
+      signOut: mockSignOut, signInAsVisitor: vi.fn(), convertVisitorToAccount: vi.fn(),
     });
     render(<Account />);
     fireEvent.click(screen.getByText("Salvar"));

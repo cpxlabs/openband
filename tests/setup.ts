@@ -57,9 +57,14 @@ vi.mock("expo-status-bar", () => ({
 
 vi.mock("../src/context/AuthContext", () => ({
   useAuth: () => ({
+    session: null,
     user: null,
+    loading: false,
+    isVisitor: false,
+    visitorId: null,
     signOut: vi.fn(),
     signInAsVisitor: vi.fn(),
+    convertVisitorToAccount: vi.fn(),
   }),
 }));
 

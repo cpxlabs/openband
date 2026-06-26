@@ -170,4 +170,53 @@ router.get("/auth/me", async (req: Request, res: Response) => {
   }
 })
 
+router.post("/auth/convert-visitor", async (req: Request, res: Response) => {
+  try {
+    const { email, password, name, visitorId } = req.body
+    if (!email || !password) {
+      return res.status(400).json({ error: "E-mail e senha são obrigatórios." })
+    }
+
+    const { data: existing } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("email", email)
+      .maybeSingle()
+
+    if (existing) {
+      return res.status(400).json({ error: "Este e-mail já está em uso." })
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12)
+
+    const { data: newUser, error: createError } = await supabase
+      .from("profiles")
+      .insert({ email, name, password_hash: passwordHash, tier: "FREE" })
+      .select()
+      .single()
+
+    if (createError) throw createError
+
+    if (visitorId) {
+      const { error: transferError } = await supabase
+        .from("projects")
+        .update({ user_id: newUser.id })
+        .eq("user_id", visitorId)
+
+      if (transferError) {
+        console.warn("Failed to transfer visitor projects:", transferError)
+      }
+    }
+
+    const token = signToken(newUser.id, newUser.tier || "FREE")
+    res.status(201).json({
+      token,
+      user: { id: newUser.id, email: newUser.email, name: newUser.name, tier: newUser.tier },
+    })
+  } catch (e) {
+    console.error("Convert visitor failed:", e)
+    res.status(500).json({ error: "Falha ao criar conta." })
+  }
+})
+
 export default router
