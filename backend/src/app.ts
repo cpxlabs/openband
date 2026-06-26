@@ -3,6 +3,7 @@ import cors from "cors";
 import extractRoutes from "./routes/extract";
 import masterRoutes from "./routes/master";
 import generatorRoutes from "./routes/generator";
+import exportRoutes from "./routes/export";
 import { checkDemucsInstalled } from "./services/demucs";
 
 const app = express();
@@ -105,6 +106,7 @@ app.use("/api", rateLimit(30, 15 * 60 * 1000));
 app.use("/api", extractRoutes);
 app.use("/api", masterRoutes);
 app.use("/api", generatorRoutes);
+app.use("/api", exportRoutes);
 
 app.use(
   (

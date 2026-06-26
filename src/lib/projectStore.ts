@@ -30,6 +30,7 @@ export interface ProjectData {
   metronome: MetronomeSettings;
   recordSettings: RecordSettings;
   lastSaved: number;
+  commits?: { version: number; description: string; createdAt: number }[];
 }
 
 const STORAGE_PREFIX = "openband_project_";
@@ -256,6 +257,22 @@ export function importProject(json: string): string | null {
     console.warn("[projectStore] importProject failed:", e);
     return null;
   }
+}
+
+export function createProjectSnapshot(
+  projectId: string,
+  description: string,
+  _data: ProjectData,
+): void {
+  const current = loadProject(projectId);
+  if (!current) return;
+  const commits = current.commits || [];
+  commits.push({
+    version: commits.length + 1,
+    description,
+    createdAt: Date.now(),
+  });
+  saveProject(projectId, { ...current, commits });
 }
 
 export function listProjectIndex(): Record<

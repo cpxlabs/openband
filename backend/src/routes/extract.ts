@@ -115,4 +115,49 @@ router.get("/stems/:filename", (req: Request, res: Response) => {
   });
 });
 
+router.post("/stems/manifest", (req: Request, res: Response) => {
+  const { projectId, bpm, key, chords, tracks } = req.body || {};
+
+  if (!projectId || bpm === undefined || !key || !Array.isArray(chords) || !Array.isArray(tracks)) {
+    return res.status(400).json({
+      error:
+        "projectId, bpm, key, chords[] e tracks[] são obrigatórios",
+    });
+  }
+
+  const manifest = {
+    generator: "Openband DAW Engine v2.0",
+    projectOriginId: projectId,
+    sessionMetadata: {
+      globalBpm: bpm,
+      globalKey: key,
+      chordsSequence: chords,
+    },
+    stemsRegistry: tracks.map(
+      (track: Record<string, unknown>) => ({
+        filename: `${String(track.name || "track").toLowerCase().replace(/\s+/g, "_")}.wav`,
+        trackType:
+          track.midiNotes &&
+          Array.isArray(track.midiNotes) &&
+          track.midiNotes.length > 0
+            ? "midi_synthesizer"
+            : "audio_track",
+        trackName: String(track.name || "track"),
+        isMono: false,
+        ...(track.midiNotes &&
+        Array.isArray(track.midiNotes) &&
+        track.midiNotes.length > 0
+          ? {
+              patchRef: String(track.name || "track")
+                .toLowerCase()
+                .replace(/\s+/g, "_"),
+            }
+          : {}),
+      }),
+    ),
+  };
+
+  res.json(manifest);
+});
+
 export default router;
