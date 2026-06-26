@@ -1,11 +1,10 @@
 import { Router, Request, Response } from "express";
-import { execFile, exec } from "child_process";
+import { execFile } from "child_process";
 import path from "path";
 import fs from "fs";
 import { promisify } from "util";
 
 const execFileAsync = promisify(execFile);
-const execAsync = promisify(exec);
 const router = Router();
 
 function sanitizePath(input: string, baseDir: string): string {
@@ -78,7 +77,8 @@ router.post("/export/djstem", async (req: Request, res: Response) => {
 
     const args: string[] = [];
     stems.forEach((stem: { path: string }, i: number) => {
-      args.push("-i", stem.path, "-map", `${i}:a`);
+      const safePath = sanitizePath(stem.path, outputDir);
+      args.push("-i", safePath, "-map", `${i}:a`);
     });
     args.push("-c:a", "aac", "-b:a", "256k", "-y", outputPath);
     await execFileAsync("ffmpeg", args, { timeout: 60000 });
@@ -86,7 +86,11 @@ router.post("/export/djstem", async (req: Request, res: Response) => {
     res.json({ url: `/stems/${path.basename(outputPath)}` });
   } catch (e) {
     console.error("DJ Stem export failed:", e);
-    res.status(500).json({ error: "Falha na exportação DJ Stem" });
+    const isProduction = process.env.NODE_ENV === "production";
+    res.status(500).json({
+      error: "Falha na exportação DJ Stem",
+      ...(isProduction ? {} : { details: String(e) }),
+    });
   }
 });
 
@@ -107,9 +111,21 @@ router.post("/export/social-video", async (req: Request, res: Response) => {
 
     const outputVideo = path.join(outputDir, `social_${Date.now()}.mp4`);
 
-    const cmd = `ffmpeg -loop 1 -i "${validatedCover}" -i "${validatedAudio}" -filter_complex "[1:a]showwaves=s=1080x360:mode=line:colors=0x3b82f6[wave];[0:v]scale=1080:1920,boxblur=20[bg];[bg][wave]overlay=0:(main_h-overlay_h)/2:short=1[video]" -map "[video]" -map 1:a -c:v libx264 -c:a aac -b:a 192k -pix_fmt yuv420p -shortest -y "${outputVideo}"`;
-
-    await execAsync(cmd, { timeout: 120000 });
+    await execFileAsync("ffmpeg", [
+      "-loop", "1",
+      "-i", validatedCover,
+      "-i", validatedAudio,
+      "-filter_complex", "[1:a]showwaves=s=1080x360:mode=line:colors=0x3b82f6[wave];[0:v]scale=1080:1920,boxblur=20[bg];[bg][wave]overlay=0:(main_h-overlay_h)/2:short=1[video]",
+      "-map", "[video]",
+      "-map", "1:a",
+      "-c:v", "libx264",
+      "-c:a", "aac",
+      "-b:a", "192k",
+      "-pix_fmt", "yuv420p",
+      "-shortest",
+      "-y",
+      outputVideo,
+    ], { timeout: 120000 });
 
     res.json({ url: `/videos/${path.basename(outputVideo)}` });
   } catch (e) {

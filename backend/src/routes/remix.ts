@@ -66,6 +66,12 @@ router.get("/projects/:id/remixes", async (req: Request, res: Response) => {
 
 router.get("/projects/:id/tree", async (req: Request, res: Response) => {
   try {
+    interface RemixRow {
+      created_at: string
+      remixed_project_id: string
+      remixed_project: { title: string } | null
+    }
+
     const { data: remixes } = await supabase
       .from("remixes")
       .select("*, remixed_project:projects!remixes_remixed_project_id_fkey(*)")
@@ -73,9 +79,9 @@ router.get("/projects/:id/tree", async (req: Request, res: Response) => {
 
     const tree = {
       projectId: req.params.id,
-      remixes: remixes?.map(r => ({
+      remixes: (remixes as unknown as RemixRow[])?.map(r => ({
         id: r.remixed_project_id,
-        title: (r as any).remixed_project?.title,
+        title: r.remixed_project?.title,
         createdAt: r.created_at,
       })) || [],
     }

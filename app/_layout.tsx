@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "../src/context/AuthContext";
 import { ThemeProvider } from "../src/context/ThemeContext";
 import { View, Platform } from "react-native";
 import { Loading } from "../src/components";
+import { disposeAudioContext } from "../src/lib/midiSynth";
 
 import "../global.css";
 
@@ -74,6 +75,10 @@ export default function RootLayout() {
     window.addEventListener("load", register);
     return () => window.removeEventListener("load", register);
   }, []);
+
+  useEffect(() => {
+    return () => { disposeAudioContext() }
+  }, [])
 
   return (
     <SafeAreaProvider>

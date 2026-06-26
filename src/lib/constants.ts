@@ -36,8 +36,11 @@ export async function generatePreviewUrl(
   if (previewUrlCache.size >= MAX_CACHE_SIZE) {
     const firstKey = previewUrlCache.keys().next().value;
     if (firstKey !== undefined) {
-      URL.revokeObjectURL(previewUrlCache.get(firstKey)!);
-      previewUrlCache.delete(firstKey);
+    const url = previewUrlCache.get(firstKey)
+    if (url !== undefined) {
+      URL.revokeObjectURL(url)
+      previewUrlCache.delete(firstKey)
+    }
     }
   }
   previewUrlCache.set(key, url);
