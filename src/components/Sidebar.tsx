@@ -8,7 +8,7 @@ const NAV_ITEMS = [
   { key: "settings", label: "Ajustes", icon: "⚙" },
 ];
 
-const LOGO = require("../../assets/logo.png");
+const LOGO = require("../../assets/logo-dark.png");
 
 interface SidebarProps {
   currentRoute: string;
