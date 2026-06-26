@@ -72,7 +72,7 @@ export default function Login() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <View
-        className={`flex-1 justify-center ${resp.isDesktop ? "mx-auto w-full px-0" : "px-8"}`}
+        className="flex-1 justify-center px-8 desktop:mx-auto desktop:w-full desktop:px-0"
         style={
           resp.isDesktop
             ? {

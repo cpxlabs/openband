@@ -5,7 +5,6 @@ import { useResponsive } from "../../src/lib/responsive";
 import { Sidebar } from "../../src/components";
 
 function TabIcon({ label, focused }: { label: string; focused: boolean }) {
-  const { breakpoint } = useResponsive();
   const icons: Record<string, string> = {
     Feed: "♫",
     Momentos: "♡",
@@ -16,12 +15,12 @@ function TabIcon({ label, focused }: { label: string; focused: boolean }) {
   return (
     <View className="items-center justify-center gap-0.5 px-1">
       <Text
-        className={`${breakpoint === "mobile" ? "text-xl" : "text-2xl"} ${focused ? "text-brand-primary" : "text-gray-500"}`}
+        className={`text-xl tablet:text-2xl ${focused ? "text-brand-primary" : "text-gray-500"}`}
       >
         {icons[label] || "●"}
       </Text>
       <Text
-        className={`${breakpoint === "mobile" ? "text-[10px]" : "text-xs"} font-medium ${focused ? "text-brand-primary" : "text-gray-500"}`}
+        className={`text-[10px] tablet:text-xs font-medium ${focused ? "text-brand-primary" : "text-gray-500"}`}
       >
         {label}
       </Text>
@@ -36,7 +35,8 @@ export default function TabLayout() {
   const isDesktop = breakpoint === "desktop";
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const currentSegment = segments[segments.length - 1] || "index";
+  const lastSegment = segments[segments.length - 1] || "index"
+  const currentSegment = lastSegment === "(tabs)" ? "index" : lastSegment
   const routeNameMap: Record<string, string> = {
     index: "Feed",
     moments: "Momentos",

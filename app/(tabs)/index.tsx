@@ -298,18 +298,18 @@ export default function Feed() {
         }
       >
         <View
-          className={`${resp.isMobile ? "pt-4" : "pt-12"} ${resp.isMobile ? "px-4" : "px-6"}`}
+          className="pt-4 mobile:pt-12 px-4 mobile:px-6"
         >
           <PageHeader title="Feed" subtitle="Descubra novos sons" />
         </View>
 
-        <View className={`${resp.isMobile ? "px-4" : "px-6"} mb-2`}>
+        <View className="px-4 mobile:px-6 mb-2">
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             className="mb-2"
           >
-            <View className="flex-row gap-2 py-1">
+            <View className="flex-row gap-2 py-1.5">
               {GENRE_FILTERS.map((genre) => (
                 <Pressable
                   key={genre.id}
@@ -357,13 +357,13 @@ export default function Feed() {
         </View>
 
         {playingId && (
-          <View
-            className={`flex-row items-center gap-2 ${resp.isMobile ? "px-4" : "px-6"} py-2 bg-brand-primary/10 border-b border-brand-primary/20`}
-          >
-            <View className="w-2 h-2 rounded-full bg-green-500" />
-            <Text className="text-green-400 text-xs font-medium flex-1">
-              Tocando: {currentPostRef.current.title}
-            </Text>
+          <View className="px-4 mobile:px-6 py-3 bg-brand-primary/10 border-b border-brand-primary/20">
+            <View className="flex-row items-center gap-2.5">
+              <View className="w-2.5 h-2.5 rounded-full bg-green-500" />
+              <Text className="text-green-400 text-xs font-medium flex-1">
+                Tocando: {currentPostRef.current.title}
+              </Text>
+            </View>
           </View>
         )}
       </View>
@@ -399,7 +399,7 @@ export default function Feed() {
             : 0;
 
           return (
-            <Card activeBorder={isThisPlaying} className="mx-4 mb-3">
+            <Card activeBorder={isThisPlaying} className="mx-4 mobile:mx-4 tablet:mx-0 mb-3">
               <View className="p-4">
                 <View className="flex-row items-start gap-3">
                   <Avatar name={item.author} size="md" />

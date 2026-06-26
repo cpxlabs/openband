@@ -30,7 +30,7 @@ export function Sidebar({
   const sidebarContent = (
     <View
       testID={testID}
-      className={`bg-dark-surface border-r border-dark-border h-full ${isPersistent ? "w-56" : "w-64"}`}
+      className={`bg-dark-surface border-r border-dark-border h-full ${isPersistent ? "w-52" : "w-64"}`}
     >
       <View className="h-16 border-b border-dark-border items-center justify-center">
         <View className="flex-row items-center gap-2">
@@ -43,7 +43,7 @@ export function Sidebar({
         </View>
       </View>
 
-      <ScrollView className="flex-1 px-3 py-4">
+      <ScrollView className={`flex-1 py-4 ${isPersistent ? "px-2" : "px-3"}`}>
         {NAV_ITEMS.map((item) => {
           const isActive = currentRoute === item.key;
           return (
@@ -87,14 +87,14 @@ export function Sidebar({
 
       <View className="border-t border-dark-border px-3 py-3">
         <View className="flex-row items-center gap-2">
-          <View className="w-8 h-8 rounded-full bg-gray-600 items-center justify-center">
-            <Text className="text-white text-xs">U</Text>
+          <View className="w-8 h-8 rounded-full bg-brand-primary/20 items-center justify-center">
+            <Text className="text-brand-primary text-xs font-bold">U</Text>
           </View>
           <View className="flex-1">
-            <Text className="text-gray-400 text-[10px] font-medium">
+            <Text className="text-gray-400 text-2xs font-medium">
               OpenBand
             </Text>
-            <Text className="text-gray-600 text-[9px]">v1.0.0</Text>
+            <Text className="text-brand-primary/50 text-3xs">v1.0.0</Text>
           </View>
         </View>
       </View>

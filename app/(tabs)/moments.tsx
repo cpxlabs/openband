@@ -178,13 +178,13 @@ export default function Moments() {
   return (
     <View className="flex-1 bg-dark-bg">
       <View
-        className={`${resp.isMobile ? "pt-4" : "pt-12"} ${resp.isMobile ? "px-4" : "px-6"} flex-row items-center justify-between mb-2`}
+        className="pt-4 mobile:pt-12 px-4 mobile:px-6 flex-row items-center justify-between mb-2"
       >
         <PageHeader title="Momentos" subtitle="Artistas e criadores" />
       </View>
 
       <View
-        className={`flex-row gap-2 ${resp.isMobile ? "px-4" : "px-6"} mb-3`}
+        className="flex-row gap-2 px-4 mobile:px-6 mb-3"
       >
         <Pressable
           onPress={() => setTab("moments")}
@@ -210,7 +210,7 @@ export default function Moments() {
 
       {credits.length > 0 && (
         <View
-          className={`${resp.isMobile ? "px-4" : "px-6"} mb-3 p-2.5 rounded-xl bg-brand-accent/10 border border-brand-accent/20`}
+          className="px-4 mobile:px-6 mb-3 p-2.5 rounded-xl bg-brand-accent/10 border border-brand-accent/20"
           style={
             resp.isDesktop
               ? {
@@ -250,14 +250,14 @@ export default function Moments() {
         }
       >
         {tab === "moments" ? (
-          <View className={`${resp.isMobile ? "px-4" : "px-6"}`}>
+          <View className="px-4 mobile:px-6">
             {MOCK_MOMENTS.map((moment) => (
               <MomentCard key={moment.id} moment={moment} />
             ))}
           </View>
         ) : (
           <View
-            className={`${resp.isMobile ? "px-4" : "px-6"} ${resp.isDesktop ? "flex-row flex-wrap gap-4" : "gap-3"}`}
+            className="px-4 mobile:px-6 gap-3 tablet:flex-row tablet:flex-wrap tablet:gap-4"
           >
             <View className="card p-3 mb-1 w-full">
               <Text className="text-gray-400 text-xs leading-relaxed">
@@ -268,7 +268,7 @@ export default function Moments() {
             {FREE_SAMPLE_PACKS.map((pack) => (
               <View
                 key={pack.id}
-                className={`card overflow-hidden ${resp.isDesktop ? "w-[calc(50%-8px)]" : "w-full"}`}
+                className="card overflow-hidden w-full tablet:w-[49%]"
               >
                 <View className="p-4">
                   <View className="flex-row items-start gap-3 mb-3">

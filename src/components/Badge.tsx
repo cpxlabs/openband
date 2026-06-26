@@ -9,21 +9,21 @@ interface BadgeProps {
 
 const variantStyles = {
   default: "bg-dark-muted",
-  play: "bg-dark-bg border border-dark-border",
-  active: "bg-brand-primary/10 border border-brand-primary/20",
+  play: "bg-brand-primary/10 border border-brand-primary/20",
+  active: "bg-brand-green/10 border border-brand-green/20",
 };
 
 const textStyles = {
   default: "text-gray-400",
-  play: "text-gray-500",
-  active: "text-brand-primary",
+  play: "text-brand-primary",
+  active: "text-brand-green",
 };
 
 export function Badge({ text, icon, variant = "default", testID }: BadgeProps) {
   return (
     <View
       testID={testID}
-      className={`${variantStyles[variant]} px-2.5 py-1 rounded-full flex-row items-center gap-1`}
+      className={`badge ${variantStyles[variant]}`}
     >
       {icon && <Text className={`text-xs ${textStyles[variant]}`}>{icon}</Text>}
       <Text className={`${textStyles[variant]} text-xs font-medium`} numberOfLines={1}>

@@ -289,7 +289,7 @@ export default function Extractor() {
     <View className="flex-1 bg-dark-bg">
       {phase === "done" && (
         <View
-          className={`${resp.isMobile ? "pt-4" : "pt-12"} ${resp.isMobile ? "px-4" : "px-6"} flex-row justify-end`}
+          className="pt-4 mobile:pt-12 px-4 mobile:px-6 flex-row justify-end"
           style={
             resp.isDesktop
               ? {
@@ -309,7 +309,7 @@ export default function Extractor() {
       )}
 
       <View
-        className={`${resp.isMobile ? "pt-4" : "pt-12"} ${resp.isMobile ? "px-4" : "px-6"}`}
+        className="pt-4 mobile:pt-12 px-4 mobile:px-6"
         style={
           resp.isDesktop
             ? {
@@ -327,7 +327,7 @@ export default function Extractor() {
       </View>
 
       <ScrollView
-        className={`flex-1 ${resp.isMobile ? "px-4" : "px-6"}`}
+        className="flex-1 px-4 mobile:px-6"
         style={
           resp.isDesktop
             ? {
@@ -341,7 +341,7 @@ export default function Extractor() {
       >
         {phase === "select" && (
           <View>
-            <View className="card-elevated p-8 mb-6 items-center border-dashed border-2 border-dark-border active:border-brand-accent">
+            <View className="card-elevated p-5 mobile:p-8 mb-6 items-center border-dashed border-2 border-dark-border active:border-brand-accent">
               <View className="w-16 h-16 rounded-2xl bg-brand-primary/10 items-center justify-center mb-4">
                 <Text className="text-3xl">📁</Text>
               </View>
@@ -396,45 +396,53 @@ export default function Extractor() {
 
         {phase === "processing" && (
           <View className="items-center py-16 px-4">
-            <View className="w-24 h-24 rounded-3xl bg-brand-primary/10 items-center justify-center mb-8">
+            <View className="w-24 h-24 rounded-3xl bg-brand-primary/10 items-center justify-center mb-6">
               <Text className="text-5xl">🔊</Text>
             </View>
 
-            <View className="flex-row gap-1.5 mb-8">
-              {Array.from({ length: 7 }, (_, i) => (
+            <View className="flex-row gap-1.5 mb-6">
+              {Array.from({ length: 9 }, (_, i) => (
                 <View
                   key={i}
-                  className="w-2 bg-brand-primary/60 rounded-full"
+                  className="w-2.5 rounded-full"
                   style={{
-                    height: 16 + Math.sin(animTick * 0.5 + i * 1.2) * 10,
-                    opacity: progress > i * 15 ? 1 : 0.2,
+                    height: 20 + Math.sin(animTick * 0.5 + i * 1.2) * 14,
+                    opacity: progress > i * 12 ? 1 : 0.2,
+                    backgroundColor:
+                      progress > i * 12 ? "#ff3b30" : "#26262b",
                   }}
                 />
               ))}
             </View>
 
-            <Text className="text-white font-medium text-lg mb-1">
-              {statusText}
-            </Text>
-            <Text className="text-gray-500 text-sm mb-6">
+            <View className="flex-row items-center gap-2 mb-2">
+              <View className="w-2 h-2 rounded-full bg-brand-primary animate-pulse" />
+              <Text className="text-white font-medium text-base">
+                {statusText}
+              </Text>
+            </View>
+            <Text className="text-brand-primary font-bold text-2xl mb-4">
               {Math.round(progress)}%
             </Text>
 
-            <View className="w-full max-w-xs">
+            <View className="w-full max-w-xs mb-8">
               <ProgressBar progress={progress} />
             </View>
 
-            <View className="mt-8 flex-row gap-3 flex-wrap justify-center">
+            <View className="flex-row gap-3 flex-wrap justify-center">
               {(["drums", "bass", "vocals", "other"] as const).map((type) => {
                 const meta = STEM_META[type];
+                const isActive = progress > (type === "drums" ? 15 : type === "bass" ? 30 : type === "vocals" ? 60 : 85);
                 return (
-                  <View key={type} className="items-center gap-1 opacity-60">
+                  <View key={type} className={`items-center gap-1 ${isActive ? "opacity-100" : "opacity-30"}`}>
                     <View
                       className={`w-12 h-12 rounded-xl ${meta.color} items-center justify-center`}
                     >
                       <Text className="text-lg">{meta.icon}</Text>
                     </View>
-                    <Text className="text-gray-500 text-xs">{meta.label}</Text>
+                    <Text className={`text-xs font-medium ${isActive ? "text-white" : "text-gray-500"}`}>
+                      {meta.label}
+                    </Text>
                   </View>
                 );
               })}
@@ -469,7 +477,10 @@ export default function Extractor() {
               />
             ))}
 
-            <View className="mt-4 gap-3">
+            <View className="card-elevated p-4 mt-4 gap-3">
+              <Text className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-1">
+                Ações
+              </Text>
               <Button
                 title="Adicionar todos ao estúdio"
                 icon="+"

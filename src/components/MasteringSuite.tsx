@@ -326,7 +326,7 @@ export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
       </View>
 
       <ScrollView
-        className={`flex-1 ${resp.isMobile ? "px-4" : "px-6"} pt-3`}
+        className="flex-1 px-4 tablet:px-6 pt-3"
         style={
           resp.isDesktop
             ? {

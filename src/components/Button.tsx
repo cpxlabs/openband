@@ -4,17 +4,31 @@ interface ButtonProps {
   title: string;
   onPress: () => void;
   variant?: "primary" | "secondary" | "ghost";
+  size?: "sm" | "md" | "lg";
   loading?: boolean;
   disabled?: boolean;
   icon?: string;
+  fullWidth?: boolean;
   className?: string;
   testID?: string;
 }
 
-const variantStyles = {
-  primary: "bg-brand-primary active:opacity-80 hover:opacity-90",
-  secondary: "bg-dark-muted border border-dark-border active:opacity-80 hover:opacity-90",
-  ghost: "active:opacity-60 hover:opacity-90",
+const variantBase = {
+  primary: "btn-primary",
+  secondary: "btn-secondary",
+  ghost: "btn-ghost",
+};
+
+const sizeStyles = {
+  sm: "px-3 py-2",
+  md: "px-5 py-3",
+  lg: "px-6 py-4",
+};
+
+const textSizes = {
+  sm: "text-sm",
+  md: "text-base",
+  lg: "text-lg",
 };
 
 const textStyles = {
@@ -27,21 +41,24 @@ export function Button({
   title,
   onPress,
   variant = "primary",
+  size = "md",
   loading,
   disabled,
   icon,
+  fullWidth,
   className = "",
   testID,
 }: ButtonProps) {
+  const isDisabled = disabled || loading;
   return (
     <Pressable
       testID={testID}
       onPress={onPress}
-      disabled={disabled || loading}
+      disabled={isDisabled}
       accessibilityRole="button"
       accessibilityLabel={title}
-      accessibilityState={{ disabled: disabled || loading, busy: loading }}
-      className={`${variantStyles[variant]} rounded-xl p-4 flex-row items-center justify-center gap-2 ${disabled ? "opacity-50" : ""} ${className}`}
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
+      className={`${variantBase[variant]} ${sizeStyles[size]} ${fullWidth ? "w-full" : ""} flex-row items-center justify-center gap-2 ${isDisabled ? "opacity-40" : "active:opacity-80 hover:opacity-90"} ${className}`.trim().replace(/\s+/g, " ")}
     >
       {loading ? (
         <ActivityIndicator
@@ -50,8 +67,8 @@ export function Button({
         />
       ) : (
         <>
-          {icon && <Text className="text-base">{icon}</Text>}
-          <Text className={`${textStyles[variant]} font-bold text-base`} numberOfLines={1}>
+          {icon && <Text className={`${textSizes[size]}`}>{icon}</Text>}
+          <Text className={`${textStyles[variant]} font-bold ${textSizes[size]}`} numberOfLines={1}>
             {title}
           </Text>
         </>

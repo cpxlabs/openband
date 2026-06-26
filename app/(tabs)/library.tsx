@@ -110,13 +110,13 @@ export default function Library() {
   return (
     <View className="flex-1 bg-dark-bg">
       <View
-        className={`${resp.isMobile ? "pt-4" : "pt-12"} ${resp.isMobile ? "px-4" : "px-6"}`}
+        className="pt-4 mobile:pt-12 px-4 mobile:px-6"
       >
         <PageHeader title="Biblioteca" subtitle="Seus projetos musicais" />
       </View>
 
       <View
-        className={`${resp.isMobile ? "px-4" : "px-6"} mb-3 gap-3 ${resp.isDesktop ? "max-w-3xl mx-auto w-full" : ""}`}
+        className="px-4 mobile:px-6 mb-3 gap-3 tablet:max-w-content tablet:mx-auto tablet:w-full"
       >
         <Button
           title="Novo Projeto"

@@ -6,6 +6,7 @@ interface CardProps {
   onPress?: () => void;
   className?: string;
   activeBorder?: boolean;
+  highlighted?: boolean;
   elevated?: boolean;
   testID?: string;
   accessibilityLabel?: string;
@@ -15,19 +16,21 @@ export function Card({
   children,
   onPress,
   activeBorder = false,
+  highlighted = false,
   elevated = false,
   className = "",
   testID,
   accessibilityLabel,
 }: CardProps) {
   const Container = onPress ? Pressable : View;
+  const isHighlighted = highlighted || activeBorder;
   return (
     <Container
       testID={testID}
       onPress={onPress}
       accessibilityRole={onPress ? "button" : undefined}
       accessibilityLabel={onPress ? (accessibilityLabel ?? "Card") : undefined}
-      className={`${elevated ? "card-elevated" : "card"} ${activeBorder ? "border-brand-primary/50" : ""} ${onPress ? "active:opacity-80 hover:bg-dark-elevated" : ""} ${className}`}
+      className={`${elevated ? "card-elevated" : "card"} ${isHighlighted ? "border-brand-primary/50" : ""} ${onPress ? "active:opacity-80 active:scale-[0.98] hover:bg-dark-elevated" : ""} ${className}`.trim().replace(/\s+/g, " ")}
     >
       {children}
     </Container>
@@ -48,7 +51,7 @@ export function CardRow({
       onPress={onPress}
       accessibilityRole={onPress ? "button" : undefined}
       accessibilityLabel={onPress ? (accessibilityLabel ?? "Card row") : undefined}
-      className={`flex-row items-center p-4 bg-dark-surface rounded-2xl border border-dark-border ${onPress ? "active:border-brand-accent/50 hover:bg-dark-elevated" : ""} ${className}`}
+      className={`card flex-row items-center p-4 ${onPress ? "active:border-brand-accent/50 active:scale-[0.98] hover:bg-dark-elevated" : ""} ${className}`.trim().replace(/\s+/g, " ")}
     >
       {children}
     </Container>

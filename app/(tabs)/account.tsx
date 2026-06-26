@@ -62,9 +62,6 @@ export default function Account() {
     ]);
   };
 
-  const px = resp.isMobile ? "px-4" : "px-6"
-  const pt = resp.isMobile ? "pt-4" : "pt-12"
-
   return (
     <ScrollView
       className="flex-1 bg-dark-bg"
@@ -75,11 +72,11 @@ export default function Account() {
           : undefined
       }
     >
-      <View className={`${pt} ${px}`}>
+      <View className="pt-4 tablet:pt-12 px-4 tablet:px-6">
         <PageHeader title="Conta" subtitle="Suas informações de perfil" />
       </View>
 
-      <View className={`${px} gap-6`}>
+      <View className="px-4 tablet:px-6 gap-6">
         <View className="items-center py-6">
           <Avatar name={currentName} size="lg" />
           <Text className="text-white text-xl font-bold mt-4">{currentName}</Text>

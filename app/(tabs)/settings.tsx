@@ -16,8 +16,6 @@ export default function Settings() {
   const { theme, setTheme } = useTheme();
   const profile = MOCK_PROFILE;
 
-  const px = resp.isMobile ? "px-4" : "px-6"
-  const pt = resp.isMobile ? "pt-4" : "pt-12"
 
   return (
     <ScrollView
@@ -29,11 +27,11 @@ export default function Settings() {
           : undefined
       }
     >
-      <View className={`${pt} ${px}`}>
+      <View className="pt-4 tablet:pt-12 px-4 tablet:px-6">
         <PageHeader title="Configurações" subtitle="Personalize sua experiência" />
       </View>
 
-      <View className={`${px} gap-6`}>
+      <View className="px-4 tablet:px-6 gap-6">
         <View className="items-center py-6 gap-3">
           <Avatar name={profile.name} size="lg" />
           <View className="items-center">
