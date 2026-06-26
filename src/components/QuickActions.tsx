@@ -45,9 +45,9 @@ export function QuickActions({ testID }: { testID?: string }) {
   };
 
   return (
-    <View testID={testID} className="card-elevated p-4 gap-2">
+    <View testID={testID} className="card-elevated flex-1 p-4 gap-2">
       <Text className="label mb-1">Ferramentas Rápidas</Text>
-      <ScrollView showsVerticalScrollIndicator={false} className="gap-2">
+      <ScrollView showsVerticalScrollIndicator={false} className="flex-1 gap-2">
         {QUICK_ACTIONS.map((action) => (
           <Pressable
             key={action.id}

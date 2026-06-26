@@ -400,7 +400,7 @@ export default function Feed() {
       </View>
 
       <View className="flex-1 flex-row" style={maxWidthStyle}>
-        <View className="flex-1" style={{ flexBasis: resp.isDesktop ? "70%" : "100%" }}>
+        <View style={resp.isDesktop ? { flex: 7 } : { flex: 1 }}>
           <FlatList
             data={filteredPosts}
             keyExtractor={(item) => item.id}
@@ -526,7 +526,7 @@ export default function Feed() {
         </View>
 
         {resp.isDesktop && (
-          <View style={{ width: "30%", paddingLeft: 12 }}>
+          <View style={{ flex: 3, paddingLeft: 12 }}>
             <QuickActions />
           </View>
         )}
