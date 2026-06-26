@@ -1,4 +1,4 @@
-import { View, Text, Pressable, ScrollView, Image, Platform } from "react-native";
+import { View, Text, Pressable, ScrollView, Image } from "react-native";
 
 const NAV_ITEMS = [
   { key: "index", label: "Feed", icon: "♫" },
@@ -8,7 +8,7 @@ const NAV_ITEMS = [
   { key: "settings", label: "Ajustes", icon: "⚙" },
 ];
 
-const LOGO_URL = "/logo-openband.png";
+const LOGO = require("../../assets/logo.png");
 
 interface SidebarProps {
   currentRoute: string;
@@ -36,17 +36,12 @@ export function Sidebar({
     >
       <View className="items-center justify-center pt-8 pb-6 px-4 border-b border-dark-border select-none">
         <View className="w-16 h-16 items-center justify-center mb-3">
-          {Platform.OS === "web" ? (
-            <Image
-              source={{ uri: LOGO_URL }}
-              style={{ width: 64, height: 64 }}
-              className="object-contain"
-            />
-          ) : (
-            <View className="w-12 h-12 rounded-2xl bg-brand-primary items-center justify-center">
-              <Text className="text-white text-xl font-bold">♫</Text>
-            </View>
-          )}
+          <Image
+            source={LOGO}
+            style={{ width: 64, height: 64 }}
+            className="object-contain"
+            resizeMode="contain"
+          />
         </View>
 
         <View className="items-center">

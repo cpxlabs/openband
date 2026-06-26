@@ -18,7 +18,7 @@ import {
   PageHeader,
   Avatar,
   QuickActions,
-  NewProject,
+  QuickTools,
 } from "../../src/components";
 import { generatePreviewUrl, SCREEN_BOTTOM_PADDING } from "../../src/lib/constants";
 import { GENRES } from "../../src/lib/projectTemplates";
@@ -200,7 +200,7 @@ export default function Feed() {
   const player = useAudioPlayer(null);
   const status = useAudioPlayerStatus(player);
   const [playingId, setPlayingId] = useState<string | null>(null);
-  const [showNewProject, setShowNewProject] = useState(false);
+  const [showQuickTools, setShowQuickTools] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -268,24 +268,8 @@ export default function Feed() {
   );
 
   const handleNewProject = useCallback(() => {
-    setShowNewProject(true);
+    setShowQuickTools(true);
   }, []);
-
-  const handleCreateProject = useCallback(
-    (config: { name: string; genre: any; key: string; bpm: number; mood?: string }) => {
-      const projectId = `proj-${Date.now()}`;
-      const params = new URLSearchParams({
-        title: config.name,
-        genre: config.genre.id,
-        bpm: String(config.bpm),
-        key: config.key,
-      });
-      if (config.mood) params.set("mood", config.mood);
-      router.push(`/studio/${projectId}?${params.toString()}`);
-      setShowNewProject(false);
-    },
-    [router],
-  );
 
   const handleShare = useCallback(async (post: FeedPost) => {
     if (Platform.OS === "web") {
@@ -313,10 +297,9 @@ export default function Feed() {
 
   return (
     <View className="flex-1 bg-dark-bg">
-      <NewProject
-        visible={showNewProject}
-        onClose={() => setShowNewProject(false)}
-        onCreate={handleCreateProject}
+      <QuickTools
+        visible={showQuickTools}
+        onClose={() => setShowQuickTools(false)}
       />
       <View style={maxWidthStyle}>
         <View className="pt-4 tablet:pt-12 px-4 tablet:px-6 flex-row items-start justify-between">
