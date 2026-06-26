@@ -18,6 +18,8 @@ export interface ProjectData {
   key: string;
   bpm: number;
   mood?: string;
+  parentProjectId?: string;
+  isPublished?: boolean;
   tracks: TrackDef[];
   groups: GroupDef[];
   trackAssignments: Record<string, string | null>;
@@ -190,6 +192,10 @@ function sanitizeProjectData(raw: unknown): ProjectData | null {
     genre: typeof data.genre === "string" ? data.genre : "",
     key: typeof data.key === "string" ? data.key : "C",
     mood: typeof data.mood === "string" ? data.mood : undefined,
+    parentProjectId:
+      typeof data.parentProjectId === "string" ? data.parentProjectId : undefined,
+    isPublished:
+      typeof data.isPublished === "boolean" ? data.isPublished : undefined,
     bpm: data.bpm as number,
     tracks: Array.isArray(data.tracks) ? data.tracks : [],
     groups: Array.isArray(data.groups) ? data.groups : [],
@@ -288,4 +294,17 @@ export function listProjectIndex(): Record<
     console.warn("[projectStore] listProjectIndex parse failed:", e);
     return {};
   }
+}
+
+export function createRemix(originalId: string, _userId: string): string | null {
+  const original = loadProject(originalId);
+  if (!original) return null;
+  const newId = `proj-${Date.now()}`;
+  saveProject(newId, {
+    ...original,
+    title: `Remix: ${original.title}`,
+    parentProjectId: originalId,
+    isPublished: false,
+  });
+  return newId;
 }

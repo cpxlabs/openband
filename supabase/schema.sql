@@ -65,6 +65,32 @@ create table public.posts (
 );
 
 -- ============================================================
+-- REMIX GRAPH
+-- ============================================================
+
+alter table public.projects add column if not exists parent_project_id uuid references public.projects(id) on delete set null;
+alter table public.projects add column if not exists is_published boolean default false;
+alter table public.projects add column if not exists updated_at timestamp with time zone default timezone('utc'::text, now()) not null;
+
+create table if not exists public.remixes (
+  id uuid default gen_random_uuid() primary key,
+  original_project_id uuid not null references public.projects(id) on delete cascade,
+  remixed_project_id uuid not null references public.projects(id) on delete cascade,
+  created_by uuid references public.profiles(id),
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  unique(original_project_id, remixed_project_id)
+);
+
+create table if not exists public.project_reactions (
+  id uuid default gen_random_uuid() primary key,
+  project_id uuid not null references public.projects(id) on delete cascade,
+  user_id uuid references public.profiles(id) on delete cascade,
+  reaction text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  unique(project_id, user_id, reaction)
+);
+
+-- ============================================================
 -- ROW LEVEL SECURITY
 -- ============================================================
 
@@ -73,6 +99,8 @@ alter table public.projects enable row level security;
 alter table public.tracks enable row level security;
 alter table public.stems enable row level security;
 alter table public.posts enable row level security;
+alter table public.remixes enable row level security;
+alter table public.project_reactions enable row level security;
 
 -- Profiles
 create policy "Profiles are publicly viewable"
@@ -207,6 +235,26 @@ create policy "Users can update own posts"
 create policy "Users can delete own posts"
   on public.posts for delete using (auth.uid() = user_id);
 
+-- Remixes
+create policy "Remixes are publicly viewable"
+  on public.remixes for select using (true);
+
+create policy "Authenticated users can create remixes"
+  on public.remixes for insert
+  with check (auth.uid() = created_by);
+
+-- Project Reactions
+create policy "Reactions are publicly viewable"
+  on public.project_reactions for select using (true);
+
+create policy "Authenticated users can create reactions"
+  on public.project_reactions for insert
+  with check (auth.uid() = user_id);
+
+create policy "Users can delete own reactions"
+  on public.project_reactions for delete
+  using (auth.uid() = user_id);
+
 -- ============================================================
 -- AUTO-UPDATE updated_at
 -- ============================================================
@@ -222,6 +270,7 @@ begin
 end;
 $$;
 
+drop trigger if exists set_projects_updated_at on public.projects;
 create trigger set_projects_updated_at
   before update on public.projects
   for each row execute function public.set_updated_at();
