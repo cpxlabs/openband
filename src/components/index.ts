@@ -42,3 +42,4 @@ export { MasteringSuite } from "./MasteringSuite";
 export { MasteringChain } from "./MasteringChain";
 export { MasteringVersionManager } from "./MasteringVersionManager";
 export { MasteringUpload } from "./MasteringUpload";
+export { VoiceCommandButton } from "./VoiceCommandButton";
