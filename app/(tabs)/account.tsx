@@ -62,76 +62,62 @@ export default function Account() {
     ]);
   };
 
+  const px = resp.isMobile ? "px-4" : "px-6"
+  const pt = resp.isMobile ? "pt-4" : "pt-12"
+
   return (
     <ScrollView
       className="flex-1 bg-dark-bg"
+      contentContainerStyle={{ paddingBottom: 100 }}
       style={
         resp.isDesktop
-          ? {
-              maxWidth: LAYOUT_MAX_WIDTHS.account,
-              alignSelf: "center",
-              width: "100%",
-            }
+          ? { maxWidth: LAYOUT_MAX_WIDTHS.account, alignSelf: "center", width: "100%" }
           : undefined
       }
     >
-      <View
-        className={`${resp.isMobile ? "pt-4" : "pt-12"} ${resp.isMobile ? "px-4" : "px-6"}`}
-      >
+      <View className={`${pt} ${px}`}>
         <PageHeader title="Conta" subtitle="Suas informações de perfil" />
       </View>
 
-      <View className={`${resp.isMobile ? "px-4" : "px-6"} gap-6 pb-8`}>
+      <View className={`${px} gap-6`}>
         <View className="items-center py-6">
           <Avatar name={currentName} size="lg" />
-          <Text className="text-white text-xl font-bold mt-4">
-            {currentName}
-          </Text>
+          <Text className="text-white text-xl font-bold mt-4">{currentName}</Text>
           <Text className="text-gray-500 text-sm mt-1">{user?.email}</Text>
         </View>
 
-        <Divider />
+        <Divider label="Editar perfil" />
 
-        <View className="gap-4">
-          <Text className="label px-1">Editar perfil</Text>
-          <TextInput
-            label="Nome de exibição"
-            placeholder="Seu nome"
-            onChangeText={setName}
-            value={name}
-            autoCapitalize="words"
-          />
-          <Button
-            title="Salvar"
-            onPress={handleSaveName}
-            loading={saving}
-            disabled={!name.trim() || name.trim() === currentName}
-          />
-        </View>
+        <TextInput
+          label="Nome de exibição"
+          placeholder="Seu nome"
+          onChangeText={setName}
+          value={name}
+          autoCapitalize="words"
+        />
+        <Button
+          title="Salvar"
+          onPress={handleSaveName}
+          loading={saving}
+          disabled={!name.trim() || name.trim() === currentName}
+        />
 
-        <Divider />
+        <Divider label="Sessão" />
 
-        <View className="gap-4">
-          <Text className="label px-1">Sessão</Text>
-          <View className="card p-4">
-            <View className="flex-row justify-between items-center">
-              <Text className="text-gray-400 text-sm">Status</Text>
-              <View className="flex-row items-center gap-1.5">
-                <View className="w-2 h-2 rounded-full bg-brand-green" />
-                <Text className="text-brand-green text-sm">Conectado</Text>
-              </View>
-            </View>
+        <View className="card-elevated p-4 flex-row justify-between items-center">
+          <Text className="text-gray-400 text-sm">Status</Text>
+          <View className="flex-row items-center gap-1.5">
+            <View className="w-2 h-2 rounded-full bg-brand-green" />
+            <Text className="text-brand-green text-sm font-medium">Conectado</Text>
           </View>
         </View>
 
-        <View className="mt-4">
-          <Button
-            title="Sair"
-            onPress={handleSignOut}
-            variant="ghost"
-            loading={signingOut}
-          />
-        </View>
+        <Button
+          title="Sair"
+          onPress={handleSignOut}
+          variant="ghost"
+          loading={signingOut}
+        />
       </View>
     </ScrollView>
   );

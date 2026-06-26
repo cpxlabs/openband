@@ -47,7 +47,7 @@ export default function TabLayout() {
   const pageTitle = routeNameMap[currentSegment] || "OpenBand";
 
   const handleNavigate = (route: string) => {
-    router.replace(`/(tabs)/${route}` as Href);
+    router.navigate(`/(tabs)/${route}` as Href);
     setDrawerOpen(false);
   };
 
