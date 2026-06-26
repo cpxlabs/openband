@@ -262,7 +262,6 @@ export function importProject(json: string): string | null {
 export function createProjectSnapshot(
   projectId: string,
   description: string,
-  _data: ProjectData,
 ): void {
   const current = loadProject(projectId);
   if (!current) return;

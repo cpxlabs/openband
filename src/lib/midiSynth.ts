@@ -2,6 +2,7 @@ import { Platform } from "react-native";
 import type { MIDINote, TrackDef } from "./types";
 import type { Mood } from "./projectTemplates";
 import { MOODS } from "./projectTemplates";
+import { audioBufferToWavBlob } from "./audio";
 
 let audioCtx: AudioContext | null = null;
 
@@ -418,46 +419,6 @@ export async function renderTracksToUrl(
   }
 
   return null;
-}
-
-function audioBufferToWavBlob(buffer: AudioBuffer): Blob {
-  const nc = buffer.numberOfChannels;
-  const sr = buffer.sampleRate;
-  const ns = buffer.length;
-  const bps = 2;
-  const ba = nc * bps;
-  const ds = ns * ba;
-  const ab = new ArrayBuffer(44 + ds);
-  const v = new DataView(ab);
-  const w = (o: number, s: string) => {
-    for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i));
-  };
-  w(0, "RIFF");
-  v.setUint32(4, 36 + ds, true);
-  w(8, "WAVE");
-  w(12, "fmt ");
-  v.setUint32(16, 16, true);
-  v.setUint16(20, 1, true);
-  v.setUint16(22, nc, true);
-  v.setUint32(24, sr, true);
-  v.setUint32(28, sr * ba, true);
-  v.setUint16(32, ba, true);
-  v.setUint16(34, 16, true);
-  w(36, "data");
-  v.setUint32(40, ds, true);
-  for (let i = 0; i < ns; i++) {
-    for (let ch = 0; ch < nc; ch++) {
-      v.setInt16(
-        44 + (i * nc + ch) * bps,
-        Math.max(
-          -32768,
-          Math.min(32767, Math.round(buffer.getChannelData(ch)[i] * 32767)),
-        ),
-        true,
-      );
-    }
-  }
-  return new Blob([ab], { type: "audio/wav" });
 }
 
 export function midiNoteToName(pitch: number): string {

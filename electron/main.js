@@ -192,7 +192,8 @@ ipcMain.handle("read-file", async (_event, filePath) => {
   try {
     const buffer = await fs.promises.readFile(filePath);
     return buffer.buffer;
-  } catch {
+  } catch (err) {
+    console.error("read-file error:", err);
     return null;
   }
 });
@@ -233,8 +234,9 @@ ipcMain.handle("list-projects", async () => {
           name: data.title ?? id,
           lastModified: stat.mtimeMs,
         });
-      } catch {
-        projects.push({ id, name: id, lastModified: stat.mtimeMs });
+        } catch (err) {
+          console.error("list-projects error:", err);
+          projects.push({ id, name: id, lastModified: stat.mtimeMs });
       }
     }
   }
@@ -257,7 +259,8 @@ ipcMain.handle("load-project", async (_event, id) => {
   const filePath = path.join(PROJECTS_DIR, `${safeId}.openband.json`);
   try {
     return await fs.promises.readFile(filePath, "utf-8");
-  } catch {
+  } catch (err) {
+    console.error("load-project error:", err);
     return null;
   }
 });

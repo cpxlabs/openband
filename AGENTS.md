@@ -165,16 +165,23 @@ const path = await OpenBandNative.showOpenDialog({ filters: [...] });
 ### Required checks (run in this order):
 
 ```
-# TypeScript check — must pass with zero errors
+# 1. Code Review — must be done via the code-review subagent
+#    Use: Task tool with subagent_type="code-review"
+#    NEVER skip this step. Always shout this same agent.
+
+# 2. TypeScript check — must pass with zero errors
 npx tsc --noEmit
 
-# Vitest component + lib tests — must pass
+# 3. Backend TypeScript check — must pass
+cd backend && npx tsc --noEmit
+
+# 4. Vitest component + lib tests — must pass
 npx vitest run
 
-# Legacy node:test suite — must pass
-npm test
+# 5. Legacy node:test suite — must pass
+npm run test:legacy
 
-# Production build — must succeed
+# 6. Production build — must succeed
 npm run build
 ```
 

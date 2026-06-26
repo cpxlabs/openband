@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from "react";
 import { View, Text, Modal, Pressable, Platform, Alert } from "react-native";
 import { OpenBandNative } from "../bridge";
 import { ProgressBar } from "./ProgressBar";
+import { writeWavHeader, audioBufferToWavBlob } from "../lib/audio";
 
 type ExportFormat = "wav" | "aiff" | "flac";
 type BitDepth = 16 | 24 | 32;
@@ -45,39 +46,6 @@ interface BounceDialogProps {
 async function writeBlobToFile(blob: Blob, filename: string) {
   const arrayBuffer = await blob.arrayBuffer();
   await OpenBandNative.writeFile(filename, arrayBuffer);
-}
-
-function writeWavHeader(
-  view: DataView,
-  offset: number,
-  numChannels: number,
-  sampleRate: number,
-  bitDepth: number,
-  dataSize: number,
-): void {
-  const byteRate = sampleRate * numChannels * (bitDepth / 8);
-  const blockAlign = numChannels * (bitDepth / 8);
-
-  const writeStr = (o: number, str: string) => {
-    for (let i = 0; i < str.length; i++)
-      view.setUint8(o + i, str.charCodeAt(i));
-  };
-  const write16 = (o: number, v: number) => view.setUint16(o, v, true);
-  const write32 = (o: number, v: number) => view.setUint32(o, v, true);
-
-  writeStr(offset, "RIFF");
-  write32(offset + 4, 36 + dataSize);
-  writeStr(offset + 8, "WAVE");
-  writeStr(offset + 12, "fmt ");
-  write32(offset + 16, 16);
-  write16(offset + 20, 1);
-  write16(offset + 22, numChannels);
-  write32(offset + 24, sampleRate);
-  write32(offset + 28, byteRate);
-  write16(offset + 32, blockAlign);
-  write16(offset + 34, bitDepth);
-  writeStr(offset + 36, "data");
-  write32(offset + 40, dataSize);
 }
 
 async function generateTone(
@@ -210,49 +178,6 @@ async function renderMixdown(
   const rendered = await offlineCtx.startRendering();
   onProgress?.(70);
   return rendered;
-}
-
-function audioBufferToWavBlob(buffer: AudioBuffer, bitDepth: BitDepth): Blob {
-  const numChannels = buffer.numberOfChannels;
-  const sampleRate = buffer.sampleRate;
-  const numSamples = buffer.length;
-  const bytesPerSample = bitDepth / 8;
-  const blockAlign = numChannels * bytesPerSample;
-  const dataSize = numSamples * blockAlign;
-  const headerSize = 44;
-  const totalSize = headerSize + dataSize;
-
-  const arrayBuffer = new ArrayBuffer(totalSize);
-  const view = new DataView(arrayBuffer);
-
-  writeWavHeader(view, 0, numChannels, sampleRate, bitDepth, dataSize);
-
-  for (let i = 0; i < numSamples; i++) {
-    for (let ch = 0; ch < numChannels; ch++) {
-      const sample = buffer.getChannelData(ch)[i];
-      const offset = headerSize + (i * numChannels + ch) * bytesPerSample;
-
-      if (bitDepth === 16) {
-        const pcm = Math.max(
-          -32768,
-          Math.min(32767, Math.round(sample * 32767)),
-        );
-        view.setInt16(offset, pcm, true);
-      } else if (bitDepth === 24) {
-        const pcm = Math.max(
-          -8388608,
-          Math.min(8388607, Math.round(sample * 8388607)),
-        );
-        view.setInt8(offset, pcm & 0xff);
-        view.setInt8(offset + 1, (pcm >> 8) & 0xff);
-        view.setInt8(offset + 2, (pcm >> 16) & 0xff);
-      } else {
-        view.setFloat32(offset, sample, true);
-      }
-    }
-  }
-
-  return new Blob([arrayBuffer], { type: "audio/wav" });
 }
 
 export function BounceDialog({

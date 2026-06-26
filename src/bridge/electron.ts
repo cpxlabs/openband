@@ -7,7 +7,7 @@ import type {
 
 const api: NativeBridge | null =
   typeof window !== "undefined"
-    ? (((window as any).electronAPI as NativeBridge) ?? null)
+    ? ((window as { electronAPI?: NativeBridge }).electronAPI ?? null)
     : null;
 
 function requireAPI(): NativeBridge {

@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { View, Text, Pressable, Modal, Platform } from "react-native";
 import type { SamplerSlotData } from "../lib/types";
+import { audioBufferToWavBlob } from "../lib/audio";
 
 interface SampleSlot {
   key: string;
@@ -9,49 +10,6 @@ interface SampleSlot {
   rootKey: number;
   lowKey: number;
   highKey: number;
-}
-
-function audioBufferToWavBlob(buffer: AudioBuffer): Blob {
-  const numChannels = buffer.numberOfChannels;
-  const sampleRate = buffer.sampleRate;
-  const numSamples = buffer.length;
-  const bytesPerSample = 2;
-  const blockAlign = numChannels * bytesPerSample;
-  const dataSize = numSamples * blockAlign;
-  const totalSize = 44 + dataSize;
-  const arrayBuffer = new ArrayBuffer(totalSize);
-  const view = new DataView(arrayBuffer);
-  const w = (o: number, str: string) => {
-    for (let i = 0; i < str.length; i++)
-      view.setUint8(o + i, str.charCodeAt(i));
-  };
-  w(0, "RIFF");
-  view.setUint32(4, 36 + dataSize, true);
-  w(8, "WAVE");
-  w(12, "fmt ");
-  view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true);
-  view.setUint16(22, numChannels, true);
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, sampleRate * blockAlign, true);
-  view.setUint16(32, blockAlign, true);
-  view.setUint16(34, bytesPerSample * 8, true);
-  w(36, "data");
-  view.setUint32(40, dataSize, true);
-  for (let i = 0; i < numSamples; i++) {
-    for (let ch = 0; ch < numChannels; ch++) {
-      const offset = 44 + (i * numChannels + ch) * bytesPerSample;
-      view.setInt16(
-        offset,
-        Math.max(
-          -32768,
-          Math.min(32767, Math.round(buffer.getChannelData(ch)[i] * 32767)),
-        ),
-        true,
-      );
-    }
-  }
-  return new Blob([arrayBuffer], { type: "audio/wav" });
 }
 
 interface ADSR {

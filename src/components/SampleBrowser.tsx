@@ -8,6 +8,7 @@ import {
   Platform,
 } from "react-native";
 import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
+import { audioBufferToWavBlob } from "../lib/audio";
 
 interface SampleEntry {
   id: string;
@@ -534,52 +535,6 @@ interface SampleBrowserProps {
   visible: boolean;
   onAddSample: (sample: SampleEntry) => void;
   testID?: string;
-}
-
-function audioBufferToWavBlob(buffer: AudioBuffer): Blob {
-  const numChannels = buffer.numberOfChannels;
-  const sampleRate = buffer.sampleRate;
-  const numSamples = buffer.length;
-  const bytesPerSample = 2;
-  const blockAlign = numChannels * bytesPerSample;
-  const dataSize = numSamples * blockAlign;
-  const headerSize = 44;
-  const totalSize = headerSize + dataSize;
-
-  const arrayBuffer = new ArrayBuffer(totalSize);
-  const view = new DataView(arrayBuffer);
-
-  const writeStr = (o: number, str: string) => {
-    for (let i = 0; i < str.length; i++)
-      view.setUint8(o + i, str.charCodeAt(i));
-  };
-  const write16 = (o: number, v: number) => view.setUint16(o, v, true);
-  const write32 = (o: number, v: number) => view.setUint32(o, v, true);
-
-  writeStr(0, "RIFF");
-  write32(4, 36 + dataSize);
-  writeStr(8, "WAVE");
-  writeStr(12, "fmt ");
-  write32(16, 16);
-  write16(20, 1);
-  write16(22, numChannels);
-  write32(24, sampleRate);
-  write32(28, sampleRate * blockAlign);
-  write16(32, blockAlign);
-  write16(34, bytesPerSample * 8);
-  writeStr(36, "data");
-  write32(40, dataSize);
-
-  for (let i = 0; i < numSamples; i++) {
-    for (let ch = 0; ch < numChannels; ch++) {
-      const sample = buffer.getChannelData(ch)[i];
-      const offset = headerSize + (i * numChannels + ch) * bytesPerSample;
-      const pcm = Math.max(-32768, Math.min(32767, Math.round(sample * 32767)));
-      view.setInt16(offset, pcm, true);
-    }
-  }
-
-  return new Blob([arrayBuffer], { type: "audio/wav" });
 }
 
 function hashId(id: string): number {

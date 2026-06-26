@@ -1,11 +1,18 @@
 import { Router, Request, Response } from "express";
-import { exec } from "child_process";
+import { execFile } from "child_process";
 import path from "path";
 import fs from "fs";
 import { promisify } from "util";
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 const router = Router();
+
+function sanitizePath(input: string, baseDir: string): string {
+  const resolved = path.resolve(baseDir, path.basename(input));
+  if (!resolved.startsWith(baseDir)) throw new Error("Path escape attempt");
+  if (/[;&|$`\\'"()]/.test(input)) throw new Error("Invalid characters in path");
+  return resolved;
+}
 
 router.post("/export/video", async (req: Request, res: Response) => {
   try {
@@ -22,11 +29,23 @@ router.post("/export/video", async (req: Request, res: Response) => {
     if (!fs.existsSync(outputDir))
       fs.mkdirSync(outputDir, { recursive: true });
 
+    const safeAudioPath = sanitizePath(audioPath, outputDir);
+    const safeCoverPath = sanitizePath(coverPath, outputDir);
     const outputPath = path.join(outputDir, `export_${Date.now()}.mp4`);
 
-    const cmd = `ffmpeg -loop 1 -i ${coverPath} -i ${audioPath} -filter_complex "[1:a]showwaves=s=1080x200:mode=line:colors=0x3b82f6[v];[0:v]scale=1080:1920,boxblur=20[bg];[bg][v]overlay=0:(main_h-overlay_h)/2:short=1" -c:a aac -b:a 192k -c:v libx264 -pix_fmt yuv420p -shortest -y ${outputPath}`;
-
-    await execAsync(cmd);
+    await execFileAsync("ffmpeg", [
+      "-loop", "1",
+      "-i", safeCoverPath,
+      "-i", safeAudioPath,
+      "-filter_complex", "[1:a]showwaves=s=1080x200:mode=line:colors=0x3b82f6[v];[0:v]scale=1080:1920,boxblur=20[bg];[bg][v]overlay=0:(main_h-overlay_h)/2:short=1",
+      "-c:a", "aac",
+      "-b:a", "192k",
+      "-c:v", "libx264",
+      "-pix_fmt", "yuv420p",
+      "-shortest",
+      "-y",
+      outputPath,
+    ]);
 
     res.json({
       url: `/videos/${path.basename(outputPath)}`,

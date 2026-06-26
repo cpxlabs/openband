@@ -1,4 +1,5 @@
 import type { MIDINote } from "./types";
+import { audioBufferToWavBlob } from "./audio";
 
 const NOTE_FREQS: number[] = [];
 for (let i = 0; i < 128; i++)
@@ -95,47 +96,8 @@ export async function freezeTrackBuffer(
   return await ctx.startRendering();
 }
 
-export function audioBufferToMp3(audioBuffer: AudioBuffer): Promise<ArrayBuffer> {
-  return new Promise((resolve) => {
-    const nc = audioBuffer.numberOfChannels;
-    const sr = audioBuffer.sampleRate;
-    const ns = audioBuffer.length;
-    const ab = new ArrayBuffer(44 + ns * nc * 2);
-    const v = new DataView(ab);
-    const w = (o: number, s: string) => {
-      for (let i = 0; i < s.length; i++)
-        v.setUint8(o + i, s.charCodeAt(i));
-    };
-    w(0, "RIFF");
-    v.setUint32(4, 36 + ns * nc * 2, true);
-    w(8, "WAVE");
-    w(12, "fmt ");
-    v.setUint32(16, 16, true);
-    v.setUint16(20, 1, true);
-    v.setUint16(22, nc, true);
-    v.setUint32(24, sr, true);
-    v.setUint32(28, sr * nc * 2, true);
-    v.setUint16(32, nc * 2, true);
-    v.setUint16(34, 16, true);
-    w(36, "data");
-    v.setUint32(40, ns * nc * 2, true);
-    for (let i = 0; i < ns; i++) {
-      for (let ch = 0; ch < nc; ch++) {
-        v.setInt16(
-          44 + (i * nc + ch) * 2,
-          Math.max(
-            -32768,
-            Math.min(
-              32767,
-              Math.round(audioBuffer.getChannelData(ch)[i] * 32767),
-            ),
-          ),
-          true,
-        );
-      }
-    }
-    resolve(ab);
-  });
+export async function audioBufferToWav(audioBuffer: AudioBuffer): Promise<Blob> {
+  return audioBufferToWavBlob(audioBuffer);
 }
 
 function createConvolutionBuffer(
