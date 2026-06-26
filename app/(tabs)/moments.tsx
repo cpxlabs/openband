@@ -5,6 +5,7 @@ import { PageHeader, Button, Badge } from "../../src/components";
 import { MomentCard } from "../../src/components";
 import type { MomentData } from "../../src/components/MomentCard";
 import { useResponsive, LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive";
+import { SCREEN_BOTTOM_PADDING } from "../../src/lib/constants";
 
 const MOCK_MOMENTS: MomentData[] = [
   {
@@ -209,7 +210,16 @@ export default function Moments() {
 
       {credits.length > 0 && (
         <View
-          className={`${resp.isMobile ? "mx-4" : "mx-6"} mb-3 p-2.5 rounded-xl bg-brand-accent/10 border border-brand-accent/20`}
+          className={`${resp.isMobile ? "px-4" : "px-6"} mb-3 p-2.5 rounded-xl bg-brand-accent/10 border border-brand-accent/20`}
+          style={
+            resp.isDesktop
+              ? {
+                  maxWidth: LAYOUT_MAX_WIDTHS.moments,
+                  alignSelf: "center",
+                  width: "100%",
+                }
+              : undefined
+          }
         >
           <Text className="text-brand-accent text-[10px] font-bold uppercase tracking-wider">
             Créditos
@@ -227,7 +237,8 @@ export default function Moments() {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: SCREEN_BOTTOM_PADDING }}
+        showsVerticalScrollIndicator={false}
         style={
           resp.isDesktop
             ? {

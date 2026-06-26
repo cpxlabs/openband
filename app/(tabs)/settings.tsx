@@ -29,10 +29,14 @@ export default function Settings() {
           : undefined
       }
     >
-      <PageHeader
-        title="Configurações"
-        subtitle="Personalize sua experiência"
-      />
+      <View
+        className={`${resp.isMobile ? "pt-4" : "pt-12"} ${resp.isMobile ? "px-4" : "px-6"}`}
+      >
+        <PageHeader
+          title="Configurações"
+          subtitle="Personalize sua experiência"
+        />
+      </View>
 
       <View className={`${resp.isMobile ? "px-4" : "px-6"} gap-6 pb-8`}>
         <View className="items-center py-6 gap-3">

@@ -12,9 +12,9 @@ interface ButtonProps {
 }
 
 const variantStyles = {
-  primary: "bg-brand-primary active:opacity-80",
-  secondary: "bg-dark-muted border border-dark-border active:opacity-80",
-  ghost: "active:opacity-60",
+  primary: "bg-brand-primary active:opacity-80 hover:opacity-90",
+  secondary: "bg-dark-muted border border-dark-border active:opacity-80 hover:opacity-90",
+  ghost: "active:opacity-60 hover:opacity-90",
 };
 
 const textStyles = {
@@ -38,6 +38,9 @@ export function Button({
       testID={testID}
       onPress={onPress}
       disabled={disabled || loading}
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      accessibilityState={{ disabled: disabled || loading, busy: loading }}
       className={`${variantStyles[variant]} rounded-xl p-4 flex-row items-center justify-center gap-2 ${disabled ? "opacity-50" : ""} ${className}`}
     >
       {loading ? (
@@ -48,7 +51,7 @@ export function Button({
       ) : (
         <>
           {icon && <Text className="text-base">{icon}</Text>}
-          <Text className={`${textStyles[variant]} font-bold text-base`}>
+          <Text className={`${textStyles[variant]} font-bold text-base`} numberOfLines={1}>
             {title}
           </Text>
         </>

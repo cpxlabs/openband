@@ -12,7 +12,13 @@ export function Loading({
   testID,
 }: LoadingProps) {
   const content = (
-    <View testID={testID} className="items-center justify-center gap-4">
+    <View
+      testID={testID}
+      className="items-center justify-center gap-4"
+      accessibilityRole="progressbar"
+      accessibilityLabel="Carregando"
+      aria-busy={true}
+    >
       <ActivityIndicator size="large" color="#ff3b30" />
       {message && (
         <Text className="text-gray-400 text-sm font-medium">{message}</Text>

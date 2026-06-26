@@ -8,6 +8,7 @@ interface CardProps {
   activeBorder?: boolean;
   elevated?: boolean;
   testID?: string;
+  accessibilityLabel?: string;
 }
 
 export function Card({
@@ -17,13 +18,16 @@ export function Card({
   elevated = false,
   className = "",
   testID,
+  accessibilityLabel,
 }: CardProps) {
   const Container = onPress ? Pressable : View;
   return (
     <Container
       testID={testID}
       onPress={onPress}
-      className={`${elevated ? "card-elevated" : "card"} ${activeBorder ? "border-brand-primary/50" : ""} ${onPress ? "active:opacity-80" : ""} ${className}`}
+      accessibilityRole={onPress ? "button" : undefined}
+      accessibilityLabel={onPress ? (accessibilityLabel ?? "Card") : undefined}
+      className={`${elevated ? "card-elevated" : "card"} ${activeBorder ? "border-brand-primary/50" : ""} ${onPress ? "active:opacity-80 hover:bg-dark-elevated" : ""} ${className}`}
     >
       {children}
     </Container>
@@ -35,13 +39,16 @@ export function CardRow({
   onPress,
   className = "",
   testID,
+  accessibilityLabel,
 }: CardProps) {
   const Container = onPress ? Pressable : View;
   return (
     <Container
       testID={testID}
       onPress={onPress}
-      className={`flex-row items-center p-4 bg-dark-surface rounded-2xl border border-dark-border ${onPress ? "active:border-brand-accent/50" : ""} ${className}`}
+      accessibilityRole={onPress ? "button" : undefined}
+      accessibilityLabel={onPress ? (accessibilityLabel ?? "Card row") : undefined}
+      className={`flex-row items-center p-4 bg-dark-surface rounded-2xl border border-dark-border ${onPress ? "active:border-brand-accent/50 hover:bg-dark-elevated" : ""} ${className}`}
     >
       {children}
     </Container>

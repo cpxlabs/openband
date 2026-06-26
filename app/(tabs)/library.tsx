@@ -16,6 +16,7 @@ import {
   exportProject,
   importProject,
 } from "../../src/lib/projectStore";
+import { SCREEN_BOTTOM_PADDING } from "../../src/lib/constants";
 import { OpenBandNative } from "../../src/bridge";
 
 export default function Library() {
@@ -115,7 +116,7 @@ export default function Library() {
       </View>
 
       <View
-        className={`${resp.isMobile ? "mx-4" : "mx-6"} mb-3 gap-3 ${resp.isDesktop ? "max-w-3xl mx-auto w-full" : ""}`}
+        className={`${resp.isMobile ? "px-4" : "px-6"} mb-3 gap-3 ${resp.isDesktop ? "max-w-3xl mx-auto w-full" : ""}`}
       >
         <Button
           title="Novo Projeto"
@@ -147,7 +148,7 @@ export default function Library() {
         data={projects}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{
-          paddingBottom: 100,
+          paddingBottom: SCREEN_BOTTOM_PADDING,
           paddingHorizontal: resp.isMobile ? 16 : 24,
         }}
         style={

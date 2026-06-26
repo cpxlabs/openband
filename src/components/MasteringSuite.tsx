@@ -14,6 +14,8 @@ import { MasteringVersionManager } from "./MasteringVersionManager";
 import { MasteringUpload } from "./MasteringUpload";
 import { LufsMeter } from "./LufsMeter";
 import { PluginEditor } from "./PluginEditor";
+import { PageHeader } from "./PageHeader";
+import { Button } from "./Button";
 import {
   MasteringInput,
   MasteringSession,
@@ -21,9 +23,10 @@ import {
   createVersion,
 } from "../lib/masteringSuite";
 import { OpenBandNative } from "../bridge";
-import { DEMO_AUDIO_URL } from "../lib/constants";
+import { DEMO_AUDIO_URL, SCREEN_BOTTOM_PADDING } from "../lib/constants";
 import { takeMasteringInput } from "../lib/masteringBridge";
 import { audioBufferToWavBlob } from "../lib/audio";
+import { useResponsive, LAYOUT_MAX_WIDTHS } from "../lib/responsive";
 
 interface MasteringSuiteProps {
   onBack?: () => void;
@@ -57,6 +60,7 @@ async function fetchAndRenderAudio(
 }
 
 export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
+  const resp = useResponsive();
   const [session, setSession] = useState<MasteringSession>(() => {
     const pending = takeMasteringInput();
     if (pending) {
@@ -292,7 +296,17 @@ export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
 
   return (
     <View testID={testID} className="flex-1 bg-dark-bg">
-      <View className="flex-row items-center justify-between px-4 py-3 border-b border-dark-border">
+      <View className="flex-row items-center justify-between px-4 py-3 border-b border-dark-border"
+        style={
+          resp.isDesktop
+            ? {
+                maxWidth: LAYOUT_MAX_WIDTHS.mastering,
+                alignSelf: "center",
+                width: "100%",
+              }
+            : undefined
+        }
+      >
         <View className="flex-row items-center gap-3">
           {onBack && (
             <Pressable
@@ -302,25 +316,27 @@ export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
               <Text className="text-gray-400 text-lg">←</Text>
             </Pressable>
           )}
-          <View>
-            <Text className="text-white text-base font-bold">
-              Mastering Suite
-            </Text>
-            <Text className="text-gray-500 text-[10px] uppercase tracking-wider">
-              OpenBand
-            </Text>
-          </View>
+          <PageHeader title="Mastering Suite" subtitle="OpenBand" />
         </View>
-        <Pressable
+        <Button
+          title="Export"
           onPress={() => setShowExport(true)}
-          className="px-4 py-2 rounded-lg bg-brand-accent active:opacity-80"
-        >
-          <Text className="text-white text-xs font-bold">Export</Text>
-        </Pressable>
+          variant="primary"
+        />
       </View>
 
       <ScrollView
-        className="flex-1 px-4 pt-3 pb-6"
+        className={`flex-1 ${resp.isMobile ? "px-4" : "px-6"} pt-3`}
+        style={
+          resp.isDesktop
+            ? {
+                maxWidth: LAYOUT_MAX_WIDTHS.mastering,
+                alignSelf: "center",
+                width: "100%",
+              }
+            : undefined
+        }
+        contentContainerStyle={{ paddingBottom: SCREEN_BOTTOM_PADDING }}
         showsVerticalScrollIndicator={false}
       >
         <MasteringUpload
@@ -404,17 +420,11 @@ export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
               Export
             </Text>
           </View>
-          <Pressable
+          <Button
+            title="Exportar Master"
             onPress={() => setShowExport(true)}
-            className="bg-purple-600/30 rounded-xl border border-purple-500/30 p-4 items-center active:opacity-80"
-          >
-            <Text className="text-white text-sm font-bold">
-              Exportar Master
-            </Text>
-            <Text className="text-gray-400 text-[10px] mt-1">
-              WAV {exportBitDepth}-bit / {exportSampleRate / 1000}kHz
-            </Text>
-          </Pressable>
+            variant="secondary"
+          />
         </View>
       </ScrollView>
 

@@ -18,7 +18,7 @@ import {
   PageHeader,
   Avatar,
 } from "../../src/components";
-import { generatePreviewUrl } from "../../src/lib/constants";
+import { generatePreviewUrl, SCREEN_BOTTOM_PADDING } from "../../src/lib/constants";
 import { GENRES } from "../../src/lib/projectTemplates";
 import { useResponsive, LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive";
 
@@ -287,80 +287,92 @@ export default function Feed() {
   return (
     <View className="flex-1 bg-dark-bg">
       <View
-        className={`${resp.isMobile ? "pt-4" : "pt-12"} ${resp.isMobile ? "px-4" : "px-6"}`}
+        style={
+          resp.isDesktop
+            ? {
+                maxWidth: LAYOUT_MAX_WIDTHS.feed,
+                alignSelf: "center",
+                width: "100%",
+              }
+            : undefined
+        }
       >
-        <PageHeader title="Feed" subtitle="Descubra novos sons" />
-      </View>
-
-      <View className={`${resp.isMobile ? "px-4" : "px-6"} mb-2`}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          className="mb-2"
+        <View
+          className={`${resp.isMobile ? "pt-4" : "pt-12"} ${resp.isMobile ? "px-4" : "px-6"}`}
         >
-          <View className="flex-row gap-2 py-1">
-            {GENRE_FILTERS.map((genre) => (
+          <PageHeader title="Feed" subtitle="Descubra novos sons" />
+        </View>
+
+        <View className={`${resp.isMobile ? "px-4" : "px-6"} mb-2`}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            className="mb-2"
+          >
+            <View className="flex-row gap-2 py-1">
+              {GENRE_FILTERS.map((genre) => (
+                <Pressable
+                  key={genre.id}
+                  onPress={() => setGenreFilter(genre.id)}
+                  className={`px-3 py-1.5 rounded-full border flex-row items-center gap-1 ${
+                    genreFilter === genre.id
+                      ? "bg-brand-primary/20 border-brand-primary"
+                      : "bg-dark-elevated border-dark-border"
+                  }`}
+                >
+                  <Text
+                    className={`text-xs ${genreFilter === genre.id ? "text-brand-primary" : "text-gray-400"}`}
+                  >
+                    {genre.icon}
+                  </Text>
+                  <Text
+                    className={`text-xs font-semibold ${genreFilter === genre.id ? "text-brand-primary" : "text-white"}`}
+                  >
+                    {genre.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </ScrollView>
+
+          <View className="flex-row gap-2">
+            {(["recent", "popular", "genre"] as SortMode[]).map((mode) => (
               <Pressable
-                key={genre.id}
-                onPress={() => setGenreFilter(genre.id)}
-                className={`px-3 py-1.5 rounded-full border flex-row items-center gap-1 ${
-                  genreFilter === genre.id
-                    ? "bg-brand-primary/20 border-brand-primary"
-                    : "bg-dark-elevated border-dark-border"
-                }`}
+                key={mode}
+                onPress={() => setSortMode(mode)}
+                className={`px-3 py-1 rounded-lg border ${sortMode === mode ? "bg-dark-muted border-brand-accent/40" : "bg-dark-elevated border-dark-border"}`}
               >
                 <Text
-                  className={`text-xs ${genreFilter === genre.id ? "text-brand-primary" : "text-gray-400"}`}
+                  className={`text-[10px] font-semibold ${sortMode === mode ? "text-brand-accent" : "text-gray-400"}`}
                 >
-                  {genre.icon}
-                </Text>
-                <Text
-                  className={`text-xs font-semibold ${genreFilter === genre.id ? "text-brand-primary" : "text-white"}`}
-                >
-                  {genre.label}
+                  {mode === "recent"
+                    ? "Recentes"
+                    : mode === "popular"
+                      ? "Populares"
+                      : "Gênero"}
                 </Text>
               </Pressable>
             ))}
           </View>
-        </ScrollView>
-
-        <View className="flex-row gap-2">
-          {(["recent", "popular", "genre"] as SortMode[]).map((mode) => (
-            <Pressable
-              key={mode}
-              onPress={() => setSortMode(mode)}
-              className={`px-3 py-1 rounded-lg border ${sortMode === mode ? "bg-dark-muted border-brand-accent/40" : "bg-dark-elevated border-dark-border"}`}
-            >
-              <Text
-                className={`text-[10px] font-semibold ${sortMode === mode ? "text-brand-accent" : "text-gray-400"}`}
-              >
-                {mode === "recent"
-                  ? "Recentes"
-                  : mode === "popular"
-                    ? "Populares"
-                    : "Gênero"}
-              </Text>
-            </Pressable>
-          ))}
         </View>
+
+        {playingId && (
+          <View
+            className={`flex-row items-center gap-2 ${resp.isMobile ? "px-4" : "px-6"} py-2 bg-brand-primary/10 border-b border-brand-primary/20`}
+          >
+            <View className="w-2 h-2 rounded-full bg-green-500" />
+            <Text className="text-green-400 text-xs font-medium flex-1">
+              Tocando: {currentPostRef.current.title}
+            </Text>
+          </View>
+        )}
       </View>
-
-      {playingId && (
-        <View
-          className={`flex-row items-center gap-2 ${resp.isMobile ? "px-4" : "px-6"} py-2 bg-brand-primary/10 border-b border-brand-primary/20`}
-        >
-          <View className="w-2 h-2 rounded-full bg-green-500" />
-          <Text className="text-green-400 text-xs font-medium flex-1">
-            Tocando: {currentPostRef.current.title}
-          </Text>
-        </View>
-      )}
 
       <FlatList
         data={filteredPosts}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{
-          paddingBottom: 100,
+          paddingBottom: SCREEN_BOTTOM_PADDING,
           paddingHorizontal: resp.isDesktop ? 24 : 0,
         }}
         style={

@@ -26,7 +26,7 @@ export function Badge({ text, icon, variant = "default", testID }: BadgeProps) {
       className={`${variantStyles[variant]} px-2.5 py-1 rounded-full flex-row items-center gap-1`}
     >
       {icon && <Text className={`text-xs ${textStyles[variant]}`}>{icon}</Text>}
-      <Text className={`${textStyles[variant]} text-xs font-medium`}>
+      <Text className={`${textStyles[variant]} text-xs font-medium`} numberOfLines={1}>
         {text}
       </Text>
     </View>

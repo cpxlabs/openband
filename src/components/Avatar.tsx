@@ -18,6 +18,8 @@ export function Avatar({ name, size = "md", testID }: AvatarProps) {
   return (
     <View
       testID={testID}
+      accessibilityLabel={name}
+      accessibilityRole="image"
       className={`${sizes[size]} rounded-2xl bg-brand-primary/30 items-center justify-center`}
     >
       <Text

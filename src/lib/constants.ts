@@ -4,6 +4,8 @@ import { hashStr, audioBufferToWavBlob } from "./audio";
 export const DEMO_AUDIO_URL =
   "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
 
+export const SCREEN_BOTTOM_PADDING = 100;
+
 const MAX_CACHE_SIZE = 50;
 const previewUrlCache = new Map<string, string>();
 

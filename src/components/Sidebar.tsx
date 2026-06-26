@@ -53,11 +53,13 @@ export function Sidebar({
                 onNavigate(item.key);
                 if (!isPersistent) onClose();
               }}
-              className={`flex-row items-center gap-3 px-3 py-2.5 rounded-xl mb-1 active:opacity-70 ${
+              className={`flex-row items-center gap-3 px-3 py-2.5 rounded-xl mb-1 active:opacity-70 hover:bg-dark-muted ${
                 isActive
                   ? "bg-brand-primary/15 border border-brand-primary/30"
                   : "border border-transparent"
               }`}
+              accessibilityRole="button"
+              aria-current={isActive ? "page" : undefined}
             >
               <View
                 className={`w-8 h-8 rounded-lg items-center justify-center ${

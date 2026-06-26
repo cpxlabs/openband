@@ -9,7 +9,7 @@ import {
   Badge,
   ProgressBar,
 } from "../src/components";
-import { DEMO_AUDIO_URL } from "../src/lib/constants";
+import { DEMO_AUDIO_URL, SCREEN_BOTTOM_PADDING } from "../src/lib/constants";
 import { useResponsive, LAYOUT_MAX_WIDTHS } from "../src/lib/responsive";
 import { saveProject } from "../src/lib/projectStore";
 import type { TrackDef, TrackRegion } from "../src/lib/types";
@@ -288,7 +288,18 @@ export default function Extractor() {
   return (
     <View className="flex-1 bg-dark-bg">
       {phase === "done" && (
-        <View className="px-4 pt-12 flex-row justify-end">
+        <View
+          className={`${resp.isMobile ? "pt-4" : "pt-12"} ${resp.isMobile ? "px-4" : "px-6"} flex-row justify-end`}
+          style={
+            resp.isDesktop
+              ? {
+                  maxWidth: LAYOUT_MAX_WIDTHS.extractor,
+                  alignSelf: "center",
+                  width: "100%",
+                }
+              : undefined
+          }
+        >
           <Pressable onPress={handleReset} className="p-2 active:opacity-60">
             <Text className="text-brand-accent text-sm font-medium">
               Nova extração
@@ -297,10 +308,23 @@ export default function Extractor() {
         </View>
       )}
 
-      <PageHeader
-        title="Separar Stems"
-        subtitle="Extraia faixas individuais de qualquer áudio"
-      />
+      <View
+        className={`${resp.isMobile ? "pt-4" : "pt-12"} ${resp.isMobile ? "px-4" : "px-6"}`}
+        style={
+          resp.isDesktop
+            ? {
+                maxWidth: LAYOUT_MAX_WIDTHS.extractor,
+                alignSelf: "center",
+                width: "100%",
+              }
+            : undefined
+        }
+      >
+        <PageHeader
+          title="Separar Stems"
+          subtitle="Extraia faixas individuais de qualquer áudio"
+        />
+      </View>
 
       <ScrollView
         className={`flex-1 ${resp.isMobile ? "px-4" : "px-6"}`}
@@ -313,7 +337,7 @@ export default function Extractor() {
               }
             : undefined
         }
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ paddingBottom: SCREEN_BOTTOM_PADDING }}
       >
         {phase === "select" && (
           <View>

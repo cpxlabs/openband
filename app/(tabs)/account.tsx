@@ -75,7 +75,11 @@ export default function Account() {
           : undefined
       }
     >
-      <PageHeader title="Conta" subtitle="Suas informações de perfil" />
+      <View
+        className={`${resp.isMobile ? "pt-4" : "pt-12"} ${resp.isMobile ? "px-4" : "px-6"}`}
+      >
+        <PageHeader title="Conta" subtitle="Suas informações de perfil" />
+      </View>
 
       <View className={`${resp.isMobile ? "px-4" : "px-6"} gap-6 pb-8`}>
         <View className="items-center py-6">

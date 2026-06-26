@@ -14,6 +14,10 @@ export function ProgressBar({
   return (
     <View
       testID={testID}
+      accessibilityRole="progressbar"
+      aria-valuenow={progress}
+      aria-valuemin={0}
+      aria-valuemax={100}
       className={`h-1 bg-dark-border rounded-full overflow-hidden ${className}`}
     >
       <View
