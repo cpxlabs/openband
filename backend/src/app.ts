@@ -5,7 +5,9 @@ import masterRoutes from "./routes/master";
 import generatorRoutes from "./routes/generator";
 import exportRoutes from "./routes/export";
 import remixRoutes from "./routes/remix";
+import tierRoutes from "./routes/tier";
 import { checkDemucsInstalled } from "./services/demucs";
+import { requireFeature } from "./middleware/tierGuard";
 
 const app = express();
 app.set("trust proxy", 1);
@@ -89,6 +91,12 @@ function rateLimit(maxRequests: number, windowMs: number) {
 
 app.use(express.json({ limit: "1mb" }));
 
+app.use("/api/export/video", requireFeature("canExportVideo"));
+app.use("/api/export/social-video", requireFeature("canExportVideo"));
+app.use("/api/export/djstem", requireFeature("canExportVideo"));
+app.use("/api/projects/remix", requireFeature("canCreateRemixes"));
+app.use("/api/projects/:id/publish", requireFeature("canPublishToFeed"));
+
 let demucsCached: boolean | null = null;
 
 app.get("/api/health", async (_req, res) => {
@@ -104,6 +112,7 @@ app.get("/api/health", async (_req, res) => {
 });
 
 app.use("/api", rateLimit(30, 15 * 60 * 1000));
+app.use("/api", tierRoutes);
 app.use("/api", extractRoutes);
 app.use("/api", masterRoutes);
 app.use("/api", generatorRoutes);
