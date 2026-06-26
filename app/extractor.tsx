@@ -337,7 +337,7 @@ export default function Extractor() {
               }
             : undefined
         }
-        contentContainerStyle={{ paddingBottom: SCREEN_BOTTOM_PADDING }}
+        contentContainerStyle={{ paddingBottom: SCREEN_BOTTOM_PADDING, flexGrow: 1 }}
       >
         {phase === "select" && (
           <View>

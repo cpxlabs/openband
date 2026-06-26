@@ -237,7 +237,7 @@ export default function Moments() {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingBottom: SCREEN_BOTTOM_PADDING }}
+        contentContainerStyle={{ paddingBottom: SCREEN_BOTTOM_PADDING, flexGrow: 1 }}
         showsVerticalScrollIndicator={false}
         style={
           resp.isDesktop

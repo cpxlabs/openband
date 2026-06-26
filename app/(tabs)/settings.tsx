@@ -20,7 +20,7 @@ export default function Settings() {
   return (
     <ScrollView
       className="flex-1 bg-dark-bg"
-      contentContainerStyle={{ paddingBottom: 100 }}
+      contentContainerStyle={{ paddingBottom: 100, flexGrow: 1 }}
       style={
         resp.isDesktop
           ? { maxWidth: LAYOUT_MAX_WIDTHS.settings, alignSelf: "center", width: "100%" }
