@@ -75,6 +75,21 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS name TEXT;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS tier TEXT DEFAULT 'FREE';
 
 -- ============================================================
+-- USER SESSIONS
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS user_sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  token_hash TEXT NOT NULL,
+  device_name TEXT,
+  ip_address TEXT,
+  user_agent TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  last_active_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================
 -- REMIX GRAPH
 -- ============================================================
 
@@ -309,6 +324,20 @@ $$;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+
+-- ============================================================
+-- SOFT-DELETE (TRASH BIN)
+-- ============================================================
+
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
+
+-- ============================================================
+-- CREATIVE DNA
+-- ============================================================
+
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS creative_tags TEXT[] DEFAULT '{}';
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS genre TEXT DEFAULT '';
 
 -- ============================================================
 -- STORAGE BUCKETS

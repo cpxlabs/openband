@@ -7,8 +7,14 @@ import exportRoutes from "./routes/export";
 import remixRoutes from "./routes/remix";
 import tierRoutes from "./routes/tier";
 import authRoutes from "./routes/auth";
+import magicLinkRoutes from "./routes/magicLink";
+import sessionRoutes from "./routes/sessions";
+import trashRoutes from "./routes/trash";
+import projectsRoutes from "./routes/projects";
+import dnaRoutes from "./routes/dna";
 import { checkDemucsInstalled } from "./services/demucs";
 import { requireFeature } from "./middleware/tierGuard";
+import { checkBlacklist } from "./middleware/sessionBlacklist";
 
 const app = express();
 app.set("trust proxy", 1);
@@ -113,13 +119,19 @@ app.get("/api/health", async (_req, res) => {
 });
 
 app.use("/api", rateLimit(30, 15 * 60 * 1000));
+app.use("/api", checkBlacklist);
 app.use("/api", authRoutes);
+app.use("/api", magicLinkRoutes);
+app.use("/api", sessionRoutes);
 app.use("/api", tierRoutes);
 app.use("/api", extractRoutes);
 app.use("/api", masterRoutes);
 app.use("/api", generatorRoutes);
 app.use("/api", exportRoutes);
 app.use("/api", remixRoutes);
+app.use("/api", trashRoutes);
+app.use("/api", projectsRoutes);
+app.use("/api", dnaRoutes);
 
 app.use(
   (

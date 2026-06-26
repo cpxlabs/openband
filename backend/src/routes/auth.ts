@@ -12,6 +12,21 @@ function signToken(userId: string, tier: string): string {
   return jwt.sign({ userId, tier }, JWT_SECRET, { expiresIn: "7d" })
 }
 
+async function createSession(userId: string, token: string, req: Request) {
+  const tokenHash = token.substring(0, 16)
+  const userAgent = req.headers["user-agent"] || null
+  const ipAddress = req.ip || req.socket.remoteAddress || null
+  const deviceName = userAgent ? userAgent.substring(0, 120) : null
+
+  await supabase.from("user_sessions").insert({
+    user_id: userId,
+    token_hash: tokenHash,
+    device_name: deviceName,
+    ip_address: ipAddress,
+    user_agent: userAgent,
+  })
+}
+
 router.post("/auth/register", async (req: Request, res: Response) => {
   try {
     const { email, name, password } = req.body
@@ -40,6 +55,7 @@ router.post("/auth/register", async (req: Request, res: Response) => {
     if (error) throw error
 
     const token = signToken(newUser.id, newUser.tier || "FREE")
+    await createSession(newUser.id, token, req)
     res.status(201).json({
       token,
       user: { id: newUser.id, email: newUser.email, name: newUser.name, tier: newUser.tier },
@@ -75,6 +91,7 @@ router.post("/auth/login", async (req: Request, res: Response) => {
     }
 
     const token = signToken(user.id, user.tier || "FREE")
+    await createSession(user.id, token, req)
     res.status(200).json({
       token,
       user: { id: user.id, email: user.email, name: user.name, tier: user.tier, avatar_url: user.avatar_url },
@@ -134,6 +151,7 @@ router.post("/auth/google", async (req: Request, res: Response) => {
     }
 
     const token = signToken(user.id, user.tier || "FREE")
+    await createSession(user.id, token, req)
     res.status(200).json({
       token,
       user: { id: user.id, email: user.email, name: user.name, avatar_url: user.avatar_url, tier: user.tier },
@@ -209,6 +227,7 @@ router.post("/auth/convert-visitor", async (req: Request, res: Response) => {
     }
 
     const token = signToken(newUser.id, newUser.tier || "FREE")
+    await createSession(newUser.id, token, req)
     res.status(201).json({
       token,
       user: { id: newUser.id, email: newUser.email, name: newUser.name, tier: newUser.tier },
