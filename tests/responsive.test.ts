@@ -35,12 +35,21 @@ describe("useResponsive", () => {
       }
     });
 
-    it("returns desktop at or above 1024px", () => {
-      for (const w of [1024, 1440, 1920]) {
+    it("returns desktop at or above 1280px", () => {
+      for (const w of [1280, 1440, 1920]) {
         setWidth(w);
         const { result } = renderHook(() => useResponsive());
         expect(result.current.breakpoint).toBe("desktop");
         expect(result.current.isDesktop).toBe(true);
+      }
+    });
+
+    it("returns tablet between 480px and 1279px", () => {
+      for (const w of [480, 768, 1024]) {
+        setWidth(w);
+        const { result } = renderHook(() => useResponsive());
+        expect(result.current.breakpoint).toBe("tablet");
+        expect(result.current.isDesktop).toBe(false);
       }
     });
   });

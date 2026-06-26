@@ -21,6 +21,7 @@ import {
   QuickTools,
 } from "../../src/components";
 import { generatePreviewUrl, SCREEN_BOTTOM_PADDING } from "../../src/lib/constants";
+import { LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive";
 import { GENRES } from "../../src/lib/projectTemplates";
 import { useResponsive } from "../../src/lib/responsive";
 
@@ -292,7 +293,7 @@ export default function Feed() {
   }, []);
 
   const maxWidthStyle: any = resp.isDesktop
-    ? { maxWidth: 1200, alignSelf: "center" as const }
+    ? { maxWidth: LAYOUT_MAX_WIDTHS.feedWide, alignSelf: "center" as const }
     : undefined
 
   return (

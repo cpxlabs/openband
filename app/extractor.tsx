@@ -289,7 +289,7 @@ export default function Extractor() {
     <View className="flex-1 bg-dark-bg">
       {phase === "done" && (
         <View
-          className="pt-4 mobile:pt-12 px-4 mobile:px-6 flex-row justify-end"
+          className="pt-4 tablet:pt-12 px-4 tablet:px-6 flex-row justify-end"
           style={
             resp.isDesktop
               ? {
@@ -309,7 +309,7 @@ export default function Extractor() {
       )}
 
       <View
-        className="pt-4 mobile:pt-12 px-4 mobile:px-6"
+        className="pt-4 tablet:pt-12 px-4 tablet:px-6"
         style={
           resp.isDesktop
             ? {
@@ -327,7 +327,7 @@ export default function Extractor() {
       </View>
 
       <ScrollView
-        className="flex-1 px-4 mobile:px-6"
+        className="flex-1 px-4 tablet:px-6"
         style={
           resp.isDesktop
             ? {
@@ -341,7 +341,7 @@ export default function Extractor() {
       >
         {phase === "select" && (
           <View>
-            <View className="card-elevated p-5 mobile:p-8 mb-6 items-center border-dashed border-2 border-dark-border active:border-brand-accent">
+            <View className="card-elevated p-5 tablet:p-8 mb-6 items-center border-dashed border-2 border-dark-border active:border-brand-accent">
               <View className="w-16 h-16 rounded-2xl bg-brand-primary/10 items-center justify-center mb-4">
                 <Text className="text-3xl">📁</Text>
               </View>

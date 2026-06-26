@@ -31,8 +31,7 @@ function TabIcon({ label, focused }: { label: string; focused: boolean }) {
 export default function TabLayout() {
   const router = useRouter();
   const segments = useSegments();
-  const { breakpoint } = useResponsive();
-  const isDesktop = breakpoint === "desktop";
+  const { breakpoint, isDesktop, headerHeight, bottomNavHeight } = useResponsive();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const lastSegment = segments[segments.length - 1] || "index"
@@ -68,7 +67,7 @@ export default function TabLayout() {
       )}
       <View className="flex-1">
         {!isDesktop && (
-          <View className="h-12 bg-dark-surface border-b border-dark-border flex-row items-center px-3 z-20">
+          <View className="bg-dark-surface border-b border-dark-border flex-row items-center px-3 z-20" style={{ height: headerHeight }}>
             <Pressable
               onPress={() => setDrawerOpen(true)}
               className="w-9 h-9 rounded-lg bg-dark-muted/40 items-center justify-center active:opacity-70"
@@ -89,7 +88,7 @@ export default function TabLayout() {
               borderTopWidth: 1,
               borderTopColor: "#26262b",
               display: isDesktop ? "none" : "flex",
-              height: breakpoint === "tablet" ? 72 : 65,
+              height: bottomNavHeight,
               paddingBottom: 8,
               paddingTop: 6,
               paddingHorizontal: breakpoint === "tablet" ? 24 : 12,

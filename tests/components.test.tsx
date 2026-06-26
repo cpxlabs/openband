@@ -1770,7 +1770,7 @@ describe("testID Contract", () => {
 
     it("adapts Login screen layout to desktop dimensions", () => {
       const spy = vi.spyOn(reactNative, "useWindowDimensions");
-      spy.mockReturnValue({ width: 1200, height: 800, scale: 1, fontScale: 1 });
+      spy.mockReturnValue({ width: 1280, height: 800, scale: 1, fontScale: 1 });
 
       const { container } = render(<Login />);
       const viewElement = container.firstChild?.firstChild;

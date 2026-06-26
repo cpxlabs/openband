@@ -4,6 +4,7 @@ export type Breakpoint = "mobile" | "tablet" | "desktop";
 
 export const LAYOUT_MAX_WIDTHS = {
   feed: 768,
+  feedWide: 1200,
   library: 768,
   moments: 768,
   extractor: 768,
@@ -16,7 +17,7 @@ export const LAYOUT_MAX_WIDTHS = {
 export function useResponsive() {
   const { width, height } = useWindowDimensions();
   const breakpoint: Breakpoint =
-    width < 480 ? "mobile" : width < 1024 ? "tablet" : "desktop";
+    width < 480 ? "mobile" : width < 1280 ? "tablet" : "desktop";
   const isLandscape = width > height;
   const isWeb = Platform.OS === "web";
 
