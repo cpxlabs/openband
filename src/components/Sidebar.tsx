@@ -39,7 +39,7 @@ export function Sidebar({
           {Platform.OS === "web" ? (
             <Image
               source={{ uri: LOGO_URL }}
-              style={{ width: 64, height: 64, tintColor: "#fff" }}
+              style={{ width: 64, height: 64 }}
               className="object-contain"
             />
           ) : (
