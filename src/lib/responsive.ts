@@ -7,6 +7,7 @@ export const LAYOUT_MAX_WIDTHS = {
   library: 768,
   moments: 768,
   extractor: 768,
+  mastering: 768,
   account: 576,
   settings: 576,
   login: 448,
@@ -19,6 +20,12 @@ export function useResponsive() {
   const isLandscape = width > height;
   const isWeb = Platform.OS === "web";
 
+  const isPortrait = height > width;
+  const headerHeight = breakpoint === "mobile" ? 48 : 56;
+  const bottomNavHeight = breakpoint === "mobile" ? 56 : breakpoint === "tablet" ? 64 : 0;
+  const numColumns =
+    breakpoint === "mobile" ? 1 : breakpoint === "tablet" ? 2 : 3;
+
   return {
     width,
     height,
@@ -27,7 +34,11 @@ export function useResponsive() {
     isTablet: breakpoint === "tablet",
     isDesktop: breakpoint === "desktop",
     isLandscape,
+    isPortrait,
     isWeb,
+    headerHeight,
+    bottomNavHeight,
+    numColumns,
     sidebarWidth: breakpoint === "desktop" ? 64 : 0,
     contentPadding:
       breakpoint === "mobile" ? 16 : breakpoint === "tablet" ? 24 : 24,
