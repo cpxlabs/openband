@@ -65,6 +65,16 @@ create table public.posts (
 );
 
 -- ============================================================
+-- AUTH COLUMNS (email/password + Google OAuth)
+-- ============================================================
+
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS password_hash TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS google_id TEXT UNIQUE;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS email TEXT UNIQUE;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS name TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS tier TEXT DEFAULT 'FREE';
+
+-- ============================================================
 -- REMIX GRAPH
 -- ============================================================
 

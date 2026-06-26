@@ -6,6 +6,7 @@ import generatorRoutes from "./routes/generator";
 import exportRoutes from "./routes/export";
 import remixRoutes from "./routes/remix";
 import tierRoutes from "./routes/tier";
+import authRoutes from "./routes/auth";
 import { checkDemucsInstalled } from "./services/demucs";
 import { requireFeature } from "./middleware/tierGuard";
 
@@ -112,6 +113,7 @@ app.get("/api/health", async (_req, res) => {
 });
 
 app.use("/api", rateLimit(30, 15 * 60 * 1000));
+app.use("/api", authRoutes);
 app.use("/api", tierRoutes);
 app.use("/api", extractRoutes);
 app.use("/api", masterRoutes);
