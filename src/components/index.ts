@@ -44,3 +44,4 @@ export { MasteringVersionManager } from "./MasteringVersionManager";
 export { MasteringUpload } from "./MasteringUpload";
 export { VoiceCommandButton } from "./VoiceCommandButton";
 export { MiniPlayer } from "./MiniPlayer";
+export { QuickActions } from "./QuickActions";

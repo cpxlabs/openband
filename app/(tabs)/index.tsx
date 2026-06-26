@@ -17,10 +17,12 @@ import {
   ProgressBar,
   PageHeader,
   Avatar,
+  QuickActions,
+  NewProject,
 } from "../../src/components";
 import { generatePreviewUrl, SCREEN_BOTTOM_PADDING } from "../../src/lib/constants";
 import { GENRES } from "../../src/lib/projectTemplates";
-import { useResponsive, LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive";
+import { useResponsive } from "../../src/lib/responsive";
 
 interface FeedPost {
   id: string;
@@ -198,6 +200,7 @@ export default function Feed() {
   const player = useAudioPlayer(null);
   const status = useAudioPlayerStatus(player);
   const [playingId, setPlayingId] = useState<string | null>(null);
+  const [showNewProject, setShowNewProject] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -264,6 +267,26 @@ export default function Feed() {
     [router],
   );
 
+  const handleNewProject = useCallback(() => {
+    setShowNewProject(true);
+  }, []);
+
+  const handleCreateProject = useCallback(
+    (config: { name: string; genre: any; key: string; bpm: number; mood?: string }) => {
+      const projectId = `proj-${Date.now()}`;
+      const params = new URLSearchParams({
+        title: config.name,
+        genre: config.genre.id,
+        bpm: String(config.bpm),
+        key: config.key,
+      });
+      if (config.mood) params.set("mood", config.mood);
+      router.push(`/studio/${projectId}?${params.toString()}`);
+      setShowNewProject(false);
+    },
+    [router],
+  );
+
   const handleShare = useCallback(async (post: FeedPost) => {
     if (Platform.OS === "web") {
       await navigator.clipboard.writeText(
@@ -284,26 +307,34 @@ export default function Feed() {
     );
   }, []);
 
+  const maxWidthStyle: any = resp.isDesktop
+    ? { maxWidth: 1200, alignSelf: "center" as const }
+    : undefined
+
   return (
     <View className="flex-1 bg-dark-bg">
-      <View
-        style={
-          resp.isDesktop
-            ? {
-                maxWidth: LAYOUT_MAX_WIDTHS.feed,
-                alignSelf: "center",
-                width: "100%",
-              }
-            : undefined
-        }
-      >
-        <View
-          className="pt-4 mobile:pt-12 px-4 mobile:px-6"
-        >
-          <PageHeader title="Feed" subtitle="Descubra novos sons" />
+      <NewProject
+        visible={showNewProject}
+        onClose={() => setShowNewProject(false)}
+        onCreate={handleCreateProject}
+      />
+      <View style={maxWidthStyle}>
+        <View className="pt-4 tablet:pt-12 px-4 tablet:px-6 flex-row items-start justify-between">
+          <View className="flex-1">
+            <PageHeader title="Feed" subtitle="Descubra novos sons e crie os seus" />
+          </View>
+          <Pressable
+            onPress={handleNewProject}
+            className="bg-brand-primary rounded-full px-5 py-2.5 flex-row items-center gap-2 active:opacity-80 hover:bg-brand-primaryDark"
+            accessibilityRole="button"
+            accessibilityLabel="Novo Projeto"
+          >
+            <Text className="text-white font-bold text-base">+</Text>
+            <Text className="text-white font-bold text-sm">Novo Projeto</Text>
+          </Pressable>
         </View>
 
-        <View className="px-4 mobile:px-6 mb-2">
+        <View className="px-4 tablet:px-6 mb-2">
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -357,7 +388,7 @@ export default function Feed() {
         </View>
 
         {playingId && (
-          <View className="px-4 mobile:px-6 py-3 bg-brand-primary/10 border-b border-brand-primary/20">
+          <View className="px-4 tablet:px-6 py-3 bg-brand-primary/10 border-b border-brand-primary/20">
             <View className="flex-row items-center gap-2.5">
               <View className="w-2.5 h-2.5 rounded-full bg-green-500" />
               <Text className="text-green-400 text-xs font-medium flex-1">
@@ -368,137 +399,138 @@ export default function Feed() {
         )}
       </View>
 
-      <FlatList
-        data={filteredPosts}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{
-          paddingBottom: SCREEN_BOTTOM_PADDING,
-          paddingHorizontal: resp.isDesktop ? 24 : 0,
-        }}
-        style={
-          resp.isDesktop
-            ? {
-                maxWidth: LAYOUT_MAX_WIDTHS.feed,
-                alignSelf: "center",
-                width: "100%",
-              }
-            : undefined
-        }
-        ListEmptyComponent={
-          <View className="py-16 items-center">
-            <Text className="text-4xl mb-3 opacity-50">🎵</Text>
-            <Text className="text-gray-500 text-sm">
-              Nenhum track encontrado
-            </Text>
-          </View>
-        }
-        renderItem={({ item }) => {
-          const isThisPlaying = playingId === item.id && player.playing;
-          const progress = status.duration
-            ? (status.currentTime / status.duration) * 100
-            : 0;
+      <View className="flex-1 flex-row" style={maxWidthStyle}>
+        <View className="flex-1" style={{ flexBasis: resp.isDesktop ? "70%" : "100%" }}>
+          <FlatList
+            data={filteredPosts}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={{
+              paddingBottom: SCREEN_BOTTOM_PADDING,
+              paddingHorizontal: resp.isDesktop ? 16 : 0,
+            }}
+            ListEmptyComponent={
+              <View className="py-16 items-center">
+                <Text className="text-4xl mb-3 opacity-50">🎵</Text>
+                <Text className="text-gray-500 text-sm">
+                  Nenhum track encontrado
+                </Text>
+              </View>
+            }
+            renderItem={({ item }) => {
+              const isThisPlaying = playingId === item.id && player.playing;
+              const progress = status.duration
+                ? (status.currentTime / status.duration) * 100
+                : 0;
 
-          return (
-            <Card activeBorder={isThisPlaying} className="mx-4 mobile:mx-4 tablet:mx-0 mb-3">
-              <View className="p-4">
-                <View className="flex-row items-start gap-3">
-                  <Avatar name={item.author} size="md" />
-                  <View className="flex-1">
-                    <View className="flex-row items-start justify-between">
-                      <View className="flex-1 mr-2">
-                        <Text className="text-white font-bold text-base leading-tight">
-                          {item.title}
-                        </Text>
-                        <Text className="text-gray-400 text-xs mt-0.5">
-                          {item.authorHandle}
-                        </Text>
+              return (
+                <Card highlighted={isThisPlaying} className="mx-4 tablet:mx-2 mb-3">
+                  <View className="p-4">
+                    <View className="flex-row items-start gap-3">
+                      <Avatar name={item.author} size="md" />
+                      <View className="flex-1">
+                        <View className="flex-row items-start justify-between">
+                          <View className="flex-1 mr-2">
+                            <Text className="text-white font-bold text-base leading-tight">
+                              {item.title}
+                            </Text>
+                            <Text className="text-gray-400 text-xs mt-0.5">
+                              {item.authorHandle}
+                            </Text>
+                          </View>
+                          <Badge
+                            text={formatCount(item.plays)}
+                            icon="▶"
+                            variant="play"
+                          />
+                        </View>
+
+                        <View className="flex-row items-center gap-2 mt-2">
+                          <Badge
+                            text={item.genre.toUpperCase()}
+                            variant="default"
+                          />
+                          <Badge text={item.key} variant="default" />
+                          <Badge text={`${item.bpm} BPM`} variant="default" />
+                          <Text className="text-gray-600 text-[10px]">
+                            {Math.floor(item.duration / 60)}:
+                            {String(item.duration % 60).padStart(2, "0")}
+                          </Text>
+                        </View>
                       </View>
-                      <Badge
-                        text={formatCount(item.plays)}
-                        icon="▶"
-                        variant="play"
-                      />
                     </View>
 
-                    <View className="flex-row items-center gap-2 mt-2">
-                      <Badge
-                        text={item.genre.toUpperCase()}
-                        variant="default"
-                      />
-                      <Badge text={item.key} variant="default" />
-                      <Badge text={`${item.bpm} BPM`} variant="default" />
-                      <Text className="text-gray-600 text-[10px]">
-                        {Math.floor(item.duration / 60)}:
-                        {String(item.duration % 60).padStart(2, "0")}
+                    <Pressable
+                      onPress={() => {
+                        handlePlay(item);
+                        handlePlayed(item.id);
+                      }}
+                      className={`mt-3 h-10 rounded-xl items-center justify-center flex-row gap-2 ${
+                        isThisPlaying ? "bg-green-600" : "btn-secondary"
+                      }`}
+                    >
+                      <Text
+                        className={`text-sm ${isThisPlaying ? "text-white" : "text-brand-primary"}`}
+                      >
+                        {isThisPlaying ? "⏸" : "▶"}
                       </Text>
+                      <Text
+                        className={`font-bold text-xs ${isThisPlaying ? "text-white" : "text-brand-primary"}`}
+                      >
+                        {isThisPlaying ? "Pausar" : "Ouvir"}
+                      </Text>
+                    </Pressable>
+
+                    <View className="flex-row items-center gap-3 mt-3">
+                      <Pressable
+                        onPress={() => handleLike(item.id)}
+                        className="flex-row items-center gap-1 active:opacity-60"
+                      >
+                        <Text
+                          className={`text-base ${item.userLiked ? "text-brand-primary" : "text-gray-500"}`}
+                        >
+                          {item.userLiked ? "❤" : "♡"}
+                        </Text>
+                        <Text
+                          className={`text-xs font-semibold ${item.userLiked ? "text-brand-primary" : "text-gray-500"}`}
+                        >
+                          {formatCount(item.likes)}
+                        </Text>
+                      </Pressable>
+
+                      <Pressable
+                        onPress={() => handleRemix(item)}
+                        className="flex-row items-center gap-1 px-2.5 py-1 rounded-full bg-dark-elevated border border-dark-border active:opacity-70"
+                      >
+                        <Text className="text-gray-400 text-xs">🔄</Text>
+                        <Text className="text-gray-400 text-[10px] font-semibold">
+                          Remix
+                        </Text>
+                      </Pressable>
+
+                      <Pressable
+                        onPress={() => handleShare(item)}
+                        className="flex-row items-center gap-1 px-2.5 py-1 rounded-full bg-dark-elevated border border-dark-border active:opacity-70"
+                      >
+                        <Text className="text-gray-400 text-xs">↗</Text>
+                        <Text className="text-gray-400 text-[10px] font-semibold">
+                          Compartilhar
+                        </Text>
+                      </Pressable>
                     </View>
                   </View>
-                </View>
+                  {isThisPlaying && <ProgressBar progress={progress} />}
+                </Card>
+              );
+            }}
+          />
+        </View>
 
-                <Pressable
-                  onPress={() => {
-                    handlePlay(item);
-                    handlePlayed(item.id);
-                  }}
-                  className={`mt-3 h-10 rounded-xl items-center justify-center flex-row gap-2 ${
-                    isThisPlaying ? "bg-green-600" : "btn-secondary"
-                  }`}
-                >
-                  <Text
-                    className={`text-sm ${isThisPlaying ? "text-white" : "text-brand-primary"}`}
-                  >
-                    {isThisPlaying ? "⏸" : "▶"}
-                  </Text>
-                  <Text
-                    className={`font-bold text-xs ${isThisPlaying ? "text-white" : "text-brand-primary"}`}
-                  >
-                    {isThisPlaying ? "Pausar" : "Ouvir"}
-                  </Text>
-                </Pressable>
-
-                <View className="flex-row items-center gap-3 mt-3">
-                  <Pressable
-                    onPress={() => handleLike(item.id)}
-                    className="flex-row items-center gap-1 active:opacity-60"
-                  >
-                    <Text
-                      className={`text-base ${item.userLiked ? "text-brand-primary" : "text-gray-500"}`}
-                    >
-                      {item.userLiked ? "❤" : "♡"}
-                    </Text>
-                    <Text
-                      className={`text-xs font-semibold ${item.userLiked ? "text-brand-primary" : "text-gray-500"}`}
-                    >
-                      {formatCount(item.likes)}
-                    </Text>
-                  </Pressable>
-
-                  <Pressable
-                    onPress={() => handleRemix(item)}
-                    className="flex-row items-center gap-1 px-2.5 py-1 rounded-full bg-dark-elevated border border-dark-border active:opacity-70"
-                  >
-                    <Text className="text-gray-400 text-xs">🔄</Text>
-                    <Text className="text-gray-400 text-[10px] font-semibold">
-                      Remix
-                    </Text>
-                  </Pressable>
-
-                  <Pressable
-                    onPress={() => handleShare(item)}
-                    className="flex-row items-center gap-1 px-2.5 py-1 rounded-full bg-dark-elevated border border-dark-border active:opacity-70"
-                  >
-                    <Text className="text-gray-400 text-xs">↗</Text>
-                    <Text className="text-gray-400 text-[10px] font-semibold">
-                      Compartilhar
-                    </Text>
-                  </Pressable>
-                </View>
-              </View>
-              {isThisPlaying && <ProgressBar progress={progress} />}
-            </Card>
-          );
-        }}
-      />
+        {resp.isDesktop && (
+          <View style={{ width: "30%", paddingLeft: 12 }}>
+            <QuickActions />
+          </View>
+        )}
+      </View>
     </View>
   );
 }
