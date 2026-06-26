@@ -130,7 +130,8 @@ router.post("/export/social-video", async (req: Request, res: Response) => {
     res.json({ url: `/videos/${path.basename(outputVideo)}` });
   } catch (e) {
     console.error("Social video export failed:", e);
-    res.status(500).json({ error: "Falha na exportação de vídeo social" });
+    const isProduction = process.env.NODE_ENV === "production";
+    res.status(500).json({ error: "Falha na exportação de vídeo social", ...(isProduction ? {} : { details: String(e) }) });
   }
 });
 

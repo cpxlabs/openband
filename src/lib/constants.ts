@@ -17,7 +17,7 @@ export async function generatePreviewUrl(
   const h = hashStr(key);
   const freq = 110 + Math.abs(h % 880);
   const types: OscillatorType[] = ["sine", "triangle", "sawtooth", "square"];
-  if (Platform.OS !== "web") return "";
+  if (Platform.OS !== "web" || typeof OfflineAudioContext === "undefined") return "";
   const ctx = new OfflineAudioContext(1, Math.ceil(sr * duration), sr);
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
