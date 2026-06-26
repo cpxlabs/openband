@@ -8,19 +8,26 @@ import { ThemeProvider } from "../src/context/ThemeContext";
 import { View, Platform } from "react-native";
 import { Loading } from "../src/components";
 import { AudioEngineProvider } from "../src/context/AudioEngine";
+import { VISITOR_MODE } from "../src/lib/flags";
 
 import "../global.css";
 
 function RootLayoutProtected() {
-  const { session, loading } = useAuth();
+  const { session, loading, signInAsVisitor } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+
+  useEffect(() => {
+    if (VISITOR_MODE && !session && !loading) {
+      signInAsVisitor();
+    }
+  }, [session, loading, signInAsVisitor]);
 
   useEffect(() => {
     if (loading) return;
     const inAuthGroup = segments[0] === "(auth)";
 
-    if (!session && !inAuthGroup) {
+    if (!session && !inAuthGroup && !VISITOR_MODE) {
       router.replace("/login");
     } else if (session && inAuthGroup) {
       router.replace("/(tabs)");
