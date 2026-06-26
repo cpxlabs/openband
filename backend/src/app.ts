@@ -11,7 +11,11 @@ import magicLinkRoutes from "./routes/magicLink";
 import sessionRoutes from "./routes/sessions";
 import trashRoutes from "./routes/trash";
 import projectsRoutes from "./routes/projects";
+import activityRoutes from "./routes/activity";
 import dnaRoutes from "./routes/dna";
+import bandsRoutes from "./routes/bands";
+import mixingTemplatesRoutes from "./routes/mixingTemplates";
+import hydrationRoutes from "./routes/hydration";
 import { checkDemucsInstalled } from "./services/demucs";
 import { requireFeature } from "./middleware/tierGuard";
 import { checkBlacklist } from "./middleware/sessionBlacklist";
@@ -131,7 +135,11 @@ app.use("/api", exportRoutes);
 app.use("/api", remixRoutes);
 app.use("/api", trashRoutes);
 app.use("/api", projectsRoutes);
+app.use("/api", activityRoutes);
 app.use("/api", dnaRoutes);
+app.use("/api", bandsRoutes);
+app.use("/api", mixingTemplatesRoutes);
+app.use("/api", hydrationRoutes);
 
 app.use(
   (

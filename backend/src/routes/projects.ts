@@ -51,4 +51,53 @@ router.delete("/projects/:id", requireAuth, async (req: AuthenticatedRequest, re
   }
 })
 
+interface TrackData {
+  id?: string
+  [key: string]: any
+}
+
+router.patch("/projects/:id/tracks/:trackId", async (req, res) => {
+  try {
+    const { id, trackId } = req.params
+    const trackPatch = req.body
+
+    const { data: project, error: fetchErr } = await supabase
+      .from("projects")
+      .select("tracks")
+      .eq("id", id)
+      .maybeSingle()
+
+    if (fetchErr || !project) {
+      return res.status(404).json({ error: "Projeto não encontrado." })
+    }
+
+    const tracks: TrackData[] = project.tracks || []
+    const trackIdx = tracks.findIndex((t) => t.id === trackId)
+    if (trackIdx === -1) {
+      return res.status(404).json({ error: "Trilha não encontrada." })
+    }
+
+    tracks[trackIdx] = { ...tracks[trackIdx], ...trackPatch }
+
+    const { error: updateErr } = await supabase
+      .from("projects")
+      .update({ tracks, updated_at: new Date().toISOString() })
+      .eq("id", id)
+
+    if (updateErr) throw updateErr
+
+    await supabase.from("project_activity").insert({
+      project_id: id,
+      user_name: req.body._userName || "Usuário",
+      action: "track_updated",
+      details: `Trilha ${trackId} atualizada`,
+    })
+
+    res.json({ success: true, track: tracks[trackIdx] })
+  } catch (e) {
+    console.error("Track patch failed:", e)
+    res.status(500).json({ error: "Falha ao atualizar trilha." })
+  }
+})
+
 export default router

@@ -116,6 +116,20 @@ create table if not exists public.project_reactions (
 );
 
 -- ============================================================
+-- PROJECT ACTIVITY LOG (AUDIT TRAIL)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS project_activity (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  user_name TEXT,
+  action TEXT NOT NULL,
+  details TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================
 -- ROW LEVEL SECURITY
 -- ============================================================
 
@@ -126,6 +140,7 @@ alter table public.stems enable row level security;
 alter table public.posts enable row level security;
 alter table public.remixes enable row level security;
 alter table public.project_reactions enable row level security;
+alter table public.project_activity enable row level security;
 
 -- Profiles
 create policy "Profiles are publicly viewable"
@@ -280,6 +295,21 @@ create policy "Users can delete own reactions"
   on public.project_reactions for delete
   using (auth.uid() = user_id);
 
+-- Project Activity
+create policy "Activity visible to project viewers"
+  on public.project_activity for select
+  using (
+    exists (
+      select 1 from public.projects
+      where projects.id = project_activity.project_id
+      and (projects.is_public = true or projects.owner_id = auth.uid())
+    )
+  );
+
+create policy "Authenticated users can log activity"
+  on public.project_activity for insert
+  with check (auth.role() = 'authenticated');
+
 -- ============================================================
 -- AUTO-UPDATE updated_at
 -- ============================================================
@@ -338,6 +368,36 @@ ALTER TABLE projects ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
 
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS creative_tags TEXT[] DEFAULT '{}';
 ALTER TABLE projects ADD COLUMN IF NOT EXISTS genre TEXT DEFAULT '';
+
+-- ============================================================
+-- SHARED BAND ACCOUNTS (RBAC)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS bands (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  description TEXT,
+  avatar_url TEXT,
+  owner_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS band_members (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  band_id UUID NOT NULL REFERENCES bands(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  role TEXT NOT NULL DEFAULT 'VIEWER',
+  joined_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(band_id, user_id)
+);
+
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS band_id UUID REFERENCES bands(id) ON DELETE SET NULL;
+
+-- ============================================================
+-- USER MIXING TEMPLATES
+-- ============================================================
+
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS mixing_preferences JSONB DEFAULT '{}';
 
 -- ============================================================
 -- STORAGE BUCKETS
