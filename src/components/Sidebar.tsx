@@ -1,4 +1,4 @@
-import { View, Text, Pressable, ScrollView } from "react-native";
+import { View, Text, Pressable, ScrollView, Image, Platform } from "react-native";
 
 const NAV_ITEMS = [
   { key: "index", label: "Feed", icon: "♫" },
@@ -7,6 +7,8 @@ const NAV_ITEMS = [
   { key: "account", label: "Conta", icon: "●" },
   { key: "settings", label: "Ajustes", icon: "⚙" },
 ];
+
+const LOGO_URL = "/logo-openband.png";
 
 interface SidebarProps {
   currentRoute: string;
@@ -32,13 +34,27 @@ export function Sidebar({
       testID={testID}
       className={`bg-dark-surface border-r border-dark-border h-full ${isPersistent ? "w-52" : "w-64"}`}
     >
-      <View className="h-16 border-b border-dark-border items-center justify-center">
-        <View className="flex-row items-center gap-2">
-          <View className="w-8 h-8 rounded-lg bg-brand-primary items-center justify-center">
-            <Text className="text-white text-sm">♫</Text>
-          </View>
-          <Text className="text-white font-bold text-base tracking-tight">
-            OpenBand
+      <View className="items-center justify-center pt-8 pb-6 px-4 border-b border-dark-border select-none">
+        <View className="w-16 h-16 items-center justify-center mb-3">
+          {Platform.OS === "web" ? (
+            <Image
+              source={{ uri: LOGO_URL }}
+              style={{ width: 64, height: 64, tintColor: "#fff" }}
+              className="object-contain"
+            />
+          ) : (
+            <View className="w-12 h-12 rounded-2xl bg-brand-primary items-center justify-center">
+              <Text className="text-white text-xl font-bold">♫</Text>
+            </View>
+          )}
+        </View>
+
+        <View className="items-center">
+          <Text className="text-white text-xl font-bold tracking-wide uppercase">
+            Open<Text className="text-brand-primary">Band</Text>
+          </Text>
+          <Text className="text-gray-600 text-[10px] font-mono tracking-widest uppercase mt-0.5">
+            v1.0.0
           </Text>
         </View>
       </View>
