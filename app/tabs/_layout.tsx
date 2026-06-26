@@ -36,7 +36,7 @@ export default function TabLayout() {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const lastSegment = segments[segments.length - 1] || "index"
-  const currentSegment = lastSegment === "(tabs)" ? "index" : lastSegment
+  const currentSegment = lastSegment === "tabs" ? "index" : lastSegment
   const routeNameMap: Record<string, string> = {
     index: "Feed",
     moments: "Momentos",
@@ -51,7 +51,7 @@ export default function TabLayout() {
       setDrawerOpen(false);
       return;
     }
-    router.replace(`/(tabs)/${route}` as Href);
+    router.replace(`/tabs/${route}` as Href);
     setDrawerOpen(false);
   };
 

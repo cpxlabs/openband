@@ -30,7 +30,7 @@ function RootLayoutProtected() {
     if (!session && !inAuthGroup && !VISITOR_MODE) {
       router.replace("/login");
     } else if (session && inAuthGroup) {
-      router.replace("/(tabs)");
+      router.replace("/tabs");
     }
   }, [session, loading, segments]);
 
@@ -50,7 +50,8 @@ function RootLayoutProtected() {
         headerShadowVisible: false,
       }}
     >
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="tabs" options={{ headerShown: false }} />
       <Stack.Screen name="extractor" options={{ headerShown: false }} />
       <Stack.Screen name="studio/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="mastering" options={{ headerShown: false }} />

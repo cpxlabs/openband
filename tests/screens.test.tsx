@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import Extractor from "../app/extractor";
-import Settings from "../app/(tabs)/settings";
-import Account from "../app/(tabs)/account";
+import Settings from "../app/tabs/settings";
+import Account from "../app/tabs/account";
 import MasteringScreen from "../app/mastering/index";
 
 const {
