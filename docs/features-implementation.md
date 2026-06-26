@@ -185,7 +185,7 @@ interface PianoRollProps {
 **Files:**
 
 - `src/lib/projectStore.ts` — Add `exportProject()` and `importProject()`
-- `app/(tabs)/library.tsx` — Share button → copy JSON / download file
+- `app/tabs/library.tsx` — Share button → copy JSON / download file
 
 ```tsx
 function exportProject(id: string): string {
@@ -206,7 +206,7 @@ function importProject(json: string): string {
 **Files:**
 
 - `src/lib/supabase.ts` — Add `projects` CRUD
-- `app/(tabs)/library.tsx` — "Published" tab
+- `app/tabs/library.tsx` — "Published" tab
 
 ---
 

@@ -228,7 +228,7 @@ Types: `fix`, `feat`, `chore`, `refactor`, `docs`
 app/
   _layout.tsx          — Root: SafeAreaProvider + AuthProvider + redirect logic
   (auth)/login.tsx    — Login screen (Supabase auth, mock fallback)
-  (tabs)/
+  tabs/
     _layout.tsx       — Tab navigator (Feed, Biblioteca, Momentos) + responsive sidebar drawer
     index.tsx         — Feed screen with audio playback
     library.tsx       — Library screen with project list + "Separar Stems" button

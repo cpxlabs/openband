@@ -65,7 +65,7 @@ Ajustes) seguem o mesmo padrão:
 | Ajustes    | 576px     |
 | Login      | 448px     |
 
-### 2. Tab Navigator + Sidebar (`app/(tabs)/_layout.tsx`)
+### 2. Tab Navigator + Sidebar (`app/tabs/_layout.tsx`)
 
 - **Desktop (≥ 1024px):** Sidebar persistente (224px à esquerda), tab bar
   oculto, sem hamburger.

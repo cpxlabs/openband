@@ -121,7 +121,7 @@ Backend (`POST /api/extract`):
 - Accepts audio files (MP3, WAV, FLAC, M4A, OGG, AAC, WMA; up to 200 MB)
 - Returns JSON with 4 stem URLs after processing
 
-### Feed (`app/(tabs)/index.tsx`)
+### Feed (`app/tabs/index.tsx`)
 
 Global social feed of published projects:
 
@@ -129,7 +129,7 @@ Global social feed of published projects:
 - Avatar, username, and post metadata
 - Like, comment, and share action bar
 
-### Library (`app/(tabs)/library.tsx`)
+### Library (`app/tabs/library.tsx`)
 
 User's project collection:
 
@@ -144,19 +144,19 @@ User's project collection:
 - Session persistence via `expo-secure-store` (native) / `localStorage` (web)
 - Visitor mode (anonymous exploration without sign-up)
 
-### Settings (`app/(tabs)/settings.tsx`)
+### Settings (`app/tabs/settings.tsx`)
 
 - Dark/light theme toggle
 - Profile display, app version info
 - Theme persisted via ThemeContext
 
-### Feed (`app/(tabs)/moments.tsx`)
+### Feed (`app/tabs/moments.tsx`)
 
 - Artist moments / social feed with audio previews
 - Free sample pack store with 30+ curated samples
 - One-tap sample import to new studio project
 
-### Account (`app/(tabs)/account.tsx`)
+### Account (`app/tabs/account.tsx`)
 
 - Display name editing with Supabase profile sync
 - Sign-out with loading state
@@ -188,7 +188,7 @@ Ongoing hardening through periodic fix-and-verify cycles. Each round fixes verif
 - Added `disposeAudioContext()` call in studio cleanup effect
 - Added error logging to empty catch block in `electron/main.js` delete-project handler
 - Cached warning flag in `projectStore.ts` to suppress repeated `console.warn`
-- Fixed stale ref in `app/(tabs)/index.tsx` — moved `currentPostRef.current` after successful `await`
+- Fixed stale ref in `app/tabs/index.tsx` — moved `currentPostRef.current` after successful `await`
 - Added LRU eviction for `uploadCache` in `browser.ts` (max 10 entries)
 - Replaced hardcoded `http://localhost:3001` with configurable `EXPO_PUBLIC_API_URL` environment variable
 - Fixed ESM `__dirname` compatibility in `backend/src/services/demucs.ts`
@@ -207,7 +207,7 @@ openband/
 ├── app/
 │   ├── _layout.tsx          # Root: SafeAreaProvider + AuthProvider + redirect
 │   ├── (auth)/login.tsx     # Login screen
-│   ├── (tabs)/
+│   ├── tabs/
 │   │   ├── _layout.tsx      # Tab navigator (Feed, Biblioteca, Momentos)
 │   │   ├── index.tsx        # Global feed with audio playback
 │   │   ├── library.tsx      # Project library
