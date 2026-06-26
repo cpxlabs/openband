@@ -17,6 +17,7 @@ export interface ProjectData {
   genre: string;
   key: string;
   bpm: number;
+  mood?: string;
   tracks: TrackDef[];
   groups: GroupDef[];
   trackAssignments: Record<string, string | null>;
@@ -187,6 +188,7 @@ function sanitizeProjectData(raw: unknown): ProjectData | null {
     title: data.title as string,
     genre: typeof data.genre === "string" ? data.genre : "",
     key: typeof data.key === "string" ? data.key : "C",
+    mood: typeof data.mood === "string" ? data.mood : undefined,
     bpm: data.bpm as number,
     tracks: Array.isArray(data.tracks) ? data.tracks : [],
     groups: Array.isArray(data.groups) ? data.groups : [],

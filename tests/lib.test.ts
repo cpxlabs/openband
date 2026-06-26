@@ -69,21 +69,56 @@ vi.stubGlobal(
 vi.stubGlobal(
   "OfflineAudioContext",
   vi.fn(() => ({
-    startRendering: vi.fn(),
+    startRendering: vi.fn(() => Promise.resolve({
+      numberOfChannels: 2,
+      sampleRate: 48000,
+      length: 48000,
+      getChannelData: vi.fn(() => new Float32Array(48000)),
+    })),
     createBufferSource: vi.fn(() => ({
       buffer: null,
       connect: vi.fn(),
       start: vi.fn(),
+      stop: vi.fn(),
     })),
     createGain: vi.fn(() => ({
       gain: {
         value: 0,
         setValueAtTime: vi.fn(),
         linearRampToValueAtTime: vi.fn(),
+        exponentialRampToValueAtTime: vi.fn(),
       },
       connect: vi.fn(),
+      disconnect: vi.fn(),
     })),
     createStereoPanner: vi.fn(() => ({ pan: { value: 0 }, connect: vi.fn() })),
+    createOscillator: vi.fn(() => ({
+      type: "",
+      frequency: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() },
+      connect: vi.fn(),
+      start: vi.fn(),
+      stop: vi.fn(),
+    })),
+    createBiquadFilter: vi.fn(() => ({
+      type: "",
+      frequency: { value: 0, setValueAtTime: vi.fn() },
+      Q: { value: 0, setValueAtTime: vi.fn() },
+      connect: vi.fn(),
+    })),
+    createDelay: vi.fn(() => ({
+      delayTime: { value: 0 },
+      connect: vi.fn(),
+    })),
+    createConvolver: vi.fn(() => ({
+      buffer: null,
+      connect: vi.fn(),
+    })),
+    createBuffer: vi.fn((channels: number, length: number, sampleRate: number) => ({
+      numberOfChannels: channels,
+      length,
+      sampleRate,
+      getChannelData: vi.fn(() => new Float32Array(length)),
+    })),
     destination: {},
     sampleRate: 48000,
     length: 0,
@@ -552,12 +587,12 @@ describe("generateTracksForGenre", () => {
   it("different keys produce different MIDI pitches on same track type", () => {
     const cMajor = generateTracksForGenre("edm", 128, "C");
     const fSharp = generateTracksForGenre("edm", 128, "F#");
-    const bassC = cMajor.find((t) => t.midiNotes && t.midiNotes.length > 0)!;
-    const bassF = fSharp.find((t) => t.midiNotes && t.midiNotes.length > 0)!;
-    expect(bassC.midiNotes![0].pitch).not.toBe(bassF.midiNotes![0].pitch);
+    const synthC = cMajor.find((t) => t.name === "Synth Lead")!;
+    const synthF = fSharp.find((t) => t.name === "Synth Lead")!;
+    expect(synthC.midiNotes![0].pitch).not.toBe(synthF.midiNotes![0].pitch);
   });
 
-  it("percussion/drums tracks do not get MIDI notes", () => {
+  it("percussion/drums tracks get genre-appropriate MIDI drum patterns", () => {
     const tracks = generateTracksForGenre("rock", 120, "E");
     for (const t of tracks) {
       if (
@@ -565,18 +600,27 @@ describe("generateTracksForGenre", () => {
         t.name.includes("Drums") ||
         t.name.includes("Percussão")
       ) {
-        expect(t.midiNotes).toBeUndefined();
+        expect(t.midiNotes).toBeDefined();
+        expect(t.midiNotes!.length).toBeGreaterThan(0);
+        for (const n of t.midiNotes!) {
+          expect(n.pitch).toBeGreaterThanOrEqual(35);
+          expect(n.pitch).toBeLessThanOrEqual(81);
+        }
       }
     }
   });
 
-  it("Baixo tracks get MIDI notes one octave below root", () => {
+  it("Baixo tracks get MIDI notes in bass range with walking pattern", () => {
     const tracks = generateTracksForGenre("pop", 120, "C");
     const baixo = tracks.find((t) => t.name === "Baixo")!;
     expect(baixo.midiNotes).toBeDefined();
+    expect(baixo.midiNotes!.length).toBeGreaterThan(0);
     for (const n of baixo.midiNotes!) {
-      expect(n.pitch).toBeLessThan(60);
+      expect(n.pitch).toBeGreaterThanOrEqual(0);
+      expect(n.pitch).toBeLessThanOrEqual(127);
     }
+    const avgPitch = baixo.midiNotes!.reduce((s, n) => s + n.pitch, 0) / baixo.midiNotes!.length;
+    expect(avgPitch).toBeLessThan(64);
   });
 
   it("bpm affects MIDI note start times and durations", () => {

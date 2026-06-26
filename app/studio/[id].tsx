@@ -57,6 +57,7 @@ import type {
   TrackRegion,
   MIDINote,
 } from "../../src/lib/types";
+import type { Mood } from "../../src/lib/projectTemplates";
 import { useResponsive } from "../../src/lib/responsive";
 import {
   MASTERING_CHAIN_PRESETS,
@@ -107,13 +108,18 @@ export default function Studio() {
     key: keyParam,
     bpm: bpmParam,
     title: titleParam,
+    mood: moodParam,
   } = useLocalSearchParams<{
     id: string;
     genre?: string;
     key?: string;
     bpm?: string;
     title?: string;
+    mood?: string;
   }>();
+  const projectMood: Mood | undefined = moodParam
+    ? (Array.isArray(moodParam) ? moodParam[0] : moodParam) as Mood
+    : undefined;
   const router = useRouter();
   const projectTitle =
     (Array.isArray(titleParam) ? titleParam[0] : titleParam) || "Projeto";
@@ -201,7 +207,7 @@ export default function Studio() {
     canUndo,
     canRedo,
   } = useHistory<TrackDef[]>(
-    generateTracksForGenre(genreParam || "pop", initialBpm, projectKey),
+    generateTracksForGenre(genreParam || "pop", initialBpm, projectKey, projectMood),
   );
 
   const [metronome, setMetronome] = useState<MetronomeSettings>({
@@ -252,6 +258,7 @@ export default function Studio() {
         title: projectTitle,
         genre: genreParam || "",
         key: projectKey || "",
+        mood: projectMood,
         bpm: metronome.bpm,
         tracks,
         groups,
@@ -311,7 +318,7 @@ export default function Studio() {
       return;
     }
     hasLoadedRef.current = true;
-    const url = await renderTracksToUrl(tracks, initialBpm);
+    const url = await renderTracksToUrl(tracks, initialBpm, projectMood);
     if (url) {
       await player.replace(url);
       player.play();
@@ -633,6 +640,7 @@ export default function Studio() {
       title: projectTitle,
       genre: genreParam || "",
       key: projectKey || "",
+      mood: projectMood,
       bpm: metronome.bpm,
       tracks: tracks as TrackDef[],
       groups,
@@ -1907,7 +1915,7 @@ export default function Studio() {
                     stems: urls,
                   });
                 } else {
-                  renderTracksToUrl(tracks, initialBpm).then((url) => {
+                  renderTracksToUrl(tracks, initialBpm, projectMood).then((url) => {
                     if (url) {
                       setMasteringInput({
                         url,

@@ -671,23 +671,43 @@ describe("NewProject", () => {
     expect(screen.getByText("Pop")).toBeTruthy();
   });
 
-  it("selects genre and shows details", () => {
+  it("selects genre and shows mood step", () => {
     render(
       <NewProject visible={true} onClose={() => {}} onCreate={() => {}} />,
     );
     fireEvent.click(screen.getByText("Rock"));
+    expect(screen.getAllByText("Escolha o mood").length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("selects mood and shows details", () => {
+    render(
+      <NewProject visible={true} onClose={() => {}} onCreate={() => {}} />,
+    );
+    fireEvent.click(screen.getByText("Rock"));
+    fireEvent.click(screen.getByText("Dia"));
     expect(screen.getByText("Criar Projeto")).toBeTruthy();
   });
 
-  it("calls onCreate with config", () => {
+  it("skips mood and shows details", () => {
+    render(
+      <NewProject visible={true} onClose={() => {}} onCreate={() => {}} />,
+    );
+    fireEvent.click(screen.getByText("Rock"));
+    fireEvent.click(screen.getByText("Pular"));
+    expect(screen.getByText("Criar Projeto")).toBeTruthy();
+  });
+
+  it("calls onCreate with config including mood", () => {
     const fn = vi.fn();
     render(<NewProject visible={true} onClose={() => {}} onCreate={fn} />);
     fireEvent.click(screen.getByText("Rock"));
+    fireEvent.click(screen.getByText("Dia"));
     fireEvent.click(screen.getByText("Criar Projeto"));
     expect(fn).toHaveBeenCalledWith(
       expect.objectContaining({
         name: expect.any(String),
         genre: expect.any(Object),
+        mood: "day",
       }),
     );
   });

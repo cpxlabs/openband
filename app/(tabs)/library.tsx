@@ -9,7 +9,7 @@ import {
   Button,
   NewProject,
 } from "../../src/components";
-import type { GenreTemplate } from "../../src/lib/projectTemplates";
+import type { GenreTemplate, Mood } from "../../src/lib/projectTemplates";
 import { useResponsive, LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive";
 import {
   listProjectIndex,
@@ -42,6 +42,7 @@ export default function Library() {
       genre: GenreTemplate;
       key: string;
       bpm: number;
+      mood?: Mood;
     }) => {
       const projectId = `proj-${Date.now()}`;
       const params = new URLSearchParams({
@@ -50,6 +51,9 @@ export default function Library() {
         key: config.key,
         bpm: String(config.bpm),
       });
+      if (config.mood) {
+        params.set("mood", config.mood);
+      }
       setRefreshKey((k) => k + 1);
       setShowNewProject(false);
       router.push(`/studio/${projectId}?${params.toString()}`);

@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { View, Text, Pressable, ScrollView, TextInput } from "react-native";
-import { GENRES, MUSICAL_KEYS, keyLabel } from "../lib/projectTemplates";
-import type { GenreTemplate } from "../lib/projectTemplates";
+import { GENRES, MUSICAL_KEYS, keyLabel, MOODS } from "../lib/projectTemplates";
+import type { GenreTemplate, Mood } from "../lib/projectTemplates";
 
 interface NewProjectProps {
   visible: boolean;
@@ -11,6 +11,7 @@ interface NewProjectProps {
     genre: GenreTemplate;
     key: string;
     bpm: number;
+    mood?: Mood;
   }) => void;
   testID?: string;
 }
@@ -25,14 +26,25 @@ export function NewProject({
   const [selectedGenre, setSelectedGenre] = useState<GenreTemplate>(GENRES[0]);
   const [bpm, setBpm] = useState(selectedGenre.defaultBpm);
   const [selectedKey, setSelectedKey] = useState(selectedGenre.defaultKey);
-  const [step, setStep] = useState<"genre" | "details">("genre");
+  const [selectedMood, setSelectedMood] = useState<Mood | undefined>();
+  const [step, setStep] = useState<"genre" | "mood" | "details">("genre");
 
   const handleSelectGenre = useCallback((genre: GenreTemplate) => {
     setSelectedGenre(genre);
     setBpm(genre.defaultBpm);
     setSelectedKey(genre.defaultKey);
-    setStep("details");
+    setSelectedMood(undefined);
+    setStep("mood");
   }, []);
+
+  const handleSelectMood = useCallback((mood: Mood) => {
+    setSelectedMood(mood);
+    const moodPreset = MOODS.find((m) => m.id === mood);
+    if (moodPreset) {
+      setBpm(Math.max(1, selectedGenre.defaultBpm + moodPreset.bpmOffset));
+    }
+    setStep("details");
+  }, [selectedGenre.defaultBpm]);
 
   const handleCreate = useCallback(() => {
     const finalName = name.trim() || `${selectedGenre.name} - Novo Projeto`;
@@ -41,19 +53,22 @@ export function NewProject({
       genre: selectedGenre,
       key: selectedKey,
       bpm,
+      mood: selectedMood,
     });
     setName("");
     setSelectedGenre(GENRES[0]);
     setBpm(GENRES[0].defaultBpm);
     setSelectedKey(GENRES[0].defaultKey);
+    setSelectedMood(undefined);
     setStep("genre");
-  }, [name, selectedGenre, selectedKey, bpm, onCreate]);
+  }, [name, selectedGenre, selectedKey, bpm, selectedMood, onCreate]);
 
   const handleClose = useCallback(() => {
     setName("");
     setSelectedGenre(GENRES[0]);
     setBpm(GENRES[0].defaultBpm);
     setSelectedKey(GENRES[0].defaultKey);
+    setSelectedMood(undefined);
     setStep("genre");
     onClose();
   }, [onClose]);
@@ -68,7 +83,11 @@ export function NewProject({
       <View className="bg-dark-elevated border-t border-dark-border rounded-t-3xl max-h-[85%]">
         <View className="flex-row items-center justify-between px-5 py-4 border-b border-dark-border">
           <Text className="text-white text-lg font-bold">
-            {step === "genre" ? "Novo Projeto" : selectedGenre.name}
+            {step === "genre"
+              ? "Novo Projeto"
+              : step === "mood"
+                ? "Escolha o mood"
+                : selectedGenre.name}
           </Text>
           <Pressable
             onPress={handleClose}
@@ -113,6 +132,81 @@ export function NewProject({
                     </View>
                   </Pressable>
                 ))}
+              </View>
+            </View>
+          ) : step === "mood" ? (
+            <View>
+              <Text className="text-gray-400 text-xs font-medium mb-1">
+                Gênero selecionado
+              </Text>
+              <View className="flex-row items-center gap-3 bg-dark-surface rounded-xl border border-dark-border p-3 mb-4">
+                <Text className="text-2xl">{selectedGenre.icon}</Text>
+                <View className="flex-1">
+                  <Text className="text-white font-semibold text-sm">
+                    {selectedGenre.name}
+                  </Text>
+                  <Text className="text-gray-500 text-[10px]">
+                    {selectedGenre.description}
+                  </Text>
+                </View>
+                <Text className="text-gray-600 text-xs">
+                  {selectedGenre.defaultBpm} BPM · {selectedGenre.defaultKey}
+                </Text>
+              </View>
+
+              <Text className="text-gray-400 text-xs font-medium mb-3">
+                Escolha o mood
+              </Text>
+              <View className="flex-row flex-wrap gap-2 mb-4">
+                {MOODS.map((m) => (
+                  <Pressable
+                    key={m.id}
+                    onPress={() => handleSelectMood(m.id)}
+                    className="w-[48%] p-4 rounded-2xl border bg-dark-surface active:opacity-80"
+                    style={{
+                      borderColor:
+                        selectedMood === m.id ? "#ff3b30" : "#26262b",
+                    }}
+                  >
+                    <Text className="text-2xl mb-1">{m.icon}</Text>
+                    <Text className="text-white font-bold text-sm">
+                      {m.name}
+                    </Text>
+                    <Text className="text-gray-500 text-[10px] mt-0.5">
+                      {m.description}
+                    </Text>
+                    <View className="flex-row items-center gap-1.5 mt-2">
+                      <Text className="text-gray-600 font-mono text-[10px]">
+                        {m.bpmOffset >= 0 ? "+" : ""}
+                        {m.bpmOffset} BPM
+                      </Text>
+                      <Text className="text-gray-700 text-[10px]">·</Text>
+                      <Text className="text-gray-600 font-mono text-[10px]">
+                        dens. {m.density.toFixed(1)}
+                      </Text>
+                    </View>
+                  </Pressable>
+                ))}
+              </View>
+
+              <View className="flex-row gap-3 mb-6">
+                <Pressable
+                  onPress={() => setStep("genre")}
+                  className="flex-1 p-4 rounded-xl bg-dark-surface border border-dark-border items-center active:opacity-80"
+                >
+                  <Text className="text-gray-300 font-bold text-sm">
+                    Voltar
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => {
+                    setSelectedMood(undefined);
+                    setStep("details");
+                  }}
+                  className="flex-1 p-4 rounded-xl bg-dark-surface border border-dark-border items-center active:opacity-80"
+                >
+                  <Text className="text-gray-300 text-sm">Pular</Text>
+                </Pressable>
               </View>
             </View>
           ) : (

@@ -1,5 +1,7 @@
 import { Platform } from "react-native";
 import type { MIDINote, TrackDef } from "./types";
+import type { Mood } from "./projectTemplates";
+import { MOODS } from "./projectTemplates";
 
 let audioCtx: AudioContext | null = null;
 
@@ -171,6 +173,20 @@ export function playMidiNotes(
   return ids;
 }
 
+export function getTrackWaveform(trackName: string): WaveformType {
+  const l = trackName.toLowerCase()
+  if (l.includes('bateria') || l.includes('drums') || l.includes('kick')) return 'sine'
+  if (l.includes('percussão') || l.includes('percussion')) return 'triangle'
+  if (l.includes('baixo') || l.includes('bass') || l.includes('808')) return 'sawtooth'
+  if (l.includes('guitarra') || l.includes('violão') || l.includes('guitar')) return 'triangle'
+  if (l.includes('piano') || l.includes('keys')) return 'triangle'
+  if (l.includes('sax') || l.includes('organ')) return 'sawtooth'
+  if (l.includes('synth') || l.includes('lead')) return 'sawtooth'
+  if (l.includes('pad')) return 'sine'
+  if (l.includes('melodia') || l.includes('sample')) return 'sine'
+  return 'sawtooth'
+}
+
 export function disposeAudioContext(): void {
   stopAllNotes();
   if (audioCtx) {
@@ -179,9 +195,97 @@ export function disposeAudioContext(): void {
   }
 }
 
+function createNoiseBuffer(ctx: OfflineAudioContext, duration: number): AudioBuffer {
+  const buffer = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * duration), ctx.sampleRate)
+  const data = buffer.getChannelData(0)
+  for (let i = 0; i < data.length; i++) {
+    data[i] = Math.random() * 2 - 1
+  }
+  return buffer
+}
+
+function createDrumSound(ctx: OfflineAudioContext, pitch: number, startTime: number, velocity: number): AudioNode {
+  const vol = velocity / 127 * 0.5
+
+  if (pitch === 36 || pitch === 35) {
+    const osc = ctx.createOscillator()
+    osc.type = 'sine'
+    osc.frequency.setValueAtTime(150, startTime)
+    osc.frequency.exponentialRampToValueAtTime(40, startTime + 0.05)
+    const gain = ctx.createGain()
+    gain.gain.setValueAtTime(vol, startTime)
+    gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.3)
+    osc.connect(gain)
+    osc.start(startTime)
+    osc.stop(startTime + 0.3)
+    return gain
+  }
+
+  if (pitch === 38 || pitch === 40) {
+    const noise = createNoiseBuffer(ctx, 0.15)
+    const noiseSrc = ctx.createBufferSource()
+    noiseSrc.buffer = noise
+    const bp = ctx.createBiquadFilter()
+    bp.type = 'bandpass'
+    bp.frequency.value = 1000
+    bp.Q.value = 0.5
+    const gain = ctx.createGain()
+    gain.gain.setValueAtTime(vol * 0.7, startTime)
+    gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.15)
+    noiseSrc.connect(bp)
+    bp.connect(gain)
+    noiseSrc.start(startTime)
+    noiseSrc.stop(startTime + 0.15)
+
+    const osc = ctx.createOscillator()
+    osc.type = 'triangle'
+    osc.frequency.setValueAtTime(200, startTime)
+    const oscGain = ctx.createGain()
+    oscGain.gain.setValueAtTime(vol * 0.3, startTime)
+    oscGain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.08)
+    osc.connect(oscGain)
+    osc.start(startTime)
+    osc.stop(startTime + 0.08)
+
+    const merger = ctx.createGain()
+    gain.connect(merger)
+    oscGain.connect(merger)
+    return merger
+  }
+
+  if (pitch === 42 || pitch === 44 || pitch === 46) {
+    const noise = createNoiseBuffer(ctx, 0.08)
+    const noiseSrc = ctx.createBufferSource()
+    noiseSrc.buffer = noise
+    const hp = ctx.createBiquadFilter()
+    hp.type = 'highpass'
+    hp.frequency.value = 7000
+    const gain = ctx.createGain()
+    gain.gain.setValueAtTime(vol * 0.4, startTime)
+    gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.08)
+    noiseSrc.connect(hp)
+    hp.connect(gain)
+    noiseSrc.start(startTime)
+    noiseSrc.stop(startTime + 0.08)
+    return gain
+  }
+
+  const noise = createNoiseBuffer(ctx, 0.1)
+  const noiseSrc = ctx.createBufferSource()
+  noiseSrc.buffer = noise
+  const gain = ctx.createGain()
+  gain.gain.setValueAtTime(vol * 0.5, startTime)
+  gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.1)
+  noiseSrc.connect(gain)
+  noiseSrc.start(startTime)
+  noiseSrc.stop(startTime + 0.1)
+  return gain
+}
+
 export async function renderTracksToUrl(
   tracks: TrackDef[],
   bpm: number,
+  mood?: Mood,
 ): Promise<string | null> {
   const safeBpm = Math.max(1, bpm);
   const beatDuration = 60 / safeBpm;
@@ -201,9 +305,14 @@ export async function renderTracksToUrl(
   const numSamples = Math.ceil(sampleRate * duration);
   const anySolo = tracks.some((t) => t.solo);
 
+  const moodPreset = mood ? MOODS.find((m) => m.id === mood) : undefined;
+
   if (typeof OfflineAudioContext !== "undefined") {
     try {
       const ctx = new OfflineAudioContext(2, numSamples, sampleRate);
+
+      const masterGain = ctx.createGain();
+      masterGain.gain.value = 1.0;
 
       for (const track of tracks) {
         if (track.muted || (anySolo && !track.solo)) continue;
@@ -215,30 +324,88 @@ export async function renderTracksToUrl(
         const panNode = ctx.createStereoPanner();
         panNode.pan.value = track.pan ?? 0;
         panNode.connect(trackGain);
-        trackGain.connect(ctx.destination);
+        trackGain.connect(masterGain);
+
+        const isDrumTrack = track.name.toLowerCase().includes('bateria') ||
+          track.name.toLowerCase().includes('drums') ||
+          track.name.toLowerCase().includes('percussão') ||
+          track.name.toLowerCase().includes('percussion')
+
+        const waveform = getTrackWaveform(track.name)
 
         for (const note of track.midiNotes) {
-          const freq = NOTE_FREQS[note.pitch] || 440;
           const noteStart = note.start * beatDuration;
           const noteDur = note.duration * beatDuration;
-          const vol = Math.max(0.01, note.velocity / 127) * 0.3;
 
-          const osc = ctx.createOscillator();
-          osc.type = "sawtooth";
-          osc.frequency.setValueAtTime(freq, noteStart);
+          if (isDrumTrack) {
+            const drumNode = createDrumSound(ctx, note.pitch, noteStart, note.velocity)
+            drumNode.connect(panNode)
+          } else {
+            const freq = NOTE_FREQS[note.pitch] || 440;
+            const vol = Math.max(0.01, note.velocity / 127) * 0.3;
 
-          const noteGain = ctx.createGain();
-          noteGain.gain.setValueAtTime(0, noteStart);
-          noteGain.gain.linearRampToValueAtTime(vol, noteStart + 0.005);
-          noteGain.gain.setValueAtTime(vol, noteStart + noteDur - 0.02);
-          noteGain.gain.linearRampToValueAtTime(0, noteStart + noteDur);
+            const osc = ctx.createOscillator();
+            osc.type = waveform;
+            osc.frequency.setValueAtTime(freq, noteStart);
 
-          osc.connect(noteGain);
-          noteGain.connect(panNode);
+            const noteGain = ctx.createGain();
+            noteGain.gain.setValueAtTime(0, noteStart);
+            noteGain.gain.linearRampToValueAtTime(vol, noteStart + 0.005);
+            noteGain.gain.setValueAtTime(vol, noteStart + noteDur - 0.02);
+            noteGain.gain.linearRampToValueAtTime(0, noteStart + noteDur);
 
-          osc.start(noteStart);
-          osc.stop(noteStart + noteDur + 0.05);
+            osc.connect(noteGain);
+            noteGain.connect(panNode);
+
+            osc.start(noteStart);
+            osc.stop(noteStart + noteDur + 0.05);
+          }
         }
+      }
+
+      if (moodPreset) {
+        let fxOutput: AudioNode = masterGain;
+
+        if (moodPreset.filter) {
+          const filter = ctx.createBiquadFilter();
+          filter.type = moodPreset.filter.type;
+          filter.frequency.value = moodPreset.filter.freq;
+          filter.Q.value = moodPreset.filter.q;
+          masterGain.connect(filter);
+          fxOutput = filter;
+        }
+
+        if (moodPreset.reverb) {
+          const dryGain = ctx.createGain();
+          dryGain.gain.value = 1.0 - moodPreset.reverb.mix * 0.7;
+
+          const wetGain = ctx.createGain();
+          wetGain.gain.value = moodPreset.reverb.mix;
+
+          const irDuration = Math.min(moodPreset.reverb.decay, 10);
+          const irLen = Math.ceil(ctx.sampleRate * irDuration);
+          const ir = ctx.createBuffer(2, irLen, ctx.sampleRate);
+          for (let c = 0; c < 2; c++) {
+            const data = ir.getChannelData(c);
+            for (let i = 0; i < irLen; i++) {
+              data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.5));
+            }
+          }
+
+          const convolver = ctx.createConvolver();
+          convolver.buffer = ir;
+
+          fxOutput.connect(dryGain);
+          dryGain.connect(ctx.destination);
+
+          fxOutput.connect(convolver);
+          convolver.connect(wetGain);
+          wetGain.connect(ctx.destination);
+        } else {
+          fxOutput.connect(ctx.destination);
+        }
+      } else {
+        masterGain.connect(ctx.destination);
       }
 
       const buffer = await ctx.startRendering();
