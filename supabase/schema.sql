@@ -15,6 +15,8 @@ create table public.profiles (
 );
 
 -- 2. Projetos (Músicas em desenvolvimento no Estúdio)
+create type public.mood_type as enum ('day', 'night', 'sun', 'rain', 'snow');
+
 create table public.projects (
   id uuid default gen_random_uuid() primary key,
   owner_id uuid references public.profiles(id) on delete cascade not null,
@@ -22,6 +24,9 @@ create table public.projects (
   bpm integer default 120 not null,
   time_signature text default '4/4' not null,
   is_public boolean default false not null,
+  mood public.mood_type,
+  cover_url text,
+  chords jsonb default '[]'::jsonb,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
