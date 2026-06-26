@@ -253,7 +253,7 @@ export function generateTracksForGenre(
     ? baseBpm + (MOODS.find((m) => m.id === mood)?.bpmOffset ?? 0)
     : baseBpm;
   const beatsPerBar = 4;
-  const regionDuration = (bars * beatsPerBar * 60 * 4) / bpmVal;
+  const regionDuration = (bars * beatsPerBar * 60) / bpmVal;
   const rootNote = keyToRootNote(key ?? genre?.defaultKey ?? "C");
 
   return suggested.map((track, i) => {

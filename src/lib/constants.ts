@@ -1,14 +1,10 @@
 import { Platform } from "react-native";
+import { hashStr, audioBufferToWavBlob } from "./audio";
 
 export const DEMO_AUDIO_URL =
   "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
 
-function hashStr(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h << 5) - h + s.charCodeAt(i);
-  return h;
-}
-
+const MAX_CACHE_SIZE = 50;
 const previewUrlCache = new Map<string, string>();
 
 export async function generatePreviewUrl(
@@ -35,48 +31,15 @@ export async function generatePreviewUrl(
   osc.start(0);
   osc.stop(duration);
   const buf = await ctx.startRendering();
-  const blob = audioBufferToPreviewBlob(buf);
+  const blob = audioBufferToWavBlob(buf, 16);
   const url = URL.createObjectURL(blob);
-  previewUrlCache.set(key, url);
-  return url;
-}
-
-function audioBufferToPreviewBlob(buffer: AudioBuffer): Blob {
-  const nc = buffer.numberOfChannels;
-  const sr = buffer.sampleRate;
-  const ns = buffer.length;
-  const bps = 2;
-  const ba = nc * bps;
-  const ds = ns * ba;
-  const ab = new ArrayBuffer(44 + ds);
-  const v = new DataView(ab);
-  const w = (o: number, s: string) => {
-    for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i));
-  };
-  w(0, "RIFF");
-  v.setUint32(4, 36 + ds, true);
-  w(8, "WAVE");
-  w(12, "fmt ");
-  v.setUint32(16, 16, true);
-  v.setUint16(20, 1, true);
-  v.setUint16(22, nc, true);
-  v.setUint32(24, sr, true);
-  v.setUint32(28, sr * ba, true);
-  v.setUint16(32, ba, true);
-  v.setUint16(34, 16, true);
-  w(36, "data");
-  v.setUint32(40, ds, true);
-  for (let i = 0; i < ns; i++) {
-    for (let ch = 0; ch < nc; ch++) {
-      v.setInt16(
-        44 + (i * nc + ch) * bps,
-        Math.max(
-          -32768,
-          Math.min(32767, Math.round(buffer.getChannelData(ch)[i] * 32767)),
-        ),
-        true,
-      );
+  if (previewUrlCache.size >= MAX_CACHE_SIZE) {
+    const firstKey = previewUrlCache.keys().next().value;
+    if (firstKey !== undefined) {
+      URL.revokeObjectURL(previewUrlCache.get(firstKey)!);
+      previewUrlCache.delete(firstKey);
     }
   }
-  return new Blob([ab], { type: "audio/wav" });
+  previewUrlCache.set(key, url);
+  return url;
 }

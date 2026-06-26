@@ -77,14 +77,11 @@ router.post("/export/djstem", async (req: Request, res: Response) => {
     const outputPath = path.join(outputDir, `djstem_${Date.now()}.stem.mp4`);
 
     const args: string[] = [];
-    const maps: string[] = [];
     stems.forEach((stem: { path: string }, i: number) => {
-      args.push("-i", stem.path);
-      maps.push("-map", `${i}:a`);
+      args.push("-i", stem.path, "-map", `${i}:a`);
     });
-
-    const cmd = `ffmpeg ${args.join(" ")} ${maps.join(" ")} -c:a aac -b:a 256k -y "${outputPath}"`;
-    await execAsync(cmd, { timeout: 60000 });
+    args.push("-c:a", "aac", "-b:a", "256k", "-y", outputPath);
+    await execFileAsync("ffmpeg", args, { timeout: 60000 });
 
     res.json({ url: `/stems/${path.basename(outputPath)}` });
   } catch (e) {

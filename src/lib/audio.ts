@@ -27,7 +27,7 @@ export function generateWaveform(seed: string, count: number): number[] {
   return data;
 }
 
-function hashStr(s: string): number {
+export function hashStr(s: string): number {
   let h = 0;
   for (let i = 0; i < s.length; i++) {
     h = ((h << 5) - h + s.charCodeAt(i)) | 0;

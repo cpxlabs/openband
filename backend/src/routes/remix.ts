@@ -59,6 +59,7 @@ router.get("/projects/:id/remixes", async (req: Request, res: Response) => {
       .eq("parent_project_id", req.params.id)
     res.json(data || [])
   } catch (e) {
+    console.error("Failed to fetch remixes:", e)
     res.status(500).json({ error: "Falha ao buscar remixes" })
   }
 })
@@ -80,6 +81,7 @@ router.get("/projects/:id/tree", async (req: Request, res: Response) => {
     }
     res.json(tree)
   } catch (e) {
+    console.error("Failed to fetch remix tree:", e)
     res.status(500).json({ error: "Falha ao buscar árvore de remixes" })
   }
 })
@@ -93,6 +95,7 @@ router.post("/projects/:id/publish", async (req: Request, res: Response) => {
     if (error) throw error
     res.json({ published: true })
   } catch (e) {
+    console.error("Failed to publish project:", e)
     res.status(500).json({ error: "Falha ao publicar projeto" })
   }
 })
@@ -106,6 +109,7 @@ router.post("/projects/:id/react", async (req: Request, res: Response) => {
     if (error) throw error
     res.json({ success: true })
   } catch (e) {
+    console.error("Failed to react to project:", e)
     res.status(500).json({ error: "Falha ao reagir ao projeto" })
   }
 })
