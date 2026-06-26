@@ -18,6 +18,8 @@ import {
   formatFileSize,
   formatSampleRate,
 } from "../src/lib/masteringSuite";
+import { exportToWav, exportAndDownload } from "../src/lib/offlineExport";
+import type { TrackDef } from "../src/lib/types";
 
 const mockAudioCtx = {
   createOscillator: vi.fn(() => ({
@@ -62,67 +64,79 @@ const mockAudioCtx = {
 };
 vi.stubGlobal(
   "AudioContext",
-  vi.fn(function () {
+  vi.fn(function (this: any) {
     return mockAudioCtx;
   }),
 );
 vi.stubGlobal(
   "OfflineAudioContext",
-  vi.fn(() => ({
-    startRendering: vi.fn(() => Promise.resolve({
-      numberOfChannels: 2,
+  vi.fn(function (_ch: number, _len: number, _sr: number) {
+    let renderCh0: Float32Array | null = null;
+    let renderCh1: Float32Array | null = null;
+    return {
+      startRendering: vi.fn(() => {
+        renderCh0 = new Float32Array(48000);
+        renderCh1 = new Float32Array(48000);
+        return Promise.resolve({
+          numberOfChannels: 2,
+          sampleRate: 48000,
+          length: 48000,
+          getChannelData: (ch: number) => (ch === 0 ? renderCh0! : renderCh1!),
+        });
+      }),
+      createBufferSource: vi.fn(() => ({
+        buffer: null,
+        connect: vi.fn(),
+        start: vi.fn(),
+        stop: vi.fn(),
+      })),
+      createGain: vi.fn(() => ({
+        gain: {
+          value: 0,
+          setValueAtTime: vi.fn(),
+          linearRampToValueAtTime: vi.fn(),
+          exponentialRampToValueAtTime: vi.fn(),
+        },
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+      })),
+      createStereoPanner: vi.fn(() => ({ pan: { value: 0 }, connect: vi.fn() })),
+      createOscillator: vi.fn(() => ({
+        type: "",
+        frequency: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() },
+        connect: vi.fn(),
+        start: vi.fn(),
+        stop: vi.fn(),
+      })),
+      createBiquadFilter: vi.fn(() => ({
+        type: "",
+        frequency: { value: 0, setValueAtTime: vi.fn() },
+        Q: { value: 0, setValueAtTime: vi.fn() },
+        connect: vi.fn(),
+      })),
+      createDelay: vi.fn(() => ({
+        delayTime: { value: 0 },
+        connect: vi.fn(),
+      })),
+      createConvolver: vi.fn(() => ({
+        buffer: null,
+        connect: vi.fn(),
+      })),
+      createBuffer: vi.fn((channels: number, length: number, _sampleRate: number) => {
+        const bufs: Float32Array[] = [];
+        for (let i = 0; i < channels; i++) bufs.push(new Float32Array(length));
+        return {
+          numberOfChannels: channels,
+          length,
+          sampleRate: 48000,
+          getChannelData: (ch: number) => bufs[ch],
+        };
+      }),
+      destination: {},
       sampleRate: 48000,
-      length: 48000,
-      getChannelData: vi.fn(() => new Float32Array(48000)),
-    })),
-    createBufferSource: vi.fn(() => ({
-      buffer: null,
-      connect: vi.fn(),
-      start: vi.fn(),
-      stop: vi.fn(),
-    })),
-    createGain: vi.fn(() => ({
-      gain: {
-        value: 0,
-        setValueAtTime: vi.fn(),
-        linearRampToValueAtTime: vi.fn(),
-        exponentialRampToValueAtTime: vi.fn(),
-      },
-      connect: vi.fn(),
-      disconnect: vi.fn(),
-    })),
-    createStereoPanner: vi.fn(() => ({ pan: { value: 0 }, connect: vi.fn() })),
-    createOscillator: vi.fn(() => ({
-      type: "",
-      frequency: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() },
-      connect: vi.fn(),
-      start: vi.fn(),
-      stop: vi.fn(),
-    })),
-    createBiquadFilter: vi.fn(() => ({
-      type: "",
-      frequency: { value: 0, setValueAtTime: vi.fn() },
-      Q: { value: 0, setValueAtTime: vi.fn() },
-      connect: vi.fn(),
-    })),
-    createDelay: vi.fn(() => ({
-      delayTime: { value: 0 },
-      connect: vi.fn(),
-    })),
-    createConvolver: vi.fn(() => ({
-      buffer: null,
-      connect: vi.fn(),
-    })),
-    createBuffer: vi.fn((channels: number, length: number, sampleRate: number) => ({
-      numberOfChannels: channels,
-      length,
-      sampleRate,
-      getChannelData: vi.fn(() => new Float32Array(length)),
-    })),
-    destination: {},
-    sampleRate: 48000,
-    length: 0,
-  })),
+      length: 0,
+    };
+  }),
 );
 
 beforeEach(() => {
@@ -738,5 +752,192 @@ describe("masteringSuite.ts", () => {
   it("formatSampleRate returns kHz string", () => {
     expect(formatSampleRate(44100)).toBe("44.1kHz");
     expect(formatSampleRate(96000)).toBe("96.0kHz");
+  });
+});
+
+describe("offlineExport.ts", () => {
+  const emptyTracks: TrackDef[] = [];
+
+  const tracksWithNotes: TrackDef[] = [
+    {
+      id: "1",
+      name: "Bateria",
+      color: "bg-green-500",
+      muted: false,
+      solo: false,
+      volume: 80,
+      pan: 0,
+      sends: {},
+      sidechainSource: null,
+      regions: [{ id: "r1", start: 0, duration: 10 }],
+      plugins: [],
+      automation: {},
+      midiNotes: [
+        { pitch: 36, start: 0, duration: 1, velocity: 100 },
+        { pitch: 36, start: 1, duration: 1, velocity: 100 },
+      ],
+    },
+    {
+      id: "2",
+      name: "Baixo",
+      color: "bg-purple-500",
+      muted: false,
+      solo: false,
+      volume: 80,
+      pan: 0,
+      sends: {},
+      sidechainSource: null,
+      regions: [{ id: "r2", start: 0, duration: 10 }],
+      plugins: [],
+      automation: {},
+      midiNotes: [
+        { pitch: 40, start: 0, duration: 2, velocity: 100 },
+        { pitch: 43, start: 2, duration: 2, velocity: 100 },
+      ],
+    },
+  ];
+
+  const mutedTrack: TrackDef[] = [
+    {
+      id: "1",
+      name: "Synth Lead",
+      color: "bg-blue-500",
+      muted: true,
+      solo: false,
+      volume: 80,
+      pan: 0,
+      sends: {},
+      sidechainSource: null,
+      regions: [{ id: "r1", start: 0, duration: 10 }],
+      plugins: [],
+      automation: {},
+      midiNotes: [
+        { pitch: 64, start: 0, duration: 1, velocity: 100 },
+      ],
+    },
+  ];
+
+  const soloTrack: TrackDef[] = [
+    {
+      id: "1",
+      name: "Bateria",
+      color: "bg-green-500",
+      muted: false,
+      solo: false,
+      volume: 80,
+      pan: 0,
+      sends: {},
+      sidechainSource: null,
+      regions: [{ id: "r1", start: 0, duration: 10 }],
+      plugins: [],
+      automation: {},
+      midiNotes: [
+        { pitch: 36, start: 0, duration: 1, velocity: 100 },
+      ],
+    },
+    {
+      id: "2",
+      name: "Guitarra Solo",
+      color: "bg-blue-500",
+      muted: false,
+      solo: true,
+      volume: 80,
+      pan: 0,
+      sends: {},
+      sidechainSource: null,
+      regions: [{ id: "r2", start: 0, duration: 10 }],
+      plugins: [],
+      automation: {},
+      midiNotes: [
+        { pitch: 67, start: 0, duration: 1, velocity: 100 },
+      ],
+    },
+  ];
+
+  it("returns null for empty tracks array", async () => {
+    const result = await exportToWav(emptyTracks, { bpm: 120 });
+    expect(result).toBeNull();
+  });
+
+  it("returns null when totalBeats is zero", async () => {
+    const noNotesTrack: TrackDef[] = [
+      {
+        id: "1",
+        name: "Pad",
+        color: "bg-indigo-500",
+        muted: false,
+        solo: false,
+        volume: 80,
+        pan: 0,
+        sends: {},
+        sidechainSource: null,
+        regions: [{ id: "r1", start: 0, duration: 10 }],
+        plugins: [],
+        automation: {},
+      },
+    ];
+    const result = await exportToWav(noNotesTrack, { bpm: 120 });
+    expect(result).toBeNull();
+  });
+
+  it("returns null when all tracks are muted", async () => {
+    const result = await exportToWav(mutedTrack, { bpm: 120 });
+    expect(result).toBeNull();
+  });
+
+  it("returns a Blob for tracks with midi notes", async () => {
+    const result = await exportToWav(tracksWithNotes, { bpm: 120 });
+    expect(result).not.toBeNull();
+    expect(result).toBeInstanceOf(Blob);
+  });
+
+  it("returns a Blob with 16-bit WAV by default", async () => {
+    const result = await exportToWav(tracksWithNotes, { bpm: 120 });
+    expect(result).not.toBeNull();
+    const header = new Uint8Array(await result!.slice(0, 44).arrayBuffer());
+    const sampleFormat = (header[21] << 8) | header[20];
+    expect(sampleFormat).toBe(1);
+    const bitsPerSample = (header[35] << 8) | header[34];
+    expect(bitsPerSample).toBe(16);
+  });
+
+  it("returns a Blob with 32-bit float WAV when bitDepth=32", async () => {
+    const result = await exportToWav(tracksWithNotes, { bpm: 120, bitDepth: 32 });
+    expect(result).not.toBeNull();
+    const header = new Uint8Array(await result!.slice(0, 44).arrayBuffer());
+    const sampleFormat = (header[21] << 8) | header[20];
+    expect(sampleFormat).toBe(3);
+    const bitsPerSample = (header[35] << 8) | header[34];
+    expect(bitsPerSample).toBe(32);
+  });
+
+  it("resolves with mood preset filter and reverb", async () => {
+    const result = await exportToWav(tracksWithNotes, { bpm: 120, mood: "rain" });
+    expect(result).not.toBeNull();
+    expect(result).toBeInstanceOf(Blob);
+  });
+
+  it("calls onProgress callback", async () => {
+    const onProgress = vi.fn();
+    await exportToWav(tracksWithNotes, { bpm: 120, onProgress });
+    expect(onProgress).toHaveBeenCalled();
+    const lastCall = onProgress.mock.calls[onProgress.mock.calls.length - 1][0];
+    expect(lastCall).toBe(100);
+  });
+
+  it("honours solo — only soloed tracks render", async () => {
+    const result = await exportToWav(soloTrack, { bpm: 120 });
+    expect(result).not.toBeNull();
+    expect(result).toBeInstanceOf(Blob);
+  });
+
+  it("exportAndDownload returns false when export fails", async () => {
+    const result = await exportAndDownload(emptyTracks, { bpm: 120 });
+    expect(result).toBe(false);
+  });
+
+  it("exportAndDownload returns true when export succeeds", async () => {
+    const result = await exportAndDownload(tracksWithNotes, { bpm: 120 });
+    expect(result).toBe(true);
   });
 });
