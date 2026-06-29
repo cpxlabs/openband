@@ -52,6 +52,7 @@ import type {
   RecordSettings,
   TrackDef,
   GroupDef,
+  BusDef,
   SendBus,
   TrackAmpChain,
   TrackRegion,
@@ -66,9 +67,9 @@ import {
 import { autoMix, AUTOMIX_GENRES } from "../../src/lib/automix";
 import { generateTracksForGenre } from "../../src/lib/projectTemplates";
 import { setMasteringInput } from "../../src/lib/masteringBridge";
-import type { AutomationPoint } from "../../src/components/AutomationLane";
+import type { AutomationPoint } from "../../src/lib/types";
 
-type BottomTab = "mixer" | "fx" | "mastering" | "groups" | "mixes";
+type BottomTab = "mixer" | "fx" | "mastering" | "groups" | "buses" | "mixes";
 
 function TimeDisplay({ seconds }: { seconds: number }) {
   const m = Math.floor(seconds / 60);
@@ -183,6 +184,7 @@ export default function Studio() {
     {},
   );
   const [groups, setGroups] = useState<GroupDef[]>([]);
+  const [buses, setBuses] = useState<BusDef[]>([]);
   const [sendBuses, setSendBuses] = useState<SendBus[]>([]);
   const [trackAmpChains, setTrackAmpChains] = useState<
     Record<string, TrackAmpChain>
@@ -245,6 +247,7 @@ export default function Studio() {
       setMasteringChain(saved.masteringChain);
       setMixSnapshots(saved.mixSnapshots);
       setActiveMixId(saved.activeMixId);
+      setBuses(saved.buses ?? []);
       setSendBuses(saved.sendBuses ?? []);
       setTrackAmpChains(saved.trackAmpChains ?? {});
       if (saved.metronome) setMetronome(saved.metronome);
@@ -262,6 +265,7 @@ export default function Studio() {
         bpm: metronome.bpm,
         tracks,
         groups,
+        buses,
         trackAssignments,
         masterPlugins,
         masteringChain,
@@ -296,6 +300,7 @@ export default function Studio() {
     metronome,
     recordSettings,
     sendBuses,
+    buses,
     trackAmpChains,
     id,
     projectTitle,
@@ -318,12 +323,12 @@ export default function Studio() {
       return;
     }
     hasLoadedRef.current = true;
-    const url = await renderTracksToUrl(tracks, initialBpm, projectMood);
+    const url = await renderTracksToUrl(tracks, initialBpm, projectMood, buses);
     if (url) {
       await player.replace(url);
       player.play();
     }
-  }, [isPlaying, player, tracks, initialBpm]);
+  }, [isPlaying, player, tracks, initialBpm, buses]);
 
   const toggleRecording = useCallback(async () => {
     try {
@@ -402,7 +407,7 @@ export default function Studio() {
     async (updatedTracks: TrackDef[]) => {
       try {
         hasLoadedRef.current = false;
-        const url = await renderTracksToUrl(updatedTracks, initialBpm, projectMood);
+        const url = await renderTracksToUrl(updatedTracks, initialBpm, projectMood, buses);
         if (url) {
           player.replace(url);
           try { player.play(); } catch (e) {
@@ -413,7 +418,7 @@ export default function Studio() {
         console.warn("rerenderAfterMuteSolo render failed:", e);
       }
     },
-    [player, initialBpm, projectMood],
+    [player, initialBpm, projectMood, buses],
   );
 
   const toggleMute = useCallback(
@@ -484,6 +489,17 @@ export default function Studio() {
       setTracks(
         tracks.map((t) =>
           t.id === trackId ? { ...t, sidechainSource: sourceId } : t,
+        ),
+      );
+    },
+    [tracks, setTracks],
+  );
+
+  const setTrackOutput = useCallback(
+    (trackId: string, outputId: string | null) => {
+      setTracks(
+        tracks.map((t) =>
+          t.id === trackId ? { ...t, outputId } : t,
         ),
       );
     },
@@ -670,6 +686,7 @@ export default function Studio() {
       bpm: metronome.bpm,
       tracks: tracks as TrackDef[],
       groups,
+      buses,
       trackAssignments,
       masterPlugins,
       masteringChain,
@@ -1070,6 +1087,7 @@ export default function Studio() {
     { key: "fx", label: "FX", icon: "◈" },
     { key: "mastering", label: "Master", icon: "⊡" },
     { key: "groups", label: "Grupos", icon: "◈" },
+    { key: "buses", label: "Buses", icon: "⏚" },
     { key: "mixes", label: "Mixes", icon: "☰" },
   ];
 
@@ -1713,6 +1731,30 @@ export default function Studio() {
                           </Text>
                         </Pressable>
                       </View>
+                      <View className="w-full flex-row items-center gap-1 mb-1">
+                        <Text className="text-[8px] text-gray-600 w-5">
+                          Bus:
+                        </Text>
+                        <Pressable
+                          onPress={() => {
+                            const allBuses = [{ id: "master", name: "Master" }, ...buses];
+                            const currentIdx = allBuses.findIndex(
+                              (b) =>
+                                (b.id === "master" && !track.outputId) ||
+                                b.id === track.outputId,
+                            );
+                            const next = allBuses[(currentIdx + 1) % allBuses.length];
+                            setTrackOutput(track.id, next.id === "master" ? null : next.id);
+                          }}
+                          className="flex-1 h-4 rounded bg-dark-muted/30 items-center justify-center active:opacity-70"
+                        >
+                          <Text className="text-[8px] text-gray-400">
+                            {track.outputId
+                              ? buses.find((b) => b.id === track.outputId)?.name || "Bus"
+                              : "Master"}
+                          </Text>
+                        </Pressable>
+                      </View>
                       {sendBuses.map((bus) => (
                         <View
                           key={bus.id}
@@ -1744,6 +1786,33 @@ export default function Studio() {
                     </View>
                   );
                 })}
+                {buses.length > 0 && (
+                  <View className="w-28 bg-dark-surface/60 rounded-xl border border-dashed border-dark-border p-2.5 items-center gap-1.5">
+                    <Text className="text-[10px] text-gray-500 font-medium">
+                      Buses
+                    </Text>
+                    {buses.map((bus) => (
+                      <View
+                        key={bus.id}
+                        className="w-full flex-row items-center gap-1"
+                      >
+                        <Text className="text-[9px] text-gray-400 flex-1 truncate">
+                          {bus.name}
+                        </Text>
+                        <Pressable
+                          onPress={() =>
+                            setBuses((prev) =>
+                              prev.filter((b) => b.id !== bus.id),
+                            )
+                          }
+                          className="w-4 h-4 rounded bg-red-500/20 items-center justify-center active:opacity-70"
+                        >
+                          <Text className="text-red-400 text-[8px]">×</Text>
+                        </Pressable>
+                      </View>
+                    ))}
+                  </View>
+                )}
                 {sendBuses.length > 0 && (
                   <View className="w-28 bg-dark-surface/60 rounded-xl border border-dashed border-dark-border p-2.5 items-center gap-1.5">
                     <Text className="text-[10px] text-gray-500 font-medium">
@@ -1772,6 +1841,149 @@ export default function Studio() {
                   </View>
                 )}
               </View>
+            </ScrollView>
+          </View>
+        )}
+        {bottomTab === "buses" && (
+          <View className="flex-1 p-3">
+            <View className="flex-row items-center justify-between mb-3">
+              <Text className="text-gray-300 label">Sub-Mix Buses</Text>
+              <Pressable
+                onPress={() => {
+                  const id = `bus-${Date.now()}`;
+                  const name = `Bus ${buses.length + 1}`;
+                  const colors = ["#ff6482", "#5ac8fa", "#ffcc00", "#34c759", "#bf5af2"];
+                  setBuses((prev) => [
+                    ...prev,
+                    {
+                      id,
+                      name,
+                      color: colors[prev.length % colors.length],
+                      volume: 1,
+                      muted: false,
+                      plugins: [],
+                    },
+                  ]);
+                }}
+                className="px-3 py-1.5 rounded-lg bg-brand-accent/20 border border-brand-accent/40 active:opacity-70"
+              >
+                <Text className="text-brand-accent text-xs font-bold">+ Bus</Text>
+              </Pressable>
+            </View>
+            {buses.length === 0 && (
+              <View className="flex-1 items-center justify-center">
+                <Text className="text-gray-600 text-xs">
+                  Nenhum bus de áudio. Crie um para agrupar tracks.
+                </Text>
+              </View>
+            )}
+            <ScrollView className="flex-1">
+              {buses.map((bus) => {
+                const assignedTracks = tracks.filter((t) => t.outputId === bus.id);
+                return (
+                  <View
+                    key={bus.id}
+                    className="bg-dark-surface rounded-xl border border-dark-border p-3 mb-2"
+                  >
+                    <View className="flex-row items-center justify-between mb-2">
+                      <View className="flex-row items-center gap-2">
+                        <View
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: bus.color }}
+                        />
+                        <Text className="text-white font-medium text-sm">
+                          {bus.name}
+                        </Text>
+                      </View>
+                      <View className="flex-row items-center gap-2">
+                        <Pressable
+                          onPress={() =>
+                            setBuses((prev) =>
+                              prev.map((b) =>
+                                b.id === bus.id ? { ...b, muted: !b.muted } : b,
+                              ),
+                            )
+                          }
+                          className={`px-2 py-1 rounded ${bus.muted ? "bg-red-500/30 border border-red-400" : "bg-dark-muted/40"}`}
+                        >
+                          <Text
+                            className={`text-[9px] font-bold ${bus.muted ? "text-red-400" : "text-gray-500"}`}
+                          >
+                            M
+                          </Text>
+                        </Pressable>
+                        <Pressable
+                          onPress={() =>
+                            setBuses((prev) =>
+                              prev.filter((b) => b.id !== bus.id),
+                            )
+                          }
+                          className="w-6 h-6 rounded bg-red-500/20 items-center justify-center active:opacity-70"
+                        >
+                          <Text className="text-red-400 text-xs">×</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                    <View className="flex-row items-center gap-2 mb-2">
+                      <Text className="text-gray-500 text-xs w-12">Vol:</Text>
+                      <View className="flex-1 h-1.5 bg-dark-bg rounded-full overflow-hidden">
+                        <View
+                          className="h-full bg-brand-accent rounded-full"
+                          style={{ width: `${bus.volume * 100}%` }}
+                        />
+                      </View>
+                      <Text className="text-gray-400 font-mono text-xs w-8 text-right">
+                        {Math.round(bus.volume * 100)}%
+                      </Text>
+                    </View>
+                    <View className="flex-row items-center gap-2">
+                      <Text className="text-gray-500 text-xs w-12">Vol:</Text>
+                      <Pressable
+                        onPress={() =>
+                          setBuses((prev) =>
+                            prev.map((b) =>
+                              b.id === bus.id
+                                ? { ...b, volume: Math.max(0, b.volume - 0.1) }
+                                : b,
+                            ),
+                          )
+                        }
+                        className="w-6 h-6 rounded bg-dark-muted/30 items-center justify-center active:opacity-70"
+                      >
+                        <Text className="text-gray-400 text-xs">−</Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() =>
+                          setBuses((prev) =>
+                            prev.map((b) =>
+                              b.id === bus.id
+                                ? { ...b, volume: Math.min(2, b.volume + 0.1) }
+                                : b,
+                            ),
+                          )
+                        }
+                        className="w-6 h-6 rounded bg-dark-muted/30 items-center justify-center active:opacity-70"
+                      >
+                        <Text className="text-gray-400 text-xs">+</Text>
+                      </Pressable>
+                    </View>
+                    {assignedTracks.length > 0 && (
+                      <View className="flex-row flex-wrap gap-1 mt-2">
+                        {assignedTracks.map((t) => (
+                          <View
+                            key={t.id}
+                            className="px-1.5 py-0.5 rounded bg-dark-muted/40"
+                          >
+                            <Text className="text-[8px] text-gray-500">
+                              {t.name}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
             </ScrollView>
           </View>
         )}
@@ -1942,7 +2154,7 @@ export default function Studio() {
                   });
                 } else {
                   try {
-                    const url = await renderTracksToUrl(tracks, initialBpm, projectMood);
+                    const url = await renderTracksToUrl(tracks, initialBpm, projectMood, buses);
                     if (url) {
                       setMasteringInput({
                         url,

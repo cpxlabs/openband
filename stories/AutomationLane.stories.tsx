@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { AutomationLane } from "../src/components";
-import type { AutomationPoint } from "../src/components/AutomationLane";
+import type { AutomationPoint } from "../src/lib/types";
 import { View } from "react-native";
 
 const meta: Meta<typeof AutomationLane> = {

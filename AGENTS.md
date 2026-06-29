@@ -303,3 +303,50 @@ electron/
   preload.js          — Context bridge exposing electronAPI methods to renderer
   package.json        — Electron + electron-builder deps
 ```
+
+---
+
+## Domain-Driven Agent Architecture
+
+This project uses five specialized agents with strict domain boundaries to minimize context switching and prevent race conditions.
+
+### A. UI & Rendering Agent
+**Focus:** HTML5 Canvas, DOM, Timeline interactions, 60fps visual performance.
+- Canvas-based waveform rendering and timeline zoom/scroll optimization
+- Non-destructive visual editing (trimming/splitting regions)
+- Pedalboard UI interactions and knob dragging
+- Stripped of all audio math and state logic
+
+### B. Audio Engine & DSP Agent
+**Focus:** Web Audio API, AudioWorklets, WebAssembly, audio routing.
+- Heavy DSP (distortion, delay, amp sims) in AudioWorklets
+- Automatic delay compensation and phase alignment
+- Track grouping, sub-mix bus routing, automation lane scheduling
+- IndexedDB caching for heavy Impulse Response (IR) files
+- Never touches UI thread — "headless" audio graph via MessagePort
+
+### C. State & Collaboration Agent
+**Focus:** Application state, multi-user synchronization, history.
+- CRDTs (Conflict-free Replicated Data Types) for real-time project merging
+- Infinite Undo/Redo history graph via Command Pattern
+- WebSocket presence service (cursors, active users)
+- Every action designed to be CRDT-compatible
+
+### D. Media Processing & AI Agent
+**Focus:** Asynchronous, CPU/GPU-intensive backend tasks.
+- Decoupled queue for AI stem separation (Demucs/Spleeter)
+- Pre-calculating waveform peak JSON data upon asset upload
+- Audio normalization and orphaned file garbage collection
+
+### E. Core Infrastructure & API Agent
+**Focus:** Standard backend operations, database, storage.
+- REST/GraphQL APIs, user authentication, database schema
+- Object Storage (S3/R2) presigned URLs for fast audio uploads/downloads
+
+### Inter-Agent Communication Patterns
+
+1. **Headless Audio Engine:** UI Agent sends high-level commands via `MessagePort` (e.g., `AudioEngine.setParam('drive', 0.8)`). Never touches `AudioBuffer` directly.
+2. **SharedArrayBuffer for Real-Time Sync:** Audio Engine writes playhead/VU positions to a shared buffer; UI Agent reads on animation frame — no message lag.
+3. **Event-Driven Backend (Pub/Sub):** Media Processing Agent never called synchronously. Infrastructure Agent publishes events (e.g., `AssetUploaded`); Media Agent listens and triggers background work.
+4. **Command Pattern + CRDT Integration:** Every action (e.g., `MoveRegionCommand`) has an inverse for Undo. State Agent broadcasts inverse operations to collaborators via WebSockets.
+```

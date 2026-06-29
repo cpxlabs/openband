@@ -56,7 +56,7 @@ import type {
 } from "../src/lib/types";
 import type { MomentData } from "../src/components/MomentCard";
 import type { MIDINote } from "../src/components/PianoRoll";
-import type { AutomationPoint } from "../src/components/AutomationLane";
+import type { AutomationPoint } from "../src/lib/types";
 
 vi.mock("expo-audio", () => ({
   useAudioPlayer: vi.fn(() => ({

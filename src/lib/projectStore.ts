@@ -7,6 +7,7 @@ import type {
   RecordSettings,
   TrackDef,
   GroupDef,
+  BusDef,
   SendBus,
   TrackAmpChain,
 } from "./types";
@@ -22,6 +23,7 @@ export interface ProjectData {
   isPublished?: boolean;
   tracks: TrackDef[];
   groups: GroupDef[];
+  buses: BusDef[];
   trackAssignments: Record<string, string | null>;
   masterPlugins: Plugin[];
   masteringChain: Plugin[];
@@ -199,6 +201,7 @@ function sanitizeProjectData(raw: unknown): ProjectData | null {
     bpm: data.bpm as number,
     tracks: Array.isArray(data.tracks) ? data.tracks : [],
     groups: Array.isArray(data.groups) ? data.groups : [],
+    buses: Array.isArray(data.buses) ? data.buses : [],
     trackAssignments:
       typeof data.trackAssignments === "object" &&
       data.trackAssignments !== null

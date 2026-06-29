@@ -1,5 +1,5 @@
 import { Platform } from "react-native";
-import type { MIDINote, TrackDef } from "./types";
+import type { MIDINote, TrackDef, BusDef } from "./types";
 import type { Mood } from "./projectTemplates";
 import { MOODS } from "./projectTemplates";
 import { audioBufferToWavBlob } from "./audio";
@@ -287,6 +287,7 @@ export async function renderTracksToUrl(
   tracks: TrackDef[],
   bpm: number,
   mood?: Mood,
+  buses?: BusDef[],
 ): Promise<string | null> {
   const safeBpm = Math.max(1, bpm);
   const beatDuration = 60 / safeBpm;
@@ -315,6 +316,20 @@ export async function renderTracksToUrl(
       const masterGain = ctx.createGain();
       masterGain.gain.value = 1.0;
 
+      const busGainNodes = new Map<string, { input: GainNode; output: GainNode; muted: boolean }>();
+      if (buses) {
+        for (const bus of buses) {
+          const input = ctx.createGain();
+          input.gain.value = 1;
+          const output = ctx.createGain();
+          output.gain.value = bus.muted ? 0 : bus.volume;
+          masterGain.connect(input);
+          input.connect(output);
+          output.connect(masterGain);
+          busGainNodes.set(bus.id, { input, output, muted: bus.muted });
+        }
+      }
+
       for (const track of tracks) {
         if (track.muted || (anySolo && !track.solo)) continue;
         if (!track.midiNotes || track.midiNotes.length === 0) continue;
@@ -325,7 +340,14 @@ export async function renderTracksToUrl(
         const panNode = ctx.createStereoPanner();
         panNode.pan.value = track.pan ?? 0;
         panNode.connect(trackGain);
-        trackGain.connect(masterGain);
+
+        const outputId = track.outputId || "master";
+        const busRoute = busGainNodes.get(outputId);
+        if (busRoute) {
+          trackGain.connect(busRoute.input);
+        } else {
+          trackGain.connect(masterGain);
+        }
 
         const isDrumTrack = track.name.toLowerCase().includes('bateria') ||
           track.name.toLowerCase().includes('drums') ||

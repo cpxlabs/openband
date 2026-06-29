@@ -16,6 +16,8 @@ import dnaRoutes from "./routes/dna";
 import bandsRoutes from "./routes/bands";
 import mixingTemplatesRoutes from "./routes/mixingTemplates";
 import hydrationRoutes from "./routes/hydration";
+import stemsRoutes from "./routes/stems";
+import presenceRoutes from "./routes/presence";
 import { checkDemucsInstalled } from "./services/demucs";
 import { requireFeature } from "./middleware/tierGuard";
 import { checkBlacklist } from "./middleware/sessionBlacklist";
@@ -140,6 +142,8 @@ app.use("/api", dnaRoutes);
 app.use("/api", bandsRoutes);
 app.use("/api", mixingTemplatesRoutes);
 app.use("/api", hydrationRoutes);
+app.use("/api", stemsRoutes);
+app.use("/api", presenceRoutes);
 
 app.use(
   (

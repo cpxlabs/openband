@@ -1,4 +1,17 @@
-import type { AutomationPoint } from "../components/AutomationLane";
+export interface AutomationPoint {
+  time: number;
+  value: number;
+  curve?: "linear" | "exponential";
+}
+
+export interface BusDef {
+  id: string;
+  name: string;
+  color: string;
+  volume: number;
+  muted: boolean;
+  plugins: Plugin[];
+}
 
 export type EqBandType = 0 | 1 | 2 | 3 | 4 | 5;
 export const EQ_BAND_LABELS: Record<number, string> = {
@@ -34,6 +47,7 @@ export interface TrackDef {
   sidechainSource: string | null;
   plugins: Plugin[];
   automation: Record<string, AutomationPoint[]>;
+  outputId?: string | null;
 }
 
 export interface MIDINote {

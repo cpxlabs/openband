@@ -238,6 +238,7 @@ describe("projectStore.ts", () => {
     bpm: 120,
     tracks: [],
     groups: [],
+    buses: [],
     trackAssignments: {},
     masterPlugins: [],
     masteringChain: [],
