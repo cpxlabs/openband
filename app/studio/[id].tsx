@@ -398,22 +398,48 @@ export default function Studio() {
     recordSettings.quality,
   ]);
 
+  const rerenderAfterMuteSolo = useCallback(
+    async (updatedTracks: TrackDef[]) => {
+      try {
+        hasLoadedRef.current = false;
+        const url = await renderTracksToUrl(updatedTracks, initialBpm, projectMood);
+        if (url) {
+          player.replace(url);
+          try { player.play(); } catch (e) {
+            console.warn("Auto-play after mute/solo failed:", e);
+          }
+        }
+      } catch (e) {
+        console.warn("rerenderAfterMuteSolo render failed:", e);
+      }
+    },
+    [player, initialBpm, projectMood],
+  );
+
   const toggleMute = useCallback(
     (trackId: string) => {
-      setTracks(
-        tracks.map((t) => (t.id === trackId ? { ...t, muted: !t.muted } : t)),
+      const updated = tracks.map((t) =>
+        t.id === trackId ? { ...t, muted: !t.muted } : t,
+      );
+      setTracks(updated);
+      rerenderAfterMuteSolo(updated).catch((e) =>
+        console.warn("toggleMute rerender failed:", e),
       );
     },
-    [tracks, setTracks],
+    [tracks, setTracks, rerenderAfterMuteSolo],
   );
 
   const toggleSolo = useCallback(
     (trackId: string) => {
-      setTracks(
-        tracks.map((t) => (t.id === trackId ? { ...t, solo: !t.solo } : t)),
+      const updated = tracks.map((t) =>
+        t.id === trackId ? { ...t, solo: !t.solo } : t,
+      );
+      setTracks(updated);
+      rerenderAfterMuteSolo(updated).catch((e) =>
+        console.warn("toggleSolo rerender failed:", e),
       );
     },
-    [tracks, setTracks],
+    [tracks, setTracks, rerenderAfterMuteSolo],
   );
 
   const deleteTrack = useCallback(
@@ -1902,7 +1928,7 @@ export default function Studio() {
               );
             })}
             <Pressable
-              onPress={() => {
+              onPress={async () => {
                 const urls = tracks.flatMap((t) =>
                   t.regions
                     .filter((r) => r.url)
@@ -1915,7 +1941,8 @@ export default function Studio() {
                     stems: urls,
                   });
                 } else {
-                  renderTracksToUrl(tracks, initialBpm, projectMood).then((url) => {
+                  try {
+                    const url = await renderTracksToUrl(tracks, initialBpm, projectMood);
                     if (url) {
                       setMasteringInput({
                         url,
@@ -1923,7 +1950,10 @@ export default function Studio() {
                         stems: tracks.map((t) => ({ name: t.name, url })),
                       });
                     }
-                  });
+                  } catch (e) {
+                    console.warn("Mastering render failed:", e);
+                    Alert.alert("Erro", "Falha ao preparar áudio para masterização.");
+                  }
                 }
                 router.push("/mastering");
               }}
