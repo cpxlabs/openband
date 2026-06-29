@@ -10,7 +10,7 @@ import {
   ProgressBar,
 } from "../src/components";
 import { DEMO_AUDIO_URL, SCREEN_BOTTOM_PADDING } from "../src/lib/constants";
-import { useResponsive, LAYOUT_MAX_WIDTHS } from "../src/lib/responsive";
+import { LAYOUT_MAX_WIDTHS } from "../src/lib/responsive";
 import { saveProject } from "../src/lib/projectStore";
 import type { TrackDef, TrackRegion } from "../src/lib/types";
 
@@ -113,7 +113,6 @@ function StemPlayer({
 }
 
 export default function Extractor() {
-  const resp = useResponsive();
   const [phase, setPhase] = useState<Phase>("select");
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState("");
@@ -290,15 +289,11 @@ export default function Extractor() {
       {phase === "done" && (
         <View
           className="pt-4 tablet:pt-12 px-4 tablet:px-6 flex-row justify-end"
-          style={
-            resp.isDesktop
-              ? {
-                  maxWidth: LAYOUT_MAX_WIDTHS.extractor,
-                  alignSelf: "center",
-                  width: "100%",
-                }
-              : undefined
-          }
+          style={{
+            maxWidth: LAYOUT_MAX_WIDTHS.extractor,
+            alignSelf: "center",
+            width: "100%",
+          }}
         >
           <Pressable onPress={handleReset} className="p-2 active:opacity-60">
             <Text className="text-brand-accent text-sm font-medium">
@@ -310,15 +305,11 @@ export default function Extractor() {
 
       <View
         className="pt-4 tablet:pt-12 px-4 tablet:px-6"
-        style={
-          resp.isDesktop
-            ? {
-                maxWidth: LAYOUT_MAX_WIDTHS.extractor,
-                alignSelf: "center",
-                width: "100%",
-              }
-            : undefined
-        }
+        style={{
+          maxWidth: LAYOUT_MAX_WIDTHS.extractor,
+          alignSelf: "center",
+          width: "100%",
+        }}
       >
         <PageHeader
           title="Separar Stems"
@@ -328,15 +319,11 @@ export default function Extractor() {
 
       <ScrollView
         className="flex-1 px-4 tablet:px-6"
-        style={
-          resp.isDesktop
-            ? {
-                maxWidth: LAYOUT_MAX_WIDTHS.extractor,
-                alignSelf: "center",
-                width: "100%",
-              }
-            : undefined
-        }
+        style={{
+          maxWidth: LAYOUT_MAX_WIDTHS.extractor,
+          alignSelf: "center",
+          width: "100%",
+        }}
         contentContainerStyle={{ paddingBottom: SCREEN_BOTTOM_PADDING, flexGrow: 1 }}
       >
         {phase === "select" && (

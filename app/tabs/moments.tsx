@@ -4,7 +4,7 @@ import { useRouter } from "expo-router";
 import { PageHeader, Button, Badge } from "../../src/components";
 import { MomentCard } from "../../src/components";
 import type { MomentData } from "../../src/components/MomentCard";
-import { useResponsive, LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive";
+import { LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive";
 import { SCREEN_BOTTOM_PADDING } from "../../src/lib/constants";
 
 const MOCK_MOMENTS: MomentData[] = [
@@ -155,7 +155,6 @@ const FREE_SAMPLE_PACKS = [
 
 export default function Moments() {
   const router = useRouter();
-  const resp = useResponsive();
   const [tab, setTab] = useState<"moments" | "packs">("moments");
   const [credits, setCredits] = useState<{ artist: string; sample: string }[]>(
     [],
@@ -211,15 +210,11 @@ export default function Moments() {
       {credits.length > 0 && (
         <View
           className="px-4 tablet:px-6 mb-3 p-2.5 rounded-xl bg-brand-accent/10 border border-brand-accent/20"
-          style={
-            resp.isDesktop
-              ? {
-                  maxWidth: LAYOUT_MAX_WIDTHS.moments,
-                  alignSelf: "center",
-                  width: "100%",
-                }
-              : undefined
-          }
+          style={{
+            maxWidth: LAYOUT_MAX_WIDTHS.moments,
+            alignSelf: "center",
+            width: "100%",
+          }}
         >
           <Text className="text-brand-accent text-[10px] font-bold uppercase tracking-wider">
             Créditos
@@ -239,15 +234,11 @@ export default function Moments() {
         className="flex-1"
         contentContainerStyle={{ paddingBottom: SCREEN_BOTTOM_PADDING, flexGrow: 1 }}
         showsVerticalScrollIndicator={false}
-        style={
-          resp.isDesktop
-            ? {
-                maxWidth: LAYOUT_MAX_WIDTHS.moments,
-                alignSelf: "center",
-                width: "100%",
-              }
-            : undefined
-        }
+        style={{
+          maxWidth: LAYOUT_MAX_WIDTHS.moments,
+          alignSelf: "center",
+          width: "100%",
+        }}
       >
         {tab === "moments" ? (
           <View className="px-4 tablet:px-6">

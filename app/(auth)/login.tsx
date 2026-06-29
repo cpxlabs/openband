@@ -8,12 +8,11 @@ import {
 } from "react-native";
 import { Button, TextInput } from "../../src/components";
 import { supabase } from "../../src/lib/supabase";
-import { useResponsive, LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive";
+import { LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive";
 import { VISITOR_MODE } from "../../src/lib/flags";
 import { useAuth } from "../../src/context/AuthContext";
 
 export default function Login() {
-  const resp = useResponsive();
   const { signInAsVisitor } = useAuth();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
@@ -73,15 +72,11 @@ export default function Login() {
     >
       <View
         className="flex-1 justify-center px-8 desktop:mx-auto desktop:w-full desktop:px-0"
-        style={
-          resp.isDesktop
-            ? {
-                maxWidth: LAYOUT_MAX_WIDTHS.login,
-                alignSelf: "center",
-                width: "100%",
-              }
-            : undefined
-        }
+        style={{
+          maxWidth: LAYOUT_MAX_WIDTHS.login,
+          alignSelf: "center",
+          width: "100%",
+        }}
       >
         <View className="items-center mb-12">
           <View className="w-20 h-20 rounded-2xl bg-brand-primary items-center justify-center mb-6 shadow-lg shadow-brand-primary/30">

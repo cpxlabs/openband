@@ -9,10 +9,9 @@ import {
   TextInput,
   Divider,
 } from "../../src/components";
-import { useResponsive, LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive";
+import { LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive";
 
 export default function Account() {
-  const resp = useResponsive();
   const { user, signOut } = useAuth();
   const currentName =
     (user?.user_metadata?.name as string) ?? user?.email?.split("@")[0] ?? "";
@@ -66,11 +65,7 @@ export default function Account() {
     <ScrollView
       className="flex-1 bg-dark-bg"
       contentContainerStyle={{ paddingBottom: 100, flexGrow: 1 }}
-      style={
-        resp.isDesktop
-          ? { maxWidth: LAYOUT_MAX_WIDTHS.account, alignSelf: "center", width: "100%" }
-          : undefined
-      }
+      style={{ maxWidth: LAYOUT_MAX_WIDTHS.account, alignSelf: "center", width: "100%" }}
     >
       <View className="pt-4 tablet:pt-12 px-4 tablet:px-6">
         <PageHeader title="Conta" subtitle="Suas informações de perfil" />

@@ -1763,7 +1763,7 @@ describe("testID Contract", () => {
       const viewElement = container.firstChild?.firstChild;
       expect(viewElement).toBeTruthy();
       const styleAttr = (viewElement as HTMLElement).getAttribute("style");
-      expect(styleAttr).toBeNull();
+      expect(styleAttr).toContain("max-width: 448px");
 
       spy.mockRestore();
     });

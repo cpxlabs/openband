@@ -292,9 +292,7 @@ export default function Feed() {
     );
   }, []);
 
-  const maxWidthStyle: any = resp.isDesktop
-    ? { maxWidth: LAYOUT_MAX_WIDTHS.feedWide, alignSelf: "center" as const }
-    : undefined
+  const maxWidthStyle: any = { maxWidth: LAYOUT_MAX_WIDTHS.feedWide, alignSelf: "center" as const }
 
   return (
     <View className="flex-1 bg-dark-bg">

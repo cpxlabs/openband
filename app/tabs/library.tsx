@@ -128,7 +128,7 @@ export default function Library() {
         data={filtered}
         keyExtractor={item => item.id}
         contentContainerStyle={{ paddingBottom: SCREEN_BOTTOM_PADDING, paddingHorizontal: resp.isMobile ? 16 : 24 }}
-        style={resp.isDesktop ? { maxWidth: LAYOUT_MAX_WIDTHS.library, alignSelf: "center", width: "100%" } : undefined}
+        style={{ maxWidth: LAYOUT_MAX_WIDTHS.library, alignSelf: "center", width: "100%" }}
         ListEmptyComponent={
           <EmptyState icon="🎧" title="Nenhum projeto ainda" subtitle="Crie seu primeiro projeto acima" />
         }
