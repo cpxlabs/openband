@@ -1,5 +1,7 @@
 import { View, Text, Pressable, ScrollView } from "react-native";
 import type { RecordSettings } from "../lib/types";
+import { useState, useCallback } from "react";
+import { startDirectMonitor, stopDirectMonitor } from "../lib/latencyMonitor";
 
 interface RecordOptionsProps {
   settings: RecordSettings;
@@ -38,6 +40,18 @@ export function RecordOptions({
   onClose,
   testID,
 }: RecordOptionsProps) {
+  const [monitoring, setMonitoring] = useState(false);
+
+  const handleToggleMonitoring = useCallback(async () => {
+    if (monitoring) {
+      stopDirectMonitor();
+      setMonitoring(false);
+    } else {
+      await startDirectMonitor();
+      setMonitoring(true);
+    }
+  }, [monitoring]);
+
   if (!visible) return null;
 
   return (
@@ -228,6 +242,34 @@ export function RecordOptions({
               </Pressable>
             ))}
           </View>
+
+          <Text className="label mb-2 text-gray-300">Monitoramento Direto</Text>
+          <Pressable
+            onPress={handleToggleMonitoring}
+            className={`flex-row items-center justify-between p-3 rounded-xl border mb-4 ${
+              monitoring
+                ? "bg-green-500/10 border-green-500/40"
+                : "bg-dark-surface border-dark-border"
+            }`}
+          >
+            <View className="flex-row items-center gap-2">
+              <Text className="text-lg">🎧</Text>
+              <Text
+                className={`font-semibold ${monitoring ? "text-green-400" : "text-gray-400"}`}
+              >
+                {monitoring
+                  ? "Monitoramento Ativo"
+                  : "Monitoramento Desligado"}
+              </Text>
+            </View>
+            <View
+              className={`w-12 h-6 rounded-full p-0.5 ${monitoring ? "bg-green-500" : "bg-dark-muted"}`}
+            >
+              <View
+                className={`w-5 h-5 rounded-full bg-white shadow-sm ${monitoring ? "ml-6" : "ml-0"}`}
+              />
+            </View>
+          </Pressable>
         </ScrollView>
       </View>
     </View>

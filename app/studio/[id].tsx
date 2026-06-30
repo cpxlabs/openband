@@ -18,6 +18,7 @@ import {
   RecordingPresets,
 } from "expo-audio";
 import { renderTracksToUrl, disposeAudioContext } from "../../src/lib/midiSynth";
+import { audioSystem } from "../../src/lib/universalAudio";
 import {
   Metronome,
   RecordOptions,
@@ -43,7 +44,12 @@ import {
   ONE_KNOB_TYPES,
   VisualEQ,
   ChordTrack,
+  CommandPalette,
+  BranchManager,
+  CommitModal,
 } from "../../src/components";
+import { registerCommand, initKeyBindings, disposeKeyBindings } from "../../src/lib/commandRegistry";
+import { chordsToMIDI } from "../../src/lib/chordTrackState";
 import { useHistory } from "../../src/lib/history";
 import { useKeyboardShortcuts } from "../../src/lib/keyboard";
 import { saveProject, loadProject } from "../../src/lib/projectStore";
@@ -157,6 +163,7 @@ export default function Studio() {
           playsInSilentMode: true,
           allowsRecording: true,
         });
+        audioSystem.initialize();
       } catch (e) {
         console.warn("Failed to set audio mode:", e);
       }
@@ -180,6 +187,9 @@ export default function Studio() {
   const [showSampler, setShowSampler] = useState(false);
   const [showSynth, setShowSynth] = useState(false);
   const [showPromptSampler, setShowPromptSampler] = useState(false);
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
+  const [showBranchManager, setShowBranchManager] = useState(false);
+  const [showCommitModal, setShowCommitModal] = useState(false);
   const [oneKnobValues, setOneKnobValues] = useState<
     Record<string, Record<string, number>>
   >({});
@@ -1115,6 +1125,9 @@ export default function Studio() {
         setShowSampler(false);
         setShowSynth(false);
         setShowPianoRoll(false);
+        setShowCommandPalette(false);
+        setShowBranchManager(false);
+        setShowCommitModal(false);
         setEditingMidiTrackId(null);
       },
       toggleMute: selectedTrack
@@ -1139,6 +1152,28 @@ export default function Studio() {
   );
 
   useKeyboardShortcuts(shortcuts);
+
+  useEffect(() => {
+    registerCommand("transport.play", "Play", "Start/stop playback", "Transport", togglePlay, "Space");
+    registerCommand("transport.record", "Record", "Toggle recording", "Transport", toggleRecording, "R");
+    registerCommand("edit.undo", "Undo", "Undo last action", "Edit", undoHistory, "Ctrl+Z");
+    registerCommand("edit.redo", "Redo", "Redo last action", "Edit", redoHistory, "Ctrl+Shift+Z");
+    registerCommand("edit.delete", "Delete", "Delete selected track", "Edit", () => selectedTrack && deleteTrack(selectedTrack.id), "Delete", "Backspace");
+    registerCommand("track.add", "Add Track", "Add a new track to the project", "Track", handleAddTrack, "Ctrl+T");
+    registerCommand("track.mute", "Mute Track", "Toggle mute on selected track", "Track", () => selectedTrack && toggleMute(selectedTrack.id));
+    registerCommand("track.solo", "Solo Track", "Toggle solo on selected track", "Track", () => selectedTrack && toggleSolo(selectedTrack.id));
+    registerCommand("mixer.open", "Open Mixer", "Switch to mixer view", "View", () => setBottomTab("mixer"), "Ctrl+M");
+    registerCommand("file.save", "Save", "Save current project", "File", handleManualSave, "Ctrl+S");
+    registerCommand("file.export", "Export", "Open export/bounce dialog", "File", () => setShowBounce(true), "Ctrl+Shift+E");
+    registerCommand("file.branch", "Branch Manager", "Open project branching", "File", () => setShowBranchManager(true), "Ctrl+B");
+    registerCommand("file.commit", "Commit Changes", "Open commit modal", "File", () => setShowCommitModal(true), "Ctrl+Shift+C");
+    registerCommand("view.browser", "Sample Browser", "Toggle sample browser", "View", () => setShowSampleBrowser((p) => !p), "Ctrl+I");
+    registerCommand("palette.toggle", "Command Palette", "Open command palette", "System", () => setShowCommandPalette(true), "Ctrl+K");
+    initKeyBindings();
+    return () => {
+      disposeKeyBindings();
+    };
+  }, [togglePlay, toggleRecording, undoHistory, redoHistory, handleManualSave, selectedTrack, toggleMute, toggleSolo, deleteTrack, handleAddTrack, setBottomTab, setShowBounce, setShowBranchManager, setShowCommitModal, setShowSampleBrowser, setShowCommandPalette]);
 
   const getEffectiveVolume = (trackId: string): number => {
     const gv = getGroupVolume(groups, trackId);
@@ -1218,6 +1253,24 @@ export default function Studio() {
             className="h-8 rounded-lg items-center justify-center px-2 bg-dark-muted"
           >
             <Text className="text-gray-300 text-xs">🎵</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setShowCommandPalette(true)}
+            className="h-8 rounded-lg items-center justify-center px-2 bg-dark-muted active:opacity-70"
+          >
+            <Text className="text-gray-300 text-xs">⌘</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setShowBranchManager(true)}
+            className="h-8 rounded-lg items-center justify-center px-2 bg-dark-muted active:opacity-70"
+          >
+            <Text className="text-gray-300 text-xs">⎇</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setShowCommitModal(true)}
+            className="h-8 rounded-lg items-center justify-center px-2 bg-dark-muted active:opacity-70"
+          >
+            <Text className="text-gray-300 text-xs">✓</Text>
           </Pressable>
           <Pressable
             onPress={() => setShowSampler(true)}
@@ -2424,6 +2477,53 @@ export default function Studio() {
               visible
               onClose={() => setBottomTab("mixer")}
             />
+            <Pressable
+              onPress={() => {
+                if (chords.length === 0) return;
+                const ROOT_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+                const keyRoot = ROOT_NAMES.indexOf(projectKey?.replace(/m$/, "") || "C");
+                const QUALITY_MAP: Record<string, import("../../src/lib/chordTrackState").ChordQuality> = {
+                  maj: "major", min: "minor", dim: "dim", aug: "aug",
+                  "7": "dom7", maj7: "maj7", min7: "min7", sus4: "sus4",
+                };
+                const chordRegions = chords.map((c, i) => ({
+                  id: c.id,
+                  start: chords.slice(0, i).reduce((s, x) => s + x.beats, 0),
+                  duration: c.beats,
+                  symbol: "",
+                  root: (keyRoot + c.degree) % 12,
+                  quality: QUALITY_MAP[c.quality] ?? "major",
+                  key: projectKey || "C",
+                  inversion: 0,
+                  velocity: 80,
+                  color: "#34c759",
+                }));
+                const midiNotes = chordsToMIDI(chordRegions, metronome.bpm, 80);
+                if (midiNotes.length === 0) return;
+                const trackId = `chord-midi-${Date.now()}`;
+                setTracks((prev) => [...prev, {
+                  id: trackId,
+                  name: "Chord Progression",
+                  color: TRACK_COLORS[tracks.length % TRACK_COLORS.length],
+                  muted: false,
+                  solo: false,
+                  volume: 70,
+                  pan: 0,
+                  sends: {},
+                  sidechainSource: null,
+                  regions: [{ id: `cr-${Date.now()}`, start: 0, duration: chordRegions.reduce((s, r) => s + r.duration, 0) * (60 / metronome.bpm) }],
+                  plugins: [],
+                  automation: {},
+                  midiNotes,
+                }]);
+                setSelectedTrackId(trackId);
+              }}
+              className="mt-2 h-8 rounded-lg bg-brand-accent/20 items-center justify-center active:opacity-70 border border-brand-accent/30"
+            >
+              <Text className="text-brand-accent text-[10px] font-bold">
+                Gerar MIDI da Progressão →
+              </Text>
+            </Pressable>
           </View>
         )}
       </View>
@@ -2545,6 +2645,18 @@ export default function Studio() {
           setEditingMidiTrackId(null);
         }}
         trackName={selectedMidiTrack?.name}
+      />
+      <CommandPalette
+        visible={showCommandPalette}
+        onClose={() => setShowCommandPalette(false)}
+      />
+      <BranchManager
+        visible={showBranchManager}
+        onClose={() => setShowBranchManager(false)}
+      />
+      <CommitModal
+        visible={showCommitModal}
+        onClose={() => setShowCommitModal(false)}
       />
     </View>
   );

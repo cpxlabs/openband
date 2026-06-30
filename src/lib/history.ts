@@ -1,3 +1,5 @@
+import { useReducer, useCallback } from "react";
+
 export interface UndoCommand {
   id: string;
   userId: string;
@@ -274,5 +276,83 @@ export function createNoteRemoveCommand(
       const track = tracks.find((t) => t.id === trackId);
       return !!track && (track.midiNotes ?? []).some((n) => n.id === noteId);
     },
+  };
+}
+
+interface HistoryState<T> {
+  present: T;
+  undoStack: T[];
+  redoStack: T[];
+}
+
+type HistoryAction<T> =
+  | { type: "SET"; payload: T }
+  | { type: "UNDO" }
+  | { type: "REDO" };
+
+const MAX_HISTORY = 100;
+
+function historyReducer<T>(state: HistoryState<T>, action: HistoryAction<T>): HistoryState<T> {
+  switch (action.type) {
+    case "SET":
+      return {
+        present: action.payload,
+        undoStack: [...state.undoStack.slice(-(MAX_HISTORY - 1)), state.present],
+        redoStack: [],
+      };
+    case "UNDO": {
+      if (state.undoStack.length === 0) return state;
+      const prev = state.undoStack[state.undoStack.length - 1];
+      return {
+        present: prev,
+        undoStack: state.undoStack.slice(0, -1),
+        redoStack: [...state.redoStack, state.present],
+      };
+    }
+    case "REDO": {
+      if (state.redoStack.length === 0) return state;
+      const next = state.redoStack[state.redoStack.length - 1];
+      return {
+        present: next,
+        undoStack: [...state.undoStack, state.present],
+        redoStack: state.redoStack.slice(0, -1),
+      };
+    }
+  }
+}
+
+export function useHistory<T>(initialValue: T): {
+  state: T;
+  setState: (updater: T | ((prev: T) => T)) => void;
+  undo: () => void;
+  redo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
+} {
+  const [history, dispatch] = useReducer(
+    historyReducer as React.Reducer<HistoryState<T>, HistoryAction<T>>,
+    { present: initialValue, undoStack: [], redoStack: [] },
+  );
+
+  const setState = useCallback(
+    (updater: T | ((prev: T) => T)) => {
+      const payload = typeof updater === "function"
+        ? (updater as (prev: T) => T)(history.present)
+        : updater;
+      dispatch({ type: "SET", payload });
+    },
+    [history.present],
+  );
+
+  const undo = useCallback(() => dispatch({ type: "UNDO" }), []);
+  const redo = useCallback(() => dispatch({ type: "REDO" }), []);
+
+  return {
+    state: history.present,
+    setState,
+    undo,
+    redo,
+    canUndo: history.undoStack.length > 0,
+    canRedo: history.redoStack.length > 0,
   };
 }
