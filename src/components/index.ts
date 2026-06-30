@@ -52,4 +52,5 @@ export { ProjectMenu } from "./ProjectMenu";
 export { PluginUI } from "./PluginUI";
 export { BranchManager } from "./BranchManager";
 export { Patchbay } from "./Patchbay";
+export { CommitModal, VersionHistory } from "./CommitModal";
 export { CommandPalette } from "./CommandPalette";
