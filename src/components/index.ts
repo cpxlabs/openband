@@ -49,3 +49,7 @@ export { MiniPlayer } from "./MiniPlayer";
 export { QuickActions } from "./QuickActions";
 export { QuickTools } from "./QuickTools";
 export { ProjectMenu } from "./ProjectMenu";
+export { PluginUI } from "./PluginUI";
+export { BranchManager } from "./BranchManager";
+export { Patchbay } from "./Patchbay";
+export { CommandPalette } from "./CommandPalette";
