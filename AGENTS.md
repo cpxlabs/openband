@@ -110,6 +110,12 @@ Available in `src/components/`:
 | `MasteringVersionManager` | `versions, activeId, onSelect, onSave, onDelete, onBypass`                                                  | A/B version compare + snapshot management                  |
 | `MasteringUpload`         | `input, onInputChange, mode`                                                                                | Upload/drop zone for audio files and stems                 |
 | `ChordTrack`              | `chords, onChange, keySignature, numBars, visible, onClose`                                                 | Chord progression timeline with presets + Markov suggestions |
+| `PluginUI`                | `descriptor, paramValues, onParamChange, onToggle?, onClose?`                                              | Generic Wasm plugin UI generator (renders knobs/sliders from schema) |
+| `BranchManager`           | `visible, onClose, onBranchSwitch?, onMerge?`                                                              | Git-like branch fork/merge/diff viewer for CRDT state        |
+| `Patchbay`                | `visible, onClose, trackIds, onRouteCreated?, onRouteRemoved?`                                             | Drag-and-drop hardware I/O routing matrix (multi-channel)   |
+| `CommandPalette`          | `visible, onClose`                                                                                         | Cmd+K searchable command overlay for keyboard-first workflow |
+| `CommitModal`             | `visible, onClose, onCommit?, onSync?`                                                                     | Commit message + push-to-cloud modal                         |
+| `VersionHistory`          | `visible, onClose, onRevert?`                                                                              | Visual commit timeline graph with revert support             |
 
 CSS component classes (from `global.css`):
 
@@ -148,6 +154,10 @@ const path = await OpenBandNative.showOpenDialog({ filters: [...] });
 - `player.play()`, `player.pause()`, `player.replace(source)`, `player.seekTo(seconds)`
 - `player.volume = 0.0...1.0`
 - Sources can be `require(...)` or URL string
+- **Universal Audio System** (`src/lib/universalAudio.ts`): Singleton `UniversalAudioSystem` with lazy AudioContext creation, multi-track mixdown via OfflineAudioContext (web) or bridge fallback (native), cross-platform file export (save dialog / download link)
+- **Cross-platform BounceDialog**: No longer blocks on `Platform.OS !== "web"` — export works on all platforms via `audioSystem`
+- **useUniversalAudio hook** (`src/hooks/useUniversalAudio.ts`): Wraps expo-audio with AudioContext resume on user interaction, play/pause/stop/seek/setVolume
+- **App init** (`app/_layout.tsx`): Audio system initialized on first pointerdown/keydown (web) or immediately (native) — handles browser autoplay policy
 
 ### Backend
 
@@ -269,10 +279,28 @@ src/
     collaboration.ts  — Real-time collaboration hook with CRDT sync
     transientDetection.ts — Audio transient detection + slicing utilities
     timeStretch.ts    — Pitch-independent time-stretch via granular synthesis
+    timeStretchVocoded.ts — Phase Vocoder / WSOLA time-stretch AudioWorklet with FFT
+    wasmInstrumentEngine.ts — Unified Wasm synth/sampler in AudioWorklet (sample-accurate MIDI)
+    wasmPluginHost.ts — Wasm plugin loader, IPlugin interface, JSON-RPC MessagePort protocol
+    projectBranching.ts — CRDT fork/merge/diff, branch isolation, selective merge acceptance
+    yjsCRDT.ts    — Operation-based CRDT with Lamport timestamps, WebSocket sync
+    aiAutoMixAnalysis.ts — Stem analysis (LUFS, spectral balance, transient density), role-based suggestions
+    chordTrackState.ts  — ChordRegion schema, chord-to-MIDI conversion, harmonic suggestion
+    stateAssetSeparation.ts — OpenBandManifest v2 with S3 URL pointers, SHA-256 commit hashing
+    supabaseRemote.ts — Push/pull/sync with asset deduplication via hash check
+    modulationMatrix.ts — LFO/envelope/macro modulation routing (11 sources × 11 targets)
+    audioTelemetry.ts — Ring buffer for underruns/CPU metrics with server reporting
+    openbandFormat.ts  — .openband binary archive with CRC32 integrity
+    previewEngine.ts  — Decoupled AudioContext for debounced sample preview, thumbnail generation
+    hardwareIO.ts   — multi-channel hardware I/O enumeration, patchbay routing
+    commandRegistry.ts — Centralized command registry, keyboard shortcut engine, Cmd+K palette
+    universalAudio.ts — Singleton AudioContext, cross-platform mixdown, export to file (web + native)
   context/
     AuthContext.tsx    — Auth state context (session, user, loading, signOut)
   bridge/            — Desktop bridge (interface, electron, tauri stub, browser fallback, auto-detect)
-  components/         — Design system (40 components, see table above)
+  components/         — Design system (46 components, see table above)
+  hooks/
+    useUniversalAudio.ts — expo-audio wrapper with AudioContext resume
 
 tests/
   components.test.tsx — Vitest component rendering + interaction tests (145 tests)
@@ -283,7 +311,7 @@ tests/
   types.test.ts      — Legacy node:test type structure tests (12 tests)
   presets.test.ts    — Legacy node:test preset count + structure tests (12 tests)
 
-stories/              — Storybook stories for all 40 components
+stories/              — Storybook stories for all 46 components
   *.stories.tsx       — Run: `npx storybook dev -p 6006`
 
 .storybook/
@@ -296,9 +324,13 @@ backend/
     routes/
       extract.ts      — POST /api/extract + GET /api/stems/:filename
       master.ts       — POST /api/master — master bounce processing
+      presence.ts     — SSE presence endpoint (cursor broadcasting)
+      collab.ts       — SSE collaboration endpoint (CRDT operation sync)
+      generator.ts    — POST /api/generate — contextual MIDI generation
     services/
       demucs.ts       — Python Demucs subprocess (htdemucs, 4 stems)
       mock.ts         — Silent WAV fallback generator
+      queue.ts        — In-memory job queue for async stem separation
     middleware/
       upload.ts       — Multer config (200MB, audio formats)
     types.ts          — Shared types
