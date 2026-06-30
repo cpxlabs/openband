@@ -259,6 +259,16 @@ src/
     clockManager.ts   — Web Worker master clock for metronome (25ms tick interval)
     presence.ts       — Client-side SSE presence hook (throttled cursor broadcasting)
     canvasWaveform.ts — AudioBuffer → peak data + Canvas waveform renderer
+    midiScheduler.ts  — Lookahead MIDI scheduler with sample-accurate timing
+    subtractiveSynth.ts — Dual-oscillator subtractive synth with filter/ADSR/LFO
+    chunkedRenderer.ts — Chunked offline rendering for long projects
+    audioGraphValidation.ts — DAG cycle detection for bus/track routing
+    snapshotManager.ts — CRDT snapshot compaction + state management
+    timelineGestures.ts — Custom gesture state machine for pinch-zoom/scroll
+    crdt.ts           — Operation-based CRDT with Lamport timestamps
+    collaboration.ts  — Real-time collaboration hook with CRDT sync
+    transientDetection.ts — Audio transient detection + slicing utilities
+    timeStretch.ts    — Pitch-independent time-stretch via granular synthesis
   context/
     AuthContext.tsx    — Auth state context (session, user, loading, signOut)
   bridge/            — Desktop bridge (interface, electron, tauri stub, browser fallback, auto-detect)
