@@ -2,6 +2,11 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { View, Text, Pressable, Modal, Platform } from "react-native";
 import type { SamplerSlotData } from "../lib/types";
 import { audioBufferToWavBlob } from "../lib/audio";
+import {
+  detectTransients,
+  sliceAudioBuffer,
+  type Transient,
+} from "../lib/transientDetection";
 
 interface SampleSlot {
   key: string;
@@ -51,7 +56,7 @@ export function Sampler({
   onAddToTrack,
   testID,
 }: SamplerProps) {
-  const [mode, setMode] = useState<"drum" | "melodic">("drum");
+  const [mode, setMode] = useState<"drum" | "melodic" | "slice">("drum");
   const [slots, setSlots] = useState<SampleSlot[]>(
     DRUM_PADS.map((p, i) => ({
       key: p.key,
@@ -70,6 +75,10 @@ export function Sampler({
   });
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
   const [loadingSlot, setLoadingSlot] = useState<number | null>(null);
+  const [sliceSource, setSliceSource] = useState<AudioBuffer | null>(null);
+  const [slicePoints, setSlicePoints] = useState<number[]>([]);
+  const [sliceThreshold, setSliceThreshold] = useState(0.3);
+  const [sliceTransients, setSliceTransients] = useState<Transient[]>([]);
 
   const audioCtx = useRef<AudioContext | null>(null);
 
@@ -179,6 +188,79 @@ export function Sampler({
     [slots, adsr, getAudioContext],
   );
 
+  const handleSliceLoad = useCallback(() => {
+    if (Platform.OS !== "web") return;
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".wav,.mp3,.aiff,.flac,.ogg";
+    input.onchange = async (e: Event) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        const result = ev.target?.result;
+        if (!result) return;
+        try {
+          const ctx = getAudioContext();
+          if (!ctx) return;
+          const buffer = await ctx.decodeAudioData(result as ArrayBuffer);
+          setSliceSource(buffer);
+          setSlicePoints([]);
+        } catch (e) {
+          console.warn("Failed to decode audio for slicing:", e);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    };
+    input.click();
+  }, [getAudioContext]);
+
+  const runAutoSlice = useCallback(() => {
+    if (!sliceSource) return;
+    const transients = detectTransients(sliceSource, sliceThreshold);
+    setSliceTransients(transients);
+    setSlicePoints(transients.map((t) => t.time));
+  }, [sliceSource, sliceThreshold]);
+
+  const handleSliceToPads = useCallback(() => {
+    if (!sliceSource || slicePoints.length === 0) return;
+    const slices = sliceAudioBuffer(sliceSource, slicePoints);
+    const newSlots = DRUM_PADS.map((p, i) => {
+      const slice = slices[i];
+      if (!slice) {
+        return {
+          key: p.key,
+          name: p.label,
+          data: null,
+          rootKey: 36 + i,
+          lowKey: 36 + i,
+          highKey: 36 + i,
+        };
+      }
+      return {
+        key: p.key,
+        name: `Slice ${i + 1}`,
+        data: slice,
+        rootKey: 36 + i,
+        lowKey: 36 + i,
+        highKey: 36 + i,
+      };
+    });
+    setSlots(newSlots);
+    setMode("drum");
+  }, [sliceSource, slicePoints]);
+
+  const toggleSlicePoint = useCallback(
+    (time: number) => {
+      setSlicePoints((prev) => {
+        const exists = prev.find((p) => Math.abs(p - time) < 0.01);
+        if (exists) return prev.filter((p) => Math.abs(p - time) >= 0.01);
+        return [...prev, time].sort((a, b) => a - b);
+      });
+    },
+    [],
+  );
+
   const handleAddToTrack = useCallback(() => {
     const loadedSlots = slots.filter(
       (s): s is SampleSlot & { data: AudioBuffer } => s.data !== null,
@@ -237,6 +319,16 @@ export function Sampler({
                   className={`text-xs ${mode === "melodic" ? "text-brand-accent" : "text-gray-400"}`}
                 >
                   Melodic
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setMode("slice")}
+                className={`px-3 py-1 rounded-lg border ${mode === "slice" ? "bg-brand-accent/20 border-brand-accent" : "border-dark-border"}`}
+              >
+                <Text
+                  className={`text-xs ${mode === "slice" ? "text-brand-accent" : "text-gray-400"}`}
+                >
+                  Slice
                 </Text>
               </Pressable>
             </View>
@@ -339,6 +431,119 @@ export function Sampler({
                   </View>
                 ))}
               </View>
+            </View>
+          )}
+
+          {mode === "slice" && (
+            <View className="bg-dark-bg rounded-xl p-3 border border-dark-border mb-3">
+              <Text className="text-gray-300 text-xs font-semibold mb-2">
+                Audio Slicer
+              </Text>
+              {!sliceSource ? (
+                <Pressable
+                  onPress={handleSliceLoad}
+                  className="py-6 rounded-lg border border-dashed border-dark-border items-center active:opacity-70"
+                >
+                  <Text className="text-gray-400 text-xs">
+                    Tap to load audio for slicing
+                  </Text>
+                  <Text className="text-gray-600 text-[9px] mt-1">
+                    WAV, MP3, AIFF, FLAC, OGG
+                  </Text>
+                </Pressable>
+              ) : (
+                <View>
+                  <View className="flex-row items-center justify-between mb-2">
+                    <Text className="text-gray-500 text-[9px]">
+                      Transients: {sliceTransients.length} | Slices:{" "}
+                      {slicePoints.length + 1}
+                    </Text>
+                    <Pressable
+                      onPress={() => {
+                        setSliceSource(null);
+                        setSlicePoints([]);
+                        setSliceTransients([]);
+                      }}
+                      className="px-2 py-0.5 rounded bg-dark-muted active:opacity-70"
+                    >
+                      <Text className="text-gray-400 text-[9px]">Clear</Text>
+                    </Pressable>
+                  </View>
+
+                  <View className="mb-2">
+                    <View className="flex-row items-center justify-between mb-1">
+                      <Text className="text-gray-500 text-[9px]">
+                        Threshold
+                      </Text>
+                      <Text className="text-gray-400 text-[9px] font-mono">
+                        {Math.round(sliceThreshold * 100)}%
+                      </Text>
+                    </View>
+                    <View className="flex-row gap-1">
+                      {[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8].map((t) => (
+                        <Pressable
+                          key={t}
+                          onPress={() => setSliceThreshold(t)}
+                          className={`flex-1 py-1 rounded ${Math.abs(sliceThreshold - t) < 0.01 ? "bg-brand-accent/20 border border-brand-accent/40" : "bg-dark-muted/30"}`}
+                        >
+                          <Text
+                            className={`text-[8px] text-center ${Math.abs(sliceThreshold - t) < 0.01 ? "text-brand-accent" : "text-gray-500"}`}
+                          >
+                            {Math.round(t * 100)}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </View>
+
+                  <View className="h-16 bg-dark-surface rounded-lg mb-2 overflow-hidden relative">
+                    {sliceTransients.map((t, i) => (
+                      <Pressable
+                        key={i}
+                        onPress={() => toggleSlicePoint(t.time)}
+                        className="absolute top-0 bottom-0 w-0.5"
+                        style={{
+                          left: `${(t.time / sliceSource.duration) * 100}%`,
+                          backgroundColor: slicePoints.includes(t.time)
+                            ? "#5ac8fa"
+                            : "#ff375f",
+                        }}
+                      />
+                    ))}
+                    {slicePoints.map((p, i) => (
+                      <View
+                        key={`sp-${i}`}
+                        className="absolute top-0 bottom-0 w-0.5 bg-brand-accent"
+                        style={{
+                          left: `${(p / sliceSource.duration) * 100}%`,
+                        }}
+                      />
+                    ))}
+                  </View>
+
+                  <View className="flex-row gap-2">
+                    <Pressable
+                      onPress={runAutoSlice}
+                      className="flex-1 py-2 rounded-lg bg-dark-muted items-center active:opacity-70"
+                    >
+                      <Text className="text-gray-300 text-[10px] font-semibold">
+                        Auto-Slice
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={handleSliceToPads}
+                      disabled={slicePoints.length === 0}
+                      className={`flex-1 py-2 rounded-lg items-center ${slicePoints.length > 0 ? "bg-brand-primary active:opacity-80" : "bg-dark-muted/30"}`}
+                    >
+                      <Text
+                        className={`text-[10px] font-bold ${slicePoints.length > 0 ? "text-white" : "text-gray-600"}`}
+                      >
+                        Slice to Pads ({slicePoints.length + 1})
+                      </Text>
+                    </Pressable>
+                  </View>
+                </View>
+              )}
             </View>
           )}
 

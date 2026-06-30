@@ -25,7 +25,7 @@ import {
   MasterRack,
   PluginEditor,
   MixManager,
-  WaveformClip,
+  WaveformCanvas,
   AutomationLane,
   TrackGroupManager,
   LufsMeter,
@@ -39,6 +39,10 @@ import {
   Sampler,
   Synth,
   PromptSampler,
+  OneKnobProcessor,
+  ONE_KNOB_TYPES,
+  VisualEQ,
+  ChordTrack,
 } from "../../src/components";
 import { useHistory } from "../../src/lib/history";
 import { useKeyboardShortcuts } from "../../src/lib/keyboard";
@@ -58,6 +62,7 @@ import type {
   TrackRegion,
   MIDINote,
 } from "../../src/lib/types";
+import { EQ_DEFAULT_BANDS } from "../../src/lib/types";
 import type { Mood } from "../../src/lib/projectTemplates";
 import { useResponsive } from "../../src/lib/responsive";
 import {
@@ -68,8 +73,10 @@ import { autoMix, AUTOMIX_GENRES } from "../../src/lib/automix";
 import { generateTracksForGenre } from "../../src/lib/projectTemplates";
 import { setMasteringInput } from "../../src/lib/masteringBridge";
 import type { AutomationPoint } from "../../src/lib/types";
+import { pitchShift } from "../../src/lib/timeStretch";
+import { audioBufferToWavBlob } from "../../src/lib/audio";
 
-type BottomTab = "mixer" | "fx" | "mastering" | "groups" | "buses" | "mixes";
+type BottomTab = "mixer" | "fx" | "mastering" | "groups" | "buses" | "mixes" | "chords";
 
 function TimeDisplay({ seconds }: { seconds: number }) {
   const m = Math.floor(seconds / 60);
@@ -173,6 +180,12 @@ export default function Studio() {
   const [showSampler, setShowSampler] = useState(false);
   const [showSynth, setShowSynth] = useState(false);
   const [showPromptSampler, setShowPromptSampler] = useState(false);
+  const [oneKnobValues, setOneKnobValues] = useState<
+    Record<string, Record<string, number>>
+  >({});
+  const [chords, setChords] = useState<
+    { id: string; degree: number; quality: import("../../src/lib/harmony").ChordQuality; beats: number }[]
+  >([]);
   const [showPianoRoll, setShowPianoRoll] = useState(false);
   const [editingMidiTrackId, setEditingMidiTrackId] = useState<string | null>(
     null,
@@ -223,6 +236,8 @@ export default function Studio() {
   });
 
   const [playbackRate, setPlaybackRate] = useState(1.0);
+  const [pitchShiftSemitones, setPitchShiftSemitones] = useState(0);
+  const [pitchCorrected, setPitchCorrected] = useState(false);
 
   const [recordSettings, setRecordSettings] = useState<RecordSettings>({
     armed: false,
@@ -324,12 +339,36 @@ export default function Studio() {
       return;
     }
     hasLoadedRef.current = true;
-    const url = await renderTracksToUrl(tracks, initialBpm, projectMood, buses);
+    let url = await renderTracksToUrl(tracks, initialBpm, projectMood, buses);
+    if (url && pitchCorrected && playbackRate !== 1) {
+      try {
+        const ctx = new AudioContext();
+        const resp = await fetch(url);
+        const arrayBuf = await resp.arrayBuffer();
+        const audioBuf = await ctx.decodeAudioData(arrayBuf);
+        const shifted = await pitchShift(audioBuf, -Math.log2(playbackRate) * 12);
+        const offline = new OfflineAudioContext(
+          shifted.numberOfChannels,
+          shifted.length,
+          shifted.sampleRate,
+        );
+        const source = offline.createBufferSource();
+        source.buffer = shifted;
+        source.connect(offline.destination);
+        source.start();
+        const rendered = await offline.startRendering();
+        const blob = await audioBufferToWavBlob(rendered);
+        url = URL.createObjectURL(blob);
+        await ctx.close();
+      } catch (e) {
+        console.warn("Pitch correction failed, using original:", e);
+      }
+    }
     if (url) {
       await player.replace(url);
       player.play();
     }
-  }, [isPlaying, player, tracks, initialBpm, buses]);
+  }, [isPlaying, player, tracks, initialBpm, buses, pitchCorrected, playbackRate]);
 
   const toggleRecording = useCallback(async () => {
     try {
@@ -408,7 +447,31 @@ export default function Studio() {
     async (updatedTracks: TrackDef[]) => {
       try {
         hasLoadedRef.current = false;
-        const url = await renderTracksToUrl(updatedTracks, initialBpm, projectMood, buses);
+        let url = await renderTracksToUrl(updatedTracks, initialBpm, projectMood, buses);
+        if (url && pitchCorrected && playbackRate !== 1) {
+          try {
+            const ctx = new AudioContext();
+            const resp = await fetch(url);
+            const arrayBuf = await resp.arrayBuffer();
+            const audioBuf = await ctx.decodeAudioData(arrayBuf);
+            const shifted = await pitchShift(audioBuf, -Math.log2(playbackRate) * 12);
+            const offline = new OfflineAudioContext(
+              shifted.numberOfChannels,
+              shifted.length,
+              shifted.sampleRate,
+            );
+            const source = offline.createBufferSource();
+            source.buffer = shifted;
+            source.connect(offline.destination);
+            source.start();
+            const rendered = await offline.startRendering();
+            const blob = await audioBufferToWavBlob(rendered);
+            url = URL.createObjectURL(blob);
+            await ctx.close();
+          } catch (e) {
+            console.warn("Pitch correction failed in rerender:", e);
+          }
+        }
         if (url) {
           player.replace(url);
           try { player.play(); } catch (e) {
@@ -419,7 +482,7 @@ export default function Studio() {
         console.warn("rerenderAfterMuteSolo render failed:", e);
       }
     },
-    [player, initialBpm, projectMood, buses],
+    [player, initialBpm, projectMood, buses, pitchCorrected, playbackRate],
   );
 
   const toggleMute = useCallback(
@@ -1085,11 +1148,12 @@ export default function Studio() {
 
   const bottomTabs: { key: BottomTab; label: string; icon: string }[] = [
     { key: "mixer", label: "Mixer", icon: "◉" },
-    { key: "fx", label: "FX", icon: "◈" },
-    { key: "mastering", label: "Master", icon: "⊡" },
+    { key: "fx", label: "FX", icon: "✦" },
+    { key: "mastering", label: "Master", icon: "♛" },
     { key: "groups", label: "Grupos", icon: "◈" },
     { key: "buses", label: "Buses", icon: "⏚" },
     { key: "mixes", label: "Mixes", icon: "☰" },
+    { key: "chords", label: "Chords", icon: "♪" },
   ];
 
   return (
@@ -1215,6 +1279,32 @@ export default function Studio() {
                 className={`text-[10px] font-mono ${Math.abs(playbackRate - rate) < 0.01 ? "text-brand-accent font-semibold" : "text-gray-500"}`}
               >
                 {rate}x
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
+        <View className="flex-row items-center gap-0.5 bg-dark-bg/40 rounded-lg px-1.5 py-1 border border-dark-border/30">
+          <Pressable
+            onPress={() => setPitchCorrected(!pitchCorrected)}
+            className={`px-1.5 py-0.5 rounded ${pitchCorrected ? "bg-brand-accent/20 border border-brand-accent/40" : "bg-dark-muted/30"}`}
+          >
+            <Text
+              className={`text-[9px] font-bold ${pitchCorrected ? "text-brand-accent" : "text-gray-500"}`}
+            >
+              ♪
+            </Text>
+          </Pressable>
+          {[-12, -7, -5, -1, 0, 1, 5, 7, 12].map((semi) => (
+            <Pressable
+              key={semi}
+              onPress={() => setPitchShiftSemitones(semi)}
+              className={`px-1 py-0.5 rounded ${Math.abs(pitchShiftSemitones - semi) < 0.01 ? "bg-brand-accent/20 border border-brand-accent/40" : "bg-dark-muted/30"}`}
+            >
+              <Text
+                className={`text-[9px] font-mono ${Math.abs(pitchShiftSemitones - semi) < 0.01 ? "text-brand-accent font-semibold" : "text-gray-500"}`}
+              >
+                {semi === 0 ? "0" : semi > 0 ? `+${semi}` : semi}
               </Text>
             </Pressable>
           ))}
@@ -1442,11 +1532,13 @@ export default function Studio() {
                             track.color
                           } ${isAudible(track) ? "opacity-90" : "opacity-25"}`}
                         >
-                          <WaveformClip
+                          <WaveformCanvas
                             regionId={region.id}
                             duration={region.duration}
                             color={track.color}
                             audible={isAudible(track)}
+                            selected={selectedTrackId === track.id}
+                            muted={track.muted}
                             height={56}
                           />
                         </View>
@@ -2031,6 +2123,31 @@ export default function Studio() {
                     trackName={selectedTrack.name}
                   />
                 </View>
+                <View className="mt-3">
+                  <Text className="text-gray-500 text-[10px] font-bold uppercase tracking-wider mb-2 px-1">
+                    Quick FX
+                  </Text>
+                  <View className="flex-row flex-wrap gap-3 px-1">
+                    {ONE_KNOB_TYPES.map((knobType) => (
+                      <OneKnobProcessor
+                        key={knobType}
+                        type={knobType}
+                        value={
+                          oneKnobValues[selectedTrack.id]?.[knobType] ?? 0
+                        }
+                        onChange={(_type, v) => {
+                          setOneKnobValues((prev) => ({
+                            ...prev,
+                            [selectedTrack.id]: {
+                              ...(prev[selectedTrack.id] ?? {}),
+                              [_type]: v,
+                            },
+                          }));
+                        }}
+                      />
+                    ))}
+                  </View>
+                </View>
                 <MasterRack
                   plugins={masterPlugins}
                   onChange={setMasterPlugins}
@@ -2064,6 +2181,39 @@ export default function Studio() {
             style={{ maxHeight: 340 }}
           >
             <LufsMeter isPlaying={isPlaying} />
+            <View className="mt-3 mb-3">
+              <VisualEQ
+                bands={(() => {
+                  const eq = masterPlugins.find((p) => p.type === "eq");
+                  if (!eq) return EQ_DEFAULT_BANDS;
+                  return Array.from({ length: 8 }, (_, i) => ({
+                    freq: eq.params[`b${i}_freq`] ?? EQ_DEFAULT_BANDS[i].freq,
+                    gain: eq.params[`b${i}_gain`] ?? EQ_DEFAULT_BANDS[i].gain,
+                    q: eq.params[`b${i}_q`] ?? EQ_DEFAULT_BANDS[i].q,
+                    type: eq.params[`b${i}_type`] ?? EQ_DEFAULT_BANDS[i].type,
+                    enabled: eq.params[`b${i}_enabled`] ?? EQ_DEFAULT_BANDS[i].enabled,
+                  }));
+                })()}
+                onChange={(index, params) => {
+                  const eqIdx = masterPlugins.findIndex(
+                    (p) => p.type === "eq",
+                  );
+                  if (eqIdx === -1) return;
+                  const updated = [...masterPlugins];
+                  const newParams = { ...updated[eqIdx].params };
+                  if (params.freq !== undefined) newParams[`b${index}_freq`] = params.freq;
+                  if (params.gain !== undefined) newParams[`b${index}_gain`] = params.gain;
+                  if (params.q !== undefined) newParams[`b${index}_q`] = params.q;
+                  if (params.type !== undefined) newParams[`b${index}_type`] = params.type;
+                  if (params.enabled !== undefined) newParams[`b${index}_enabled`] = params.enabled;
+                  updated[eqIdx] = {
+                    ...updated[eqIdx],
+                    params: newParams,
+                  };
+                  setMasterPlugins(updated);
+                }}
+              />
+            </View>
             <View className="flex-row items-center justify-between mb-2">
               <View className="flex-row items-center gap-2">
                 <View className="w-1.5 h-1.5 rounded-full bg-rose-500" />
@@ -2260,6 +2410,19 @@ export default function Studio() {
               onLoad={handleLoadMix}
               onDelete={handleDeleteMix}
               onCompare={handleCompareMix}
+            />
+          </View>
+        )}
+        {bottomTab === "chords" && (
+          <View className="px-3 py-2" style={{ maxHeight: 200 }}>
+            <ChordTrack
+              chords={chords}
+              onChange={setChords}
+              keySignature={projectKey || "C"}
+              bpm={metronome.bpm}
+              numBars={8}
+              visible
+              onClose={() => setBottomTab("mixer")}
             />
           </View>
         )}

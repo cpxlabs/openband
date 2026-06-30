@@ -18,6 +18,7 @@ import mixingTemplatesRoutes from "./routes/mixingTemplates";
 import hydrationRoutes from "./routes/hydration";
 import stemsRoutes from "./routes/stems";
 import presenceRoutes from "./routes/presence";
+import collabRoutes from "./routes/collab";
 import { checkDemucsInstalled } from "./services/demucs";
 import { requireFeature } from "./middleware/tierGuard";
 import { checkBlacklist } from "./middleware/sessionBlacklist";
@@ -144,6 +145,7 @@ app.use("/api", mixingTemplatesRoutes);
 app.use("/api", hydrationRoutes);
 app.use("/api", stemsRoutes);
 app.use("/api", presenceRoutes);
+app.use("/api", collabRoutes);
 
 app.use(
   (

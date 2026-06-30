@@ -37,6 +37,7 @@ export {
   ONE_KNOB_TYPES,
   KNOB_PRESETS,
 } from "./OneKnob";
+export { ChordTrack } from "./ChordTrack";
 export { Sampler } from "./Sampler";
 export { Synth, SYNTH_PRESETS } from "./Synth";
 export { MasteringSuite } from "./MasteringSuite";

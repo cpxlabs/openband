@@ -109,6 +109,7 @@ Available in `src/components/`:
 | `MasteringChain`          | `plugins, onToggle, onReset`                                                                                | Mastering chain slot UI with ON/OFF toggles                |
 | `MasteringVersionManager` | `versions, activeId, onSelect, onSave, onDelete, onBypass`                                                  | A/B version compare + snapshot management                  |
 | `MasteringUpload`         | `input, onInputChange, mode`                                                                                | Upload/drop zone for audio files and stems                 |
+| `ChordTrack`              | `chords, onChange, keySignature, numBars, visible, onClose`                                                 | Chord progression timeline with presets + Markov suggestions |
 
 CSS component classes (from `global.css`):
 
@@ -261,7 +262,7 @@ src/
   context/
     AuthContext.tsx    — Auth state context (session, user, loading, signOut)
   bridge/            — Desktop bridge (interface, electron, tauri stub, browser fallback, auto-detect)
-  components/         — Design system (39 components, see table above)
+  components/         — Design system (40 components, see table above)
 
 tests/
   components.test.tsx — Vitest component rendering + interaction tests (145 tests)
@@ -272,7 +273,7 @@ tests/
   types.test.ts      — Legacy node:test type structure tests (12 tests)
   presets.test.ts    — Legacy node:test preset count + structure tests (12 tests)
 
-stories/              — Storybook stories for all 39 components
+stories/              — Storybook stories for all 40 components
   *.stories.tsx       — Run: `npx storybook dev -p 6006`
 
 .storybook/

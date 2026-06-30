@@ -159,7 +159,7 @@ export interface RecordSettings {
   preRoll: number;
 }
 
-const EQ_DEFAULT_BANDS = [
+export const EQ_DEFAULT_BANDS = [
   { freq: 30, gain: 0, q: 0.71, type: 3, enabled: 0 },
   { freq: 120, gain: 0, q: 0.71, type: 2, enabled: 0 },
   { freq: 500, gain: 0, q: 0.71, type: 2, enabled: 1 },
