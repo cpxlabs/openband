@@ -118,9 +118,9 @@ export default function Studio() {
     title?: string;
     mood?: string;
   }>();
-  const projectMood: Mood | undefined = moodParam
-    ? (Array.isArray(moodParam) ? moodParam[0] : moodParam) as Mood
-    : undefined;
+  const rawMood = Array.isArray(moodParam) ? moodParam[0] : moodParam;
+  const VALID_MOODS = ["dark", "bright", "warm", "cold", "aggressive", "chill", "epic", "minimal", "nostalgic", "euphoric"] as const;
+  const projectMood: Mood | undefined = VALID_MOODS.includes(rawMood as typeof VALID_MOODS[number]) ? (rawMood as Mood) : undefined;
   const router = useRouter();
   const projectTitle =
     (Array.isArray(titleParam) ? titleParam[0] : titleParam) || "Projeto";
@@ -306,6 +306,7 @@ export default function Studio() {
     projectTitle,
     genreParam,
     projectKey,
+    projectMood,
   ]);
 
   const isPlaying = player.playing;
@@ -357,7 +358,7 @@ export default function Studio() {
                 id: `region-${Date.now()}`,
                 start: 0,
                 duration: Math.max(
-                  (recorderState.durationMillis ?? 0) / 1000,
+                  (recorderState?.durationMillis ?? 0) / 1000,
                   1,
                 ),
                 url: uri,

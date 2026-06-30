@@ -37,13 +37,19 @@ function getAudioContext(): AudioContext | null {
     sharedAudioContext = new AudioContext();
   }
   if (sharedAudioContext.state === "suspended") {
-    sharedAudioContext.resume();
+    sharedAudioContext.resume().catch(() => {});
   }
   return sharedAudioContext;
 }
 
 export function startClock(intervalMs: number = 25): void {
   if (isRunning || Platform.OS !== "web") return;
+
+  if (workerInstance) {
+    workerInstance.terminate();
+    workerInstance = null;
+  }
+
   const ctx = getAudioContext();
   if (!ctx) return;
 
@@ -59,9 +65,15 @@ export function startClock(intervalMs: number = 25): void {
         for (const listener of listeners) {
           try {
             listener(e.data.time, audioTime);
-          } catch {}
+          } catch (err) {
+            console.warn("Tick listener error:", err);
+          }
         }
       }
+    };
+
+    workerInstance.onerror = (e) => {
+      console.warn("Clock worker error:", e.message);
     };
 
     workerInstance.postMessage({ type: "start", interval: intervalMs });
@@ -79,6 +91,15 @@ export function stopClock(): void {
     workerInstance = null;
   }
   isRunning = false;
+}
+
+export function disposeClockManager(): void {
+  stopClock();
+  if (sharedAudioContext) {
+    sharedAudioContext.close().catch(() => {});
+    sharedAudioContext = null;
+  }
+  listeners.clear();
 }
 
 export function onClockTick(listener: TickListener): () => void {

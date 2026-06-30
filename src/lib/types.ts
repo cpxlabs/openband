@@ -1,7 +1,7 @@
 export interface AutomationPoint {
   time: number;
   value: number;
-  curve?: "linear" | "exponential";
+  curve: "linear" | "exponential";
 }
 
 export interface BusDef {

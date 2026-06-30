@@ -18,6 +18,7 @@ interface PresenceOptions {
 }
 
 const PRESENCE_STORE = new Map<string, Map<string, PresenceCursor>>();
+const DEFAULT_SERVER_URL = "http://localhost:3001";
 
 function getEventSourceUrl(base: string, projectId: string): string {
   const baseUrl = base.replace(/\/+$/, "");
@@ -36,7 +37,7 @@ function getLeaveUrl(base: string, projectId: string): string {
 
 export function usePresence({
   projectId,
-  serverUrl = "http://localhost:3001",
+  serverUrl = DEFAULT_SERVER_URL,
   userId,
   userName,
   throttleMs = 50,
@@ -84,7 +85,9 @@ export function usePresence({
           if (data.userId !== userId) {
             updateCursor(data);
           }
-        } catch {}
+        } catch (e) {
+          console.warn("Failed to parse presence data:", e);
+        }
       };
 
       es.onerror = () => {
@@ -100,7 +103,9 @@ export function usePresence({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ userId }),
           keepalive: true,
-        }).catch(() => {});
+        }).catch((e) => {
+          console.warn("Failed to send leave notification:", e);
+        });
 
         es.close();
         eventSourceRef.current = null;
@@ -136,7 +141,9 @@ export function usePresence({
           activeTrackId,
           playheadPosition,
         }),
-      }).catch(() => {});
+      }).catch((e) => {
+        console.warn("Failed to send cursor:", e);
+      });
     },
     [projectId, serverUrl, userId, userName, throttleMs],
   );

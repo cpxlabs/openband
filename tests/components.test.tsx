@@ -730,8 +730,8 @@ describe("WaveformClip", () => {
 
 describe("AutomationLane", () => {
   const points: AutomationPoint[] = [
-    { time: 0, value: 0 },
-    { time: 4, value: 100 },
+    { time: 0, value: 0, curve: "linear" },
+    { time: 4, value: 100, curve: "linear" },
   ];
 
   it("renders nothing when not visible", () => {

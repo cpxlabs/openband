@@ -17,7 +17,7 @@ export function applyAutomationToParam(
   param.cancelScheduledValues(startTime);
 
   if (points.length === 1) {
-    param.setValueAtTime(points[0].value, startTime + points[0].time);
+    param.setValueAtTime(points[0].value, startTime + points[0].time + offsetTime);
     return;
   }
 

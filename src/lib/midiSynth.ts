@@ -323,7 +323,6 @@ export async function renderTracksToUrl(
           input.gain.value = 1;
           const output = ctx.createGain();
           output.gain.value = bus.muted ? 0 : bus.volume;
-          masterGain.connect(input);
           input.connect(output);
           output.connect(masterGain);
           busGainNodes.set(bus.id, { input, output, muted: bus.muted });

@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useCallback } from "react";
+import { useRef, useEffect, useState, useMemo } from "react";
 import { View, Platform } from "react-native";
 import { generateWaveform } from "../lib/audio";
 
@@ -14,7 +14,7 @@ interface WaveformCanvasProps {
   peaks?: number[];
 }
 
-function getColorClass(color: string): string {
+function colorClassToHex(color: string): string {
   const colorMap: Record<string, string> = {
     "bg-red-500": "#ef4444",
     "bg-blue-500": "#3b82f6",
@@ -43,8 +43,11 @@ export function WaveformCanvas({
   const containerRef = useRef<View | HTMLDivElement | null>(null);
   const [isVisible, setIsVisible] = useState(true);
   const barCount = Math.max(8, Math.min(80, Math.floor(duration * 0.5 * zoom)));
-  const peaks = externalPeaks ?? generateWaveform(regionId, barCount);
-  const fillColor = getColorClass(color);
+  const peaks = useMemo(
+    () => externalPeaks ?? generateWaveform(regionId, barCount),
+    [externalPeaks, regionId, barCount],
+  );
+  const fillColor = colorClassToHex(color);
 
   useEffect(() => {
     if (Platform.OS !== "web" || !isVisible) return;
@@ -106,13 +109,6 @@ export function WaveformCanvas({
     return () => observer.disconnect();
   }, []);
 
-  const setCanvasRef = useCallback(
-    (node: HTMLCanvasElement | null) => {
-      canvasRef.current = node;
-    },
-    [],
-  );
-
   return (
     <View
       ref={containerRef as React.Ref<View>}
@@ -120,7 +116,7 @@ export function WaveformCanvas({
     >
       {Platform.OS === "web" ? (
         <canvas
-          ref={setCanvasRef}
+          ref={(node) => { canvasRef.current = node; }}
           style={{ width: "100%", height: "100%" }}
         />
       ) : (

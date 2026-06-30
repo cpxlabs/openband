@@ -93,7 +93,8 @@ Available in `src/components/`:
 | `PluginEditor`            | `plugin, onParamChange, onToggle, onClose`                                                                  | Deep plugin parameter editor (all 19 types)                |
 | `AutomationLane`          | `points, onChange, duration, color, visible, label, minValue, maxValue`                                     | Volume/param automation curve editor                       |
 | `TrackGroupManager`       | `groups, tracks, onCreateGroup, onRemoveGroup, onGroupVolume, onGroupMute, onAssignTrack, trackAssignments` | Track grouping with shared volume/mute                     |
-| `WaveformClip`            | `regionId, duration, color, audible, height`                                                                | Waveform visualization for audio clips                     |
+| `WaveformClip`            | `regionId, duration, color, audible, height`                                                                | Waveform visualization for audio clips (DOM)               |
+| `WaveformCanvas`          | `regionId, duration, color, audible, selected?, muted?, height?, zoom?, peaks?`                             | Canvas-based waveform with devicePixelRatio, viewport culling |
 | `SampleBrowser`           | `visible, onAddSample`                                                                                      | Browse and add sample packs                                |
 | `RecordOptions`           | `settings, onChange, visible, onClose`                                                                      | Recording settings (source, quality, sample rate)          |
 | `Metronome`               | `settings, onChange, isPlaying`                                                                             | BPM/tempo click track                                      |
@@ -245,17 +246,22 @@ src/
     supabase.ts       — Supabase client with mock fallback for dev
     responsive.ts     — useResponsive hook (mobile/tablet/desktop breakpoints)
     midiParser.ts     — MIDI file parser
-    midiSynth.ts      — Web Audio API MIDI synthesizer
+    midiSynth.ts      — Web Audio API MIDI synthesizer (bus routing, offline rendering)
     projectStore.ts   — Project persistence (localStorage + bridge)
     keyboard.ts       — useKeyboardShortcuts hook
     automix.ts        — Genre-based auto-mix presets
     history.ts        — useHistory (undo/redo) hook
     mastering.ts      — Mastering chain builder
-    types.ts          — Shared types (TrackDef, Plugin, etc.)
+    types.ts          — Shared types (TrackDef, Plugin, BusDef, AutomationPoint)
+    automationEngine.ts — Web Audio automation scheduling (linear/exponential curves)
+    busRouter.ts      — Sub-mix bus routing graph builder
+    clockManager.ts   — Web Worker master clock for metronome (25ms tick interval)
+    presence.ts       — Client-side SSE presence hook (throttled cursor broadcasting)
+    canvasWaveform.ts — AudioBuffer → peak data + Canvas waveform renderer
   context/
     AuthContext.tsx    — Auth state context (session, user, loading, signOut)
   bridge/            — Desktop bridge (interface, electron, tauri stub, browser fallback, auto-detect)
-  components/         — Design system (38 components, see table above)
+  components/         — Design system (39 components, see table above)
 
 tests/
   components.test.tsx — Vitest component rendering + interaction tests (145 tests)
@@ -266,7 +272,7 @@ tests/
   types.test.ts      — Legacy node:test type structure tests (12 tests)
   presets.test.ts    — Legacy node:test preset count + structure tests (12 tests)
 
-stories/              — Storybook stories for all 38 components
+stories/              — Storybook stories for all 39 components
   *.stories.tsx       — Run: `npx storybook dev -p 6006`
 
 .storybook/

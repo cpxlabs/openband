@@ -24,7 +24,7 @@ export function buildBusRouteGraph(
   tracks: TrackDef[],
   buses: BusRouteDef[],
   masterGain: GainNode,
-): { trackOutputs: Map<string, AudioNode>; busNodes: Map<string, BusRoutingNode> } {
+): { trackOutputs: Map<string, AudioNode>; busNodes: Map<string, BusRoutingNode>; cleanup: () => void } {
   const busNodes = new Map<string, BusRoutingNode>();
   const trackOutputs = new Map<string, AudioNode>();
 
@@ -74,7 +74,17 @@ export function buildBusRouteGraph(
     bus.inputGain.connect(bus.outputGain);
   }
 
-  return { trackOutputs, busNodes };
+  const cleanup = () => {
+    for (const bus of busNodes.values()) {
+      try { bus.inputGain.disconnect(); } catch {}
+      try { bus.outputGain.disconnect(); } catch {}
+    }
+    for (const node of trackOutputs.values()) {
+      try { node.disconnect(); } catch {}
+    }
+  };
+
+  return { trackOutputs, busNodes, cleanup };
 }
 
 export function createDefaultBuses(): BusRouteDef[] {
