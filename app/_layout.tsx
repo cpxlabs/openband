@@ -9,6 +9,7 @@ import { View, Platform } from "react-native";
 import { Loading } from "../src/components";
 import { AudioEngineProvider } from "../src/context/AudioEngine";
 import { VISITOR_MODE } from "../src/lib/flags";
+import { audioSystem } from "../src/lib/universalAudio";
 
 import "../global.css";
 
@@ -82,6 +83,20 @@ export default function RootLayout() {
     }
     window.addEventListener("load", register);
     return () => window.removeEventListener("load", register);
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS === "web") {
+      const initAudio = () => { audioSystem.initialize().catch(() => {}); };
+      document.addEventListener("pointerdown", initAudio, { once: true });
+      document.addEventListener("keydown", initAudio, { once: true });
+      return () => {
+        document.removeEventListener("pointerdown", initAudio);
+        document.removeEventListener("keydown", initAudio);
+      };
+    } else {
+      audioSystem.initialize();
+    }
   }, []);
 
   return (
