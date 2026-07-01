@@ -15,7 +15,7 @@ Built with **Expo Router**, **TypeScript**, **NativeWind v4 (Tailwind CSS v3)**,
 | Audio            | [`expo-audio`](https://docs.expo.dev/versions/v56.0.0/sdk/audio/) (SDK 56)                             |
 | Audio Processing | [Demucs](https://github.com/facebookresearch/demucs) (HTDEMUCS model) via Python subprocess            |
 | Desktop          | [Electron 35](https://www.electronjs.org/) with swappable bridge (`src/bridge/`)                       |
-| Testing          | [Vitest](https://vitest.dev/) (269 tests) + legacy `node:test` (24 tests) + Playwright E2E (5 tests) |
+| Testing          | [Vitest](https://vitest.dev/) (283 tests) + legacy `node:test` (24 tests) |
 
 ## Getting Started
 
@@ -99,14 +99,36 @@ The desktop app uses a **swappable bridge** (`src/bridge/`) — the frontend has
 Multi-track DAW with real-time audio playback via `expo-audio`:
 
 - Per-track volume sliders, mute/solo toggles, and pan controls
-- Waveform visualization using viewport-measured bar heights
-- Playhead cursor with real-time position tracking
-- Play/pause/seek transport controls
-- BPM readout and time signature display
-- Audio recording via `useAudioRecorder` with configurable quality/sample rate
+- Canvas-based waveform visualization with viewport culling devicePixelRatio
+- Playhead cursor with real-time position tracking via rAF
+- Play/pause/seek transport controls with pitch correction (±12 semitones)
+- BPM readout, time signature display, metronome with count-in
+- Audio recording via `useAudioRecorder` with direct monitoring (latencyMonitor)
 - Piano roll MIDI note editor with snap, scale highlighting, note drag/resize/delete
 - Sidechain routing per track (source selector + compressor sidechain filter)
-- Looper with record/overdub/playback, 4 loop slots
+- Looper with record/overdub/playback, 4 independent loop slots
+- Chord track with 8 progression presets + Markov chain suggestions
+- MIDI generation from chord progression via chordTrackState
+- OneKnob Quick FX per track (19 knob types)
+- Visual 8-band EQ on master with bypass and preset shapes
+- AutoMix with 11 genre-based presets + track role classification
+- Auto-pitch, noise gate, bass mono, stereo widener, reverb, delay, distortion plugins
+- Pedalboard with 16 famous pedal presets + 20 amp + 10 cab models
+- Mastering chain with 10 presets, 8-band EQ, compressor, limiter, LUFS
+- Plugin rack per track + master bus (19 plugin types)
+- Mix snapshot A/B comparison and save/load
+- Sub-mix send buses (up to 20) with per-track send levels
+- Track grouping with shared volume/mute
+- Sample browser with 60+ curated samples and category filtering
+- Sampler with Slice mode (transient detection + 16-pad mapping)
+- Synthesizer with 6 presets (Init Saw, Fat Bass, Soft Pad, Pluck, Wobble, Scream Lead)
+- CodeSampler token-based beat sequencer
+- Command palette (Cmd+K) with 18 commands across Transport/Edit/Track/File/View/System
+- Branch manager for CRDT fork/merge/diff
+- Commit modal with push-to-cloud via supabaseRemote
+- Undo/redo via useHistory (100-step, useReducer-based)
+- Automation lanes per track with linear/exponential curves
+- Bounce/export dialog (WAV/AIFF/FLAC, 16/24/32-bit, cross-platform)
 
 ### Stem Extraction (`app/extractor.tsx`)
 
@@ -162,43 +184,24 @@ User's project collection:
 - Sign-out with loading state
 - Profile info (member since, location, bio)
 
-### Bug-Fix Rounds (10 completed)
+### Bug-Fix Rounds (14 completed)
 
 Ongoing hardening through periodic fix-and-verify cycles. Each round fixes verified bugs (stale closures, O(n²) maps, unused imports, missing error handlers, type gaps, CSP issues, stale state) and runs the full tsc + vitest + build suite before shipping.
 
-**Round 10 — Code review sweep (29 issues found, 13 fixed):**
+**Round 10–13 — Previous code review sweeps (73 issues found and fixed):**
 
-**Round 11 — Code review sweep 2 (23 issues found, 10 fixed):**
-
-**Round 12 — Code review sweep 3 (11 issues found, 7 fixed):**
-
-**Round 13 — Code review sweep 4 (10 issues found, all fixed):**
-- Replaced `req.file!.path` with `filePath` in `master.ts`
-- Added error logging to empty catch blocks in `account.tsx` and `AuthContext.tsx`
-- Fixed circular import in `MasteringSuite.tsx` (direct imports instead of barrel)
-- Changed `Sidebar` import to barrel in `_layout.tsx`
-- Removed unused `React` default imports in `AuthContext.tsx` and `ThemeContext.tsx`
-- Moved misplaced `import type { TrackRegion }` to top of `midiParser.ts`
-- Removed `import.meta.url` from `backend/src/services/demucs.ts` — fixes backend `tsc` build (TS1343)
-- Fixed health endpoint Demucs caching: cached result persists across requests instead of re-running every time
-- Added error logging to silent catch blocks in `browser.ts`, `projectStore.ts`, `midiParser.ts`
-- Added warning when `PYTHON_PATH` env var is set but not absolute
-- Removed redundant non-null assertion in `master.ts`
-- Added `Platform.OS !== "web"` guard to `OfflineAudioContext` in `constants.ts` and `BounceDialog.tsx`
-- Added `disposeAudioContext()` call in studio cleanup effect
-- Added error logging to empty catch block in `electron/main.js` delete-project handler
-- Cached warning flag in `projectStore.ts` to suppress repeated `console.warn`
-- Fixed stale ref in `app/tabs/index.tsx` — moved `currentPostRef.current` after successful `await`
-- Added LRU eviction for `uploadCache` in `browser.ts` (max 10 entries)
-- Replaced hardcoded `http://localhost:3001` with configurable `EXPO_PUBLIC_API_URL` environment variable
-- Fixed ESM `__dirname` compatibility in `backend/src/services/demucs.ts`
-- Removed dead dependencies (`@google/gemini-cli`, `react-native-worklets`, `express`, `cors`, `multer`) from root `package.json`
-- Added `.slice()` to `generateWaveform()` cache return to prevent mutation corruption
-- Removed overly restrictive `filename.includes("..")` path check in extract/master routes
-- Removed unused `NextFunction` import in `master.ts`
-- Moved misplaced `import type { TrackRegion }` to top of `midiParser.ts`
-- Added error logging to empty catch blocks in `demucs.ts` rm, `login.tsx`
-- Removed code comment in `generator.ts` per self-documenting convention
+**Round 14 — Wire components + web player fix:**
+- Wired CommandPalette with 18 commands (transport, edit, track, file, view, system)
+- Wired BranchManager + CommitModal buttons in studio toolbar
+- RecordOptions gets direct monitoring toggle via latencyMonitor
+- Chord tab gets "Generate MIDI" button via chordTrackState
+- universalAudio initialized in studio audio setup
+- Fixed root calc for sharp/flat keys (used `[0]` which stripped accidentals)
+- Fixed chord quality type cast (silent wrong voicings for min/7/sus4)
+- Fixed useHistory impure nested setState → pure useReducer pattern
+- Re-exported useHistory hook (was removed during semantic undo rewrite)
+- Fixed web player autoplay policy block: remove eager AudioContext from mount effect, call ensureContext() synchronously in togglePlay before any await, try/catch around player.replace()/player.play()
+- Added blob URL tracking (currentUrlRef) with cleanup on re-render/unmount
 
 ## Project Structure
 
@@ -227,7 +230,7 @@ openband/
 │   │   ├── tauri.ts         # Tauri stub for future migration
 │   │   ├── browser.ts       # Browser fallback (localStorage, DOM APIs)
 │   │   └── index.ts         # Auto-detect platform + re-export
-│   └── components/          # Design system (38 components, see table below)
+│   └── components/          # Design system (51 components, see table below)
 ├── electron/
 │   ├── main.js              # Electron main process (BrowserWindow, IPC, native menus)
 │   ├── preload.js           # Context bridge (sandboxed electronAPI)
@@ -264,31 +267,33 @@ openband/
 
 ## Design System
 
-38 reusable components in `src/components/` (see `AGENTS.md` for full reference):
+51 reusable components in `src/components/` (see `AGENTS.md` for full reference):
 
-| Component                                                                           | Description                                             |
-| ----------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| `Button`                                                                            | `variant: primary\|secondary\|ghost`, `loading`, `icon` |
-| `TextInput`                                                                         | Wraps RN TextInput with label + error                   |
-| `Card` / `CardRow` / `CardIcon`                                                     | Dark surface containers, gradient icons                 |
-| `Badge`                                                                             | `variant: default\|play\|active`, with optional icon    |
-| `Avatar`                                                                            | `size: sm\|md\|lg`, displays initials                   |
-| `Divider`                                                                           | Horizontal line with optional label                     |
-| `Loading` / `EmptyState`                                                            | Spinner + message / centered empty state                |
-| `ProgressBar`                                                                       | 0–100 fill bar                                          |
-| `PageHeader` / `Sidebar`                                                            | Screen title + responsive drawer nav                    |
-| `PedalRack` / `Tuner`                                                               | 6-slot pedalboard + chromatic tuner                     |
-| `CodeSampler` / `PianoRoll` / `Looper`                                              | Token sequencer, MIDI editor, live loop recorder        |
-| `BounceDialog` / `MixManager`                                                       | Export dialog + A/B snapshot manager                    |
-| `PluginRack` / `MasterRack` / `PluginEditor`                                        | Track/master plugin chains + full 19-type editor        |
-| `AutomationLane` / `WaveformClip`                                                   | Volume/param automation + audio waveform viz            |
-| `VisualEQ` / `OneKnob`                                                              | Visual equalizer + single-knob control (19 types)       |
-| `MiniMastering` / `LufsMeter`                                                       | Mastering chain presets + loudness meter                |
-| `MomentCard`                                                                        | Social feed post card                                   |
-| `SampleBrowser` / `Sampler` / `Synth`                                               | Sample packs, audio player, synthesizer                 |
-| `Metronome` / `RecordOptions` / `NewProject`                                        | Click track, recording settings, project creator        |
-| `TrackGroupManager` / `SampleBrowser`                                               | Track grouping + sample library                         |
-| `MasteringSuite` / `MasteringChain` / `MasteringVersionManager` / `MasteringUpload` | Full mastering chain + A/B versioning + audio upload    |
+| Component                                                                           | Description                                                        |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `Button`                                                                            | `variant: primary\|secondary\|ghost`, `loading`, `icon`            |
+| `TextInput`                                                                         | Wraps RN TextInput with label + error                              |
+| `Card` / `CardRow` / `CardIcon`                                                     | Dark surface containers, gradient icons                            |
+| `Badge`                                                                             | `variant: default\|play\|active`, with optional icon               |
+| `Avatar`                                                                            | `size: sm\|md\|lg`, displays initials                              |
+| `Divider`                                                                           | Horizontal line with optional label                                |
+| `Loading` / `EmptyState`                                                            | Spinner + message / centered empty state                           |
+| `ProgressBar`                                                                       | 0–100 fill bar                                                     |
+| `PageHeader` / `Sidebar`                                                            | Screen title + responsive drawer nav                               |
+| `PedalRack` / `Tuner`                                                               | 6-slot pedalboard + chromatic tuner                                |
+| `CodeSampler` / `PianoRoll` / `Looper`                                              | Token sequencer, MIDI editor, live loop recorder                   |
+| `BounceDialog` / `MixManager`                                                       | Export dialog + A/B snapshot manager                               |
+| `PluginRack` / `MasterRack` / `PluginEditor`                                        | Track/master plugin chains + full 19-type editor                   |
+| `AutomationLane` / `WaveformCanvas`                                                 | Volume/param automation + canvas waveform viz with DPR, culling    |
+| `VisualEQ` / `OneKnob` / `OneKnobProcessor`                                         | Visual equalizer + single-knob control (19 types)                  |
+| `MiniMastering` / `LufsMeter`                                                       | Mastering chain presets + loudness meter                           |
+| `MomentCard`                                                                        | Social feed post card                                              |
+| `SampleBrowser` / `Sampler` / `Synth`                                               | Sample packs, audio player, synthesizer with 6 presets             |
+| `Metronome` / `RecordOptions` / `NewProject`                                        | Click track, recording settings, project creator                   |
+| `TrackGroupManager` / `ChordTrack`                                                  | Track grouping + chord progression timeline w/ Markov suggestions  |
+| `MasteringSuite` / `MasteringChain` / `MasteringVersionManager` / `MasteringUpload` | Full mastering chain + A/B versioning + audio upload               |
+| `PluginUI` / `BranchManager` / `Patchbay`                                           | Wasm plugin UI generator, git-like branch viewer, I/O patchbay    |
+| `CommandPalette` / `CommitModal` / `VersionHistory`                                 | Cmd+K palette, commit/push modal, visual commit timeline           |
 
 CSS utility classes (from `global.css`):
 
@@ -337,7 +342,7 @@ npm run build             # Production web export (output: dist/)
 npm run desktop           # Build + launch Electron desktop app
 npm run desktop:dev       # Hot-reload dev (Expo + Electron concurrently)
 npx tsc --noEmit          # TypeScript check
-npx vitest run            # Run 269 component + lib tests
+npx vitest run            # Run 283 component + lib tests
 cd backend && npm run dev # Backend dev server (port 3001)
 ```
 

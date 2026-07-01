@@ -158,6 +158,7 @@ const path = await OpenBandNative.showOpenDialog({ filters: [...] });
 - **Cross-platform BounceDialog**: No longer blocks on `Platform.OS !== "web"` — export works on all platforms via `audioSystem`
 - **useUniversalAudio hook** (`src/hooks/useUniversalAudio.ts`): Wraps expo-audio with AudioContext resume on user interaction, play/pause/stop/seek/setVolume
 - **App init** (`app/_layout.tsx`): Audio system initialized on first pointerdown/keydown (web) or immediately (native) — handles browser autoplay policy
+- **Web player autoplay fix**: `togglePlay()` calls `audioSystem.ensureContext()` synchronously before any async work to satisfy browser autoplay policy. `await player.replace()` and `await player.play()` with try/catch. No eager `audioSystem.initialize()` in studio mount effect. Blob URLs tracked in `currentUrlRef` and revoked on re-render/unmount.
 
 ### Backend
 
@@ -298,7 +299,7 @@ src/
   context/
     AuthContext.tsx    — Auth state context (session, user, loading, signOut)
   bridge/            — Desktop bridge (interface, electron, tauri stub, browser fallback, auto-detect)
-  components/         — Design system (46 components, see table above)
+  components/         — Design system (51 components, see table above)
   hooks/
     useUniversalAudio.ts — expo-audio wrapper with AudioContext resume
 
@@ -311,7 +312,7 @@ tests/
   types.test.ts      — Legacy node:test type structure tests (12 tests)
   presets.test.ts    — Legacy node:test preset count + structure tests (12 tests)
 
-stories/              — Storybook stories for all 46 components
+stories/              — Storybook stories for all 51 components
   *.stories.tsx       — Run: `npx storybook dev -p 6006`
 
 .storybook/

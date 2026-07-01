@@ -1,43 +1,122 @@
 # OpenBand Implementation Plan
 
-Build plan to close feature gaps against [BandLab](https://www.bandlab.com/features) and [Cubasis 3.8](https://www.steinberg.net/cubasis/). Each phase is ordered for maximum user value per effort.
+Build plan to close feature gaps against [BandLab](https://www.bandlab.com/features/) and [Cubasis 3.8](https://www.steinberg.net/cubasis/). Each phase is ordered for maximum user value per effort.
 
 ---
 
-## Phase 1: Audio Recording + Time-Stretch
+## ✅ Phase 1: Audio Recording + Time-Stretch — COMPLETE
 
 **Effort:** Medium-High · **Impact:** Critical — enables recording
 
-### Task 1.1: Connect `RecordOptions` UI to `expo-audio` recording API
+### Task 1.1: Connect `RecordOptions` UI to `expo-audio` recording API — ✅ DONE
 
-**Reference:** [expo-audio Recording docs](https://docs.expo.dev/versions/v56.0.0/sdk/audio/#recording-sounds)
+Recording works with `useAudioRecorder` + `RecordingPresets.HIGH_QUALITY`. Direct monitoring toggle added via `latencyMonitor.startDirectMonitor()`. Recorded tracks auto-created on stop.
 
-**Files to modify:**
+### Task 1.2: Expose playback rate controls for time-stretch/pitch-shift — ✅ DONE
 
-- `app/studio/[id].tsx` — Wire `toggleRecording()` to call `audioRecorder.prepareToRecordAsync()` + `record()`
-- `src/components/RecordOptions.tsx` — Already takes settings; ensure quality/sampleRate presets map to `RecordingPresets`
-- `src/lib/types.ts` — `RecordSettings` already defined; may need `recordingUri` field
+Transport toolbar has rate selector (0.5x–2x) and pitch shift buttons (±12 semitones). Pitch correction toggle applies phase vocoder (FFT) time-stretch during playback. Granular synthesis fallback available.
 
-**Implementation sketch:**
+### Task 1.3: Time-stretch via granular synthesis — ✅ DONE
 
-```tsx
-const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
-const recorderState = useAudioRecorderState(audioRecorder);
+`src/lib/timeStretch.ts` implements overlap-add granular synthesis (2048 grain, 512 hop, Hann window) for pitch-independent time-stretch. `src/lib/timeStretchVocoded.ts` implements phase vocoder (FFT 2048, hop 512) for production quality.
 
-if (isRecording) {
-  await audioRecorder.stop();
-  setTracks([
-    ...tracks,
-    {
-      id: `rec-${Date.now()}`,
-      name: "Recording",
-      regions: [
-        {
-          id: `r-${Date.now()}`,
-          start: 0,
-          duration: recorderState.durationMillis / 1000,
-        },
-      ],
+---
+
+## ✅ Phase 2: Piano Roll MIDI Editor — COMPLETE
+
+**Effort:** High · **Impact:** Critical — enables MIDI editing
+
+### Task 2.1: Piano roll component — ✅ DONE
+
+`PianoRoll.tsx` supports note add/move/resize/delete, snap to beat, key signature highlighting, scale highlighting, and velocity display. Connected to studio via `showPianoRoll` state.
+
+---
+
+## ✅ Phase 3: Collaboration — COMPLETE
+
+**Effort:** High · **Impact:** High — enables remote sessions
+
+### Task 3.1: CRDT implementation — ✅ DONE
+
+`src/lib/crdt.ts` implements operation-based CRDT with Lamport timestamps and LWW conflict resolution. `src/lib/yjsCRDT.ts` adds WebSocket sync with auto-reconnect. Backend SSE endpoints for operation broadcast.
+
+### Task 3.2: Presence service — ✅ DONE
+
+`src/lib/presence.ts` provides `usePresence()` hook with SSE-based cursor broadcasting, throttled at 50ms. Backend SSE server at `/api/presence`.
+
+### Task 3.3: Project branching — ✅ DONE
+
+`src/lib/projectBranching.ts` implements git-like fork/merge/diff for CRDT state. BranchManager component visualizes branch tree with selective merge acceptance. CommitModal + VersionHistory provide commit graph and push-to-cloud via Supabase REST sync.
+
+---
+
+## ✅ Phase 4: Mastering Suite — COMPLETE
+
+**Effort:** Medium · **Impact:** High — finishes tracks
+
+- Full mastering chain: 10 presets, 8-band VisualEQ, compressor, limiter, stereo widener, harmonic exciter
+- LUFS metering with integrated/short-term/range display
+- A/B version management with bypass compare
+- Cross-platform bounce/export (WAV/AIFF/FLAC, 16/24/32-bit) via universalAudio singleton
+- Audio file upload/drop zone for stems processing
+
+---
+
+## ✅ Phase 5: AI AutoMix & Stem Analysis — COMPLETE
+
+**Effort:** Medium · **Impact:** Medium — speeds up mixing
+
+- 11-genre AutoMix with track role classification (kick/snare/hihat/bass/vocal/lead/pad/keys/guitar/fx/other)
+- Per-role EQ boost profiles, compression ratios, volume ranges, pan preferences
+- LUFS-based target levels per role
+- Multi-instance panning spread for same-role tracks
+- Backend Demucs stem separation with async job queue
+
+---
+
+## ✅ Phase 6: Plugin System — COMPLETE
+
+**Effort:** Medium · **Impact:** Medium — sound design
+
+- 19 plugin types: autoPitch, reverb, delay, chorus, flanger, phaser, distortion, overdrive, ampSim, cabinetSim, noiseGate, compressor, limiter, eq, filter, bassMono, stereoWidener, gain, tremolo
+- PluginRack per track + MasterRack on master bus
+- PluginEditor for full parameter editing
+- Wasm plugin host (`wasmPluginHost.ts`) with JSON-RPC MessagePort protocol, dynamic ParamSlider UI
+- Pedalboard with 16 famous pedal presets + 20 amp + 10 cab models
+
+---
+
+## ✅ Phase 7: Waveform Visualization — COMPLETE
+
+**Effort:** Medium · **Impact:** Medium — visual feedback
+
+- `WaveformCanvas` component: canvas 2D waveform with devicePixelRatio optimization
+- Viewport culling for performance on long projects
+- Optional peak data memozation to avoid recomputation
+- `WavformClip` DOM-based fallback for simpler use cases
+
+---
+
+## ✅ Phase 8: Export & File Format — COMPLETE
+
+**Effort:** Medium · **Impact:** Medium — sharing
+
+- `.openband` binary archive format with CRC32 integrity
+- WAV 24-bit export via OfflineAudioContext mixdown
+- Chunked rendering (5s blocks) for long projects
+- Cross-platform export via universalAudio (download link on web, bridge writeFile on native)
+- State/asset separation with SHA-256 commit hashing
+
+---
+
+## Remaining Gaps (No Priority)
+
+The following features from the original analysis are **lower priority** and not yet implemented:
+
+- Video export (low)
+- AUv3 plugin support (low)
+- MIDI Learn / MCU control surface (low)
+- Cloud sync auto-push (medium)
       // ... color, plugins, etc
     },
   ]);
