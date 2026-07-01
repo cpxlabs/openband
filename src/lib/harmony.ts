@@ -10,7 +10,7 @@ export interface ProgressionPreset {
   id: string
   name: string
   description: string
-  mood: ('sun' | 'rain' | 'snow' | 'day' | 'night')[]
+  mood: ('dark' | 'bright' | 'warm' | 'cold' | 'aggressive' | 'chill' | 'epic' | 'minimal' | 'nostalgic' | 'euphoric')[]
   degrees: HarmonicDegrees[]
 }
 
@@ -31,52 +31,52 @@ export const SCALE_INTERVALS: Record<string, number[]> = {
 export const PROGRESSION_PRESETS: ProgressionPreset[] = [
   {
     id: 'pop-classic', name: 'Pop Clássico', description: 'I - V - vi - IV — cósmico, seguro, comercial',
-    mood: ['day', 'sun'],
+    mood: ['warm', 'bright'],
     degrees: [{ degree: 0, quality: 'maj' }, { degree: 4, quality: 'maj' }, { degree: 5, quality: 'min' }, { degree: 3, quality: 'maj' }],
   },
   {
     id: 'jazz-basic', name: 'Jazz/R&B Básico', description: 'ii - V - I — sofisticado, fluido, noturno',
-    mood: ['night', 'rain'],
+    mood: ['dark', 'chill'],
     degrees: [{ degree: 1, quality: 'min' }, { degree: 4, quality: '7' }, { degree: 0, quality: 'maj7' }],
   },
   {
     id: 'epic-rock', name: 'Épico/Rock', description: 'i - VI - III - VII — tenso, dramático',
-    mood: ['night', 'snow'],
+    mood: ['dark', 'cold'],
     degrees: [{ degree: 0, quality: 'min' }, { degree: 5, quality: 'maj' }, { degree: 2, quality: 'maj' }, { degree: 6, quality: 'maj' }],
   },
   {
     id: 'blues', name: 'Blues/Pop Raiz', description: 'I - IV - V — direto, enérgico, ensolarado',
-    mood: ['sun'],
+    mood: ['bright', 'euphoric'],
     degrees: [{ degree: 0, quality: '7' }, { degree: 3, quality: '7' }, { degree: 4, quality: '7' }, { degree: 0, quality: '7' }],
   },
   {
     id: 'lofi-chill', name: 'Lo-Fi Chill', description: 'I - vi - IV - V — relaxante, introspectivo',
-    mood: ['rain', 'snow'],
+    mood: ['chill', 'nostalgic'],
     degrees: [{ degree: 0, quality: 'maj7' }, { degree: 5, quality: 'min' }, { degree: 3, quality: 'maj7' }, { degree: 4, quality: 'maj' }],
   },
   {
     id: 'edm-anthem', name: 'EDM Anthem', description: 'vi - IV - I - V — festa, energia',
-    mood: ['sun', 'night'],
+    mood: ['euphoric', 'aggressive'],
     degrees: [{ degree: 5, quality: 'min' }, { degree: 3, quality: 'maj' }, { degree: 0, quality: 'maj' }, { degree: 4, quality: 'maj' }],
   },
   {
     id: 'acoustic-folk', name: 'Folk Acústico', description: 'I - V - IV - V — simples, campestre',
-    mood: ['day', 'sun'],
+    mood: ['warm', 'bright'],
     degrees: [{ degree: 0, quality: 'maj' }, { degree: 4, quality: 'maj' }, { degree: 3, quality: 'maj' }, { degree: 4, quality: 'maj' }],
   },
   {
     id: 'dark-minimal', name: 'Minimal Escuro', description: 'i - IV - V — espaçoso, atmosférico',
-    mood: ['night', 'snow'],
+    mood: ['minimal', 'cold'],
     degrees: [{ degree: 0, quality: 'min' }, { degree: 3, quality: 'maj' }, { degree: 4, quality: 'maj' }, { degree: 0, quality: 'min' }],
   },
   {
     id: 'metal-power', name: 'Metal Power', description: 'i - VI - VII — agressivo, pesado',
-    mood: ['night'],
+    mood: ['aggressive'],
     degrees: [{ degree: 0, quality: 'min' }, { degree: 5, quality: 'maj' }, { degree: 6, quality: 'maj' }],
   },
   {
     id: 'rnb-smooth', name: 'R&B Smooth', description: 'I - vi - ii - V — soul, groove',
-    mood: ['night', 'rain'],
+    mood: ['dark', 'nostalgic'],
     degrees: [{ degree: 0, quality: 'maj7' }, { degree: 5, quality: 'min' }, { degree: 1, quality: 'min' }, { degree: 4, quality: '7' }],
   },
 ]

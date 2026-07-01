@@ -684,7 +684,7 @@ describe("NewProject", () => {
       <NewProject visible={true} onClose={() => {}} onCreate={() => {}} />,
     );
     fireEvent.click(screen.getByText("Rock"));
-    fireEvent.click(screen.getByText("Dia"));
+    fireEvent.click(screen.getByText("Warm"));
     expect(screen.getByText("Criar Projeto")).toBeTruthy();
   });
 
@@ -701,13 +701,13 @@ describe("NewProject", () => {
     const fn = vi.fn();
     render(<NewProject visible={true} onClose={() => {}} onCreate={fn} />);
     fireEvent.click(screen.getByText("Rock"));
-    fireEvent.click(screen.getByText("Dia"));
+    fireEvent.click(screen.getByText("Warm"));
     fireEvent.click(screen.getByText("Criar Projeto"));
     expect(fn).toHaveBeenCalledWith(
       expect.objectContaining({
         name: expect.any(String),
         genre: expect.any(Object),
-        mood: "day",
+        mood: "warm",
       }),
     );
   });

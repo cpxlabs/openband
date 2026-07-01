@@ -50,7 +50,7 @@ export default function TabLayout() {
       setDrawerOpen(false);
       return;
     }
-    router.replace(`/tabs/${route}` as Href);
+    router.push(`/tabs/${route}` as Href);
     setDrawerOpen(false);
   };
 

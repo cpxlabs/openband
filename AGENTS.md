@@ -98,7 +98,7 @@ Available in `src/components/`:
 | `SampleBrowser`           | `visible, onAddSample`                                                                                      | Browse and add sample packs                                |
 | `RecordOptions`           | `settings, onChange, visible, onClose`                                                                      | Recording settings (source, quality, sample rate)          |
 | `Metronome`               | `settings, onChange, isPlaying`                                                                             | BPM/tempo click track                                      |
-| `NewProject`              | `visible, onClose, onCreate`                                                                                | New project creation modal                                 |
+| `NewProject`              | `visible, onClose, onCreate, onStartFromScratch?`                                                           | 3-step project creation (genre→mood→details) with numBars, timeSignature, "start from scratch" |
 | `PianoRoll`               | `notes, onChange, visible, onClose, bpm, numBars?, snap?, keySignature?, scale?`                            | MIDI note piano roll editor                                |
 | `Looper`                  | `visible, onClose, bpm, onCommitLoop`                                                                       | Live loop recording/playback                               |
 | `VisualEQ`                | `frequencies, onChange?, height?`                                                                           | Visual equalizer display                                   |
@@ -242,7 +242,7 @@ app/
   _layout.tsx          — Root: SafeAreaProvider + AuthProvider + redirect logic
   (auth)/login.tsx    — Login screen (Supabase auth, mock fallback)
   tabs/
-    _layout.tsx       — Tab navigator (Feed, Biblioteca, Momentos) + responsive sidebar drawer
+    _layout.tsx       — Tab navigator (Feed, Biblioteca, Momentos) + responsive sidebar drawer (router.push, not replace)
     index.tsx         — Feed screen with audio playback
     library.tsx       — Library screen with project list + "Separar Stems" button
     moments.tsx       — Sample pack store / artist moments
@@ -251,7 +251,7 @@ app/
   extractor.tsx       — Stem separation (select → process → results)
   mastering/
     index.tsx         — Mastering suite page (full chain EQ, comp, limiter, LUFS)
-  studio/[id].tsx     — DAW-style multi-track mixer with waveform + transport
+  studio/[id].tsx     — DAW-style multi-track mixer with waveform + transport (parses numBars, timeSignature, scratch params)
 
 src/
   lib/
@@ -260,11 +260,12 @@ src/
     midiParser.ts     — MIDI file parser
     midiSynth.ts      — Web Audio API MIDI synthesizer (bus routing, offline rendering)
     projectStore.ts   — Project persistence (localStorage + bridge)
+    projectTemplates.ts — Genre/mood/key templates with Mood (10-value), TIME_SIGNATURES, generateTracksForGenre
     keyboard.ts       — useKeyboardShortcuts hook
     automix.ts        — Genre-based auto-mix presets
     history.ts        — useHistory (undo/redo) hook
     mastering.ts      — Mastering chain builder
-    types.ts          — Shared types (TrackDef, Plugin, BusDef, AutomationPoint)
+    types.ts          — Shared types (TrackDef, Plugin, BusDef, AutomationPoint, ChordQuality, TIME_SIGNATURES, EQ_DEFAULT_BANDS)
     automationEngine.ts — Web Audio automation scheduling (linear/exponential curves)
     busRouter.ts      — Sub-mix bus routing graph builder
     clockManager.ts   — Web Worker master clock for metronome (25ms tick interval)
@@ -304,11 +305,13 @@ src/
     useUniversalAudio.ts — expo-audio wrapper with AudioContext resume
 
 tests/
-  components.test.tsx — Vitest component rendering + interaction tests (145 tests)
+  components.test.tsx — Vitest component rendering + interaction tests (147 tests)
   components2.test.tsx — Vitest additional component tests (20 tests)
+  components3.test.tsx — Vitest additional component tests (20 tests)
   screens.test.tsx  — Vitest screen-level tests (27 tests)
-  lib.test.ts        — Vitest library function tests (62 tests)
-  responsive.test.ts — Vitest breakpoint & dimension tests (15 tests)
+  lib.test.ts        — Vitest library function tests (73 tests)
+  lib2.test.ts       — Vitest additional library tests (51 tests)
+  responsive.test.ts — Vitest breakpoint & dimension tests (16 tests)
   types.test.ts      — Legacy node:test type structure tests (12 tests)
   presets.test.ts    — Legacy node:test preset count + structure tests (12 tests)
 

@@ -123,6 +123,9 @@ export default function Studio() {
     bpm: bpmParam,
     title: titleParam,
     mood: moodParam,
+    numBars: numBarsParam,
+    timeSignature: tsParam,
+    scratch: scratchParam,
   } = useLocalSearchParams<{
     id: string;
     genre?: string;
@@ -130,10 +133,13 @@ export default function Studio() {
     bpm?: string;
     title?: string;
     mood?: string;
+    numBars?: string;
+    timeSignature?: string;
+    scratch?: string;
   }>();
   const rawMood = Array.isArray(moodParam) ? moodParam[0] : moodParam;
-  const VALID_MOODS = ["dark", "bright", "warm", "cold", "aggressive", "chill", "epic", "minimal", "nostalgic", "euphoric"] as const;
-  const projectMood: Mood | undefined = VALID_MOODS.includes(rawMood as typeof VALID_MOODS[number]) ? (rawMood as Mood) : undefined;
+  const allMoods: Mood[] = ["dark", "bright", "warm", "cold", "aggressive", "chill", "epic", "minimal", "nostalgic", "euphoric"];
+  const projectMood: Mood | undefined = allMoods.includes(rawMood as Mood) ? (rawMood as Mood) : undefined;
   const router = useRouter();
   const projectTitle =
     (Array.isArray(titleParam) ? titleParam[0] : titleParam) || "Projeto";
@@ -141,6 +147,11 @@ export default function Studio() {
     ? parseInt(Array.isArray(bpmParam) ? bpmParam[0] : bpmParam, 10) || 120
     : 120;
   const projectKey = Array.isArray(keyParam) ? keyParam[0] : keyParam;
+  const initialNumBars = numBarsParam
+    ? parseInt(Array.isArray(numBarsParam) ? numBarsParam[0] : numBarsParam, 10) || 8
+    : 8;
+  const projectTimeSig = Array.isArray(tsParam) ? tsParam[0] : tsParam || "4/4";
+  const isScratch = Array.isArray(scratchParam) ? scratchParam[0] : scratchParam === "1";
   const player = useAudioPlayer(null);
   const status = useAudioPlayerStatus(player);
   const hasLoadedRef = useRef(false);
@@ -233,7 +244,7 @@ export default function Studio() {
     canUndo,
     canRedo,
   } = useHistory<TrackDef[]>(
-    generateTracksForGenre(genreParam || "pop", initialBpm, projectKey, projectMood),
+    isScratch ? [] : generateTracksForGenre(genreParam || "pop", initialBpm, projectKey, projectMood, initialNumBars, projectTimeSig),
   );
 
   const [metronome, setMetronome] = useState<MetronomeSettings>({

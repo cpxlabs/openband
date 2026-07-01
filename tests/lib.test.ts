@@ -507,11 +507,13 @@ describe("generateTracksForGenre", () => {
     }
   });
 
-  it("tracks have sequential string IDs", () => {
+  it("tracks have unique IDs matching track-N pattern", () => {
     const tracks = generateTracksForGenre("hiphop");
-    tracks.forEach((t, i) => {
-      expect(t.id).toBe(String(i + 1));
+    tracks.forEach((t) => {
+      expect(t.id).toMatch(/^track-\d+-\d+$/);
     });
+    const ids = tracks.map((t) => t.id);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 
   it("track names match suggestedTracks from the genre template", () => {
@@ -537,6 +539,7 @@ describe("generateTracksForGenre", () => {
     expect(tracks[1].name).toBe("Instrumento");
     expect(tracks[2].name).toBe("Bateria");
     expect(tracks[3].name).toBe("Baixo");
+    expect(tracks[0].id).toMatch(/^track-\d+-\d+$/);
   });
 
   it("returns fallback tracks for empty string genre", () => {
@@ -913,7 +916,7 @@ describe("offlineExport.ts", () => {
   });
 
   it("resolves with mood preset filter and reverb", async () => {
-    const result = await exportToWav(tracksWithNotes, { bpm: 120, mood: "rain" });
+    const result = await exportToWav(tracksWithNotes, { bpm: 120, mood: "chill" });
     expect(result).not.toBeNull();
     expect(result).toBeInstanceOf(Blob);
   });

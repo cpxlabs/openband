@@ -48,11 +48,12 @@ export default function Library() {
   }, [projects])
 
   const handleCreate = useCallback((config: {
-    name: string; genre: GenreTemplate; key: string; bpm: number; mood?: Mood
+    name: string; genre: GenreTemplate; key: string; bpm: number; mood?: Mood; numBars?: number; timeSignature?: string
   }) => {
     const projectId = `proj-${Date.now()}`
     const params = new URLSearchParams({
       title: config.name, genre: config.genre.id, key: config.key, bpm: String(config.bpm),
+      numBars: String(config.numBars ?? 8), timeSignature: config.timeSignature ?? "4/4",
     })
     if (config.mood) params.set("mood", config.mood)
     setRefreshKey(k => k + 1)
@@ -167,7 +168,16 @@ export default function Library() {
         )}
       />
 
-      <NewProject visible={showNewProject} onClose={() => setShowNewProject(false)} onCreate={handleCreate} />
+      <NewProject
+        visible={showNewProject}
+        onClose={() => setShowNewProject(false)}
+        onCreate={handleCreate}
+        onStartFromScratch={() => {
+          const projectId = `proj-${Date.now()}`
+          setShowNewProject(false)
+          router.push(`/studio/${projectId}?scratch=1`)
+        }}
+      />
     </View>
   )
 }

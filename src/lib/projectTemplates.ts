@@ -2,7 +2,7 @@ import type { MIDINote, TrackDef } from "./types";
 import { keyToRootNote, PROGRESSION_PRESETS, resolveProgression, isMinorKey, getDefaultScaleType, SCALE_INTERVALS } from "./harmony";
 import type { HarmonicDegrees } from "./harmony";
 
-export type Mood = 'day' | 'night' | 'sun' | 'rain' | 'snow';
+export type Mood = 'dark' | 'bright' | 'warm' | 'cold' | 'aggressive' | 'chill' | 'epic' | 'minimal' | 'nostalgic' | 'euphoric';
 
 type WaveformType = "sine" | "square" | "sawtooth" | "triangle";
 
@@ -22,31 +22,58 @@ export interface MoodPreset {
 
 export const MOODS: MoodPreset[] = [
   {
-    id: 'day', name: 'Dia', icon: '🌆', description: 'Neutro, focado, padrão comercial',
-    bpmOffset: 0, waveType: 'sawtooth',
-    filter: null, reverb: null, density: 1.0, velocity: 0, octaveShift: 0,
-  },
-  {
-    id: 'night', name: 'Noite', icon: '🌃', description: 'Escuro, club, sub-bass potente',
+    id: 'dark', name: 'Dark', icon: '🌑', description: 'Escuro, club, sub-bass potente',
     bpmOffset: -5, waveType: 'sawtooth',
     filter: { type: 'lowpass', freq: 6000, q: 0.5 }, reverb: { decay: 1.5, mix: 0.25 }, density: 0.8, velocity: 10, octaveShift: 0,
   },
   {
-    id: 'sun', name: 'Sol', icon: '☀️', description: 'Brilhante, enérgico, sincopado',
+    id: 'bright', name: 'Bright', icon: '☀️', description: 'Brilhante, enérgico, sincopado',
     bpmOffset: 10, waveType: 'triangle',
     filter: { type: 'highpass', freq: 200, q: 0.3 }, reverb: { decay: 0.5, mix: 0.1 }, density: 1.3, velocity: 10, octaveShift: 0,
   },
   {
-    id: 'rain', name: 'Chuva', icon: '🌧️', description: 'Melancólico, lo-fi, washed-out',
+    id: 'warm', name: 'Warm', icon: '🔥', description: 'Aconchegante, vintage, saturado',
+    bpmOffset: 0, waveType: 'sawtooth',
+    filter: { type: 'lowpass', freq: 8000, q: 0.3 }, reverb: { decay: 1.2, mix: 0.2 }, density: 1.0, velocity: 0, octaveShift: 0,
+  },
+  {
+    id: 'cold', name: 'Cold', icon: '🧊', description: 'Frio, espacial, distante',
+    bpmOffset: -10, waveType: 'sine',
+    filter: { type: 'highpass', freq: 400, q: 0.3 }, reverb: { decay: 3.0, mix: 0.4 }, density: 0.6, velocity: -10, octaveShift: 1,
+  },
+  {
+    id: 'aggressive', name: 'Aggressive', icon: '💥', description: 'Pesado, rápido, intenso',
+    bpmOffset: 15, waveType: 'square',
+    filter: null, reverb: null, density: 1.4, velocity: 15, octaveShift: 0,
+  },
+  {
+    id: 'chill', name: 'Chill', icon: '😎', description: 'Relaxado, lo-fi, suave',
     bpmOffset: -15, waveType: 'triangle',
     filter: { type: 'lowpass', freq: 3000, q: 1.0 }, reverb: { decay: 3.0, mix: 0.4 }, density: 0.6, velocity: -15, octaveShift: 1,
   },
   {
-    id: 'snow', name: 'Neve', icon: '❄️', description: 'Minimalista, espacial, frio',
+    id: 'epic', name: 'Epic', icon: '🏔️', description: 'Grandioso, cinematográfico',
+    bpmOffset: -5, waveType: 'sawtooth',
+    filter: null, reverb: { decay: 4.0, mix: 0.5 }, density: 1.2, velocity: 5, octaveShift: 0,
+  },
+  {
+    id: 'minimal', name: 'Minimal', icon: '◻️', description: 'Esparso, atmosférico, silêncio',
     bpmOffset: -20, waveType: 'sine',
     filter: { type: 'lowpass', freq: 4000, q: 0.3 }, reverb: { decay: 4.0, mix: 0.5 }, density: 0.4, velocity: -20, octaveShift: 2,
   },
+  {
+    id: 'nostalgic', name: 'Nostalgic', icon: '📼', description: 'Retrô, vinil, memória',
+    bpmOffset: -5, waveType: 'triangle',
+    filter: { type: 'lowpass', freq: 5000, q: 0.5 }, reverb: { decay: 2.0, mix: 0.3 }, density: 0.8, velocity: -5, octaveShift: 0,
+  },
+  {
+    id: 'euphoric', name: 'Euphoric', icon: '✨', description: 'Eufórico, brilhante, energético',
+    bpmOffset: 10, waveType: 'triangle',
+    filter: null, reverb: { decay: 0.8, mix: 0.15 }, density: 1.3, velocity: 10, octaveShift: 0,
+  },
 ];
+
+export const TIME_SIGNATURES = ["2/2", "3/4", "4/4", "5/4", "6/8", "7/8", "12/8"];
 
 export interface GenreTemplate {
   id: string;
@@ -240,26 +267,28 @@ export function generateTracksForGenre(
   bpm?: number,
   key?: string,
   mood?: Mood,
+  numBars: number = 8,
+  timeSignature: string = "4/4",
 ): TrackDef[] {
   const genre = GENRES.find((g) => g.id === genreId);
   const suggested = genre?.suggestedTracks;
   if (!suggested || suggested.length === 0) {
-    return getFallbackTracks();
+    return getFallbackTracks(numBars);
   }
 
-  const bars = 8;
   const baseBpm = bpm ?? genre?.defaultBpm ?? 120;
   const bpmVal = mood
     ? baseBpm + (MOODS.find((m) => m.id === mood)?.bpmOffset ?? 0)
     : baseBpm;
-  const beatsPerBar = 4;
-  const regionDuration = (bars * beatsPerBar * 60) / bpmVal;
+  const [, beatsPerBar] = timeSignature.split("/").map(Number);
+  const regionDuration = (numBars * beatsPerBar * 60) / bpmVal;
   const rootNote = keyToRootNote(key ?? genre?.defaultKey ?? "C");
+  const now = Date.now();
 
   return suggested.map((track, i) => {
     const midiNotes = generateMidiForTrack(track.name, genreId, rootNote, bpmVal, mood);
     return {
-      id: String(i + 1),
+      id: `track-${now}-${i}`,
       name: track.name,
       color: track.color,
       muted: false,
@@ -647,10 +676,12 @@ function generateMidiForTrack(
   return result
 }
 
-function getFallbackTracks(): TrackDef[] {
+function getFallbackTracks(numBars: number = 8): TrackDef[] {
+  const now = Date.now();
+  const baseDuration = (numBars * 4 * 60) / 120;
   return [
     {
-      id: "1",
+      id: `track-${now}-0`,
       name: "Vocal",
       color: "bg-red-500",
       muted: false,
@@ -659,12 +690,12 @@ function getFallbackTracks(): TrackDef[] {
       pan: 0,
       sends: {},
       sidechainSource: null,
-      regions: [{ id: nextRegionId(), start: 0, duration: 200 }],
+      regions: [{ id: nextRegionId(), start: 0, duration: Math.round(baseDuration) }],
       plugins: [],
       automation: {},
     },
     {
-      id: "2",
+      id: `track-${now}-1`,
       name: "Instrumento",
       color: "bg-blue-500",
       muted: false,
@@ -673,12 +704,12 @@ function getFallbackTracks(): TrackDef[] {
       pan: 0,
       sends: {},
       sidechainSource: null,
-      regions: [{ id: nextRegionId(), start: 0, duration: 200 }],
+      regions: [{ id: nextRegionId(), start: 0, duration: Math.round(baseDuration) }],
       plugins: [],
       automation: {},
     },
     {
-      id: "3",
+      id: `track-${now}-2`,
       name: "Bateria",
       color: "bg-green-500",
       muted: false,
@@ -687,12 +718,12 @@ function getFallbackTracks(): TrackDef[] {
       pan: 0,
       sends: {},
       sidechainSource: null,
-      regions: [{ id: nextRegionId(), start: 0, duration: 200 }],
+      regions: [{ id: nextRegionId(), start: 0, duration: Math.round(baseDuration) }],
       plugins: [],
       automation: {},
     },
     {
-      id: "4",
+      id: `track-${now}-3`,
       name: "Baixo",
       color: "bg-purple-500",
       muted: false,
@@ -701,7 +732,7 @@ function getFallbackTracks(): TrackDef[] {
       pan: 0,
       sends: {},
       sidechainSource: null,
-      regions: [{ id: nextRegionId(), start: 0, duration: 200 }],
+      regions: [{ id: nextRegionId(), start: 0, duration: Math.round(baseDuration) }],
       plugins: [],
       automation: {},
     },

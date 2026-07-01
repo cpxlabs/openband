@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { View, Text, Pressable, ScrollView, TextInput } from "react-native";
-import { GENRES, MUSICAL_KEYS, keyLabel, MOODS } from "../lib/projectTemplates";
+import { GENRES, MUSICAL_KEYS, keyLabel, MOODS, TIME_SIGNATURES } from "../lib/projectTemplates";
 import type { GenreTemplate, Mood } from "../lib/projectTemplates";
 
 interface NewProjectProps {
@@ -12,7 +12,10 @@ interface NewProjectProps {
     key: string;
     bpm: number;
     mood?: Mood;
+    numBars?: number;
+    timeSignature?: string;
   }) => void;
+  onStartFromScratch?: () => void;
   testID?: string;
 }
 
@@ -20,6 +23,7 @@ export function NewProject({
   visible,
   onClose,
   onCreate,
+  onStartFromScratch,
   testID,
 }: NewProjectProps) {
   const [name, setName] = useState("");
@@ -27,6 +31,8 @@ export function NewProject({
   const [bpm, setBpm] = useState(selectedGenre.defaultBpm);
   const [selectedKey, setSelectedKey] = useState(selectedGenre.defaultKey);
   const [selectedMood, setSelectedMood] = useState<Mood | undefined>();
+  const [numBars, setNumBars] = useState(8);
+  const [timeSignature, setTimeSignature] = useState("4/4");
   const [step, setStep] = useState<"genre" | "mood" | "details">("genre");
 
   const handleSelectGenre = useCallback((genre: GenreTemplate) => {
@@ -54,14 +60,18 @@ export function NewProject({
       key: selectedKey,
       bpm,
       mood: selectedMood,
+      numBars,
+      timeSignature,
     });
     setName("");
     setSelectedGenre(GENRES[0]);
     setBpm(GENRES[0].defaultBpm);
     setSelectedKey(GENRES[0].defaultKey);
     setSelectedMood(undefined);
+    setNumBars(8);
+    setTimeSignature("4/4");
     setStep("genre");
-  }, [name, selectedGenre, selectedKey, bpm, selectedMood, onCreate]);
+  }, [name, selectedGenre, selectedKey, bpm, selectedMood, numBars, timeSignature, onCreate]);
 
   const handleClose = useCallback(() => {
     setName("");
@@ -69,9 +79,24 @@ export function NewProject({
     setBpm(GENRES[0].defaultBpm);
     setSelectedKey(GENRES[0].defaultKey);
     setSelectedMood(undefined);
+    setNumBars(8);
+    setTimeSignature("4/4");
     setStep("genre");
     onClose();
   }, [onClose]);
+
+  const handleScratch = useCallback(() => {
+    setName("");
+    setSelectedGenre(GENRES[0]);
+    setBpm(GENRES[0].defaultBpm);
+    setSelectedKey(GENRES[0].defaultKey);
+    setSelectedMood(undefined);
+    setNumBars(8);
+    setTimeSignature("4/4");
+    setStep("genre");
+    onStartFromScratch?.();
+    onClose();
+  }, [onStartFromScratch, onClose]);
 
   if (!visible) return null;
 
@@ -132,6 +157,20 @@ export function NewProject({
                     </View>
                   </Pressable>
                 ))}
+                {onStartFromScratch && (
+                  <Pressable
+                    onPress={handleScratch}
+                    className="w-[48%] p-4 rounded-2xl border border-dark-border bg-dark-surface items-center justify-center active:opacity-80"
+                  >
+                    <Text className="text-3xl mb-1">▢</Text>
+                    <Text className="text-white font-bold text-sm">
+                      Começar do Zero
+                    </Text>
+                    <Text className="text-gray-500 text-[10px] mt-0.5 text-center">
+                      Projeto vazio, sem tracks sugeridas
+                    </Text>
+                  </Pressable>
+                )}
               </View>
             </View>
           ) : step === "mood" ? (
@@ -279,12 +318,63 @@ export function NewProject({
               </View>
 
               <Text className="text-gray-400 text-xs font-medium mb-2">
+                Compassos
+              </Text>
+              <View className="flex-row items-center gap-3 mb-4">
+                <Pressable
+                  onPress={() => setNumBars(Math.max(1, numBars - 2))}
+                  className="w-10 h-10 rounded-xl bg-dark-surface border border-dark-border items-center justify-center active:opacity-70"
+                >
+                  <Text className="text-gray-300 text-lg">−</Text>
+                </Pressable>
+                <View className="flex-1 items-center">
+                  <Text className="text-white font-mono text-base font-bold">
+                    {numBars}
+                  </Text>
+                  <Text className="text-gray-600 text-[10px]">compassos</Text>
+                </View>
+                <Pressable
+                  onPress={() => setNumBars(Math.min(64, numBars + 2))}
+                  className="w-10 h-10 rounded-xl bg-dark-surface border border-dark-border items-center justify-center active:opacity-70"
+                >
+                  <Text className="text-gray-300 text-lg">+</Text>
+                </Pressable>
+              </View>
+
+              <Text className="text-gray-400 text-xs font-medium mb-2">
+                Fórmula de Compasso
+              </Text>
+              <View className="flex-row flex-wrap gap-1.5 mb-4">
+                {TIME_SIGNATURES.map((ts) => (
+                  <Pressable
+                    key={ts}
+                    onPress={() => setTimeSignature(ts)}
+                    className={`px-3 py-2 rounded-lg border ${
+                      timeSignature === ts
+                        ? "bg-brand-accent/20 border-brand-accent"
+                        : "bg-dark-surface border-dark-border"
+                    }`}
+                  >
+                    <Text
+                      className={`font-mono text-sm font-bold ${
+                        timeSignature === ts
+                          ? "text-brand-accent"
+                          : "text-gray-400"
+                      }`}
+                    >
+                      {ts}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              <Text className="text-gray-400 text-xs font-medium mb-2">
                 Tom
               </Text>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                className="mb-6"
+                className="mb-4"
               >
                 <View
                   className="flex-row flex-wrap gap-1.5"
