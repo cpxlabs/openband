@@ -311,3 +311,36 @@ export function createRemix(originalId: string, _userId: string): string | null 
   });
   return newId;
 }
+
+const FAVORITES_KEY = "openband_favorites";
+
+export function toggleProjectFavorite(projectId: string): boolean {
+  const favorites = getFavoriteProjects();
+  const idx = favorites.indexOf(projectId);
+  if (idx >= 0) {
+    favorites.splice(idx, 1);
+  } else {
+    favorites.push(projectId);
+  }
+  const storage = getStorage();
+  if (storage) {
+    storage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
+  }
+  return idx < 0;
+}
+
+export function getFavoriteProjects(): string[] {
+  const storage = getStorage();
+  if (!storage) return [];
+  const raw = storage.getItem(FAVORITES_KEY);
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+export function isProjectFavorite(projectId: string): boolean {
+  return getFavoriteProjects().includes(projectId);
+}

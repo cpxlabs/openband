@@ -4,7 +4,7 @@ import { useRouter } from "expo-router"
 import { CardRow, CardIcon, EmptyState, PageHeader, Button, NewProject, Badge, ProjectMenu } from "../../src/components"
 import type { GenreTemplate, Mood } from "../../src/lib/projectTemplates"
 import { useResponsive, LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive"
-import { listProjectIndex, importProject, loadProject } from "../../src/lib/projectStore"
+import { listProjectIndex, importProject, loadProject, getFavoriteProjects, isProjectFavorite, toggleProjectFavorite } from "../../src/lib/projectStore"
 import { SCREEN_BOTTOM_PADDING } from "../../src/lib/constants"
 import { OpenBandNative } from "../../src/bridge"
 
@@ -43,9 +43,21 @@ export default function Library() {
       .sort((a, b) => b.lastSaved - a.lastSaved)
   }, [projectIndex])
 
+  const handleToggleFavorite = useCallback((projectId: string) => {
+    toggleProjectFavorite(projectId)
+    setRefreshKey(k => k + 1)
+  }, [])
+
   const filtered = useMemo(() => {
+    if (filterTab === "favorites") {
+      const favorites = getFavoriteProjects();
+      return projects.filter(p => favorites.includes(p.id));
+    }
+    if (filterTab === "collabs") {
+      return projects.filter(p => p.metadata?.parentProjectId);
+    }
     return projects
-  }, [projects])
+  }, [projects, filterTab])
 
   const handleCreate = useCallback((config: {
     name: string; genre: GenreTemplate; key: string; bpm: number; mood?: Mood; numBars?: number; timeSignature?: string
@@ -133,7 +145,9 @@ export default function Library() {
         ListEmptyComponent={
           <EmptyState icon="🎧" title="Nenhum projeto ainda" subtitle="Crie seu primeiro projeto acima" />
         }
-        renderItem={({ item }) => (
+        renderItem={({ item }) => {
+          const isFavorite = isProjectFavorite(item.id)
+          return (
           <CardRow onPress={() => router.push(`/studio/${item.id}`)} className="mb-2 relative">
             <CardIcon icon="♫" />
             <View className="flex-1 ml-4">
@@ -154,6 +168,14 @@ export default function Library() {
               </View>
             </View>
             <Pressable
+              onPress={() => handleToggleFavorite(item.id)}
+              className="px-2 py-2 active:opacity-60"
+            >
+              <Text className={`text-lg ${isFavorite ? "text-brand-primary" : "text-gray-500"}`}>
+                {isFavorite ? "★" : "☆"}
+              </Text>
+            </Pressable>
+            <Pressable
               onPress={() => router.push(`/studio/${item.id}`)}
               className="px-3 py-2 rounded-lg bg-dark-muted active:opacity-70 mr-1"
             >
@@ -165,7 +187,8 @@ export default function Library() {
               onRefresh={() => setRefreshKey(k => k + 1)}
             />
           </CardRow>
-        )}
+          )
+        }}
       />
 
       <NewProject

@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react"
 import { View, Text, Pressable, Alert } from "react-native"
-import { exportProject } from "../lib/projectStore"
+import { exportProject, loadProject, saveProject } from "../lib/projectStore"
 
 export function ProjectMenu({ projectId, projectTitle, onRefresh }: {
   projectId: string
@@ -13,6 +13,24 @@ export function ProjectMenu({ projectId, projectTitle, onRefresh }: {
     const newId = createDuplicate(projectId, projectTitle)
     if (newId) { onRefresh() }
     setOpen(false)
+  }, [projectId, projectTitle, onRefresh])
+
+  const handleRename = useCallback(() => {
+    setOpen(false)
+    Alert.prompt(
+      "Renomear Projeto",
+      "Digite o novo nome do projeto:",
+      (newTitle) => {
+        if (!newTitle || !newTitle.trim()) return
+        const project = loadProject(projectId)
+        if (!project) return
+        project.title = newTitle.trim()
+        saveProject(projectId, project)
+        onRefresh()
+      },
+      "plain-text",
+      projectTitle,
+    )
   }, [projectId, projectTitle, onRefresh])
 
   const handleDownload = useCallback(async () => {
@@ -58,7 +76,7 @@ export function ProjectMenu({ projectId, projectTitle, onRefresh }: {
           <Pressable className="absolute inset-0 z-10" onPress={() => setOpen(false)} />
           <View className="absolute right-0 top-10 z-20 bg-dark-surface border border-dark-border rounded-xl py-1 w-48 shadow-lg">
             <MenuOption icon="📋" label="Duplicar Projeto" onPress={handleDuplicate} />
-            <MenuOption icon="✏️" label="Renomear" onPress={() => { setOpen(false); Alert.alert("Renomear", "Em breve!") }} />
+            <MenuOption icon="✏️" label="Renomear" onPress={handleRename} />
             <MenuOption icon="⬇️" label="Baixar Áudio (.wav)" onPress={handleDownload} />
             <View className="h-px bg-dark-border mx-3" />
             <MenuOption icon="🗑️" label="Mover para Lixeira" onPress={handleMoveToTrash} destructive />

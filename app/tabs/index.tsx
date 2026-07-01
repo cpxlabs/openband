@@ -24,6 +24,7 @@ import { generatePreviewUrl, SCREEN_BOTTOM_PADDING } from "../../src/lib/constan
 import { LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive";
 import { GENRES } from "../../src/lib/projectTemplates";
 import { useResponsive } from "../../src/lib/responsive";
+import { listProjectIndex } from "../../src/lib/projectStore";
 
 interface FeedPost {
   id: string;
@@ -202,6 +203,12 @@ export default function Feed() {
   const status = useAudioPlayerStatus(player);
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [showQuickTools, setShowQuickTools] = useState(false);
+  const [hasProjects, setHasProjects] = useState(false);
+
+  useEffect(() => {
+    const index = listProjectIndex();
+    setHasProjects(Object.keys(index).length > 0);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -397,6 +404,37 @@ export default function Feed() {
                   Nenhum track encontrado
                 </Text>
               </View>
+            }
+            ListHeaderComponent={
+              !hasProjects ? (
+                <View className="mx-4 mb-4 mt-2 p-5 rounded-2xl bg-brand-primary/10 border border-brand-primary/30">
+                  <Text className="text-2xl mb-2">🎸</Text>
+                  <Text className="text-white font-bold text-lg mb-1">
+                    Bem-vindo ao OpenBand!
+                  </Text>
+                  <Text className="text-gray-300 text-sm mb-3 leading-5">
+                    Crie seu primeiro projeto musical e comece a produzir música agora.
+                  </Text>
+                  <View className="flex-row gap-2">
+                    <Pressable
+                      onPress={handleNewProject}
+                      className="flex-1 bg-brand-primary rounded-xl py-3 items-center"
+                    >
+                      <Text className="text-white font-bold text-sm">
+                        + Novo Projeto
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => router.push("/tabs/library")}
+                      className="flex-1 bg-dark-elevated border border-dark-border rounded-xl py-3 items-center"
+                    >
+                      <Text className="text-white font-bold text-sm">
+                        Ver Biblioteca
+                      </Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ) : null
             }
             renderItem={({ item }) => {
               const isThisPlaying = playingId === item.id && player.playing;
