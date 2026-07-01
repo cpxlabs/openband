@@ -1379,24 +1379,25 @@ describe("Synth", () => {
 
   it("shows current preset name", () => {
     render(<Synth visible={true} onClose={() => {}} bpm={120} />);
-    expect(screen.getByText("Classic Bass")).toBeTruthy();
+    expect(screen.getByText("Init Saw")).toBeTruthy();
   });
 
-  it("shows Osc info", () => {
+  it("shows piano keyboard with C3 label", () => {
     render(<Synth visible={true} onClose={() => {}} bpm={120} />);
-    expect(screen.getByText(/sawtooth \(80%\)/)).toBeTruthy();
+    expect(screen.getByText("C3")).toBeTruthy();
   });
 
-  it("shows play buttons", () => {
+  it("shows tab buttons", () => {
     render(<Synth visible={true} onClose={() => {}} bpm={120} />);
-    expect(screen.getByText("Play C4")).toBeTruthy();
-    expect(screen.getByText("Play E4")).toBeTruthy();
+    expect(screen.getByText("OSC")).toBeTruthy();
+    expect(screen.getByText("FLT")).toBeTruthy();
+    expect(screen.getByText("ENV")).toBeTruthy();
   });
 });
 
 describe("SYNTH_PRESETS", () => {
-  it("has 20 presets", () => {
-    expect(SYNTH_PRESETS).toHaveLength(20);
+  it("has 25 presets", () => {
+    expect(SYNTH_PRESETS).toHaveLength(25);
   });
 
   it("includes expected presets", () => {
