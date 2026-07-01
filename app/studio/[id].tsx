@@ -144,6 +144,7 @@ export default function Studio() {
   const player = useAudioPlayer(null);
   const status = useAudioPlayerStatus(player);
   const hasLoadedRef = useRef(false);
+  const currentUrlRef = useRef<string | null>(null);
 
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const recorderState = useAudioRecorderState(audioRecorder);
@@ -163,13 +164,13 @@ export default function Studio() {
           playsInSilentMode: true,
           allowsRecording: true,
         });
-        audioSystem.initialize();
       } catch (e) {
         console.warn("Failed to set audio mode:", e);
       }
     })();
     return () => {
       disposeAudioContext();
+      if (currentUrlRef.current) URL.revokeObjectURL(currentUrlRef.current);
     };
   }, []);
 
@@ -344,11 +345,20 @@ export default function Studio() {
       player.pause();
       return;
     }
+
+    await audioSystem.ensureContext();
+
     if (hasLoadedRef.current) {
-      player.play();
+      try {
+        player.currentTime = 0;
+        await player.play();
+      } catch (e) {
+        console.warn("Resume playback failed:", e);
+      }
       return;
     }
     hasLoadedRef.current = true;
+    if (currentUrlRef.current) URL.revokeObjectURL(currentUrlRef.current);
     let url = await renderTracksToUrl(tracks, initialBpm, projectMood, buses);
     if (url && pitchCorrected && playbackRate !== 1) {
       try {
@@ -375,8 +385,14 @@ export default function Studio() {
       }
     }
     if (url) {
-      await player.replace(url);
-      player.play();
+      try {
+        currentUrlRef.current = url;
+        await player.replace(url);
+        player.currentTime = 0;
+        await player.play();
+      } catch (e) {
+        console.warn("Playback failed:", e);
+      }
     }
   }, [isPlaying, player, tracks, initialBpm, buses, pitchCorrected, playbackRate]);
 
@@ -456,7 +472,9 @@ export default function Studio() {
   const rerenderAfterMuteSolo = useCallback(
     async (updatedTracks: TrackDef[]) => {
       try {
+        await audioSystem.ensureContext();
         hasLoadedRef.current = false;
+        if (currentUrlRef.current) URL.revokeObjectURL(currentUrlRef.current);
         let url = await renderTracksToUrl(updatedTracks, initialBpm, projectMood, buses);
         if (url && pitchCorrected && playbackRate !== 1) {
           try {
@@ -483,8 +501,12 @@ export default function Studio() {
           }
         }
         if (url) {
-          player.replace(url);
-          try { player.play(); } catch (e) {
+          try {
+            currentUrlRef.current = url;
+            await player.replace(url);
+            player.currentTime = 0;
+            await player.play();
+          } catch (e) {
             console.warn("Auto-play after mute/solo failed:", e);
           }
         }
