@@ -116,6 +116,12 @@ Available in `src/components/`:
 | `CommandPalette`          | `visible, onClose`                                                                                         | Cmd+K searchable command overlay for keyboard-first workflow |
 | `CommitModal`             | `visible, onClose, onCommit?, onSync?`                                                                     | Commit message + push-to-cloud modal                         |
 | `VersionHistory`          | `visible, onClose, onRevert?`                                                                              | Visual commit timeline graph with revert support             |
+| `PromptSampler`           | `visible, onClose, onRender, bpm`                                                                          | AI prompt-based MIDI generation                              |
+| `VoiceCommandButton`      | `visible, onClose`                                                                                         | Voice command input button                                   |
+| `MiniPlayer`              | `visible, onClose`                                                                                         | Mini audio player overlay                                    |
+| `QuickActions`            | `visible, onClose`                                                                                         | Quick action shortcuts bar                                   |
+| `QuickTools`              | `visible, onClose`                                                                                         | Quick tool selector                                          |
+| `ProjectMenu`             | `visible, onClose`                                                                                         | Project-level menu (save, export, share)                     |
 
 CSS component classes (from `global.css`):
 
@@ -251,7 +257,7 @@ app/
   extractor.tsx       — Stem separation (select → process → results)
   mastering/
     index.tsx         — Mastering suite page (full chain EQ, comp, limiter, LUFS)
-  studio/[id].tsx     — DAW-style multi-track mixer with waveform + transport (parses numBars, timeSignature, scratch params)
+  studio/[id].tsx     — DAW-style multi-track mixer with waveform + transport (parses numBars, timeSignature, scratch params). Uses clockManager for beat tracking, busRouter for auto-assignment, automationEngine for volume interpolation
 
 src/
   lib/
@@ -266,11 +272,11 @@ src/
     history.ts        — useHistory (undo/redo) hook
     mastering.ts      — Mastering chain builder
     types.ts          — Shared types (TrackDef, Plugin, BusDef, AutomationPoint, ChordQuality, TIME_SIGNATURES, EQ_DEFAULT_BANDS)
-    automationEngine.ts — Web Audio automation scheduling (linear/exponential curves)
-    busRouter.ts      — Sub-mix bus routing graph builder
-    clockManager.ts   — Web Worker master clock for metronome (25ms tick interval)
+    automationEngine.ts — Web Audio automation scheduling (linear/exponential curves), wired into studio playback
+    busRouter.ts      — Sub-mix bus routing graph builder, auto-assigns tracks to buses on creation
+    clockManager.ts   — Web Worker master clock for metronome (25ms tick interval), tracks beat position during playback
     presence.ts       — Client-side SSE presence hook (throttled cursor broadcasting)
-    canvasWaveform.ts — AudioBuffer → peak data + Canvas waveform renderer
+    canvasWaveform.ts — AudioBuffer → peak data (generatePeakData) + Canvas 2D waveform renderer (renderWaveformCanvas) + virtual scroll
     midiScheduler.ts  — Lookahead MIDI scheduler with sample-accurate timing
     subtractiveSynth.ts — Dual-oscillator subtractive synth with filter/ADSR/LFO
     chunkedRenderer.ts — Chunked offline rendering for long projects
@@ -300,7 +306,7 @@ src/
   context/
     AuthContext.tsx    — Auth state context (session, user, loading, signOut)
   bridge/            — Desktop bridge (interface, electron, tauri stub, browser fallback, auto-detect)
-  components/         — Design system (51 components, see table above)
+  components/         — Design system (56 components, see table above)
   hooks/
     useUniversalAudio.ts — expo-audio wrapper with AudioContext resume
 
@@ -315,7 +321,7 @@ tests/
   types.test.ts      — Legacy node:test type structure tests (12 tests)
   presets.test.ts    — Legacy node:test preset count + structure tests (12 tests)
 
-stories/              — Storybook stories for all 51 components
+stories/              — Storybook stories for all 56 components (49 stories)
   *.stories.tsx       — Run: `npx storybook dev -p 6006`
 
 .storybook/

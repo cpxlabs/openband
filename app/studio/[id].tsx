@@ -19,6 +19,9 @@ import {
 } from "expo-audio";
 import { renderTracksToUrl, disposeAudioContext } from "../../src/lib/midiSynth";
 import { audioSystem } from "../../src/lib/universalAudio";
+import { startClock, stopClock, onClockTick, disposeClockManager } from "../../src/lib/clockManager";
+import { assignTrackToBus } from "../../src/lib/busRouter";
+import { buildAutomationSchedule, interpolateAutomationValue } from "../../src/lib/automationEngine";
 import {
   Metronome,
   RecordOptions,
@@ -181,6 +184,7 @@ export default function Studio() {
     })();
     return () => {
       disposeAudioContext();
+      disposeClockManager();
       if (currentUrlRef.current) URL.revokeObjectURL(currentUrlRef.current);
     };
   }, []);
@@ -257,6 +261,7 @@ export default function Studio() {
     countInBars: 2,
   });
 
+  const [currentBeat, setCurrentBeat] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(1.0);
   const [pitchShiftSemitones, setPitchShiftSemitones] = useState(0);
   const [pitchCorrected, setPitchCorrected] = useState(false);
@@ -350,6 +355,38 @@ export default function Studio() {
   const currentTime = status.currentTime || 0;
   const duration = status.duration || 240;
   const anySolo = useMemo(() => tracks.some((t) => t.solo), [tracks]);
+
+  const automatedVolume = useCallback(
+    (trackId: string): number => {
+      const track = tracks.find((t) => t.id === trackId);
+      if (!track || !track.automation?.volume?.length) return trackVolume(trackId);
+      const pts = buildAutomationSchedule(track.automation.volume, metronome.bpm);
+      const automated = interpolateAutomationValue(pts, currentTime);
+      return Math.max(0, Math.min(100, automated));
+    },
+    [tracks, metronome.bpm, currentTime],
+  );
+
+  useEffect(() => {
+    if (isPlaying) {
+      startClock(25);
+    } else {
+      stopClock();
+      setCurrentBeat(0);
+    }
+    return () => {
+      if (!isPlaying) stopClock();
+    };
+  }, [isPlaying]);
+
+  useEffect(() => {
+    const unsub = onClockTick((_time, audioTime) => {
+      const beatsPerMeasure = projectTimeSig.split("/").map(Number)[0];
+      const beat = ((audioTime * metronome.bpm) / 60) % (beatsPerMeasure * 4);
+      setCurrentBeat(beat);
+    });
+    return unsub;
+  }, [metronome.bpm, projectTimeSig]);
 
   const togglePlay = useCallback(async () => {
     if (isPlaying) {
@@ -860,9 +897,11 @@ export default function Studio() {
 
   const handleAddTrack = useCallback(() => {
     const trackId = `track-${Date.now()}`;
+    const name = `Track ${tracks.length + 1}`;
+    const busId = assignTrackToBus(name);
     const newTrack: TrackDef = {
       id: trackId,
-      name: `Track ${tracks.length + 1}`,
+      name,
       color: TRACK_COLORS[tracks.length % TRACK_COLORS.length],
       muted: false,
       solo: false,
@@ -870,6 +909,7 @@ export default function Studio() {
       pan: 0,
       sends: {},
       sidechainSource: null,
+      outputId: busId,
       regions: [{ id: `region-${Date.now()}`, start: 0, duration: 80 }],
       plugins: [],
       automation: {},
@@ -880,9 +920,11 @@ export default function Studio() {
 
   const handleAddMidiTrack = useCallback(() => {
     const trackId = `midi-${Date.now()}`;
+    const name = `MIDI ${tracks.length + 1}`;
+    const busId = assignTrackToBus("synth");
     const newTrack: TrackDef = {
       id: trackId,
-      name: `MIDI ${tracks.length + 1}`,
+      name,
       color: TRACK_COLORS[tracks.length % TRACK_COLORS.length],
       muted: false,
       solo: false,
@@ -890,6 +932,7 @@ export default function Studio() {
       pan: 0,
       sends: {},
       sidechainSource: null,
+      outputId: busId,
       regions: [],
       midiNotes: [],
       plugins: [],
@@ -1208,11 +1251,12 @@ export default function Studio() {
     };
   }, [togglePlay, toggleRecording, undoHistory, redoHistory, handleManualSave, selectedTrack, toggleMute, toggleSolo, deleteTrack, handleAddTrack, setBottomTab, setShowBounce, setShowBranchManager, setShowCommitModal, setShowSampleBrowser, setShowCommandPalette]);
 
-  const getEffectiveVolume = (trackId: string): number => {
+  const getEffectiveVolume = useCallback((trackId: string): number => {
     const gv = getGroupVolume(groups, trackId);
-    const tv = trackVolume(trackId);
-    return gv ? Math.round(tv * (gv.volume / 100)) : tv;
-  };
+    const tv = tracks.find((t) => t.id === trackId)?.volume ?? 70;
+    const baseVol = isPlaying ? automatedVolume(trackId) : tv;
+    return gv ? Math.round(baseVol * (gv.volume / 100)) : baseVol;
+  }, [groups, isPlaying, automatedVolume, tracks]);
 
   const bottomTabs: { key: BottomTab; label: string; icon: string }[] = [
     { key: "mixer", label: "Mixer", icon: "◉" },
@@ -1351,6 +1395,11 @@ export default function Studio() {
           <TimeDisplay seconds={currentTime} />
           <Text className="text-gray-600">/</Text>
           <TimeDisplay seconds={duration} />
+          {isPlaying && (
+            <Text className="text-gray-500 text-[9px] font-mono ml-1">
+              ♩{Math.floor(currentBeat) + 1}
+            </Text>
+          )}
         </View>
 
         <View className="flex-row items-center gap-0.5 bg-dark-bg/40 rounded-lg px-1.5 py-1 border border-dark-border/30">
