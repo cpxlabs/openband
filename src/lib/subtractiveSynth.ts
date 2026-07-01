@@ -1,4 +1,5 @@
 import { Platform } from "react-native";
+import { getSharedAudioContext } from "./universalAudio";
 
 const NOTE_FREQS: number[] = [];
 for (let i = 0; i < 128; i++) {
@@ -66,15 +67,12 @@ interface ActiveVoice {
   released: boolean;
 }
 
-let audioCtx: AudioContext | null = null;
 const voices: Map<string, ActiveVoice> = new Map();
 const MAX_VOICES = 16;
 
 function getAudioContext(): AudioContext | null {
   if (Platform.OS !== "web") return null;
-  if (!audioCtx) audioCtx = new AudioContext();
-  if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
-  return audioCtx;
+  return getSharedAudioContext();
 }
 
 function noteOn(
@@ -257,10 +255,7 @@ export interface SubtractiveSynth {
 }
 
 export function disposeSubtractiveSynthAudio(): void {
-  if (audioCtx) {
-    audioCtx.close().catch(() => {});
-    audioCtx = null;
-  }
+  // AudioContext lifecycle is now managed by universalAudio.dispose()
   for (const [id, voice] of voices) {
     try { voice.osc1.stop(); } catch {}
     try { voice.osc2.stop(); } catch {}

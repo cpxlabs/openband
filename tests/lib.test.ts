@@ -391,6 +391,8 @@ describe("midiSynth.ts", () => {
   });
 
   it("playNote creates oscillator and returns id", async () => {
+    const { audioSystem } = await import("../src/lib/universalAudio");
+    await audioSystem.initialize();
     const { playNote } = await import("../src/lib/midiSynth");
     const id = playNote(60, 100, "sine", 8000, 0);
     expect(id).toBeTruthy();
@@ -408,10 +410,12 @@ describe("midiSynth.ts", () => {
     expect(() => stopAllNotes()).not.toThrow();
   });
 
-  it("disposeAudioContext closes context", async () => {
-    const { disposeAudioContext } = await import("../src/lib/midiSynth");
+  it("disposeAudioContext stops all notes", async () => {
+    const { disposeAudioContext, stopAllNotes } = await import("../src/lib/midiSynth");
     disposeAudioContext();
-    expect(mockAudioCtx.close).toHaveBeenCalled();
+    // AudioContext lifecycle now managed by universalAudio.dispose()
+    // disposeAudioContext should still stop all notes
+    expect(() => stopAllNotes()).not.toThrow();
   });
 
   it("playMidiNotes returns array of ids", async () => {

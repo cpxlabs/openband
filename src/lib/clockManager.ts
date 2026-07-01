@@ -1,4 +1,5 @@
 import { Platform } from "react-native";
+import { getSharedAudioContext } from "./universalAudio";
 
 type TickListener = (time: number, audioTime: number) => void;
 
@@ -27,19 +28,12 @@ self.onmessage = function(e) {
 }
 
 let workerInstance: Worker | null = null;
-let sharedAudioContext: AudioContext | null = null;
 let isRunning = false;
 const listeners = new Set<TickListener>();
 
 function getAudioContext(): AudioContext | null {
   if (Platform.OS !== "web") return null;
-  if (!sharedAudioContext) {
-    sharedAudioContext = new AudioContext();
-  }
-  if (sharedAudioContext.state === "suspended") {
-    sharedAudioContext.resume().catch(() => {});
-  }
-  return sharedAudioContext;
+  return getSharedAudioContext();
 }
 
 export function startClock(intervalMs: number = 25): void {
@@ -95,10 +89,7 @@ export function stopClock(): void {
 
 export function disposeClockManager(): void {
   stopClock();
-  if (sharedAudioContext) {
-    sharedAudioContext.close().catch(() => {});
-    sharedAudioContext = null;
-  }
+  // AudioContext lifecycle is now managed by universalAudio.dispose()
   listeners.clear();
 }
 

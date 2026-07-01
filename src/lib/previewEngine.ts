@@ -1,4 +1,5 @@
 import { Platform } from "react-native";
+import { getSharedAudioContext } from "./universalAudio";
 
 export interface PreviewAsset {
   id: string;
@@ -19,7 +20,6 @@ export interface PreviewState {
   loading: boolean;
 }
 
-let previewAudioCtx: AudioContext | null = null;
 let currentSource: AudioBufferSourceNode | null = null;
 let gainNode: GainNode | null = null;
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -34,21 +34,12 @@ let currentState: PreviewState = {
 
 function getPreviewContext(): AudioContext | null {
   if (Platform.OS !== "web" || typeof window === "undefined") return null;
-
-  if (!previewAudioCtx || previewAudioCtx.state === "closed") {
-    try {
-      previewAudioCtx = new AudioContext({ sampleRate: 44100 });
-    } catch (e) {
-      console.error("Failed to create preview context:", e);
-      return null;
-    }
+  const ctx = getSharedAudioContext();
+  if (!ctx) return null;
+  if (ctx.state === "suspended") {
+    ctx.resume().catch(() => {});
   }
-
-  if (previewAudioCtx.state === "suspended") {
-    previewAudioCtx.resume().catch(() => {});
-  }
-
-  return previewAudioCtx;
+  return ctx;
 }
 
 function emitState(): void {
@@ -193,10 +184,7 @@ export function disposePreviewEngine(): void {
     gainNode.disconnect();
     gainNode = null;
   }
-  if (previewAudioCtx) {
-    previewAudioCtx.close().catch(() => {});
-    previewAudioCtx = null;
-  }
+  // AudioContext lifecycle is now managed by universalAudio.dispose()
 }
 
 export async function generateThumbnail(
@@ -207,8 +195,10 @@ export async function generateThumbnail(
 ): Promise<Blob | null> {
   if (Platform.OS !== "web") return null;
 
+  const ctx = getSharedAudioContext();
+  if (!ctx) return null;
+
   try {
-    const ctx = new AudioContext({ sampleRate: 44100 });
     const resp = await fetch(fullAudioUrl);
     if (!resp.ok) return null;
 
@@ -249,14 +239,9 @@ export async function generateThumbnail(
 
     const rendered = await offlineCtx.startRendering();
     const wavBytes = audioBufferToWav(rendered);
-
-    await ctx.close();
     return new Blob([wavBytes], { type: "audio/wav" });
   } catch (e) {
     console.error("Thumbnail generation failed:", e);
-    if (typeof ctx !== "undefined") {
-      try { ctx.close(); } catch {}
-    }
     return null;
   }
 }

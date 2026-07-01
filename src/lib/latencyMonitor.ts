@@ -1,4 +1,5 @@
 import { Platform } from "react-native";
+import { getSharedAudioContext } from "./universalAudio";
 
 export interface LatencyConfig {
   bufferDurationMs: number;
@@ -20,7 +21,6 @@ const DEFAULT_LATENCY_CONFIG: LatencyConfig = {
   latencyHint: "interactive",
 };
 
-let sharedCtx: AudioContext | null = null;
 let mediaStream: MediaStream | null = null;
 let sourceNode: MediaStreamAudioSourceNode | null = null;
 let monitorGain: GainNode | null = null;
@@ -33,20 +33,14 @@ let monitorState: MonitorState = {
 };
 
 function createLowLatencyContext(
-  config: LatencyConfig = DEFAULT_LATENCY_CONFIG,
+  _config: LatencyConfig = DEFAULT_LATENCY_CONFIG,
 ): AudioContext | null {
   if (Platform.OS !== "web" || typeof AudioContext === "undefined") return null;
+  const ctx = getSharedAudioContext();
+  if (ctx) return ctx;
 
-  try {
-    const ctx = new AudioContext({
-      latencyHint: config.latencyHint,
-      sampleRate: config.sampleRate,
-    });
-    return ctx;
-  } catch (e) {
-    console.warn("Failed to create low-latency AudioContext:", e);
-    return new AudioContext();
-  }
+  console.warn("Shared AudioContext not available, latency monitoring disabled");
+  return null;
 }
 
 export async function requestMicrophoneAccess(): Promise<MediaStream | null> {
@@ -68,6 +62,8 @@ export async function requestMicrophoneAccess(): Promise<MediaStream | null> {
   }
 }
 
+let monitorCtx: AudioContext | null = null;
+
 export async function startDirectMonitor(
   config: LatencyConfig = DEFAULT_LATENCY_CONFIG,
 ): Promise<MonitorState> {
@@ -76,25 +72,25 @@ export async function startDirectMonitor(
   const stream = await requestMicrophoneAccess();
   if (!stream) return monitorState;
 
-  if (!sharedCtx || sharedCtx.state === "closed") {
-    sharedCtx = createLowLatencyContext(config);
+  if (!monitorCtx || monitorCtx.state === "closed") {
+    monitorCtx = createLowLatencyContext(config);
   }
-  if (!sharedCtx) return monitorState;
+  if (!monitorCtx) return monitorState;
 
-  if (sharedCtx.state === "suspended") {
-    await sharedCtx.resume();
+  if (monitorCtx.state === "suspended") {
+    await monitorCtx.resume();
   }
 
-  sourceNode = sharedCtx.createMediaStreamSource(stream);
+  sourceNode = monitorCtx.createMediaStreamSource(stream);
   mediaStream = stream;
 
-  monitorGain = sharedCtx.createGain();
+  monitorGain = monitorCtx.createGain();
   monitorGain.gain.value = monitorState.monitorVolume;
 
   sourceNode.connect(monitorGain);
-  monitorGain.connect(sharedCtx.destination);
+  monitorGain.connect(monitorCtx.destination);
 
-  const measuredLatency = measureInputLatency(sharedCtx);
+  const measuredLatency = measureInputLatency(monitorCtx);
   monitorState = {
     ...monitorState,
     enabled: true,
@@ -172,10 +168,10 @@ export function applyLatencyCompensationToTrack(
 
 export function disposeLatencySystem(): void {
   stopDirectMonitor();
-  if (sharedCtx && sharedCtx.state !== "closed") {
-    sharedCtx.close().catch(() => {});
+  if (monitorCtx && monitorCtx.state !== "closed") {
+    monitorCtx.close().catch(() => {});
   }
-  sharedCtx = null;
+  monitorCtx = null;
   monitorState = {
     enabled: false,
     inputVolume: 0.8,

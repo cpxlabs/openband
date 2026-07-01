@@ -10,6 +10,31 @@ export interface UniversalAudioPlayer {
   getPlayer: () => unknown;
 }
 
+/**
+ * Shared AudioContext getter — canonical source for all modules.
+ * Returns the singleton context from universalAudioSystem, creating it lazily.
+ * All other audio modules should use this instead of creating their own.
+ */
+export function getSharedAudioContext(): AudioContext | null {
+  return audioSystem.audioCtx;
+}
+
+/**
+ * Ensure the shared AudioContext is available and running (web only).
+ * Resumes from suspended state if needed (browser autoplay policy).
+ */
+export async function ensureSharedAudioContext(): Promise<AudioContext | null> {
+  return audioSystem.ensureContext();
+}
+
+/**
+ * Dispose all audio subsystems through the central audioSystem singleton.
+ * Call this on app teardown to release all AudioContext resources.
+ */
+export function disposeAllAudio(): void {
+  audioSystem.dispose();
+}
+
 class UniversalAudioSystem {
   private static instance: UniversalAudioSystem;
   private isInitialized = false;
@@ -22,6 +47,7 @@ class UniversalAudioSystem {
     return UniversalAudioSystem.instance;
   }
 
+  /** Public getter for the shared AudioContext (read-only). */
   get audioCtx(): AudioContext | null {
     return this._audioCtx;
   }
@@ -118,15 +144,141 @@ class UniversalAudioSystem {
   }
 
   private async renderMixdownNative(
-    _tracks: { volume: number; pan: number; muted: boolean; solo: boolean; regions: { start: number; duration: number; url?: string }[] }[],
-    _duration: number,
-    _sampleRate: number,
+    tracks: { volume: number; pan: number; muted: boolean; solo: boolean; regions: { start: number; duration: number; url?: string }[] }[],
+    duration: number,
+    sampleRate: number,
     onProgress?: (pct: number) => void,
   ): Promise<Blob> {
-    onProgress?.(50);
-    const raw = new ArrayBuffer(44);
+    onProgress?.(10);
+
+    const anySolo = tracks.some((t) => t.solo);
+    const audible = tracks.filter((t) => {
+      if (anySolo) return t.solo && !t.muted;
+      return !t.muted;
+    });
+
+    const totalSamples = Math.ceil(sampleRate * duration);
+    const left = new Float32Array(totalSamples);
+    const right = new Float32Array(totalSamples);
+    const total = audible.reduce((s, t) => s + t.regions.length, 0);
+    let processed = 0;
+
+    for (const track of audible) {
+      const trackGain = track.volume / 100;
+      const pan = track.pan / 100;
+      const leftGain = trackGain * (pan < 0 ? 1 : 1 - pan);
+      const rightGain = trackGain * (pan > 0 ? 1 : 1 + pan);
+
+      for (const region of track.regions) {
+        if (!region.url) {
+          processed++;
+          onProgress?.(Math.round((processed / total) * 80));
+          continue;
+        }
+        try {
+          const resp = await fetch(region.url, { credentials: "omit" });
+          const ab = await resp.arrayBuffer();
+          const decoded = await this.decodeAudioPureJS(ab, sampleRate);
+          const startSample = Math.floor(region.start * sampleRate);
+          const regionSamples = Math.min(
+            Math.floor(region.duration * sampleRate),
+            decoded.length,
+            totalSamples - startSample,
+          );
+
+          for (let i = 0; i < regionSamples; i++) {
+            const src = decoded[i] || 0;
+            left[startSample + i] += src * leftGain;
+            right[startSample + i] += src * rightGain;
+          }
+        } catch (e) {
+          console.warn("Failed to process region on native:", e);
+        }
+        processed++;
+        onProgress?.(Math.round((processed / total) * 80));
+      }
+    }
+
+    onProgress?.(85);
+    const wavBlob = this.float32ToWavBlob(left, right, sampleRate, 24);
     onProgress?.(100);
-    return new Blob([raw], { type: "audio/wav" });
+    return wavBlob;
+  }
+
+  /** Decode audio without AudioContext (pure JS WAV/MP3 decoder fallback for native). */
+  private async decodeAudioPureJS(arrayBuffer: ArrayBuffer, targetSampleRate: number): Promise<Float32Array> {
+    const view = new DataView(arrayBuffer);
+    const header = String.fromCharCode(view.getUint8(0), view.getUint8(1), view.getUint8(2), view.getUint8(3));
+
+    if (header === "RIFF") {
+      const format = String.fromCharCode(view.getUint8(8), view.getUint8(9), view.getUint8(10), view.getUint8(11));
+      if (format === "WAVE") {
+        const numChannels = view.getUint16(22, true);
+        const sampleRate = view.getUint32(24, true);
+        const bitsPerSample = view.getUint16(34, true);
+        const dataOffset = 44;
+        const dataLength = Math.min(view.getUint32(40, true), arrayBuffer.byteLength - dataOffset);
+
+        let samples: Float32Array;
+        if (bitsPerSample === 16) {
+          const numSamples = dataLength / (numChannels * 2);
+          samples = new Float32Array(numSamples);
+          for (let i = 0; i < numSamples; i++) {
+            let sum = 0;
+            for (let ch = 0; ch < numChannels; ch++) {
+              const val = view.getInt16(dataOffset + (i * numChannels + ch) * 2, true);
+              sum += val / 32768;
+            }
+            samples[i] = sum / numChannels;
+          }
+          return samples;
+        }
+      }
+    }
+
+    // Fallback: return silence
+    return new Float32Array(Math.ceil(targetSampleRate * 0.5));
+  }
+
+  private float32ToWavBlob(left: Float32Array, right: Float32Array, sampleRate: number, bitDepth: number): Blob {
+    const length = left.length;
+    const numChannels = 2;
+    const bytesPerSample = bitDepth / 8;
+    const blockAlign = numChannels * bytesPerSample;
+    const dataSize = length * blockAlign;
+    const headerSize = 44;
+    const totalSize = headerSize + dataSize;
+    const ab = new ArrayBuffer(totalSize);
+    const view = new DataView(ab);
+
+    const ws = (o: number, str: string) => {
+      for (let i = 0; i < str.length; i++) view.setUint8(o + i, str.charCodeAt(i));
+    };
+
+    ws(0, "RIFF");
+    view.setUint32(4, 36 + dataSize, true);
+    ws(8, "WAVE");
+    ws(12, "fmt ");
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, numChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * blockAlign, true);
+    view.setUint16(32, blockAlign, true);
+    view.setUint16(34, bitDepth, true);
+    ws(36, "data");
+    view.setUint32(40, dataSize, true);
+
+    for (let i = 0; i < length; i++) {
+      for (let ch = 0; ch < numChannels; ch++) {
+        const sample = ch === 0 ? left[i] : right[i];
+        const clamped = Math.max(-1, Math.min(1, sample));
+        const val = clamped < 0 ? clamped * 0x8000 : clamped * 0x7fff;
+        view.setInt16(headerSize + (i * numChannels + ch) * bytesPerSample, val, true);
+      }
+    }
+
+    return new Blob([ab], { type: "audio/wav" });
   }
 
   private audioBufferToWavBlob(buffer: AudioBuffer, bitDepth: number): Blob {

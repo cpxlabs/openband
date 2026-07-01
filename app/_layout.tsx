@@ -9,7 +9,7 @@ import { View, Platform } from "react-native";
 import { Loading } from "../src/components";
 import { AudioEngineProvider } from "../src/context/AudioEngine";
 import { VISITOR_MODE } from "../src/lib/flags";
-import { audioSystem } from "../src/lib/universalAudio";
+import { audioSystem, disposeAllAudio } from "../src/lib/universalAudio";
 
 import "../global.css";
 
@@ -93,9 +93,13 @@ export default function RootLayout() {
       return () => {
         document.removeEventListener("pointerdown", initAudio);
         document.removeEventListener("keydown", initAudio);
+        disposeAllAudio();
       };
     } else {
       audioSystem.initialize();
+      return () => {
+        disposeAllAudio();
+      };
     }
   }, []);
 

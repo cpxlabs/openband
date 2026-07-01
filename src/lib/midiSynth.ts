@@ -3,20 +3,11 @@ import type { MIDINote, TrackDef, BusDef } from "./types";
 import type { Mood } from "./projectTemplates";
 import { MOODS } from "./projectTemplates";
 import { audioBufferToWavBlob } from "./audio";
-
-let audioCtx: AudioContext | null = null;
+import { getSharedAudioContext } from "./universalAudio";
 
 function getAudioContext(): AudioContext | null {
   if (Platform.OS !== "web") return null;
-  if (!audioCtx) {
-    audioCtx = new AudioContext();
-  }
-  if (audioCtx.state === "suspended") {
-    audioCtx.resume().catch((e: unknown) => {
-      console.warn("Failed to resume AudioContext:", e);
-    });
-  }
-  return audioCtx;
+  return getSharedAudioContext();
 }
 
 const NOTE_FREQS: number[] = [];
@@ -190,10 +181,7 @@ export function getTrackWaveform(trackName: string): WaveformType {
 
 export function disposeAudioContext(): void {
   stopAllNotes();
-  if (audioCtx) {
-    audioCtx.close();
-    audioCtx = null;
-  }
+  // AudioContext lifecycle is now managed by universalAudio.dispose()
 }
 
 function createNoiseBuffer(ctx: OfflineAudioContext, duration: number): AudioBuffer {

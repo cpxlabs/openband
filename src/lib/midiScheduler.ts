@@ -1,5 +1,6 @@
 import { Platform } from "react-native";
 import type { MIDINote } from "./types";
+import { getSharedAudioContext } from "./universalAudio";
 
 const NOTE_FREQS: number[] = [];
 for (let i = 0; i < 128; i++) {
@@ -29,14 +30,11 @@ interface ScheduledOscillator {
   endTimeout: ReturnType<typeof setTimeout>;
 }
 
-let audioCtx: AudioContext | null = null;
 const activeOscillators: Map<string, ScheduledOscillator> = new Map();
 
 function getAudioContext(): AudioContext | null {
   if (Platform.OS !== "web") return null;
-  if (!audioCtx) audioCtx = new AudioContext();
-  if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
-  return audioCtx;
+  return getSharedAudioContext();
 }
 
 function midiToMidiId(note: SchedulerNote): string {
@@ -242,10 +240,7 @@ export function createLookaheadScheduler(): LookaheadScheduler {
 
 export function disposeMidiScheduler(): void {
   stopAll();
-  if (audioCtx) {
-    audioCtx.close().catch(() => {});
-    audioCtx = null;
-  }
+  // AudioContext lifecycle is now managed by universalAudio.dispose()
 }
 
 export function noteNumberToName(note: number): string {
