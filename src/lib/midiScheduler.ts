@@ -242,6 +242,10 @@ export function createLookaheadScheduler(): LookaheadScheduler {
 
 export function disposeMidiScheduler(): void {
   stopAll();
+  if (audioCtx) {
+    audioCtx.close().catch(() => {});
+    audioCtx = null;
+  }
 }
 
 export function noteNumberToName(note: number): string {

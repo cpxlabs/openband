@@ -254,6 +254,9 @@ export async function generateThumbnail(
     return new Blob([wavBytes], { type: "audio/wav" });
   } catch (e) {
     console.error("Thumbnail generation failed:", e);
+    if (typeof ctx !== "undefined") {
+      try { ctx.close(); } catch {}
+    }
     return null;
   }
 }

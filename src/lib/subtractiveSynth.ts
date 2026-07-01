@@ -256,6 +256,19 @@ export interface SubtractiveSynth {
   dispose: () => void;
 }
 
+export function disposeSubtractiveSynthAudio(): void {
+  if (audioCtx) {
+    audioCtx.close().catch(() => {});
+    audioCtx = null;
+  }
+  for (const [id, voice] of voices) {
+    try { voice.osc1.stop(); } catch {}
+    try { voice.osc2.stop(); } catch {}
+    if (voice.lfoNode) try { voice.lfoNode.stop(); } catch {}
+    voices.delete(id);
+  }
+}
+
 export function createSubtractiveSynth(
   initialConfig: Partial<SubtractiveSynthConfig> = {},
 ): SubtractiveSynth {

@@ -4,7 +4,7 @@
   "main": "expo-router/entry",
   "dependencies": {
     "@supabase/supabase-js": "^2.50.0",
-    "expo": "~56.0.12",
+    "expo": "^57.0.1",
     "expo-asset": "~56.0.17",
     "expo-audio": "~56.0.12",
     "expo-constants": "~56.0.18",
