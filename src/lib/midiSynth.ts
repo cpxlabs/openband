@@ -4,6 +4,7 @@ import type { Mood } from "./projectTemplates";
 import { MOODS } from "./projectTemplates";
 import { audioBufferToWavBlob } from "./audio";
 import { getSharedAudioContext } from "./universalAudio";
+import { createTrackedBlob } from "./universalAudio";
 
 function getAudioContext(): AudioContext | null {
   if (Platform.OS !== "web") return null;
@@ -420,7 +421,7 @@ export async function renderTracksToUrl(
 
       const buffer = await ctx.startRendering();
       const blob = audioBufferToWavBlob(buffer);
-      return URL.createObjectURL(blob);
+      return createTrackedBlob(blob);
     } catch (e) {
       console.warn("OfflineAudioContext renderTracksToUrl failed:", e);
       return null;

@@ -1,6 +1,55 @@
 import { Platform } from "react-native";
 import { OpenBandNative } from "../bridge";
 
+/**
+ * Central blob URL registry with leak protection.
+ * All blob URLs created in audio modules should be registered here.
+ * Automatically revokes URLs older than MAX_AGE_MS or when registry exceeds MAX_ENTRIES.
+ */
+const blobUrlRegistry = new Map<string, number>();
+const MAX_ENTRIES = 100;
+const MAX_AGE_MS = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Create a blob URL with automatic leak tracking.
+ * Returns the URL and registers it for cleanup.
+ */
+export function createTrackedBlob(blob: Blob): string {
+  const url = URL.createObjectURL(blob);
+  blobUrlRegistry.set(url, Date.now());
+  cleanupBlobUrls();
+  return url;
+}
+
+/**
+ * Revoke a tracked blob URL.
+ * Safe to call even if the URL was already revoked or never registered.
+ */
+export function revokeTrackedBlob(url: string): void {
+  blobUrlRegistry.delete(url);
+  try { URL.revokeObjectURL(url); } catch { /* already revoked */ }
+}
+
+/** Clean up old blob URLs to prevent memory leaks. */
+function cleanupBlobUrls(): void {
+  const now = Date.now();
+  for (const [url, created] of blobUrlRegistry) {
+    if (now - created > MAX_AGE_MS) {
+      blobUrlRegistry.delete(url);
+      try { URL.revokeObjectURL(url); } catch { /* ignore */ }
+    }
+  }
+  if (blobUrlRegistry.size > MAX_ENTRIES) {
+    const oldest = [...blobUrlRegistry.entries()]
+      .sort((a, b) => a[1] - b[1])
+      .slice(0, blobUrlRegistry.size - MAX_ENTRIES);
+    for (const [url] of oldest) {
+      blobUrlRegistry.delete(url);
+      try { URL.revokeObjectURL(url); } catch { /* ignore */ }
+    }
+  }
+}
+
 export interface UniversalAudioPlayer {
   play: () => Promise<void>;
   pause: () => Promise<void>;
@@ -214,7 +263,7 @@ class UniversalAudioSystem {
       const format = String.fromCharCode(view.getUint8(8), view.getUint8(9), view.getUint8(10), view.getUint8(11));
       if (format === "WAVE") {
         const numChannels = view.getUint16(22, true);
-        const sampleRate = view.getUint32(24, true);
+        const _sampleRate = view.getUint32(24, true);
         const bitsPerSample = view.getUint16(34, true);
         const dataOffset = 44;
         const dataLength = Math.min(view.getUint32(40, true), arrayBuffer.byteLength - dataOffset);

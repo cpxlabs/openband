@@ -233,8 +233,14 @@ export class ChunkedRenderer {
         }
 
         const rendered = await ctx.startRendering();
-        const channelData = rendered.getChannelData(0);
-        chunks.push(new Float32Array(channelData));
+        const left = rendered.getChannelData(0);
+        const right = rendered.getChannelData(1);
+        const interleaved = new Float32Array(left.length * 2);
+        for (let i = 0; i < left.length; i++) {
+          interleaved[i * 2] = left[i];
+          interleaved[i * 2 + 1] = right[i];
+        }
+        chunks.push(interleaved);
 
         this.onProgress?.(
           ((chunkIdx + 1) / totalChunks) * 100,
@@ -250,21 +256,24 @@ export class ChunkedRenderer {
 
     if (chunks.length === 0) return null;
 
-    const totalLength = chunks.reduce((sum, c) => sum + c.length, 0);
-    const merged = new Float32Array(totalLength);
+    const totalInterleaved = chunks.reduce((sum, c) => sum + c.length, 0);
+    const numSamples = totalInterleaved / 2;
+
+    const mergedLeft = new Float32Array(numSamples);
+    const mergedRight = new Float32Array(numSamples);
     let offset = 0;
     for (const chunk of chunks) {
-      merged.set(chunk, offset);
-      offset += chunk.length;
+      const chunkSamples = chunk.length / 2;
+      for (let i = 0; i < chunkSamples; i++) {
+        mergedLeft[offset + i] = chunk[i * 2];
+        mergedRight[offset + i] = chunk[i * 2 + 1];
+      }
+      offset += chunkSamples;
     }
 
-    const offlineCtx = new OfflineAudioContext(
-      1,
-      merged.length,
-      sampleRate,
-    );
-    const buffer = offlineCtx.createBuffer(1, merged.length, sampleRate);
-    buffer.getChannelData(0).set(merged);
+    const buffer = new OfflineAudioContext(2, numSamples, sampleRate).createBuffer(2, numSamples, sampleRate);
+    buffer.getChannelData(0).set(mergedLeft);
+    buffer.getChannelData(1).set(mergedRight);
 
     return audioBufferToWavBlob(buffer);
   }
