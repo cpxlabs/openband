@@ -7,6 +7,7 @@ import {
   sliceAudioBuffer,
   type Transient,
 } from "../lib/transientDetection";
+import { getSharedAudioContext, createTrackedBlob } from "../lib/universalAudio";
 
 interface SampleSlot {
   key: string;
@@ -75,25 +76,23 @@ export function Sampler({
   });
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
   const [loadingSlot, setLoadingSlot] = useState<number | null>(null);
+  const [velocity, setVelocity] = useState(100);
   const [sliceSource, setSliceSource] = useState<AudioBuffer | null>(null);
   const [slicePoints, setSlicePoints] = useState<number[]>([]);
   const [sliceThreshold, setSliceThreshold] = useState(0.3);
   const [sliceTransients, setSliceTransients] = useState<Transient[]>([]);
 
-  const audioCtx = useRef<AudioContext | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
 
   useEffect(() => {
-    return () => {
-      audioCtx.current?.close();
-      audioCtx.current = null;
-    };
+    audioCtxRef.current = getSharedAudioContext();
   }, []);
 
   const getAudioContext = useCallback(() => {
     if (Platform.OS !== "web") return null;
-    if (!audioCtx.current) audioCtx.current = new AudioContext();
-    if (audioCtx.current.state === "suspended") audioCtx.current.resume();
-    return audioCtx.current;
+    const ctx = audioCtxRef.current || getSharedAudioContext();
+    if (ctx && ctx.state === "suspended") ctx.resume().catch(() => {});
+    return ctx;
   }, []);
 
   const handleLoadSample = useCallback(
@@ -155,7 +154,7 @@ export function Sampler({
   );
 
   const previewSample = useCallback(
-    (slotIndex: number) => {
+    (slotIndex: number, noteNumber?: number) => {
       if (Platform.OS !== "web") return;
       const slot = slots[slotIndex];
       if (!slot.data) return;
@@ -165,15 +164,22 @@ export function Sampler({
         const source = ctx.createBufferSource();
         source.buffer = slot.data;
 
+        // Pitch shift for melodic mode
+        if (mode === "melodic" && noteNumber !== undefined) {
+          const semitones = noteNumber - slot.rootKey;
+          source.playbackRate.value = Math.pow(2, semitones / 12);
+        }
+
         const gainNode = ctx.createGain();
+        const vol = velocity / 127;
         const now = ctx.currentTime;
         const a = adsr.attack / 1000;
         const d = adsr.decay / 1000;
         gainNode.gain.setValueAtTime(0, now);
-        gainNode.gain.linearRampToValueAtTime(1, now + a);
-        gainNode.gain.linearRampToValueAtTime(adsr.sustain / 100, now + a + d);
+        gainNode.gain.linearRampToValueAtTime(vol, now + a);
+        gainNode.gain.linearRampToValueAtTime(vol * (adsr.sustain / 100), now + a + d);
         gainNode.gain.setValueAtTime(
-          adsr.sustain / 100,
+          vol * (adsr.sustain / 100),
           now + slot.data.duration - adsr.release / 1000,
         );
         gainNode.gain.linearRampToValueAtTime(0, now + slot.data.duration);
@@ -185,7 +191,7 @@ export function Sampler({
         console.warn("Failed to preview sample:", e);
       }
     },
-    [slots, adsr, getAudioContext],
+    [slots, adsr, velocity, mode, getAudioContext],
   );
 
   const handleSliceLoad = useCallback(() => {
@@ -270,7 +276,7 @@ export function Sampler({
       let url = "";
       if (Platform.OS === "web") {
         const blob = audioBufferToWavBlob(slot.data);
-        url = URL.createObjectURL(blob);
+        url = createTrackedBlob(blob);
       }
       return {
         key: slot.key,
@@ -431,6 +437,91 @@ export function Sampler({
                   </View>
                 ))}
               </View>
+            </View>
+          )}
+
+          {/* Velocity control */}
+          <View className="bg-dark-bg rounded-xl p-3 border border-dark-border mb-3">
+            <View className="flex-row items-center justify-between mb-2">
+              <Text className="text-gray-300 text-xs font-semibold">Velocity</Text>
+              <Text className="text-gray-400 text-[10px] font-mono">{velocity}/127</Text>
+            </View>
+            <View className="flex-row gap-1">
+              {[0, 32, 64, 80, 96, 112, 127].map((v) => (
+                <Pressable
+                  key={v}
+                  onPress={() => setVelocity(v)}
+                  className={`flex-1 py-1.5 rounded ${velocity === v ? "bg-brand-accent/30 border border-brand-accent" : "bg-dark-muted border border-dark-border"}`}
+                >
+                  <Text className={`text-[8px] text-center ${velocity === v ? "text-brand-accent" : "text-gray-500"}`}>
+                    {v}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
+          {/* Melodic mini-keyboard */}
+          {mode === "melodic" && (
+            <View className="bg-dark-bg rounded-xl p-3 border border-dark-border mb-3">
+              <Text className="text-gray-300 text-xs font-semibold mb-2">Keyboard</Text>
+              <View className="h-16 flex-row relative">
+                {[48, 50, 52, 53, 55, 57, 59, 60, 62, 64, 65, 67, 69, 71, 72].map((note, i) => {
+                  const noteNames = ["C2","D2","E2","F2","G2","A2","B2","C3","D3","E3","F3","G3","A3","B3","C4"];
+                  const hasLoadedSlot = slots.find((s) => note >= s.lowKey && note <= s.highKey && s.data);
+                  return (
+                    <Pressable
+                      key={note}
+                      onPressIn={() => {
+                        if (hasLoadedSlot) {
+                          const idx = slots.indexOf(hasLoadedSlot);
+                          previewSample(idx, note);
+                        }
+                      }}
+                      className="flex-1 rounded-b border-l border-gray-700"
+                      style={{ backgroundColor: hasLoadedSlot ? "rgba(90,200,250,0.3)" : "#f5f5f5" }}
+                    >
+                      <View className="flex-1 justify-end items-center pb-1">
+                        <Text className="text-gray-400 text-[7px]">{noteNames[i]}</Text>
+                      </View>
+                    </Pressable>
+                  );
+                })}
+                {[49, 51, 54, 56, 58, 61, 63, 66, 68, 70].map((note, i) => {
+                  const noteNames = ["C#2","D#2","F#2","G#2","A#2","C#3","D#3","F#3","G#3","A#3"];
+                  const whiteNotes = [48, 50, 52, 53, 55, 57, 59, 60, 62, 64, 65, 67, 69, 71, 72];
+                  const prevWhite = whiteNotes.filter((w) => w < note).length;
+                  const hasLoadedSlot = slots.find((s) => note >= s.lowKey && note <= s.highKey && s.data);
+                  return (
+                    <Pressable
+                      key={note}
+                      onPressIn={() => {
+                        if (hasLoadedSlot) {
+                          const idx = slots.indexOf(hasLoadedSlot);
+                          previewSample(idx, note);
+                        }
+                      }}
+                      className="absolute rounded-b"
+                      style={{
+                        left: `${((prevWhite - 1 + 0.65) / whiteNotes.length) * 100}%`,
+                        width: `${(0.6 / whiteNotes.length) * 100}%`,
+                        height: "60%",
+                        backgroundColor: hasLoadedSlot ? "#5ac8fa" : "#1a1a1a",
+                        borderColor: "#333",
+                        borderWidth: 1,
+                        zIndex: 1,
+                      }}
+                    >
+                      <View className="flex-1 justify-end items-center pb-0.5">
+                        <Text className="text-gray-600 text-[5px]">{noteNames[i]}</Text>
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              <Text className="text-gray-600 text-[8px] text-center mt-1">
+                Tap keys to preview samples at different pitches
+              </Text>
             </View>
           )}
 

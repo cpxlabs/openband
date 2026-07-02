@@ -9,34 +9,46 @@ export function detectTransients(
   threshold: number = 0.3,
   minSpacingMs: number = 50,
 ): Transient[] {
-  const channelData = buffer.getChannelData(0);
+  // Use all channels for energy detection
+  const numChannels = buffer.numberOfChannels;
   const sampleRate = buffer.sampleRate;
   const windowSize = 1024;
   const hopSize = 512;
   const minSpacingSamples = (minSpacingMs / 1000) * sampleRate;
 
   const energies: number[] = [];
-  for (let i = 0; i < channelData.length; i += hopSize) {
+  for (let i = 0; i < buffer.length; i += hopSize) {
     let sum = 0;
-    const end = Math.min(i + windowSize, channelData.length);
-    for (let j = i; j < end; j++) {
-      sum += channelData[j] * channelData[j];
+    const end = Math.min(i + windowSize, buffer.length);
+    const count = (end - i) * numChannels;
+    for (let ch = 0; ch < numChannels; ch++) {
+      const chData = buffer.getChannelData(ch);
+      for (let j = i; j < end; j++) {
+        sum += chData[j] * chData[j];
+      }
     }
-    energies.push(Math.sqrt(sum / (end - i)));
+    energies.push(Math.sqrt(sum / count));
   }
 
   const maxEnergy = Math.max(...energies, 0.001);
   const normalizedEnergies = energies.map((e) => e / maxEnergy);
 
+  // Use onset detection function (spectral flux approximation via energy difference)
+  const onsets: number[] = [];
+  for (let i = 1; i < normalizedEnergies.length; i++) {
+    const diff = normalizedEnergies[i] - normalizedEnergies[i - 1];
+    onsets.push(Math.max(0, diff));
+  }
+
+  const maxOnset = Math.max(...onsets, 0.001);
+  const normalizedOnsets = onsets.map((o) => o / maxOnset);
+
   const transients: Transient[] = [];
   let lastTransientIndex = -minSpacingSamples;
 
-  for (let i = 1; i < normalizedEnergies.length - 1; i++) {
-    const prev = normalizedEnergies[i - 1];
-    const curr = normalizedEnergies[i];
-    const next = normalizedEnergies[i + 1];
-
-    const isLocalMax = curr > prev && curr > next;
+  for (let i = 1; i < normalizedOnsets.length - 1; i++) {
+    const curr = normalizedOnsets[i];
+    const isLocalMax = curr > normalizedOnsets[i - 1] && curr > normalizedOnsets[i + 1];
     const aboveThreshold = curr > threshold;
     const spaced = i * hopSize - lastTransientIndex >= minSpacingSamples;
 
@@ -59,7 +71,7 @@ export function sliceAudioBuffer(
   slicePoints: number[],
 ): AudioBuffer[] {
   const sampleRate = buffer.sampleRate;
-  const channelData = buffer.getChannelData(0);
+  const numChannels = buffer.numberOfChannels;
   const sorted = [0, ...slicePoints.sort((a, b) => a - b), buffer.duration];
   const slices: AudioBuffer[] = [];
 
@@ -70,15 +82,21 @@ export function sliceAudioBuffer(
 
     if (length <= 0) continue;
 
-    const ctx = new OfflineAudioContext(1, length, sampleRate);
-    const newBuffer = ctx.createBuffer(1, length, sampleRate);
-    const newData = newBuffer.getChannelData(0);
+    const sliceBuffer = new OfflineAudioContext(
+      numChannels,
+      length,
+      sampleRate,
+    ).createBuffer(numChannels, length, sampleRate);
 
-    for (let j = 0; j < length; j++) {
-      newData[j] = channelData[startSample + j] ?? 0;
+    for (let ch = 0; ch < numChannels; ch++) {
+      const chData = buffer.getChannelData(ch);
+      const sliceData = sliceBuffer.getChannelData(ch);
+      for (let j = 0; j < length; j++) {
+        sliceData[j] = chData[startSample + j] ?? 0;
+      }
     }
 
-    slices.push(newBuffer);
+    slices.push(sliceBuffer);
   }
 
   return slices;

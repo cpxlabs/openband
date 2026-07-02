@@ -482,7 +482,7 @@ describe("transientDetection", () => {
     const buf = { getChannelData: () => data, sampleRate: 44100, length: len, numberOfChannels: 1 };
     detectTransients(buf as any, 0.3).forEach((t: any) => {
       expect(t.time).toBeGreaterThanOrEqual(0);
-      expect(t.position).toBeLessThan(len);
+      expect(t.index).toBeLessThan(len);
     });
   });
 });
