@@ -311,7 +311,7 @@ function SynthSlider({ label, value, min, max, step, onChange, unit, displayValu
   label: string; value: number; min: number; max: number; step: number;
   onChange: (v: number) => void; unit?: string; displayValue?: string;
 }) {
-  const [dragging, setDragging] = useState(false);
+  const draggingRef = useRef(false);
   const startX = useRef(0);
   const startValue = useRef(0);
   const pct = max === min ? 0 : ((value - min) / (max - min)) * 100;
@@ -319,19 +319,22 @@ function SynthSlider({ label, value, min, max, step, onChange, unit, displayValu
   const handlePressIn = useCallback((e: any) => {
     startX.current = e.nativeEvent.pageX;
     startValue.current = value;
-    setDragging(true);
+    draggingRef.current = true;
   }, [value]);
 
   const handleMove = useCallback((e: any) => {
-    if (!dragging) return;
+    if (!draggingRef.current) return;
     const dx = e.nativeEvent.pageX - startX.current;
     const range = max - min;
     const delta = (dx / 150) * range;
-    const stepped = min + Math.round((startValue.current + delta - min) / step) * step;
-    onChange(Math.max(min, Math.min(max, stepped)));
-  }, [dragging, min, max, step, onChange]);
+    const newVal = Math.max(min, Math.min(max, startValue.current + delta));
+    const stepped = min + Math.round((newVal - min) / step) * step;
+    onChange(stepped);
+  }, [min, max, step, onChange]);
 
-  const handleRelease = useCallback(() => setDragging(false), []);
+  const handleRelease = useCallback(() => {
+    draggingRef.current = false;
+  }, []);
 
   return (
     <View className="mb-2">
@@ -346,8 +349,9 @@ function SynthSlider({ label, value, min, max, step, onChange, unit, displayValu
         onStartShouldSetResponder={() => true}
         onResponderMove={handleMove}
         onResponderRelease={handleRelease}
-        className="h-4 bg-dark-muted rounded-full overflow-hidden active:opacity-80"
-        style={{ borderColor: dragging ? "#5ac8fa" : "transparent", borderWidth: 1 }}
+        onResponderTerminate={handleRelease}
+        className="h-4 bg-dark-muted rounded-full overflow-hidden"
+        style={{ borderColor: draggingRef.current ? "#5ac8fa" : "transparent", borderWidth: 1 }}
       >
         <View className="h-full bg-brand-accent rounded-full" style={{ width: `${pct}%` }} />
       </Pressable>
@@ -539,6 +543,7 @@ export function Synth({ visible, onClose, bpm, testID }: SynthProps) {
       synthRef.current?.dispose();
       disposeSubtractiveSynthAudio();
     };
+    // Only create synth once on mount; config updates are handled by separate effect
   }, []);
 
   useEffect(() => {
@@ -641,11 +646,28 @@ export function Synth({ visible, onClose, bpm, testID }: SynthProps) {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.repeat) return;
       const note = KEY_MAP[e.key.toLowerCase()];
-      if (note !== undefined) noteOn(note);
+      if (note !== undefined) {
+        if (!synthRef.current) return;
+        if (voiceIds.current.has(note)) return;
+        const id = synthRef.current.noteOn(note, 100);
+        voiceIds.current.set(note, id);
+        setActiveNotes((prev) => new Set(prev).add(note));
+      }
     };
     const handleKeyUp = (e: KeyboardEvent) => {
       const note = KEY_MAP[e.key.toLowerCase()];
-      if (note !== undefined) noteOff(note);
+      if (note !== undefined) {
+        const id = voiceIds.current.get(note);
+        if (id && synthRef.current) {
+          synthRef.current.noteOff(id);
+          voiceIds.current.delete(note);
+        }
+        setActiveNotes((prev) => {
+          const next = new Set(prev);
+          next.delete(note);
+          return next;
+        });
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -654,7 +676,7 @@ export function Synth({ visible, onClose, bpm, testID }: SynthProps) {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, [visible, noteOn, noteOff]);
+  }, [visible]);
 
   const tabs: { id: TabType; label: string }[] = [
     { id: "osc", label: "OSC" },
