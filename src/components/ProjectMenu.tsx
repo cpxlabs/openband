@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react"
-import { View, Text, Pressable, Alert } from "react-native"
+import { View, Text, Pressable, Alert, Platform } from "react-native"
 import { exportProject, loadProject, saveProject } from "../lib/projectStore"
+import { OpenBandNative } from "../bridge"
 
 export function ProjectMenu({ projectId, projectTitle, onRefresh }: {
   projectId: string
@@ -37,13 +38,25 @@ export function ProjectMenu({ projectId, projectTitle, onRefresh }: {
     const json = exportProject(projectId)
     if (!json) return
     try {
-      const a = document.createElement("a")
-      a.href = URL.createObjectURL(new Blob([json], { type: "application/json" }))
-      a.download = `${projectTitle.replace(/\s+/g, "_")}.openband.json`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-    } catch {}
+      if (Platform.OS === "web") {
+        const a = document.createElement("a")
+        a.href = URL.createObjectURL(new Blob([json], { type: "application/json" }))
+        a.download = `${projectTitle.replace(/\s+/g, "_")}.openband.json`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+      } else {
+        const path = await OpenBandNative.showSaveDialog({
+          defaultPath: `${projectTitle.replace(/\s+/g, "_")}.openband.json`,
+        })
+        if (path) {
+          await OpenBandNative.writeFile(path, json)
+        }
+      }
+    } catch (e) {
+      console.warn("Download failed:", e)
+      Alert.alert("Erro", "Falha ao baixar projeto.")
+    }
     setOpen(false)
   }, [projectId, projectTitle])
 
