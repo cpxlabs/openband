@@ -1,4 +1,6 @@
 import type { ChordQuality } from "./harmony"
+import type { MIDINote } from "./types"
+import { keyToRootNote, getDefaultScaleType, getScale } from "./harmony"
 
 export interface ChordSuggestion {
   degree: number
@@ -101,4 +103,121 @@ function romanNumeralLabel(degree: number, quality: ChordQuality): string {
   if (quality === "7") return `${label}7`
   if (quality === "maj7") return `${label}maj7`
   return label
+}
+
+/**
+ * Convert chord blocks to MIDI notes for rendering in the studio.
+ */
+export interface ChordBlock {
+  id: string;
+  degree: number;
+  quality: ChordQuality;
+  beats: number;
+}
+
+export function chordsToMIDINotes(
+  chords: ChordBlock[],
+  keySignature: string,
+  bpm: number,
+  octave: number = 4,
+  velocity: number = 80,
+): MIDINote[] {
+  const rootNote = keyToRootNote(keySignature);
+  const scaleType = getDefaultScaleType(keySignature);
+  const scale = getScale(rootNote, scaleType);
+
+  const notes: MIDINote[] = [];
+  const beatDurationSec = 60 / bpm;
+  let currentBeat = 0;
+
+  for (const chord of chords) {
+    const chordRoot = scale[chord.degree % scale.length] + octave * 12;
+    const pitches: number[] = [];
+
+    // Build chord voicing based on quality
+    switch (chord.quality) {
+      case "maj": pitches.push(chordRoot, chordRoot + 4, chordRoot + 7); break;
+      case "min": pitches.push(chordRoot, chordRoot + 3, chordRoot + 7); break;
+      case "dim": pitches.push(chordRoot, chordRoot + 3, chordRoot + 6); break;
+      case "aug": pitches.push(chordRoot, chordRoot + 4, chordRoot + 8); break;
+      case "7": pitches.push(chordRoot, chordRoot + 4, chordRoot + 7, chordRoot + 10); break;
+      case "maj7": pitches.push(chordRoot, chordRoot + 4, chordRoot + 7, chordRoot + 11); break;
+      case "min7": pitches.push(chordRoot, chordRoot + 3, chordRoot + 7, chordRoot + 10); break;
+      case "sus4": pitches.push(chordRoot, chordRoot + 5, chordRoot + 7); break;
+    }
+
+    for (const pitch of pitches) {
+      notes.push({
+        pitch,
+        start: currentBeat * beatDurationSec,
+        duration: chord.beats * beatDurationSec,
+        velocity,
+      });
+    }
+
+    currentBeat += chord.beats;
+  }
+
+  return notes;
+}
+
+/**
+ * Analyze a set of MIDI notes to detect chord content.
+ * Uses pitch class histogram and template matching.
+ */
+export interface ChordAnalysis {
+  pitchClasses: number[];
+  detectedChord: string;
+  confidence: number;
+  key: string;
+}
+
+const CHORD_TEMPLATES: Record<string, number[]> = {
+  "C":  [1,0,0,0,1,0,0,1,0,0,0,0],
+  "Cm": [1,0,0,1,0,0,0,1,0,0,0,0],
+  "D":  [0,0,1,0,0,0,1,0,0,1,0,0],
+  "Dm": [0,0,1,0,0,1,0,0,0,1,0,0],
+  "E":  [0,0,0,0,1,0,0,1,0,0,0,1],
+  "Em": [0,0,0,1,0,0,0,1,0,0,0,1],
+  "F":  [0,0,0,0,0,1,0,0,1,0,0,1],
+  "Fm": [0,0,0,1,0,1,0,0,1,0,0,0],
+  "G":  [0,0,1,0,0,0,0,1,0,0,0,1],
+  "Gm": [0,0,1,0,0,1,0,0,0,0,0,1],
+  "A":  [1,0,0,0,1,0,0,0,0,1,0,0],
+  "Am": [1,0,0,1,0,0,0,0,0,1,0,0],
+  "B":  [0,0,1,0,0,0,1,0,0,0,1,0],
+  "Bm": [0,0,1,0,0,1,0,0,0,0,1,0],
+};
+
+export function analyzeChordContent(notes: MIDINote[]): ChordAnalysis {
+  const pitchClasses = new Array(12).fill(0);
+
+  for (const note of notes) {
+    pitchClasses[note.pitch % 12]++;
+  }
+
+  // Normalize
+  const max = Math.max(...pitchClasses, 1);
+  const normalized = pitchClasses.map((c) => c / max);
+
+  // Match against templates
+  let bestChord = "C";
+  let bestScore = 0;
+  for (const [name, template] of Object.entries(CHORD_TEMPLATES)) {
+    let score = 0;
+    for (let i = 0; i < 12; i++) {
+      score += normalized[i] * template[i];
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      bestChord = name;
+    }
+  }
+
+  return {
+    pitchClasses: normalized,
+    detectedChord: bestChord,
+    confidence: Math.round(bestScore * 100),
+    key: bestChord.includes("m") ? `${bestChord} minor` : `${bestChord} major`,
+  };
 }

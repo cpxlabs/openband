@@ -53,7 +53,7 @@ import {
   OutputSelector,
 } from "../../src/components";
 import { registerCommand, initKeyBindings, disposeKeyBindings } from "../../src/lib/commandRegistry";
-import { chordsToMIDI } from "../../src/lib/chordTrackState";
+import { chordsToMIDINotes } from "../../src/lib/harmonicAssistant";
 import { useHistory } from "../../src/lib/history";
 import { useKeyboardShortcuts } from "../../src/lib/keyboard";
 import { saveProject, loadProject } from "../../src/lib/projectStore";
@@ -2570,25 +2570,7 @@ export default function Studio() {
             <Pressable
               onPress={() => {
                 if (chords.length === 0) return;
-                const ROOT_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-                const keyRoot = ROOT_NAMES.indexOf(projectKey?.replace(/m$/, "") || "C");
-                const QUALITY_MAP: Record<string, import("../../src/lib/chordTrackState").ChordQuality> = {
-                  maj: "major", min: "minor", dim: "dim", aug: "aug",
-                  "7": "dom7", maj7: "maj7", min7: "min7", sus4: "sus4",
-                };
-                const chordRegions = chords.map((c, i) => ({
-                  id: c.id,
-                  start: chords.slice(0, i).reduce((s, x) => s + x.beats, 0),
-                  duration: c.beats,
-                  symbol: "",
-                  root: (keyRoot + c.degree) % 12,
-                  quality: QUALITY_MAP[c.quality] ?? "major",
-                  key: projectKey || "C",
-                  inversion: 0,
-                  velocity: 80,
-                  color: "#34c759",
-                }));
-                const midiNotes = chordsToMIDI(chordRegions, metronome.bpm, 80);
+                const midiNotes = chordsToMIDINotes(chords, projectKey || "C", metronome.bpm, 4, 80);
                 if (midiNotes.length === 0) return;
                 const trackId = `chord-midi-${Date.now()}`;
                 setTracks((prev) => [...prev, {
@@ -2601,7 +2583,7 @@ export default function Studio() {
                   pan: 0,
                   sends: {},
                   sidechainSource: null,
-                  regions: [{ id: `cr-${Date.now()}`, start: 0, duration: chordRegions.reduce((s, r) => s + r.duration, 0) * (60 / metronome.bpm) }],
+                  regions: [{ id: `cr-${Date.now()}`, start: 0, duration: chords.reduce((s, c) => s + c.beats, 0) * (60 / metronome.bpm) }],
                   plugins: [],
                   automation: {},
                   midiNotes,
