@@ -4,10 +4,10 @@ import {
   View,
   Text,
   Pressable,
+  Alert,
   ScrollView,
   Share,
   Platform,
-  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
@@ -213,6 +213,7 @@ export default function Feed() {
   useEffect(() => {
     return () => {
       player.pause();
+      player.seekTo(0);
     };
   }, [player]);
   const [genreFilter, setGenreFilter] = useState("all");
@@ -246,6 +247,8 @@ export default function Feed() {
         player.play();
         currentPostRef.current = post;
         setPlayingId(post.id);
+      } else {
+        Alert.alert("Erro", "Falha ao carregar prévia do áudio.");
       }
     },
     [playingId, player],

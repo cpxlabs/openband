@@ -119,6 +119,13 @@ const TRACK_COLORS = [
 
 type PluginSource = "mastering" | "masterRack" | "track" | null;
 
+function formatTime(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  const ms = Math.floor((seconds % 1) * 100);
+  return `${m}:${String(s).padStart(2, "0")}.${String(ms).padStart(2, "0")}`;
+}
+
 export default function Studio() {
   const {
     id,
@@ -400,7 +407,6 @@ export default function Studio() {
 
     if (hasLoadedRef.current) {
       try {
-        player.currentTime = 0;
         await player.play();
       } catch (e) {
         console.warn("Resume playback failed:", e);
@@ -411,8 +417,8 @@ export default function Studio() {
     if (currentUrlRef.current) URL.revokeObjectURL(currentUrlRef.current);
     let url = await renderTracksToUrl(tracks, initialBpm, projectMood, buses);
     if (url && pitchCorrected && playbackRate !== 1) {
+      const ctx = new AudioContext();
       try {
-        const ctx = new AudioContext();
         const resp = await fetch(url);
         const arrayBuf = await resp.arrayBuffer();
         const audioBuf = await ctx.decodeAudioData(arrayBuf);
@@ -428,23 +434,27 @@ export default function Studio() {
         source.start();
         const rendered = await offline.startRendering();
         const blob = await audioBufferToWavBlob(rendered);
+        URL.revokeObjectURL(url);
         url = URL.createObjectURL(blob);
-        await ctx.close();
       } catch (e) {
         console.warn("Pitch correction failed, using original:", e);
+      } finally {
+        await ctx.close();
       }
     }
     if (url) {
       try {
         currentUrlRef.current = url;
         await player.replace(url);
-        player.currentTime = 0;
         await player.play();
       } catch (e) {
         console.warn("Playback failed:", e);
       }
     }
   }, [isPlaying, player, tracks, initialBpm, buses, pitchCorrected, playbackRate]);
+
+  // Stop playback when studio unmounts
+  useEffect(() => () => { player.pause(); }, [player]);
 
   const toggleRecording = useCallback(async () => {
     try {
@@ -1277,6 +1287,12 @@ export default function Studio() {
       >
         <View className="flex-row items-center gap-2">
           <Pressable
+            onPress={() => player && (player.currentTime = Math.max(0, player.currentTime - 5))}
+            className="w-8 h-8 rounded-lg bg-dark-muted items-center justify-center active:opacity-70"
+          >
+            <Text className="text-gray-300 text-xs">⏮</Text>
+          </Pressable>
+          <Pressable
             onPress={togglePlay}
             className={`w-11 h-11 rounded-full items-center justify-center ${isPlaying ? "bg-green-600" : "bg-dark-border"}`}
           >
@@ -1291,11 +1307,30 @@ export default function Studio() {
             />
           </Pressable>
           <Pressable
-            onPress={() => setShowRecordOptions(true)}
+            onPress={() => player && (player.currentTime = Math.max(0, player.currentTime + 5))}
             className="w-8 h-8 rounded-lg bg-dark-muted items-center justify-center active:opacity-70"
           >
-            <Text className="text-gray-400 text-xs">⚙</Text>
+            <Text className="text-gray-300 text-xs">⏭</Text>
           </Pressable>
+          <Pressable
+            onPress={() => {
+              if (player) player.currentTime = 0;
+            }}
+            className="w-8 h-8 rounded-lg bg-dark-muted items-center justify-center active:opacity-70"
+          >
+            <Text className="text-gray-300 text-xs">⏹</Text>
+          </Pressable>
+        </View>
+
+        {/* Time display */}
+        <View className="flex-row items-center gap-2">
+          <Text className="text-gray-400 text-xs font-mono">
+            {formatTime(player?.currentTime ?? 0)}
+          </Text>
+          <Text className="text-gray-600 text-xs">/</Text>
+          <Text className="text-gray-500 text-xs font-mono">
+            {formatTime(progressPct > 0 ? (player?.currentTime ?? 0) / progressPct : 0)}
+          </Text>
         </View>
 
         <View className="flex-row items-center gap-1.5">
