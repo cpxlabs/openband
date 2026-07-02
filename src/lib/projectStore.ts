@@ -43,6 +43,17 @@ const INDEX_KEY = "openband_project_index";
 const pendingBridgeSaves = new Map<string, ProjectData>();
 let bridgeAvailable: boolean | null = null;
 
+/** Callback fired after a successful local save — used for cloud sync auto-push. */
+let onProjectSaved: ((id: string, project: ProjectData) => void) | null = null;
+
+/**
+ * Register a callback to be invoked after every project save.
+ * Use this for cloud sync auto-push, analytics, etc.
+ */
+export function setOnProjectSaved(cb: ((id: string, project: ProjectData) => void) | null): void {
+  onProjectSaved = cb;
+}
+
 async function checkBridge(): Promise<boolean> {
   if (bridgeAvailable !== null) return bridgeAvailable;
   try {
@@ -122,6 +133,7 @@ export function saveProject(
       const index = listProjectIndex();
       index[id] = { title: data.title, lastSaved: project.lastSaved };
       storage.setItem(INDEX_KEY, JSON.stringify(index));
+      onProjectSaved?.(id, project);
     } catch (e) {
       console.warn("Project save failed:", e);
     }
