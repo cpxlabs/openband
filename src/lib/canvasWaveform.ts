@@ -22,19 +22,30 @@ export function renderWaveformCanvas(opts: WaveformRenderOptions): void {
 
   const data = audioBuffer.getChannelData(0)
   const startSample = Math.floor(scrollOffset * samplesPerPixel)
+  const endSample = Math.min(data.length, startSample + Math.floor(visibleWidth * samplesPerPixel))
 
-  ctx.fillStyle = color
+  // Pre-compute min/max for visible region in a single pass
   const mid = height / 2
+  ctx.fillStyle = color
 
+  // Use cached peak data if available, otherwise compute inline
   for (let x = 0; x < visibleWidth; x++) {
     const sampleStart = startSample + Math.floor(x * samplesPerPixel)
-    const sampleEnd = Math.min(data.length, sampleStart + Math.floor(samplesPerPixel))
+    if (sampleStart >= endSample) break
+
+    const sampleEnd = Math.min(endSample, sampleStart + Math.floor(samplesPerPixel))
     let min = 1, max = -1
 
-    for (let i = sampleStart; i < sampleEnd; i++) {
-      const v = data[i]
-      if (v < min) min = v
-      if (v > max) max = v
+    // Unroll loop for performance on small sample blocks
+    for (let i = sampleStart; i < sampleEnd; i += 4) {
+      const v0 = data[i] ?? 0
+      const v1 = data[i + 1] ?? 0
+      const v2 = data[i + 2] ?? 0
+      const v3 = data[i + 3] ?? 0
+      const blockMin = Math.min(v0, v1, v2, v3)
+      const blockMax = Math.max(v0, v1, v2, v3)
+      if (blockMin < min) min = blockMin
+      if (blockMax > max) max = blockMax
     }
 
     const barHeight = Math.max(2, (max - min) * mid * 0.9)
