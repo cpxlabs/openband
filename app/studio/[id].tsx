@@ -21,7 +21,7 @@ import { renderTracksToUrl, disposeAudioContext } from "../../src/lib/midiSynth"
 import { audioSystem } from "../../src/lib/universalAudio";
 import { startClock, stopClock, onClockTick, disposeClockManager } from "../../src/lib/clockManager";
 import { assignTrackToBus } from "../../src/lib/busRouter";
-import { buildAutomationSchedule, interpolateAutomationValue } from "../../src/lib/automationEngine";
+import { buildAutomationSchedule, interpolateAutomationValue, type ScheduledAutomationPoint } from "../../src/lib/automationEngine";
 import {
   Metronome,
   RecordOptions,
@@ -365,15 +365,29 @@ export default function Studio() {
   const duration = status.duration || 240;
   const anySolo = useMemo(() => tracks.some((t) => t.solo), [tracks]);
 
+  // Pre-compute automation schedules once when automation data changes
+  // Uses binary search interpolation per-frame instead of O(n) schedule rebuild
+  const automationSchedules = useMemo(() => {
+    const schedules = new Map<string, ScheduledAutomationPoint[]>();
+    for (const track of tracks) {
+      if (track.automation?.volume?.length) {
+        schedules.set(track.id, buildAutomationSchedule(track.automation.volume, metronome.bpm));
+      }
+    }
+    return schedules;
+  }, [tracks, metronome.bpm]);
+
   const automatedVolume = useCallback(
     (trackId: string): number => {
-      const track = tracks.find((t) => t.id === trackId);
-      if (!track || !track.automation?.volume?.length) return trackVolume(trackId);
-      const pts = buildAutomationSchedule(track.automation.volume, metronome.bpm);
-      const automated = interpolateAutomationValue(pts, currentTime);
+      const schedule = automationSchedules.get(trackId);
+      if (!schedule) {
+        // Fallback: get current track volume directly
+        return tracks.find((t) => t.id === trackId)?.volume ?? 70;
+      }
+      const automated = interpolateAutomationValue(schedule, currentTime);
       return Math.max(0, Math.min(100, automated));
     },
-    [tracks, metronome.bpm, currentTime],
+    [automationSchedules, currentTime, tracks],
   );
 
   useEffect(() => {
