@@ -84,3 +84,41 @@ After each feature:
 3. **Unused imports** — When changing function signatures, check all call sites.
 4. **Type mismatches** — New functions must match existing interfaces (e.g., MIDINote has only pitch/start/duration/velocity).
 5. **Bridge API differences** — `SaveDialogOptions` uses `defaultPath`, not `defaultFileName`. Check `interface.ts` before using bridge methods.
+
+## Cross-Platform Testing Pattern
+
+After implementing features with Platform.OS branching, add tests to `tests/lib5.test.ts`:
+
+### Platform Mock Setup
+```typescript
+const mockPlatform = { OS: "web" as string };
+vi.mock("react-native", () => ({
+  Platform: { get OS() { return mockPlatform.OS; } },
+  Dimensions: { get: vi.fn(() => ({ width: 1920, height: 1080 })), addEventListener: vi.fn(() => ({ remove: vi.fn() })) },
+}));
+
+vi.mock("../src/bridge", () => ({
+  OpenBandNative: { showOpenDialog: vi.fn(), showSaveDialog: vi.fn(), writeFile: vi.fn(), readFile: vi.fn(), getDocumentsPath: vi.fn().mockResolvedValue("/docs"), saveProject: vi.fn().mockResolvedValue(true), loadProject: vi.fn().mockResolvedValue(null), deleteProject: vi.fn().mockResolvedValue(undefined) },
+}));
+```
+
+### Native Platform Tests (reliable, no AudioContext mock needed)
+```typescript
+it("initialize is a no-op on native", async () => {
+  mockPlatform.OS = "ios";
+  vi.resetModules();
+  const { audioSystem } = await import("../src/lib/universalAudio");
+  await audioSystem.initialize();
+  expect(audioSystem.audioCtx).toBeNull();
+  expect(audioSystem.isInitialized).toBe(true);
+});
+```
+
+### Key test categories
+- **universalAudio native**: initialize no-op, ensureContext null, getSharedAudioContext null, disposeAllAudio safe
+- **hardwareIO**: enumerateDevices web (with navigator mock) vs native (empty arrays), setAudioOutputDevice false on native
+- **projectStore**: localStorage save, export/import null cases, listProjectIndex
+- **responsive**: breakpoint thresholds (480, 1280), common device widths (375, 768, 1440, 1920)
+
+### Avoid mocking AudioContext constructor after vi.resetModules()
+The `vi.stubGlobal("AudioContext", ...)` pattern doesn't survive `vi.resetModules()`. Instead, test the native paths (where AudioContext is never used) which are more reliable and cover the critical Platform.OS branching.
