@@ -173,20 +173,23 @@ export function Sampler({
         const gainNode = ctx.createGain();
         const vol = velocity / 127;
         const now = ctx.currentTime;
-        const a = adsr.attack / 1000;
-        const d = adsr.decay / 1000;
+        const duration = slot.data.duration;
+        const a = Math.min(adsr.attack / 1000, duration * 0.3);
+        const d = Math.min(adsr.decay / 1000, (duration - a) * 0.5);
+        const r = Math.min(adsr.release / 1000, duration * 0.3);
+
         gainNode.gain.setValueAtTime(0, now);
         gainNode.gain.linearRampToValueAtTime(vol, now + a);
         gainNode.gain.linearRampToValueAtTime(vol * (adsr.sustain / 100), now + a + d);
-        gainNode.gain.setValueAtTime(
-          vol * (adsr.sustain / 100),
-          now + slot.data.duration - adsr.release / 1000,
-        );
-        gainNode.gain.linearRampToValueAtTime(0, now + slot.data.duration);
+        // Ensure release starts after sustain, never before attack+decay completes
+        const releaseStart = Math.max(now + a + d + 0.05, now + duration - r);
+        gainNode.gain.setValueAtTime(vol * (adsr.sustain / 100), releaseStart);
+        gainNode.gain.linearRampToValueAtTime(0, releaseStart + r);
 
         source.connect(gainNode);
         gainNode.connect(ctx.destination);
         source.start(now);
+        source.stop(now + duration + r);
       } catch (e) {
         console.warn("Failed to preview sample:", e);
       }
