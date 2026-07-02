@@ -263,7 +263,7 @@ class UniversalAudioSystem {
       const format = String.fromCharCode(view.getUint8(8), view.getUint8(9), view.getUint8(10), view.getUint8(11));
       if (format === "WAVE") {
         const numChannels = view.getUint16(22, true);
-        const _sampleRate = view.getUint32(24, true);
+        void view.getUint32(24, true); // sampleRate — not used in pure JS decoder
         const bitsPerSample = view.getUint16(34, true);
         const dataOffset = 44;
         const dataLength = Math.min(view.getUint32(40, true), arrayBuffer.byteLength - dataOffset);

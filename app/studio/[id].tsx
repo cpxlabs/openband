@@ -50,6 +50,7 @@ import {
   CommandPalette,
   BranchManager,
   CommitModal,
+  OutputSelector,
 } from "../../src/components";
 import { registerCommand, initKeyBindings, disposeKeyBindings } from "../../src/lib/commandRegistry";
 import { chordsToMIDI } from "../../src/lib/chordTrackState";
@@ -206,6 +207,7 @@ export default function Studio() {
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showBranchManager, setShowBranchManager] = useState(false);
   const [showCommitModal, setShowCommitModal] = useState(false);
+  const [showOutputSelector, setShowOutputSelector] = useState(false);
   const [oneKnobValues, setOneKnobValues] = useState<
     Record<string, Record<string, number>>
   >({});
@@ -1360,6 +1362,12 @@ export default function Studio() {
             className="h-8 rounded-lg items-center justify-center px-2 bg-dark-muted active:opacity-70"
           >
             <Text className="text-gray-300 text-xs">🎹</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setShowOutputSelector(true)}
+            className="h-8 rounded-lg items-center justify-center px-2 bg-dark-muted active:opacity-70"
+          >
+            <Text className="text-gray-300 text-xs">🔊</Text>
           </Pressable>
           <Pressable
             onPress={() => setShowLooper(true)}
@@ -2739,6 +2747,10 @@ export default function Studio() {
       <CommitModal
         visible={showCommitModal}
         onClose={() => setShowCommitModal(false)}
+      />
+      <OutputSelector
+        visible={showOutputSelector}
+        onClose={() => setShowOutputSelector(false)}
       />
     </View>
   );

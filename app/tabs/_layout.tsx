@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Tabs, useRouter, useSegments, type Href } from "expo-router";
 import { Text, View, Pressable, type ViewStyle } from "react-native";
 import { useResponsive } from "../../src/lib/responsive";
@@ -45,14 +45,14 @@ export default function TabLayout() {
   };
   const pageTitle = routeNameMap[currentSegment] || "OpenBand";
 
-  const handleNavigate = (route: string) => {
+  const handleNavigate = useCallback((route: string) => {
     if (currentSegment === route) {
       setDrawerOpen(false);
       return;
     }
-    router.push(`/tabs/${route}` as Href);
+    router.replace(`/tabs/${route}` as Href);
     setDrawerOpen(false);
-  };
+  }, [currentSegment, router]);
 
   return (
     <View className="flex-1 bg-dark-bg flex-row">
