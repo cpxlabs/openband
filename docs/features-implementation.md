@@ -439,3 +439,10 @@ function autoMix(tracks: TrackDef[], genre: string): TrackDef[] {
 ✅ **Time-stretch / pitch-shift** (granular synthesis + phase vocoder, transport controls)
 
 **All features shipped. No remaining gaps.**
+
+## Playback Improvements (Latest)
+
+- **P0 fixes**: AudioContext try/finally cleanup, blob URL revoke before replace, pause/resume without position reset, studio unmount cleanup
+- **Transport controls**: Skip ±5s (⏮⏭), stop (⏹), time display (current/total in `M:SS.cc`)
+- **Feed playback**: seekTo(0) on cleanup, Alert.alert on preview failure
+- **Performance**: Pre-compute automation schedules (useMemo), binary search interpolation per-frame instead of O(n) rebuild
