@@ -15,7 +15,7 @@ Built with **Expo Router**, **TypeScript**, **NativeWind v4 (Tailwind CSS v3)**,
 | Audio            | [`expo-audio`](https://docs.expo.dev/versions/v56.0.0/sdk/audio/) (SDK 56)                             |
 | Audio Processing | [Demucs](https://github.com/facebookresearch/demucs) (HTDEMUCS model) via Python subprocess            |
 | Desktop          | [Electron 35](https://www.electronjs.org/) with swappable bridge (`src/bridge/`)                       |
-| Testing          | [Vitest](https://vitest.dev/) (283 tests) + legacy `node:test` (24 tests) |
+| Testing          | [Vitest](https://vitest.dev/) (537 tests) + [Playwright](https://playwright.dev/) (E2E) + legacy `node:test` (24 tests) |
 
 ## Getting Started
 
@@ -120,8 +120,8 @@ Multi-track DAW with real-time audio playback via `expo-audio`:
 - Sub-mix send buses (up to 20) with per-track send levels
 - Track grouping with shared volume/mute
 - Sample browser with 60+ curated samples and category filtering
-- Sampler with Slice mode (transient detection + 16-pad mapping)
-- Synthesizer with 6 presets (Init Saw, Fat Bass, Soft Pad, Pluck, Wobble, Scream Lead)
+- Sampler with velocity control (0-127), melodic mini-keyboard (C2-C4), transient slicing, stereo ADSR
+- Synthesizer with 25 presets, 16-voice polyphony, 5-tab UI (OSC/FLT/ENV/LFO/ARP), 25-key piano
 - CodeSampler token-based beat sequencer
 - Command palette (Cmd+K) with 18 commands across Transport/Edit/Track/File/View/System
 - Branch manager for CRDT fork/merge/diff
@@ -267,7 +267,7 @@ openband/
 
 ## Design System
 
-51 reusable components in `src/components/` (see `AGENTS.md` for full reference):
+56+ reusable components in `src/components/` (see `AGENTS.md` for full reference):
 
 | Component                                                                           | Description                                                        |
 | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
