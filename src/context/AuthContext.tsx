@@ -48,14 +48,18 @@ function saveVisitorSession(id: string, createdAt: string): void {
   try {
     if (typeof localStorage === "undefined") return;
     localStorage.setItem(VISITOR_STORAGE_KEY, JSON.stringify({ id, createdAt }));
-  } catch {}
+  } catch (e) {
+    console.warn("Visitor session save failed:", e);
+  }
 }
 
 function clearVisitorSession(): void {
   try {
     if (typeof localStorage === "undefined") return;
     localStorage.removeItem(VISITOR_STORAGE_KEY);
-  } catch {}
+  } catch (e) {
+    console.warn("Visitor session clear failed:", e);
+  }
 }
 
 function createVisitorUser(id: string, createdAt: string): User {

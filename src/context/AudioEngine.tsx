@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState, useCallback } from "react";
 import { Platform } from "react-native";
 import { playMidiNotes, stopAllNotes, disposeAudioContext } from "../lib/midiSynth";
 import type { MIDINote } from "../lib/types";
@@ -29,15 +29,16 @@ export function AudioEngineProvider({ children }: { children: React.ReactNode })
   });
   const voiceIds = useRef<string[]>([]);
 
-  const stop = () => {
+  const stop = useCallback(() => {
     stopAllNotes();
     voiceIds.current = [];
     setState((s) => ({ ...s, isPlaying: false }));
-  };
+  }, []);
 
-  const play = (tracks: { midiNotes?: MIDINote[] }[], bpm: number) => {
+  const play = useCallback((tracks: { midiNotes?: MIDINote[] }[], bpm: number) => {
     if (Platform.OS !== "web") return;
-    stop();
+    stopAllNotes();
+    voiceIds.current = [];
     const ids: string[] = [];
     for (const track of tracks) {
       if (track.midiNotes && track.midiNotes.length > 0) {
@@ -46,19 +47,20 @@ export function AudioEngineProvider({ children }: { children: React.ReactNode })
     }
     voiceIds.current = ids;
     setState({ isPlaying: true, currentBpm: bpm, miniPlayerVisible: true });
-  };
+  }, []);
 
-  const pause = () => {
+  const pause = useCallback(() => {
     stopAllNotes();
     voiceIds.current = [];
     setState((s) => ({ ...s, isPlaying: false }));
-  };
+  }, []);
 
-  const resume = () => {
-  };
+  const resume = useCallback(() => {
+    // MIDI playback resume not yet implemented
+  }, []);
 
-  const showMiniPlayer = () => setState((s) => ({ ...s, miniPlayerVisible: true }));
-  const hideMiniPlayer = () => setState((s) => ({ ...s, miniPlayerVisible: false }));
+  const showMiniPlayer = useCallback(() => setState((s) => ({ ...s, miniPlayerVisible: true })), []);
+  const hideMiniPlayer = useCallback(() => setState((s) => ({ ...s, miniPlayerVisible: false })), []);
 
   useEffect(() => {
     return () => {

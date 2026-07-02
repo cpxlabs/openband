@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { View, Text, Pressable, Modal, Platform, ScrollView } from "react-native";
+import { View, Text, Pressable, Modal, Platform, ScrollView, type GestureResponderEvent } from "react-native";
 import {
   createSubtractiveSynth,
   SubtractiveSynth,
@@ -316,13 +316,13 @@ function SynthSlider({ label, value, min, max, step, onChange, unit, displayValu
   const startValue = useRef(0);
   const pct = max === min ? 0 : ((value - min) / (max - min)) * 100;
 
-  const handlePressIn = useCallback((e: any) => {
+  const handlePressIn = useCallback((e: GestureResponderEvent) => {
     startX.current = e.nativeEvent.pageX;
     startValue.current = value;
     draggingRef.current = true;
   }, [value]);
 
-  const handleMove = useCallback((e: any) => {
+  const handleMove = useCallback((e: GestureResponderEvent) => {
     if (!draggingRef.current) return;
     const dx = e.nativeEvent.pageX - startX.current;
     const range = max - min;

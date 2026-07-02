@@ -42,6 +42,7 @@ let lamportClock = 0;
 let ws: WebSocket | null = null;
 let syncCallback: ((docId: string, ops: CRDTOperation[]) => void) | null = null;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let reconnectAttempts = 0;
 let wsUrl = "ws://localhost:3001/collab";
 
 function generateId(): string {
@@ -241,6 +242,7 @@ export function connectToSync(
     ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
+      reconnectAttempts = 0;
       console.log("CRDT sync connected");
       const sv = getStateVector();
       ws?.send(JSON.stringify({
@@ -262,9 +264,11 @@ export function connectToSync(
     };
 
     ws.onclose = () => {
-      console.log("CRDT sync disconnected, reconnecting in 3s...");
+      const backoff = Math.min(3000 * Math.pow(2, reconnectAttempts), 60000);
+      console.log(`CRDT sync disconnected, reconnecting in ${backoff}ms (attempt ${reconnectAttempts + 1})...`);
       if (reconnectTimer) clearTimeout(reconnectTimer);
-      reconnectTimer = setTimeout(() => connectToSync(url, onSync), 3000);
+      reconnectAttempts++;
+      reconnectTimer = setTimeout(() => connectToSync(url, onSync), backoff);
     };
 
     ws.onerror = (e) => {

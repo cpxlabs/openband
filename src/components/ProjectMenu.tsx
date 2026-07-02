@@ -39,12 +39,15 @@ export function ProjectMenu({ projectId, projectTitle, onRefresh }: {
     if (!json) return
     try {
       if (Platform.OS === "web") {
+        const blob = new Blob([json], { type: "application/json" })
+        const url = URL.createObjectURL(blob)
         const a = document.createElement("a")
-        a.href = URL.createObjectURL(new Blob([json], { type: "application/json" }))
+        a.href = url
         a.download = `${projectTitle.replace(/\s+/g, "_")}.openband.json`
         document.body.appendChild(a)
         a.click()
         document.body.removeChild(a)
+        URL.revokeObjectURL(url)
       } else {
         const path = await OpenBandNative.showSaveDialog({
           defaultPath: `${projectTitle.replace(/\s+/g, "_")}.openband.json`,
