@@ -19,3 +19,4 @@ electron/out/
 electron/node_modules/
 electron/.env
 ios/
+.opencode/
