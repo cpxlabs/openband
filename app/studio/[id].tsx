@@ -437,29 +437,29 @@ export default function Studio() {
     if (currentUrlRef.current) URL.revokeObjectURL(currentUrlRef.current);
     let url = await renderTracksToUrl(tracks, initialBpm, projectMood, buses);
     if (url && pitchCorrected && playbackRate !== 1) {
-      const ctx = new AudioContext();
-      try {
-        const resp = await fetch(url);
-        const arrayBuf = await resp.arrayBuffer();
-        const audioBuf = await ctx.decodeAudioData(arrayBuf);
-        const shifted = await pitchShift(audioBuf, -Math.log2(playbackRate) * 12);
-        const offline = new OfflineAudioContext(
-          shifted.numberOfChannels,
-          shifted.length,
-          shifted.sampleRate,
-        );
-        const source = offline.createBufferSource();
-        source.buffer = shifted;
-        source.connect(offline.destination);
-        source.start();
-        const rendered = await offline.startRendering();
-        const blob = await audioBufferToWavBlob(rendered);
-        URL.revokeObjectURL(url);
-        url = URL.createObjectURL(blob);
-      } catch (e) {
-        console.warn("Pitch correction failed, using original:", e);
-      } finally {
-        await ctx.close();
+      const sharedCtx = await audioSystem.ensureContext();
+      if (sharedCtx) {
+        try {
+          const resp = await fetch(url);
+          const arrayBuf = await resp.arrayBuffer();
+          const audioBuf = await sharedCtx.decodeAudioData(arrayBuf);
+          const shifted = await pitchShift(audioBuf, -Math.log2(playbackRate) * 12);
+          const offline = new OfflineAudioContext(
+            shifted.numberOfChannels,
+            shifted.length,
+            shifted.sampleRate,
+          );
+          const source = offline.createBufferSource();
+          source.buffer = shifted;
+          source.connect(offline.destination);
+          source.start();
+          const rendered = await offline.startRendering();
+          const blob = await audioBufferToWavBlob(rendered);
+          URL.revokeObjectURL(url);
+          url = URL.createObjectURL(blob);
+        } catch (e) {
+          console.warn("Pitch correction failed, using original:", e);
+        }
       }
     }
     if (url) {
@@ -564,27 +564,28 @@ export default function Studio() {
         if (currentUrlRef.current) URL.revokeObjectURL(currentUrlRef.current);
         let url = await renderTracksToUrl(updatedTracks, initialBpm, projectMood, buses);
         if (url && pitchCorrected && playbackRate !== 1) {
-          try {
-            const ctx = new AudioContext();
-            const resp = await fetch(url);
-            const arrayBuf = await resp.arrayBuffer();
-            const audioBuf = await ctx.decodeAudioData(arrayBuf);
-            const shifted = await pitchShift(audioBuf, -Math.log2(playbackRate) * 12);
-            const offline = new OfflineAudioContext(
-              shifted.numberOfChannels,
-              shifted.length,
-              shifted.sampleRate,
-            );
-            const source = offline.createBufferSource();
-            source.buffer = shifted;
-            source.connect(offline.destination);
-            source.start();
-            const rendered = await offline.startRendering();
-            const blob = await audioBufferToWavBlob(rendered);
-            url = URL.createObjectURL(blob);
-            await ctx.close();
-          } catch (e) {
-            console.warn("Pitch correction failed in rerender:", e);
+          const sharedCtx = await audioSystem.ensureContext();
+          if (sharedCtx) {
+            try {
+              const resp = await fetch(url);
+              const arrayBuf = await resp.arrayBuffer();
+              const audioBuf = await sharedCtx.decodeAudioData(arrayBuf);
+              const shifted = await pitchShift(audioBuf, -Math.log2(playbackRate) * 12);
+              const offline = new OfflineAudioContext(
+                shifted.numberOfChannels,
+                shifted.length,
+                shifted.sampleRate,
+              );
+              const source = offline.createBufferSource();
+              source.buffer = shifted;
+              source.connect(offline.destination);
+              source.start();
+              const rendered = await offline.startRendering();
+              const blob = await audioBufferToWavBlob(rendered);
+              url = URL.createObjectURL(blob);
+            } catch (e) {
+              console.warn("Pitch correction failed in rerender:", e);
+            }
           }
         }
         if (url) {
