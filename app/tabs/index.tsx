@@ -18,6 +18,8 @@ import {
   PageHeader,
   Avatar,
   QuickActions,
+  MiniPlayer,
+  setMiniPlayerState,
   QuickTools,
 } from "../../src/components";
 import { generatePreviewUrl, SCREEN_BOTTOM_PADDING } from "../../src/lib/constants";
@@ -250,6 +252,7 @@ export default function Feed() {
       if (playingId === post.id && status.playing) {
         if (isWeb) webAudio.pause(); else expoPlayer.pause();
         setPlayingId(null);
+        setMiniPlayerState({ visible: false, url: null });
         return;
       }
       const url = await generatePreviewUrl(post.id, post.duration);
@@ -263,6 +266,13 @@ export default function Feed() {
         }
         currentPostRef.current = post;
         setPlayingId(post.id);
+        setMiniPlayerState({
+          title: post.title,
+          subtitle: post.author,
+          url,
+          projectId: post.id,
+          visible: true,
+        });
       } else {
         Alert.alert("Erro", "Falha ao carregar prévia do áudio.");
       }
@@ -570,6 +580,7 @@ export default function Feed() {
           </View>
         )}
       </View>
+      <MiniPlayer />
     </View>
   );
 }

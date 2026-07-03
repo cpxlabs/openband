@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Platform } from "react-native";
+import { audioSystem } from "../lib/universalAudio";
 
 /**
  * Web-only audio player using HTML5 <audio> element.
@@ -51,17 +52,27 @@ export function useWebAudioPlayer() {
   const replace = useCallback(async (url: string) => {
     const audio = audioRef.current;
     if (!audio) return;
-    audio.src = url;
-    audio.load();
-    setIsLoaded(false);
-    setCurrentTime(0);
-    setDuration(0);
+
+    return new Promise<void>((resolve) => {
+      const onCanPlay = () => {
+        audio.removeEventListener("canplaythrough", onCanPlay);
+        setIsLoaded(true);
+        resolve();
+      };
+      audio.addEventListener("canplaythrough", onCanPlay, { once: true });
+      audio.src = url;
+      audio.load();
+      setIsLoaded(false);
+      setCurrentTime(0);
+      setDuration(0);
+    });
   }, []);
 
   const play = useCallback(async () => {
     const audio = audioRef.current;
     if (!audio) return;
     try {
+      await audioSystem.ensureContext();
       await audio.play();
     } catch (e) {
       console.warn("WebAudio play failed:", e);

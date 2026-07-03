@@ -46,7 +46,7 @@ export { MasteringChain } from "./MasteringChain";
 export { MasteringVersionManager } from "./MasteringVersionManager";
 export { MasteringUpload } from "./MasteringUpload";
 export { VoiceCommandButton } from "./VoiceCommandButton";
-export { MiniPlayer } from "./MiniPlayer";
+export { MiniPlayer, setMiniPlayerState } from "./MiniPlayer";
 export { QuickActions } from "./QuickActions";
 export { QuickTools } from "./QuickTools";
 export { ProjectMenu } from "./ProjectMenu";
