@@ -336,7 +336,7 @@ export default function VirtualStudio() {
           <Text className="text-gray-300 text-lg">←</Text>
         </Pressable>
         <View className="flex-1 items-center">
-          <Text className="text-white font-bold text-base">Virtual Studio</Text>
+          <Text className="text-white font-bold text-base">3D Studio</Text>
         </View>
         <View className="w-9" />
       </View>

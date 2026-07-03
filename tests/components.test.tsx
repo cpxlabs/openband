@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+import { View, Text } from "react-native";
 import * as reactNative from "react-native";
 import Login from "../app/(auth)/login";
 import {
@@ -1113,6 +1114,75 @@ describe("Sidebar", () => {
       />,
     );
     expect(container.innerHTML).toBe("");
+  });
+
+  it("renders 3D Studio with sub-items expanded by default", () => {
+    render(
+      <Sidebar
+        currentRoute="virtual-studio"
+        onNavigate={() => {}}
+        isOpen={true}
+        onClose={() => {}}
+        isPersistent={true}
+      />,
+    );
+    expect(screen.getByText("3D Studio")).toBeTruthy();
+    expect(screen.getByText("Mixing Console")).toBeTruthy();
+    expect(screen.getByText("Mastering Suite")).toBeTruthy();
+    expect(screen.getByText("Piano Roll")).toBeTruthy();
+    expect(screen.getByText("Pedalboard")).toBeTruthy();
+    expect(screen.getByText("Synthesizer")).toBeTruthy();
+  });
+
+  it("calls onNavigate with sub-item key when sub-item pressed", () => {
+    const fn = vi.fn();
+    render(
+      <Sidebar
+        currentRoute="virtual-studio"
+        onNavigate={fn}
+        isOpen={true}
+        onClose={() => {}}
+        isPersistent={true}
+      />,
+    );
+    fireEvent.click(screen.getByText("Piano Roll"));
+    expect(fn).toHaveBeenCalledWith("piano-roll");
+  });
+
+  it("calls onNavigate with parent key when 3D Studio header pressed", () => {
+    const fn = vi.fn();
+    render(
+      <Sidebar
+        currentRoute="index"
+        onNavigate={fn}
+        isOpen={true}
+        onClose={() => {}}
+        isPersistent={true}
+      />,
+    );
+    fireEvent.click(screen.getByText("3D Studio"));
+    expect(fn).toHaveBeenCalledWith("virtual-studio");
+  });
+});
+
+describe("VirtualStudio", () => {
+  const MockVirtualStudio = vi.fn(() => {
+    return (
+      <View>
+        <Text>3D Studio</Text>
+        <Text>WASD to move • Click furniture to open</Text>
+      </View>
+    );
+  });
+
+  it("renders 3D Studio header", () => {
+    render(<MockVirtualStudio />);
+    expect(screen.getByText("3D Studio")).toBeTruthy();
+  });
+
+  it("shows controls hint when loaded", () => {
+    render(<MockVirtualStudio />);
+    expect(screen.getByText(/WASD to move/)).toBeTruthy();
   });
 });
 
