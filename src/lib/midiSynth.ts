@@ -17,6 +17,337 @@ for (let i = 0; i < 128; i++) {
 
 export type WaveformType = "sine" | "square" | "sawtooth" | "triangle";
 
+// --- Native MIDI Synthesis (pure JS, no OfflineAudioContext) ---
+
+function generateWaveform(type: WaveformType, frequency: number, duration: number, sampleRate: number, volume: number): Float32Array {
+  const numSamples = Math.ceil(sampleRate * duration);
+  const samples = new Float32Array(numSamples);
+  const phaseIncrement = frequency / sampleRate;
+  let phase = 0;
+
+  for (let i = 0; i < numSamples; i++) {
+    let value = 0;
+    switch (type) {
+      case "sine":
+        value = Math.sin(2 * Math.PI * phase);
+        break;
+      case "square":
+        value = phase < 0.5 ? 1 : -1;
+        break;
+      case "sawtooth":
+        value = 2 * phase - 1;
+        break;
+      case "triangle":
+        value = phase < 0.5 ? 4 * phase - 1 : 3 - 4 * phase;
+        break;
+    }
+    samples[i] = value * volume;
+    phase += phaseIncrement;
+    if (phase >= 1) phase -= 1;
+  }
+  return samples;
+}
+
+function generateNoiseBuffer(duration: number, sampleRate: number): Float32Array {
+  const numSamples = Math.ceil(sampleRate * duration);
+  const samples = new Float32Array(numSamples);
+  for (let i = 0; i < numSamples; i++) {
+    samples[i] = Math.random() * 2 - 1;
+  }
+  return samples;
+}
+
+function applyEnvelope(samples: Float32Array, attack: number, decay: number, sustainLevel: number, release: number, sampleRate: number): Float32Array {
+  const result = new Float32Array(samples.length);
+  const attackSamples = attack * sampleRate;
+  const decaySamples = decay * sampleRate;
+  const releaseStart = samples.length - release * sampleRate;
+
+  for (let i = 0; i < samples.length; i++) {
+    let envelope = 1;
+    if (i < attackSamples) {
+      envelope = i / attackSamples;
+    } else if (i < attackSamples + decaySamples) {
+      envelope = 1 - (1 - sustainLevel) * ((i - attackSamples) / decaySamples);
+    } else if (i > releaseStart) {
+      envelope = sustainLevel * (1 - (i - releaseStart) / (samples.length - releaseStart));
+    }
+    result[i] = samples[i] * envelope;
+  }
+  return result;
+}
+
+function applySimpleLowPass(samples: Float32Array, cutoffFreq: number, sampleRate: number): Float32Array {
+  const result = new Float32Array(samples.length);
+  const rc = 1 / (2 * Math.PI * cutoffFreq);
+  const dt = 1 / sampleRate;
+  const alpha = dt / (rc + dt);
+  let prev = 0;
+
+  for (let i = 0; i < samples.length; i++) {
+    prev = prev + alpha * (samples[i] - prev);
+    result[i] = prev;
+  }
+  return result;
+}
+
+function applySimpleHighPass(samples: Float32Array, cutoffFreq: number, sampleRate: number): Float32Array {
+  const result = new Float32Array(samples.length);
+  const rc = 1 / (2 * Math.PI * cutoffFreq);
+  const dt = 1 / sampleRate;
+  const alpha = rc / (rc + dt);
+  let prevInput = 0;
+  let prevOutput = 0;
+
+  for (let i = 0; i < samples.length; i++) {
+    prevOutput = alpha * (prevOutput + samples[i] - prevInput);
+    prevInput = samples[i];
+    result[i] = prevOutput;
+  }
+  return result;
+}
+
+function generateDrumSamples(pitch: number, velocity: number, duration: number, sampleRate: number): { left: Float32Array; right: Float32Array } {
+  const numSamples = Math.ceil(sampleRate * duration);
+  const left = new Float32Array(numSamples);
+  const right = new Float32Array(numSamples);
+  const vol = (velocity / 127) * 0.5;
+
+  if (pitch === 36 || pitch === 35) {
+    // Kick drum: sine with pitch sweep
+    const freq = 150;
+    const pitchSweep = 0.05;
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      const currentFreq = freq * Math.exp(-t / pitchSweep * 3);
+      const env = Math.exp(-t / 0.3);
+      const sample = Math.sin(2 * Math.PI * currentFreq * t) * vol * env;
+      left[i] = sample;
+      right[i] = sample;
+    }
+  } else if (pitch === 38 || pitch === 40) {
+    // Snare: noise + triangle oscillator
+    const noiseDuration = 0.15;
+    const noiseSamples = Math.min(Math.ceil(sampleRate * noiseDuration), numSamples);
+    const noise = generateNoiseBuffer(noiseDuration, sampleRate);
+    // Bandpass noise
+    const filteredNoise = applySimpleLowPass(noise, 2000, sampleRate);
+    const filteredHP = applySimpleHighPass(filteredNoise, 500, sampleRate);
+    for (let i = 0; i < noiseSamples; i++) {
+      const env = Math.exp(-i / (sampleRate * 0.15)) * vol * 0.7;
+      left[i] += filteredHP[i] * env;
+      right[i] += filteredHP[i] * env;
+    }
+    // Triangle oscillator layer
+    const triFreq = 200;
+    for (let i = 0; i < Math.min(numSamples, Math.ceil(sampleRate * 0.08)); i++) {
+      const env = Math.exp(-i / (sampleRate * 0.08)) * vol * 0.3;
+      const sample = Math.sin(2 * Math.PI * triFreq * (i / sampleRate)) * env;
+      left[i] += sample;
+      right[i] += sample;
+    }
+  } else if (pitch === 42 || pitch === 44 || pitch === 46) {
+    // Hi-hat: filtered noise, short
+    const hhDuration = pitch === 46 ? 0.2 : 0.08;
+    const noise = generateNoiseBuffer(hhDuration, sampleRate);
+    const filtered = applySimpleHighPass(noise, 6000, sampleRate);
+    const hhSamples = Math.min(Math.ceil(sampleRate * hhDuration), numSamples);
+    for (let i = 0; i < hhSamples; i++) {
+      const env = Math.exp(-i / (sampleRate * hhDuration)) * vol * 0.4;
+      left[i] = filtered[i] * env;
+      right[i] = filtered[i] * env;
+    }
+  } else if (pitch === 43 || pitch === 47 || pitch === 57) {
+    // Tom: similar to kick but higher pitch
+    const baseFreq = pitch === 43 ? 100 : pitch === 47 ? 80 : 60;
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      const currentFreq = baseFreq * Math.exp(-t / 0.08 * 2);
+      const env = Math.exp(-t / 0.4);
+      const sample = Math.sin(2 * Math.PI * currentFreq * t) * vol * env;
+      left[i] = sample;
+      right[i] = sample;
+    }
+  } else if (pitch === 49 || pitch === 51 || pitch === 55 || pitch === 59) {
+    // Cymbal: long filtered noise
+    const noise = generateNoiseBuffer(duration, sampleRate);
+    const filtered = applySimpleHighPass(noise, 8000, sampleRate);
+    for (let i = 0; i < numSamples; i++) {
+      const env = Math.exp(-i / (sampleRate * duration * 0.5)) * vol * 0.3;
+      left[i] = filtered[i] * env;
+      right[i] = filtered[i] * env;
+    }
+  }
+
+  return { left, right };
+}
+
+function renderMidiNotesNative(
+  tracks: { name: string; volume: number; pan: number; muted: boolean; solo: boolean; midiNotes?: MIDINote[]; outputId?: string }[],
+  buses: { id: string; muted: boolean; volume: number }[] | undefined,
+  duration: number,
+  sampleRate: number,
+  mood: Mood | undefined,
+): Float32Array {
+  const totalSamples = Math.ceil(sampleRate * duration);
+  const left = new Float32Array(totalSamples);
+  const right = new Float32Array(totalSamples);
+
+  const anySolo = tracks.some((t) => t.solo);
+  const audible = tracks.filter((t) => (anySolo ? t.solo && !t.muted : !t.muted));
+
+  // Build bus gain map
+  const busGains: Record<string, number> = {};
+  if (buses) {
+    for (const bus of buses) {
+      busGains[bus.id] = bus.muted ? 0 : bus.volume / 100;
+    }
+  }
+
+  const beatDuration = 60 / (tracks[0]?.bpm || 120);
+
+  for (const track of audible) {
+    if (!track.midiNotes || track.midiNotes.length === 0) continue;
+
+    const trackGain = track.volume / 100;
+    const pan = track.pan / 100;
+    const leftGain = trackGain * (pan < 0 ? 1 : 1 - pan);
+    const rightGain = trackGain * (pan > 0 ? 1 : 1 + pan);
+    const busGain = track.outputId && busGains[track.outputId] !== undefined ? busGains[track.outputId] : 1;
+    const effectiveLeftGain = leftGain * busGain;
+    const effectiveRightGain = rightGain * busGain;
+
+    const isDrumTrack =
+      track.name.toLowerCase().includes("bateria") ||
+      track.name.toLowerCase().includes("drums") ||
+      track.name.toLowerCase().includes("percussão") ||
+      track.name.toLowerCase().includes("percussion");
+
+    const waveform = getTrackWaveform(track.name);
+
+    for (const note of track.midiNotes) {
+      const noteStartSec = note.start * beatDuration;
+      const noteDurSec = note.duration * beatDuration;
+      const startSample = Math.floor(noteStartSec * sampleRate);
+
+      if (startSample >= totalSamples) continue;
+
+      let noteSamples: { left: Float32Array; right: Float32Array };
+
+      if (isDrumTrack) {
+        noteSamples = generateDrumSamples(note.pitch, note.velocity, noteDurSec + 0.1, sampleRate);
+      } else {
+        const freq = NOTE_FREQS[note.pitch] || 440;
+        const vol = Math.max(0.01, note.velocity / 127) * 0.3;
+        const oscSamples = generateWaveform(waveform, freq, noteDurSec + 0.05, sampleRate, vol);
+        // Apply simple ADSR envelope
+        const envelopeSamples = applyEnvelope(oscSamples, 0.005, noteDurSec * 0.3, 0.8, 0.02, sampleRate);
+        noteSamples = { left: envelopeSamples, right: envelopeSamples };
+      }
+
+      // Mix into stereo buffer
+      const mixLen = Math.min(noteSamples.left.length, totalSamples - startSample);
+      for (let i = 0; i < mixLen; i++) {
+        if (startSample + i >= 0 && startSample + i < totalSamples) {
+          left[startSample + i] += noteSamples.left[i] * effectiveLeftGain;
+          right[startSample + i] += noteSamples.right[i] * effectiveRightGain;
+        }
+      }
+    }
+  }
+
+  // Apply mood effects (simple filter + reverb approximation)
+  if (mood) {
+    // Apply filter if present
+    if (mood.filter) {
+      if (mood.filter.type === "lowpass") {
+        for (let ch = 0; ch < 2; ch++) {
+          const buf = ch === 0 ? left : right;
+          const filtered = applySimpleLowPass(buf, mood.filter.freq, sampleRate);
+          (ch === 0 ? left : right).set(filtered);
+        }
+      } else if (mood.filter.type === "highpass") {
+        for (let ch = 0; ch < 2; ch++) {
+          const buf = ch === 0 ? left : right;
+          const filtered = applySimpleHighPass(buf, mood.filter.freq, sampleRate);
+          (ch === 0 ? left : right).set(filtered);
+        }
+      }
+    }
+
+    // Simple reverb approximation (add delayed, attenuated copies)
+    if (mood.reverb) {
+      const mix = mood.reverb.mix * 0.5;
+      const decay = Math.min(mood.reverb.decay, 2);
+      const delaySamples = Math.floor(sampleRate * 0.03); // 30ms delay
+      for (let ch = 0; ch < 2; ch++) {
+        const buf = ch === 0 ? left : right;
+        const wet = new Float32Array(buf.length);
+        for (let tap = 1; tap <= 4; tap++) {
+          const delay = delaySamples * tap;
+          const gain = mix * Math.exp(-tap / decay);
+          for (let i = delay; i < buf.length; i++) {
+            wet[i] += buf[i - delay] * gain;
+          }
+        }
+        for (let i = 0; i < buf.length; i++) {
+          buf[i] = buf[i] * (1 - mix * 0.3) + wet[i];
+        }
+      }
+    }
+  }
+
+  // Interleave stereo samples for WAV encoding
+  const interleaved = new Float32Array(totalSamples * 2);
+  for (let i = 0; i < totalSamples; i++) {
+    interleaved[i * 2] = Math.max(-1, Math.min(1, left[i]));
+    interleaved[i * 2 + 1] = Math.max(-1, Math.min(1, right[i]));
+  }
+
+  return interleaved;
+}
+
+function interleaveToWavBlob(interleaved: Float32Array, sampleRate: number): Blob {
+  const numSamples = interleaved.length / 2;
+  const numChannels = 2;
+  const bytesPerSample = 2; // 16-bit
+  const blockAlign = numChannels * bytesPerSample;
+  const dataSize = numSamples * blockAlign;
+  const headerSize = 44;
+  const ab = new ArrayBuffer(headerSize + dataSize);
+  const view = new DataView(ab);
+
+  // WAV header
+  const writeString = (offset: number, str: string) => {
+    for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+  };
+  writeString(0, "RIFF");
+  view.setUint32(4, 36 + dataSize, true);
+  writeString(8, "WAVE");
+  writeString(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true); // PCM
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * blockAlign, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, 16, true); // 16-bit
+  writeString(36, "data");
+  view.setUint32(40, dataSize, true);
+
+  // Write samples
+  for (let i = 0; i < numSamples; i++) {
+    for (let ch = 0; ch < numChannels; ch++) {
+      const sample = interleaved[i * numChannels + ch];
+      const clamped = Math.max(-1, Math.min(1, sample));
+      const val = clamped < 0 ? clamped * 0x8000 : clamped * 0x7fff;
+      view.setInt16(headerSize + (i * numChannels + ch) * bytesPerSample, val, true);
+    }
+  }
+
+  return new Blob([ab], { type: "audio/wav" });
+}
+
 export interface SynthVoice {
   oscillator: OscillatorNode;
   gainNode: GainNode;
@@ -423,11 +754,33 @@ export async function renderTracksToUrl(
       return createTrackedBlob(blob);
     } catch (e) {
       console.warn("OfflineAudioContext renderTracksToUrl failed:", e);
-      return null;
+      // Fall through to native path
     }
   }
 
-  return null;
+  // Native path: pure JS MIDI synthesis (no OfflineAudioContext)
+  try {
+    const interleaved = renderMidiNotesNative(
+      tracks.map((t) => ({
+        name: t.name,
+        volume: t.volume ?? 1,
+        pan: t.pan ?? 0,
+        muted: t.muted || false,
+        solo: t.solo || false,
+        midiNotes: t.midiNotes,
+        outputId: t.outputId,
+      })),
+      buses,
+      duration,
+      sampleRate,
+      moodPreset,
+    );
+    const blob = interleaveToWavBlob(interleaved, sampleRate);
+    return createTrackedBlob(blob);
+  } catch (e) {
+    console.warn("Native MIDI render failed:", e);
+    return null;
+  }
 }
 
 export function midiNoteToName(pitch: number): string {
