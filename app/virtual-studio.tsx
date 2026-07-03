@@ -1,365 +1,214 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { View, Text, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 
-// Collaboration service URL (only connect when explicitly configured)
-const COLLAB_URL = process.env.EXPO_PUBLIC_COLLAB_URL;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ThreeAny = any;
 
-interface Avatar {
-  id: string;
-  name: string;
-  x: number;
-  z: number;
-  color: string;
-}
-
-interface Furniture {
+interface FurnitureDef {
   id: string;
   name: string;
   icon: string;
   x: number;
+  y: number;
   z: number;
+  w: number;
+  h: number;
+  d: number;
   color: string;
   route: string;
-  width: number;
-  depth: number;
 }
 
-const FURNITURE: Furniture[] = [
-  { id: "mixer", name: "Mixer", icon: "🎛", x: -3, z: -2, color: "#3b82f6", route: "/studio", width: 2, depth: 1 },
-  { id: "mastering", name: "Mastering", icon: "🎚", x: 3, z: -2, color: "#8b5cf6", route: "/mastering", width: 2, depth: 1 },
-  { id: "tracks", name: "Tracks", icon: "🎵", x: -3, z: 2, color: "#10b981", route: "/tabs/library", width: 2, depth: 1 },
-  { id: "piano", name: "Piano Roll", icon: "🎹", x: 3, z: 2, color: "#f59e0b", route: "/studio", width: 2, depth: 1 },
-  { id: "looper", name: "Looper", icon: "🔁", x: 0, z: -3, color: "#ef4444", route: "/studio", width: 1.5, depth: 1 },
-  { id: "sampler", name: "Sampler", icon: "🥁", x: 0, z: 3, color: "#06b6d4", route: "/studio", width: 1.5, depth: 1 },
+const FURNITURE: FurnitureDef[] = [
+  { id: "mixer", name: "Mixing Console", icon: "🎛", x: -3, y: 0, z: -2, w: 3, h: 0.6, d: 1.5, color: "#2563eb", route: "/studio" },
+  { id: "mastering", name: "Mastering Suite", icon: "🎚", x: 3, y: 0, z: -2, w: 1.5, h: 1.2, d: 1.2, color: "#7c3aed", route: "/mastering" },
+  { id: "timeline", name: "Timeline", icon: "🎬", x: -3, y: 0, z: 2, w: 3, h: 0.5, d: 1.5, color: "#059669", route: "/studio" },
+  { id: "piano", name: "Piano Roll", icon: "🎹", x: 3, y: 0, z: 2, w: 2.5, h: 0.5, d: 1.2, color: "#b45309", route: "/studio" },
+  { id: "pedalboard", name: "Pedalboard", icon: "🎸", x: 0, y: 0, z: -3.5, w: 2, h: 0.3, d: 1, color: "#dc2626", route: "/studio" },
+  { id: "synth", name: "Synthesizer", icon: "🎹", x: 0, y: 0, z: 3.5, w: 2, h: 0.5, d: 1, color: "#0891b2", route: "/studio" },
 ];
 
-const AVATAR_COLORS = ["#ff6b6b", "#4ecdc4", "#45b7d1", "#96ceb4", "#ffeaa7", "#dfe6e9", "#a29bfe", "#fd79a8"];
+const THREE_CDN = "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.min.js";
+const GRID_SIZE = 16;
+const FLOOR_COLOR = 0x1e293b;
+const GRID_COLOR_MAIN = 0x334155;
+const GRID_COLOR_MINOR = 0x1e293b;
+const WALL_COLOR = 0x1e293b;
+const WALL_OPACITY = 0.5;
+const CAMERA_DISTANCE = 8;
+const MOVE_SPEED = 4;
+const AVATAR_BOUNDS = 7;
 
-function hashStr(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) {
-    h = ((h << 5) - h + s.charCodeAt(i)) | 0;
-  }
-  return Math.abs(h);
+function makeSprite(THREE: ThreeAny, text: string, fontSize: number, y: number, scaleX: number, scaleY: number): ThreeAny {
+  const c = document.createElement("canvas");
+  c.width = 256;
+  c.height = 48;
+  const ctx = c.getContext("2d")!;
+  ctx.font = `bold ${fontSize}px sans-serif`;
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#ffffff";
+  ctx.fillText(text, 128, 32);
+  const sprite = new THREE.Sprite(
+    new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false })
+  );
+  sprite.position.y = y;
+  sprite.scale.set(scaleX, scaleY, 1);
+  return sprite;
 }
 
 export default function VirtualStudio() {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
-  const wsRef = useRef<WebSocket | null>(null);
-  const sceneRef = useRef<unknown>(null);
-  const [connectedUsers, setConnectedUsers] = useState(1);
-  const [userId] = useState(() => `user-${Math.random().toString(36).slice(2, 8)}`);
-  const [userName] = useState(() => `User${Math.floor(Math.random() * 999)}`);
-  const myPosRef = useRef({ x: 0, z: 0 });
+  const [selectedFurniture, setSelectedFurniture] = useState<FurnitureDef | null>(null);
+  const [threeLoaded, setThreeLoaded] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  // Connect to collaboration WebSocket (optional — skip if backend not running)
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    // Only attempt connection if COLLAB_URL is explicitly configured
-    const collabUrl = process.env.EXPO_PUBLIC_COLLAB_URL;
-    if (!collabUrl) return;
-
-    let ws: WebSocket | null = null;
-    try {
-      ws = new WebSocket(`${collabUrl}/ws/project/studio-room`);
-      wsRef.current = ws;
-
-      ws.onopen = () => {
-        ws?.send(JSON.stringify({
-          type: "join",
-          userId,
-          userName,
-          x: 0,
-          z: 0,
-        }));
-      };
-
-      ws.onmessage = (event: MessageEvent) => {
-        try {
-          const msg = JSON.parse(event.data);
-          if (msg.type === "state_change" && msg.data?.avatars) {
-            const avatarsArr = Object.values(msg.data.avatars) as Avatar[];
-            const others = avatarsArr.filter((a) => a.id !== userId);
-            setConnectedUsers(others.length + 1);
-          }
-        } catch { /* ignore malformed messages */ }
-      };
-
-      ws.onerror = () => { wsRef.current = null; };
-      ws.onclose = () => { wsRef.current = null; };
-    } catch {
-      // WebSocket not supported — local mode
-    }
-
-    return () => {
-      ws?.close();
-    };
-  }, [userId, userName]);
-
-  // Broadcast position on movement
-  const broadcastPosition = useCallback((x: number, z: number) => {
-    myPosRef.current = { x, z };
-    wsRef.current?.send(JSON.stringify({
-      type: "movement",
-      userId,
-      x,
-      z,
-    }));
-  }, [userId]);
-
-  // Initialize Three.js scene
   useEffect(() => {
     if (typeof window === "undefined" || !containerRef.current) return;
 
     let cancelled = false;
     let animationId = 0;
 
-    async function init() {
-      // Load three.js dynamically — avoids Metro build-time resolution
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let THREE: any;
-      const win = window as unknown as Record<string, unknown>;
-      if (typeof window !== "undefined" && win.THREE) {
-        THREE = win.THREE;
-      } else if (typeof window !== "undefined") {
-        // Load from CDN via script tag (avoids Metro bundler)
-        try {
-          await new Promise<void>((resolve, reject) => {
-            const s = document.createElement("script");
-            s.src = "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.min.js";
-            s.onload = () => {
-              THREE = (window as unknown as Record<string, unknown>).THREE;
-              resolve();
-            };
-            s.onerror = () => reject(new Error("Failed to load three.js from CDN"));
-            document.head.appendChild(s);
-          });
-        } catch (e) {
-          console.warn("Three.js CDN load failed, running without 3D scene:", e);
-          return;
-        }
-      }
-      if (cancelled || !THREE) return;
+    async function loadThree(): Promise<ThreeAny> {
+      const existing = ((window as unknown) as Record<string, unknown>).THREE as ThreeAny;
+      if (existing) return existing;
 
+      return new Promise<ThreeAny>((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = THREE_CDN;
+        script.onload = () => resolve(((window as unknown) as Record<string, unknown>).THREE as ThreeAny);
+        script.onerror = () => reject(new Error("Failed to load Three.js from CDN"));
+        document.head.appendChild(script);
+      });
+    }
+
+    async function init() {
       const container = containerRef.current!;
       const width = container.clientWidth;
       const height = container.clientHeight;
 
+      let THREE: ThreeAny;
+      try {
+        THREE = await loadThree();
+      } catch {
+        if (!cancelled) setLoadError("Three.js unavailable — 3D room disabled");
+        return;
+      }
+      if (cancelled) return;
+
       // Scene
       const scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x0a0a0f);
-      scene.fog = new THREE.Fog(0x0a0a0f, 20, 40);
-      sceneRef.current = scene;
+      scene.background = new THREE.Color(0x0f172a);
 
-      // Camera
-      const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 100);
-      camera.position.set(0, 12, 12);
+      // Orthographic Camera (isometric)
+      const aspect = width / height;
+      const camera = new THREE.OrthographicCamera(
+        -CAMERA_DISTANCE * aspect,
+        CAMERA_DISTANCE * aspect,
+        CAMERA_DISTANCE,
+        -CAMERA_DISTANCE,
+        0.1,
+        100
+      );
+      camera.position.set(10, 10, 10);
       camera.lookAt(0, 0, 0);
 
       // Renderer
-      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      const renderer = new THREE.WebGLRenderer({ antialias: false });
       renderer.setSize(width, height);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       container.appendChild(renderer.domElement);
 
       // Lighting
-      const ambientLight = new THREE.AmbientLight(0x404060, 0.5);
-      scene.add(ambientLight);
+      scene.add(new THREE.AmbientLight(0x404060, 0.8));
 
       const mainLight = new THREE.DirectionalLight(0xffffff, 1);
       mainLight.position.set(5, 10, 5);
-      mainLight.castShadow = true;
-      mainLight.shadow.mapSize.set(2048, 2048);
-      mainLight.shadow.camera.near = 0.5;
-      mainLight.shadow.camera.far = 50;
-      mainLight.shadow.camera.left = -15;
-      mainLight.shadow.camera.right = 15;
-      mainLight.shadow.camera.top = 15;
-      mainLight.shadow.camera.bottom = -15;
       scene.add(mainLight);
 
-      const fillLight = new THREE.PointLight(0x3b82f6, 0.3, 20);
+      const fillLight = new THREE.PointLight(0x3b82f6, 0.4, 20);
       fillLight.position.set(-5, 5, -5);
       scene.add(fillLight);
 
-      const rimLight = new THREE.PointLight(0x8b5cf6, 0.3, 20);
-      rimLight.position.set(5, 5, 5);
-      scene.add(rimLight);
-
       // Floor
-      const floorGeo = new THREE.PlaneGeometry(20, 20);
-      const floorMat = new THREE.MeshStandardMaterial({
-        color: 0x1a1a2e,
-        roughness: 0.8,
-        metalness: 0.2,
-      });
-      const floor = new THREE.Mesh(floorGeo, floorMat);
+      const floor = new THREE.Mesh(
+        new THREE.PlaneGeometry(GRID_SIZE, GRID_SIZE),
+        new THREE.MeshStandardMaterial({ color: FLOOR_COLOR, roughness: 0.9, metalness: 0.1 })
+      );
       floor.rotation.x = -Math.PI / 2;
-      floor.receiveShadow = true;
       scene.add(floor);
 
-      // Grid on floor
-      const gridHelper = new THREE.GridHelper(20, 20, 0x2a2a4e, 0x1a1a2e);
-      scene.add(gridHelper);
+      // Grid
+      scene.add(new THREE.GridHelper(GRID_SIZE, GRID_SIZE, GRID_COLOR_MAIN, GRID_COLOR_MINOR));
 
-      // Walls
+      // Walls (back + left, semi-transparent)
       const wallMat = new THREE.MeshStandardMaterial({
-        color: 0x16162a,
-        roughness: 0.9,
+        color: WALL_COLOR,
+        roughness: 0.95,
         transparent: true,
-        opacity: 0.7,
+        opacity: WALL_OPACITY,
       });
 
-      const backWall = new THREE.Mesh(new THREE.PlaneGeometry(20, 8), wallMat);
-      backWall.position.set(0, 4, -10);
+      const backWall = new THREE.Mesh(new THREE.PlaneGeometry(GRID_SIZE, 6), wallMat);
+      backWall.position.set(0, 3, -GRID_SIZE / 2);
       scene.add(backWall);
 
-      const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(20, 8), wallMat);
-      leftWall.position.set(-10, 4, 0);
+      const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(GRID_SIZE, 6), wallMat);
+      leftWall.position.set(-GRID_SIZE / 2, 3, 0);
       leftWall.rotation.y = Math.PI / 2;
       scene.add(leftWall);
 
-      const rightWall = new THREE.Mesh(new THREE.PlaneGeometry(20, 8), wallMat);
-      rightWall.position.set(10, 4, 0);
-      rightWall.rotation.y = -Math.PI / 2;
-      scene.add(rightWall);
-
       // Furniture
-      const furnitureMeshes: unknown[] = [];
+      const furnitureMeshes: ThreeAny[] = [];
+      const furnitureBaseColors: ThreeAny[] = [];
       const furnitureGroup = new THREE.Group();
       scene.add(furnitureGroup);
 
       for (const f of FURNITURE) {
-        const group = new THREE.Group();
-        group.position.set(f.x, 0, f.z);
-        group.userData = { furnitureId: f.id, route: f.route };
+        const baseColor = new THREE.Color(f.color);
+        furnitureBaseColors.push(baseColor);
 
-        // Base
-        const baseGeo = new THREE.BoxGeometry(f.width, 0.8, f.depth);
-        const baseMat = new THREE.MeshStandardMaterial({
-          color: new THREE.Color(f.color),
-          roughness: 0.4,
-          metalness: 0.6,
-          emissive: new THREE.Color(f.color),
-          emissiveIntensity: 0.15,
-        });
-        const base = new THREE.Mesh(baseGeo, baseMat);
-        base.position.y = 0.4;
-        base.castShadow = true;
-        base.receiveShadow = true;
-        group.add(base);
+        const mesh = new THREE.Mesh(
+          new THREE.BoxGeometry(f.w, f.h, f.d),
+          new THREE.MeshToonMaterial({ color: baseColor })
+        );
+        mesh.position.set(f.x, f.y + f.h / 2, f.z);
+        mesh.userData = { furnitureId: f.id, route: f.route };
+        furnitureGroup.add(mesh);
+        furnitureMeshes.push(mesh);
 
-        // Top surface
-        const topGeo = new THREE.BoxGeometry(f.width - 0.1, 0.05, f.depth - 0.1);
-        const topMat = new THREE.MeshStandardMaterial({
-          color: 0x222233,
-          roughness: 0.2,
-          metalness: 0.8,
-        });
-        const top = new THREE.Mesh(topGeo, topMat);
-        top.position.y = 0.82;
-        group.add(top);
+        // Top highlight
+        const topMesh = new THREE.Mesh(
+          new THREE.BoxGeometry(f.w - 0.1, 0.05, f.d - 0.1),
+          new THREE.MeshToonMaterial({ color: baseColor.clone().multiplyScalar(1.3) })
+        );
+        topMesh.position.set(f.x, f.y + f.h + 0.025, f.z);
+        furnitureGroup.add(topMesh);
 
-        // Icon label (floating text plane)
-        const canvas = document.createElement("canvas");
-        canvas.width = 128;
-        canvas.height = 64;
-        const ctx = canvas.getContext("2d")!;
-        ctx.fillStyle = "transparent";
-        ctx.fillRect(0, 0, 128, 64);
-        ctx.font = "32px sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText(f.icon, 64, 36);
-        ctx.font = "bold 14px sans-serif";
-        ctx.fillStyle = "#ffffff";
-        ctx.fillText(f.name, 64, 56);
-
-        const texture = new THREE.CanvasTexture(canvas);
-        const labelGeo = new THREE.PlaneGeometry(1.5, 0.75);
-        const labelMat = new THREE.MeshBasicMaterial({
-          map: texture,
-          transparent: true,
-          depthWrite: false,
-        });
-        const label = new THREE.Mesh(labelGeo, labelMat);
-        label.position.y = 1.5;
-        group.add(label);
-
-        // Glow ring
-        const ringGeo = new THREE.RingGeometry(f.width / 2 + 0.1, f.width / 2 + 0.15, 32);
-        const ringMat = new THREE.MeshBasicMaterial({
-          color: new THREE.Color(f.color),
-          transparent: true,
-          opacity: 0.3,
-          side: THREE.DoubleSide,
-        });
-        const ring = new THREE.Mesh(ringGeo, ringMat);
-        ring.rotation.x = -Math.PI / 2;
-        ring.position.y = 0.02;
-        group.add(ring);
-
-        furnitureGroup.add(group);
-        furnitureMeshes.push(base);
+        // Sprite label (icon + name)
+        const label = makeSprite(THREE, `${f.icon} ${f.name}`, 28, f.y + f.h + 1.2, 3, 0.75);
+        label.position.x = f.x;
+        label.position.z = f.z;
+        furnitureGroup.add(label);
       }
 
-      // My avatar
-      const myColor = AVATAR_COLORS[hashStr(userId) % AVATAR_COLORS.length];
+      // Local avatar (capsule body + sphere head)
       const avatarGroup = new THREE.Group();
       scene.add(avatarGroup);
 
-      // Body
-      const bodyGeo = new THREE.CapsuleGeometry(0.3, 0.8, 8, 16);
-      const bodyMat = new THREE.MeshStandardMaterial({
-        color: new THREE.Color(myColor),
-        roughness: 0.3,
-        metalness: 0.5,
-        emissive: new THREE.Color(myColor),
-        emissiveIntensity: 0.2,
-      });
-      const body = new THREE.Mesh(bodyGeo, bodyMat);
-      body.position.y = 0.7;
-      body.castShadow = true;
+      const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.25, 0.6, 4, 8), new THREE.MeshToonMaterial({ color: 0xff3b30 }));
+      body.position.y = 0.55;
       avatarGroup.add(body);
 
-      // Head
-      const headGeo = new THREE.SphereGeometry(0.25, 16, 16);
-      const headMat = new THREE.MeshStandardMaterial({
-        color: new THREE.Color(myColor),
-        roughness: 0.3,
-        metalness: 0.5,
-      });
-      const head = new THREE.Mesh(headGeo, headMat);
-      head.position.y = 1.3;
-      head.castShadow = true;
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), new THREE.MeshToonMaterial({ color: 0xfde68a }));
+      head.position.y = 1.1;
       avatarGroup.add(head);
 
-      // Name tag
-      const nameCanvas = document.createElement("canvas");
-      nameCanvas.width = 256;
-      nameCanvas.height = 64;
-      const nameCtx = nameCanvas.getContext("2d")!;
-      nameCtx.font = "bold 28px sans-serif";
-      nameCtx.textAlign = "center";
-      nameCtx.fillStyle = "#ffffff";
-      nameCtx.fillText(userName, 128, 40);
+      // Avatar name sprite
+      const nameSprite = makeSprite(THREE, "You", 24, 1.6, 2, 0.4);
+      avatarGroup.add(nameSprite);
 
-      const nameTexture = new THREE.CanvasTexture(nameCanvas);
-      const nameGeo = new THREE.PlaneGeometry(2, 0.5);
-      const nameMat = new THREE.MeshBasicMaterial({
-        map: nameTexture,
-        transparent: true,
-        depthWrite: false,
-      });
-      const nameLabel = new THREE.Mesh(nameGeo, nameMat);
-      nameLabel.position.y = 1.8;
-      avatarGroup.add(nameLabel);
-
-      // Raycaster for interaction
+      // Raycaster for click detection
       const raycaster = new THREE.Raycaster();
       const mouse = new THREE.Vector2();
 
@@ -367,19 +216,16 @@ export default function VirtualStudio() {
         const rect = renderer.domElement.getBoundingClientRect();
         mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
         raycaster.setFromCamera(mouse, camera);
         const intersects = raycaster.intersectObjects(furnitureMeshes, false);
-
         if (intersects.length > 0) {
-          const parent = intersects[0].object.parent;
-          const route = parent?.userData?.route;
-          if (route) {
-            router.push(route);
-          }
+          const hit = intersects[0].object as { userData: { furnitureId: string } };
+          const found = FURNITURE.find(f => f.id === hit.userData.furnitureId);
+          setSelectedFurniture(found ?? null);
+        } else {
+          setSelectedFurniture(null);
         }
       };
-
       renderer.domElement.addEventListener("click", handleClick);
 
       // WASD movement
@@ -389,44 +235,16 @@ export default function VirtualStudio() {
       window.addEventListener("keydown", handleKeyDown);
       window.addEventListener("keyup", handleKeyUp);
 
-      // Camera orbit with mouse drag
-      let isDragging = false;
-      let lastMouse = { x: 0, y: 0 };
-      let cameraAngle = { theta: 0, phi: Math.PI / 4 };
-      let cameraDistance = 17;
-
-      renderer.domElement.addEventListener("mousedown", (e: MouseEvent) => {
-        if (e.button === 2) {
-          isDragging = true;
-          lastMouse = { x: e.clientX, y: e.clientY };
-        }
-      });
-      renderer.domElement.addEventListener("contextmenu", (e: Event) => e.preventDefault());
-      window.addEventListener("mouseup", () => { isDragging = false; });
-      window.addEventListener("mousemove", (e: MouseEvent) => {
-        if (isDragging) {
-          const dx = e.clientX - lastMouse.x;
-          const dy = e.clientY - lastMouse.y;
-          cameraAngle.theta -= dx * 0.005;
-          cameraAngle.phi = Math.max(0.1, Math.min(Math.PI / 2 - 0.1, cameraAngle.phi - dy * 0.005));
-          lastMouse = { x: e.clientX, y: e.clientY };
-        }
-      });
-      renderer.domElement.addEventListener("wheel", (e: WheelEvent) => {
-        cameraDistance = Math.max(8, Math.min(30, cameraDistance + e.deltaY * 0.02));
-      });
-
       // Animation loop
       let lastTime = performance.now();
-      const moveSpeed = 8;
 
       function animate(time: number) {
         animationId = requestAnimationFrame(animate);
         const delta = (time - lastTime) / 1000;
         lastTime = time;
 
-        // WASD movement
-        let dx = 0, dz = 0;
+        let dx = 0;
+        let dz = 0;
         if (keys.has("w") || keys.has("arrowup")) dz -= 1;
         if (keys.has("s") || keys.has("arrowdown")) dz += 1;
         if (keys.has("a") || keys.has("arrowleft")) dx -= 1;
@@ -434,47 +252,42 @@ export default function VirtualStudio() {
 
         if (dx !== 0 || dz !== 0) {
           const len = Math.sqrt(dx * dx + dz * dz);
-          dx /= len;
-          dz /= len;
-          avatarGroup.position.x += dx * moveSpeed * delta;
-          avatarGroup.position.z += dz * moveSpeed * delta;
-
-          // Clamp to room bounds
-          avatarGroup.position.x = Math.max(-8, Math.min(8, avatarGroup.position.x));
-          avatarGroup.position.z = Math.max(-8, Math.min(8, avatarGroup.position.z));
-
-          // Broadcast position
-          broadcastPosition(avatarGroup.position.x, avatarGroup.position.z);
+          avatarGroup.position.x = Math.max(
+            -AVATAR_BOUNDS,
+            Math.min(AVATAR_BOUNDS, avatarGroup.position.x + (dx / len) * MOVE_SPEED * delta)
+          );
+          avatarGroup.position.z = Math.max(
+            -AVATAR_BOUNDS,
+            Math.min(AVATAR_BOUNDS, avatarGroup.position.z + (dz / len) * MOVE_SPEED * delta)
+          );
         }
 
-        // Bob animation
-        body.position.y = 0.7 + Math.sin(time * 0.003) * 0.05;
-        head.position.y = 1.3 + Math.sin(time * 0.003) * 0.05;
+        // Avatar bob
+        const bob = Math.sin(time * 0.003) * 0.03;
+        body.position.y = 0.55 + bob;
+        head.position.y = 1.1 + bob;
 
-        // Update camera orbit
-        camera.position.x = avatarGroup.position.x + Math.sin(cameraAngle.theta) * Math.cos(cameraAngle.phi) * cameraDistance;
-        camera.position.z = avatarGroup.position.z + Math.cos(cameraAngle.theta) * Math.cos(cameraAngle.phi) * cameraDistance;
-        camera.position.y = Math.sin(cameraAngle.phi) * cameraDistance;
-        camera.lookAt(avatarGroup.position.x, 0, avatarGroup.position.z);
-
-        // Animate furniture glow
-        furnitureGroup.children.forEach((group: { children: Array<{ material?: { opacity: number } }> }, i: number) => {
-          const ring = group.children[3];
-          if (ring?.material) {
-            ring.material.opacity = 0.2 + Math.sin(time * 0.002 + i) * 0.15;
-          }
-        });
+        // Furniture glow pulse (own color, subtle)
+        for (let i = 0; i < furnitureMeshes.length; i++) {
+          const pulse = 0.05 + Math.sin(time * 0.002 + i * 1.2) * 0.04;
+          furnitureMeshes[i].material.emissive = furnitureBaseColors[i].clone().multiplyScalar(pulse);
+        }
 
         renderer.render(scene, camera);
       }
 
       animate(performance.now());
+      setThreeLoaded(true);
 
       // Resize handler
       const handleResize = () => {
         const w = container.clientWidth;
         const h = container.clientHeight;
-        camera.aspect = w / h;
+        const a = w / h;
+        camera.left = -CAMERA_DISTANCE * a;
+        camera.right = CAMERA_DISTANCE * a;
+        camera.top = CAMERA_DISTANCE;
+        camera.bottom = -CAMERA_DISTANCE;
         camera.updateProjectionMatrix();
         renderer.setSize(w, h);
       };
@@ -488,14 +301,17 @@ export default function VirtualStudio() {
         window.removeEventListener("keydown", handleKeyDown);
         window.removeEventListener("keyup", handleKeyUp);
         window.removeEventListener("resize", handleResize);
-        container.removeChild(renderer.domElement);
+        if (container.contains(renderer.domElement)) {
+          container.removeChild(renderer.domElement);
+        }
         renderer.dispose();
       };
     }
 
-    const cleanup = init();
-    return () => { cleanup?.then((fn) => fn?.()); };
-  }, [userId, userName, router, broadcastPosition]);
+    let cleanup: (() => void) | undefined;
+    init().then(fn => { cleanup = fn; });
+    return () => { cleanup?.(); };
+  }, []);
 
   return (
     <View className="flex-1 bg-dark-bg">
@@ -510,81 +326,61 @@ export default function VirtualStudio() {
         <View className="flex-1 items-center">
           <Text className="text-white font-bold text-base">Virtual Studio</Text>
         </View>
-        <View className="flex-row items-center gap-2">
-          <View className="w-2 h-2 rounded-full bg-green-500" />
-          <Text className="text-green-400 text-xs">{connectedUsers} online</Text>
-        </View>
+        <View className="w-9" />
       </View>
 
-      {/* 3D Room (CSS mock when Three.js unavailable) */}
-      <View className="flex-1 relative bg-gray-900 overflow-hidden">
+      {/* 3D Canvas */}
+      <View className="flex-1 relative bg-black">
         <div
           ref={containerRef as React.RefObject<HTMLDivElement>}
           style={{ position: "absolute", inset: 0 }}
         />
 
-        {/* Mock room fallback */}
-        <View className="absolute inset-0 items-center justify-center">
-          <View className="w-full h-full relative">
-            {/* Floor grid */}
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                backgroundImage:
-                  "linear-gradient(rgba(59,130,246,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.1) 1px, transparent 1px)",
-                backgroundSize: "40px 40px",
-                perspective: "800px",
-                transform: "rotateX(60deg) scale(2)",
-                transformOrigin: "center top",
-              }}
-            />
+        {!threeLoaded && !loadError && (
+          <View className="absolute inset-0 items-center justify-center bg-black">
+            <Text className="text-4xl mb-3">🏠</Text>
+            <Text className="text-white font-bold text-lg">Loading Virtual Studio...</Text>
+          </View>
+        )}
 
-            {/* Furniture cards */}
-            <View className="absolute inset-0 flex-row flex-wrap items-center justify-center gap-4 p-6">
-              {FURNITURE.map((f) => (
-                <Pressable
-                  key={f.id}
-                  onPress={() => router.push(f.route)}
-                  style={{
-                    width: 140,
-                    height: 100,
-                    borderRadius: 12,
-                    backgroundColor: f.color + "22",
-                    borderColor: f.color,
-                    borderWidth: 2,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 8,
-                  }}
-                >
-                  <Text style={{ fontSize: 32 }}>{f.icon}</Text>
-                  <Text style={{ color: "#fff", fontSize: 13, fontWeight: "600" }}>
-                    {f.name}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
+        {loadError && (
+          <View className="absolute inset-0 items-center justify-center bg-black px-6">
+            <Text className="text-4xl mb-3">🏠</Text>
+            <Text className="text-white font-bold text-lg mb-2">3D Unavailable</Text>
+            <Text className="text-gray-400 text-center text-sm">{loadError}</Text>
+          </View>
+        )}
 
-            {/* User avatar */}
-            <View className="absolute bottom-8 left-1/2" style={{ marginLeft: -40 }}>
-              <View className="bg-brand-primary rounded-full w-10 h-10 items-center justify-center">
-                <Text className="text-white text-lg">👤</Text>
-              </View>
-              <Text className="text-gray-400 text-xs text-center mt-1">{userName}</Text>
+        {/* Selected furniture overlay */}
+        {selectedFurniture && threeLoaded && (
+          <View className="absolute top-4 left-4 bg-dark-surface/90 backdrop-blur-sm rounded-xl p-4 border border-dark-border">
+            <Text className="text-3xl mb-1">{selectedFurniture.icon}</Text>
+            <Text className="text-white font-bold text-base">{selectedFurniture.name}</Text>
+            <View className="flex-row gap-2 mt-3">
+              <Pressable
+                onPress={() => router.push(selectedFurniture.route)}
+                className="bg-brand-primary rounded-lg px-4 py-2"
+              >
+                <Text className="text-white font-bold text-sm">Open</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setSelectedFurniture(null)}
+                className="bg-dark-muted rounded-lg px-4 py-2"
+              >
+                <Text className="text-gray-300 font-bold text-sm">Close</Text>
+              </Pressable>
             </View>
           </View>
-        </View>
+        )}
 
-        {/* Controls overlay */}
-        <View className="absolute bottom-6 left-4">
-          <View className="bg-dark-surface/80 backdrop-blur-sm rounded-lg px-3 py-2">
-            <Text className="text-gray-300 text-xs">🎮 Click furniture to open tools</Text>
-            <Text className="text-gray-500 text-[10px]">
-              {COLLAB_URL ? "Multi-user mode" : "Local mode — set EXPO_PUBLIC_COLLAB_URL for collaboration"}
-            </Text>
+        {/* Controls hint */}
+        {threeLoaded && (
+          <View className="absolute bottom-6 left-4">
+            <View className="bg-dark-surface/80 backdrop-blur-sm rounded-lg px-3 py-2">
+              <Text className="text-gray-300 text-xs">🎮 WASD to move • Click furniture to open</Text>
+            </View>
           </View>
-        </View>
+        )}
       </View>
     </View>
   );
