@@ -20,12 +20,18 @@ interface FurnitureDef {
 }
 
 const FURNITURE: FurnitureDef[] = [
-  { id: "mixer", name: "Mixing Console", icon: "🎛", x: -3, y: 0, z: -2, w: 3, h: 0.6, d: 1.5, color: "#2563eb", route: "/studio" },
-  { id: "mastering", name: "Mastering Suite", icon: "🎚", x: 3, y: 0, z: -2, w: 1.5, h: 1.2, d: 1.2, color: "#7c3aed", route: "/mastering" },
-  { id: "timeline", name: "Timeline", icon: "🎬", x: -3, y: 0, z: 2, w: 3, h: 0.5, d: 1.5, color: "#059669", route: "/studio" },
-  { id: "piano", name: "Piano Roll", icon: "🎹", x: 3, y: 0, z: 2, w: 2.5, h: 0.5, d: 1.2, color: "#b45309", route: "/studio" },
-  { id: "pedalboard", name: "Pedalboard", icon: "🎸", x: 0, y: 0, z: -3.5, w: 2, h: 0.3, d: 1, color: "#dc2626", route: "/studio" },
-  { id: "synth", name: "Synthesizer", icon: "🎹", x: 0, y: 0, z: 3.5, w: 2, h: 0.5, d: 1, color: "#0891b2", route: "/studio" },
+  { id: "mixer", name: "Mixing Console", icon: "🎛", x: -3.5, y: 0, z: -2, w: 2.5, h: 0.6, d: 1.5, color: "#2563eb", route: "/mixing-console" },
+  { id: "mastering", name: "Mastering Suite", icon: "🎚", x: 3.5, y: 0, z: -2, w: 1.5, h: 1.2, d: 1.2, color: "#7c3aed", route: "/mastering" },
+  { id: "beatmaker", name: "Beatmaker", icon: "🥁", x: -3.5, y: 0, z: 2, w: 2.5, h: 0.5, d: 1.5, color: "#dc2626", route: "/beatmaker" },
+  { id: "synth", name: "Synth Lab", icon: "🎹", x: 3.5, y: 0, z: 2, w: 2, h: 0.5, d: 1.2, color: "#a855f7", route: "/synth-lab" },
+  { id: "dj", name: "DJ Stage", icon: "💿", x: -3.5, y: 0, z: 0, w: 2, h: 0.5, d: 1.5, color: "#10b981", route: "/dj-stage" },
+  { id: "autotune", name: "Auto-Tune", icon: "🎤", x: 3.5, y: 0, z: 0, w: 2, h: 0.5, d: 1.2, color: "#00ffaa", route: "/autotune" },
+  { id: "live", name: "Live Room", icon: "🎸", x: 0, y: 0, z: -3.5, w: 2, h: 0.3, d: 1, color: "#ef4444", route: "/live-room" },
+  { id: "spatial", name: "Spatial Audio", icon: "🔊", x: 0, y: 0, z: 3.5, w: 2, h: 0.5, d: 1, color: "#6366f1", route: "/spatial-audio" },
+  { id: "stems", name: "Stem Collider", icon: "🔮", x: -2, y: 0, z: -3.5, w: 1.5, h: 0.3, d: 1, color: "#38bdf8", route: "/stem-collider" },
+  { id: "lofi", name: "Tape Lab", icon: "📼", x: 2, y: 0, z: -3.5, w: 1.5, h: 0.3, d: 1, color: "#ff5500", route: "/lofi-tape" },
+  { id: "acoustics", name: "Acoustics", icon: "🔇", x: -2, y: 0, z: 3.5, w: 1.5, h: 0.3, d: 1, color: "#10b981", route: "/acoustics" },
+  { id: "coverjam", name: "Cover Jam", icon: "🎬", x: 2, y: 0, z: 3.5, w: 1.5, h: 0.3, d: 1, color: "#00e5ff", route: "/cover-jam" },
 ];
 
 const THREE_CDNS = [
