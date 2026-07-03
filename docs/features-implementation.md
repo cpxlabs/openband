@@ -442,7 +442,10 @@ function autoMix(tracks: TrackDef[], genre: string): TrackDef[] {
 
 ## Playback Improvements (Latest)
 
-- **P0 fixes**: AudioContext try/finally cleanup, blob URL revoke before replace, pause/resume without position reset, studio unmount cleanup
+- **AudioContext singleton**: All `new AudioContext()` replaced with `audioSystem.ensureContext()` — browser autoplay policy satisfied
+- **Blob URL lifecycle**: Tracked via `blobUrlRegistry` with auto-revoke (5min age, 100 entry cap)
+- **Studio togglePlay**: Always re-renders tracks (no stale `hasLoadedRef` shortcut), pitch correction URL properly sequenced
+- **Feed playback**: Web uses HTML5 `<audio>` fallback, native uses expo-audio
+- **Extractor stems**: Per-stem web/native split, "Masterizar stems" button sends to mastering suite via bridge
 - **Transport controls**: Skip ±5s (⏮⏭), stop (⏹), time display (current/total in `M:SS.cc`)
-- **Feed playback**: seekTo(0) on cleanup, Alert.alert on preview failure
-- **Performance**: Pre-compute automation schedules (useMemo), binary search interpolation per-frame instead of O(n) rebuild
+- **Performance**: Pre-computed automation schedules (useMemo), binary search interpolation per-frame

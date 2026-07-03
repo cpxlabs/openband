@@ -28,7 +28,11 @@ const FURNITURE: FurnitureDef[] = [
   { id: "synth", name: "Synthesizer", icon: "🎹", x: 0, y: 0, z: 3.5, w: 2, h: 0.5, d: 1, color: "#0891b2", route: "/studio" },
 ];
 
-const THREE_CDN = "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.min.js";
+const THREE_CDNS = [
+  "https://unpkg.com/three@0.170.0/build/three.min.js",
+  "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.170.0/three.min.js",
+  "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.min.js",
+];
 const GRID_SIZE = 16;
 const FLOOR_COLOR = 0x1e293b;
 const GRID_COLOR_MAIN = 0x334155;
@@ -73,13 +77,21 @@ export default function VirtualStudio() {
       const existing = ((window as unknown) as Record<string, unknown>).THREE as ThreeAny;
       if (existing) return existing;
 
-      return new Promise<ThreeAny>((resolve, reject) => {
-        const script = document.createElement("script");
-        script.src = THREE_CDN;
-        script.onload = () => resolve(((window as unknown) as Record<string, unknown>).THREE as ThreeAny);
-        script.onerror = () => reject(new Error("Failed to load Three.js from CDN"));
-        document.head.appendChild(script);
-      });
+      for (const url of THREE_CDNS) {
+        try {
+          const three = await new Promise<ThreeAny>((resolve, reject) => {
+            const script = document.createElement("script");
+            script.src = url;
+            script.onload = () => resolve(((window as unknown) as Record<string, unknown>).THREE as ThreeAny);
+            script.onerror = () => reject(new Error(`Failed to load Three.js from ${url}`));
+            document.head.appendChild(script);
+          });
+          return three;
+        } catch {
+          continue;
+        }
+      }
+      throw new Error("Failed to load Three.js from all CDN sources");
     }
 
     async function init() {

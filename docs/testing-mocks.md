@@ -152,7 +152,8 @@ vi.mock("../src/bridge", () => ({
   - Real: pure functions, type definitions, constants
 - [ ] Verify mock paths are `../src/<rest-of-path>` (never `../<direct-lib>`)
 - [ ] After writing mocks, temporarily delete each one and run tests — if tests still pass, the mock is dead
-- [ ] Run `npx vitest run` — zero failures
+- [ ] Run `npx vitest run` — zero failures (480 tests across 10 files)
+- [ ] Run `npm run test:legacy` — zero failures (24 tests across 2 files)
 - [ ] Run `npx tsc --noEmit` — zero errors (frontend AND backend)
 
 ## Lessons Learned (from past failures)

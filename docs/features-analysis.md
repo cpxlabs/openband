@@ -2,7 +2,16 @@
 
 Current feature inventory against [BandLab](https://www.bandlab.com/features) (web/mobile DAW, 100M+ creators) and [Cubasis 3.8](https://www.steinberg.net/cubasis/) (mobile DAW, iOS/Android) to identify gaps, prioritize roadmap, and guide implementation.
 
-**Last updated:** July 1, 2026
+**Last updated:** July 3, 2026
+
+---
+
+## Status: ALL PHASES COMPLETE
+
+All 7 phases from the original build plan are **shipped**. The "Build Plan" section at the bottom is kept as historical reference. For current feature inventory, see the table below.
+
+**Shipped:** 40 features total — see `docs/features-implementation.md` for details.
+**Tests:** 480 Vitest (10 files) + 24 legacy node:test
 
 ---
 
@@ -149,15 +158,15 @@ Current feature inventory against [BandLab](https://www.bandlab.com/features) (w
 
 ## Test Suite
 
-Vitest (269 tests across 5 files): `components.test.tsx` (145), `components2.test.tsx` (20), `screens.test.tsx` (27), `lib.test.ts` (62), `responsive.test.ts` (15).
+Vitest (480 tests across 10 files): `components.test.tsx` (147), `components2.test.tsx` (20), `components3.test.tsx` (20), `lib.test.ts` (73), `lib2.test.ts` (51), `lib3.test.ts`, `lib4.test.ts`, `screens.test.tsx` (27), `responsive.test.ts` (16).
 
 Legacy `node:test` (24 tests): `types.test.ts` (12), `presets.test.ts` (12).
 
-Playwright E2E (5 tests): `e2e/smoke.spec.ts`.
-
 ```bash
-npm test             # Run 269 vitest tests
-npx tsc --noEmit     # TypeScript check (must pass before build)
+npx vitest run          # Run 480 vitest tests
+npm run test:legacy     # Run 24 legacy tests
+npx tsc --noEmit        # TypeScript check (must pass before build)
+npm run build           # Production build
 ```
 
 ---

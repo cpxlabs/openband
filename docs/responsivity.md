@@ -55,15 +55,17 @@ Ajustes) seguem o mesmo padrão:
 
 **Larguras máximas usadas (via constante `LAYOUT_MAX_WIDTHS` exportada de `src/lib/responsive.ts`):**
 
-| Tela       | Max-width |
-| ---------- | --------- |
-| Feed       | 768px     |
-| Biblioteca | 768px     |
-| Momentos   | 768px     |
-| Extractor  | 768px     |
-| Conta      | 576px     |
-| Ajustes    | 576px     |
-| Login      | 448px     |
+| Tela       | Max-width     |
+| ---------- | ------------- |
+| Feed       | full-screen   |
+| Biblioteca | full-screen   |
+| Momentos   | full-screen   |
+| Extractor  | full-screen   |
+| Conta      | full-screen   |
+| Ajustes    | full-screen   |
+| Login      | full-screen   |
+
+All screens use `width: 100%` without max-width constraints.
 
 ### 2. Tab Navigator + Sidebar (`app/tabs/_layout.tsx`)
 

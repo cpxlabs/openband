@@ -161,9 +161,10 @@ See `backend/.env.example` for all available variables:
 | `SQLITE_DB_PATH`        | `data/openband.sqlite` | Path to SQLite database file          |
 | `SUPABASE_URL`          | `http://localhost:54321` | Supabase project URL                |
 | `SUPABASE_SERVICE_ROLE_KEY` | (empty)          | Supabase service role key             |
-| `JWT_SECRET`            | `openband_jwt_secret_dev` | JWT signing secret                 |
+| `JWT_SECRET`            | (required)             | JWT signing secret — no default       |
 | `GOOGLE_CLIENT_ID`      | (empty)                | Google OAuth client ID                |
 | `PORT`                  | `3001`                 | Backend server port                   |
+| `ALLOWED_ORIGINS`       | dev defaults           | Comma-separated CORS origins          |
 
 ---
 

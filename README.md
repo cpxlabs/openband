@@ -18,7 +18,7 @@ Built with **Expo Router**, **TypeScript**, **NativeWind v4 (Tailwind CSS v3)**,
 | Desktop          | [Electron 35](https://www.electronjs.org/) with swappable bridge (`src/bridge/`)                       |
 | 3D / WebGL       | [Three.js](https://threejs.org/) — Virtual Studio (Habbo-style)                                        |
 | Backend          | FastAPI + Redis + Celery (Docker microservices, optional)                                              |
-| Testing          | [Vitest](https://vitest.dev/) (537 tests) + [Playwright](https://playwright.dev/) (E2E) + legacy `node:test` (24 tests) |
+| Testing          | [Vitest](https://vitest.dev/) (480 tests) + [Playwright](https://playwright.dev/) (E2E) + legacy `node:test` (24 tests) |
 
 ## Getting Started
 
