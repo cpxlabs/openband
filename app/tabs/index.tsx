@@ -288,6 +288,9 @@ const FeedPostCard = memo(function FeedPostCard({
             onPlayed(item.id);
           }}
           disabled={isThisLoading}
+          accessibilityRole="button"
+          accessibilityLabel={isThisLoading ? "Carregando áudio" : isThisPlaying ? "Pausar áudio" : "Ouvir áudio"}
+          accessibilityState={{ disabled: isThisLoading }}
           className={`mt-3 h-10 rounded-xl items-center justify-center flex-row gap-2 ${
             isThisPlaying ? "bg-green-600" : "btn-secondary"
           }`}
@@ -449,7 +452,8 @@ export default function Feed() {
             visible: true,
           });
         }
-      } catch {
+      } catch (error) {
+        console.warn("Feed playback failed:", error);
         Alert.alert("Erro", "Falha ao carregar prévia do áudio.");
       } finally {
         if (isMountedRef.current) setLoadingId(null);

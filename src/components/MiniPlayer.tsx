@@ -215,7 +215,13 @@ export function MiniPlayer() {
           <Pressable onPress={rewind} className="w-7 h-7 rounded items-center justify-center active:opacity-60">
             <Text className="text-gray-300 text-sm">⏮</Text>
           </Pressable>
-          <Pressable onPress={togglePlay} className="w-9 h-9 rounded-full bg-brand-primary items-center justify-center active:opacity-80">
+          <Pressable
+            onPress={togglePlay}
+            accessibilityRole="button"
+            accessibilityLabel={isLoading ? "Carregando áudio" : status.playing ? "Pausar áudio" : "Reproduzir áudio"}
+            accessibilityState={{ busy: isLoading }}
+            className="w-9 h-9 rounded-full bg-brand-primary items-center justify-center active:opacity-80"
+          >
             <Text className="text-white text-base">{isLoading ? "…" : status.playing ? "⏸" : "▶"}</Text>
           </Pressable>
           <Pressable onPress={forward} className="w-7 h-7 rounded items-center justify-center active:opacity-60">
