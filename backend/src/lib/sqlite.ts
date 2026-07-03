@@ -2,35 +2,332 @@ import Database from "better-sqlite3"
 import path from "path"
 import fs from "fs"
 
-const DB_PATH =
-  process.env.SQLITE_DB_PATH ||
-  path.join(process.cwd(), "data", "openband.sqlite")
+// ─── Types ────────────────────────────────────────────────────────────────
 
-// Ensure data directory exists
-const dataDir = path.dirname(DB_PATH)
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true })
+type Operator = "=" | "!="
+
+interface DbRow {
+  [key: string]: unknown
 }
 
-const db: import("better-sqlite3").Database = new Database(DB_PATH)
+interface WhereClause {
+  column: string
+  operator: Operator
+  value: unknown
+}
 
-// WAL mode for better concurrent read performance
-db.pragma("journal_mode = WAL")
-db.pragma("foreign_keys = ON")
+interface InClause {
+  column: string
+  values: unknown[]
+}
 
-// ─── Helpers ───────────────────────────────────────────────────────────────
+interface OrderBy {
+  column: string
+  ascending: boolean
+}
+
+interface QueryResult<T = DbRow> {
+  data: T | null
+  error: Error | null
+}
+
+interface SingleResult<T = DbRow> {
+  data: T
+  error: Error | null
+}
+
+// JSON column names that need parsing
+const JSON_COLUMNS = new Set([
+  "chords",
+  "details",
+  "mixing_preferences",
+  "creative_tags",
+])
+
+// ─── Factory: Database Connection ─────────────────────────────────────────
+
+interface DatabaseConfig {
+  path?: string
+  walMode?: boolean
+  foreignKeys?: boolean
+}
+
+function createDatabaseConnection(config: DatabaseConfig = {}): Database.Database {
+  const dbPath = config.path || path.join(process.cwd(), "data", "openband.sqlite")
+
+  const dataDir = path.dirname(dbPath)
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true })
+  }
+
+  const db = new Database(dbPath)
+
+  if (config.walMode !== false) {
+    db.pragma("journal_mode = WAL")
+  }
+  if (config.foreignKeys !== false) {
+    db.pragma("foreign_keys = ON")
+  }
+
+  return db
+}
+
+// ─── Factory: Query Builder ───────────────────────────────────────────────
+
+interface QueryBuilderConfig {
+  table: string
+  columns?: string
+  where?: WhereClause[]
+  inClause?: InClause
+  orderBy?: OrderBy
+  limit?: number
+  offset?: number
+}
+
+function createQueryBuilder(config: QueryBuilderConfig): QueryBuilder {
+  return new QueryBuilder(config)
+}
+
+class QueryBuilder {
+  private table: string
+  private columns: string
+  private wheres: WhereClause[]
+  private inClause: InClause | null
+  private orderBy: OrderBy | null
+  private limitVal: number | null
+  private offsetVal: number | null
+  private db: Database.Database
+
+  constructor(config: QueryBuilderConfig) {
+    this.table = config.table
+    this.columns = config.columns || "*"
+    this.wheres = config.where || []
+    this.inClause = config.inClause || null
+    this.orderBy = config.orderBy || null
+    this.limitVal = config.limit ?? null
+    this.offsetVal = config.offset ?? null
+    this.db = getDb()
+  }
+
+  select(cols: string): QueryBuilder {
+    this.columns = cols
+    return this
+  }
+
+  eq(column: string, value: unknown): QueryBuilder {
+    this.wheres.push({ column, operator: "=", value })
+    return this
+  }
+
+  neq(column: string, value: unknown): QueryBuilder {
+    this.wheres.push({ column, operator: "!=", value })
+    return this
+  }
+
+  in(column: string, values: unknown[]): QueryBuilder {
+    this.inClause = { column, values }
+    return this
+  }
+
+  order(column: string, ascending = true): QueryBuilder {
+    this.orderBy = { column, ascending }
+    return this
+  }
+
+  limit(n: number): QueryBuilder {
+    this.limitVal = n
+    return this
+  }
+
+  offset(n: number): QueryBuilder {
+    this.offsetVal = n
+    return this
+  }
+
+  async execute(): Promise<DbRow[]> {
+    return this.buildSelect()
+  }
+
+  async single(): Promise<SingleResult> {
+    const rows = await this.execute()
+    if (rows.length === 0) {
+      return { data: {} as DbRow, error: new Error("Expected a single row but got none") }
+    }
+    return { data: rows[0], error: null }
+  }
+
+  async maybeSingle(): Promise<QueryResult> {
+    const rows = await this.execute()
+    return rows.length === 0 ? { data: null, error: null } : { data: rows[0], error: null }
+  }
+
+  private buildSelect(): DbRow[] {
+    const selectCols =
+      this.columns === "*"
+        ? "*"
+        : this.columns
+            .split(",")
+            .map((c) => c.trim())
+            .map(toSnakeCase)
+            .join(", ")
+
+    let sql = `SELECT ${selectCols} FROM ${this.table}`
+    const values: unknown[] = []
+    const whereParts = buildWhereClauses(this.wheres, this.inClause, values)
+
+    if (whereParts.length > 0) {
+      sql += ` WHERE ${whereParts.join(" AND ")}`
+    }
+
+    if (this.orderBy) {
+      const dir = this.orderBy.ascending ? "ASC" : "DESC"
+      sql += ` ORDER BY ${toSnakeCase(this.orderBy.column)} ${dir}`
+    }
+
+    if (this.limitVal !== null) sql += ` LIMIT ${this.limitVal}`
+    if (this.offsetVal !== null) sql += ` OFFSET ${this.offsetVal}`
+
+    const rows = this.db.prepare(sql).all(...values)
+    return (rows as DbRow[]).map(rowToCamel)
+  }
+}
+
+// ─── Factory: Insert Statement ────────────────────────────────────────────
+
+interface InsertConfig {
+  table: string
+  data: Record<string, unknown> | Record<string, unknown>[]
+  autoId?: boolean
+  autoTimestamps?: boolean
+}
+
+function createInsertStatement(config: InsertConfig): DbRow[] {
+  const db = getDb()
+  const rows = Array.isArray(config.data) ? config.data : [config.data]
+  const inserted: DbRow[] = []
+
+  for (const row of rows) {
+    const data = camelizeKeys(row)
+    const columns = Object.keys(data)
+    const values = Object.values(data)
+
+    const finalColumns = [...columns]
+    const finalValues = [...values]
+
+    if (config.autoId !== false && !data.id) {
+      finalColumns.unshift("id")
+      finalValues.unshift(crypto.randomUUID())
+    }
+    if (config.autoTimestamps !== false) {
+      if (!data.created_at) {
+        finalColumns.push("created_at")
+        finalValues.push(new Date().toISOString())
+      }
+      if (!data.updated_at && hasColumn(config.table, "updated_at")) {
+        finalColumns.push("updated_at")
+        finalValues.push(new Date().toISOString())
+      }
+    }
+
+    const placeholders = finalValues.map(() => "?").join(", ")
+    const sql = `INSERT INTO ${config.table} (${finalColumns.join(", ")}) VALUES (${placeholders})`
+
+    db.prepare(sql).run(...finalValues)
+
+    const id = finalValues[finalColumns.indexOf("id")]
+    const fetched = db
+      .prepare(`SELECT * FROM ${config.table} WHERE id = ?`)
+      .get(id)
+    if (fetched) {
+      inserted.push(rowToCamel(fetched as DbRow))
+    }
+  }
+
+  return inserted
+}
+
+// ─── Factory: Update Statement ────────────────────────────────────────────
+
+interface UpdateConfig {
+  table: string
+  data: Record<string, unknown>
+  where: WhereClause[]
+  inClause?: InClause
+  autoTimestamps?: boolean
+}
+
+function createUpdateStatement(config: UpdateConfig): DbRow[] {
+  const db = getDb()
+  const data = camelizeKeys(config.data)
+  const entries = Object.entries(data)
+  if (!entries.length) return []
+
+  if (config.autoTimestamps !== false && hasColumn(config.table, "updated_at")) {
+    entries.push(["updated_at", new Date().toISOString()])
+  }
+
+  const setClause = entries.map(([col]) => `${col} = ?`).join(", ")
+  const values = entries.map(([, v]) => v)
+
+  let sql = `UPDATE ${config.table} SET ${setClause}`
+  const whereValues: unknown[] = []
+  const whereParts = buildWhereClauses(config.where, config.inClause, whereValues)
+
+  if (whereParts.length > 0) {
+    sql += ` WHERE ${whereParts.join(" AND ")}`
+    values.push(...whereValues)
+  }
+
+  db.prepare(sql).run(...values)
+
+  if (config.where.length > 0) {
+    const snakeCol = toSnakeCase(config.where[0].column)
+    const rows = db
+      .prepare(`SELECT * FROM ${config.table} WHERE ${snakeCol} = ?`)
+      .all(config.where[0].value)
+    return (rows as DbRow[]).map(rowToCamel)
+  }
+
+  return []
+}
+
+// ─── Factory: Delete Statement ────────────────────────────────────────────
+
+interface DeleteConfig {
+  table: string
+  where: WhereClause[]
+  inClause?: InClause
+}
+
+function createDeleteStatement(config: DeleteConfig): void {
+  const db = getDb()
+  let sql = `DELETE FROM ${config.table}`
+  const values: unknown[] = []
+  const whereParts = buildWhereClauses(config.where, config.inClause, values)
+
+  if (whereParts.length > 0) {
+    sql += ` WHERE ${whereParts.join(" AND ")}`
+  }
+
+  db.prepare(sql).run(...values)
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────
+
+function toSnakeCase(str: string): string {
+  return str.replace(/([A-Z])/g, "_$1").toLowerCase()
+}
 
 function toCamelCase(str: string): string {
-  return str.replace(/_([a-z])/g, (_, c) => c.toUpperCase())
+  return str.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase())
 }
 
-function rowToCamel(row: Record<string, unknown>): Record<string, unknown> {
-  const result: Record<string, unknown> = {}
+function rowToCamel(row: DbRow): DbRow {
+  const result: DbRow = {}
   for (const [key, value] of Object.entries(row)) {
-    // JSON columns stay as-is
-    if (typeof value === "string" && (key === "chords" || key === "details" || key === "mixing_preferences" || key === "creative_tags")) {
+    if (typeof value === "string" && JSON_COLUMNS.has(key)) {
       try {
-        result[toCamelCase(key)] = JSON.parse(value)
+        result[toCamelCase(key)] = JSON.parse(value) as unknown
       } catch {
         result[toCamelCase(key)] = value
       }
@@ -41,352 +338,110 @@ function rowToCamel(row: Record<string, unknown>): Record<string, unknown> {
   return result
 }
 
-function rowsToCamel(rows: unknown[]): Record<string, unknown>[] {
-  return rows.map((r) => rowToCamel(r as Record<string, unknown>))
-}
-
 function camelizeKeys(obj: Record<string, unknown>): Record<string, unknown> {
   const result: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(obj)) {
-    const snakeKey = key.replace(/([A-Z])/g, "_$1").toLowerCase()
+    const snakeKey = toSnakeCase(key)
     if (value !== undefined) {
       result[snakeKey] =
-        typeof value === "object" && value !== null ? JSON.stringify(value) : value
+        typeof value === "object" && value !== null
+          ? JSON.stringify(value)
+          : value
     }
   }
   return result
 }
 
-// ─── Supabase-compatible fluent query builder ──────────────────────────────
-
-type OrderDirection = "asc" | "desc"
-
-interface QueryState {
-  table: string
-  selects: string
-  wheres: { column: string; operator: string; value: unknown }[]
-  orderBy: { column: string; ascending: boolean } | null
-  limitVal: number | null
-  offsetVal: number | null
-  insertData: Record<string, unknown> | Record<string, unknown>[] | null
-  updateData: Record<string, unknown> | null
-  deleteAll: boolean
-  inClause: { column: string; values: unknown[] } | null
+function hasColumn(table: string, column: string): boolean {
+  const db = getDb()
+  const columns = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{
+    name: string
+  }>
+  return columns.some((c) => c.name === column)
 }
 
-class SQLiteQueryBuilder {
-  private state: QueryState
+function buildWhereClauses(
+  wheres: WhereClause[],
+  inClause: InClause | null,
+  outValues: unknown[],
+): string[] {
+  const parts: string[] = []
 
-  constructor(table: string) {
-    this.state = {
-      table,
-      selects: "*",
-      wheres: [],
-      orderBy: null,
-      limitVal: null,
-      offsetVal: null,
-      insertData: null,
-      updateData: null,
-      deleteAll: false,
-      inClause: null,
-    }
+  for (const w of wheres) {
+    parts.push(`${toSnakeCase(w.column)} ${w.operator} ?`)
+    outValues.push(w.value)
   }
 
-  select(columns = "*"): this {
-    this.state.selects = columns
-    return this
+  if (inClause) {
+    const placeholders = inClause.values.map(() => "?").join(", ")
+    parts.push(`${toSnakeCase(inClause.column)} IN (${placeholders})`)
+    outValues.push(...inClause.values)
   }
 
-  eq(column: string, value: unknown): this {
-    this.state.wheres.push({ column, operator: "=", value })
-    return this
-  }
-
-  neq(column: string, value: unknown): this {
-    this.state.wheres.push({ column, operator: "!=", value })
-    return this
-  }
-
-  in(column: string, values: unknown[]): this {
-    this.state.inClause = { column, values }
-    return this
-  }
-
-  order(column: string, opts?: { ascending?: boolean }): this {
-    this.state.orderBy = {
-      column,
-      ascending: opts?.ascending ?? true,
-    }
-    return this
-  }
-
-  limit(n: number): this {
-    this.state.limitVal = n
-    return this
-  }
-
-  offset(n: number): this {
-    this.state.offsetVal = n
-    return this
-  }
-
-  insert(data: Record<string, unknown> | Record<string, unknown>[]): this {
-    this.state.insertData = data
-    return this
-  }
-
-  update(data: Record<string, unknown>): this {
-    this.state.updateData = data
-    return this
-  }
-
-  delete(): this {
-    this.state.deleteAll = true
-    return this
-  }
-
-  // ─── Result modifiers ─────────────────────────────────────────────────
-
-  async single(): Promise<{ data: Record<string, unknown>; error: Error | null }> {
-    const result = await this.maybeSingle()
-    if (!result.data) {
-      return { data: null as unknown as Record<string, unknown>, error: new Error("Expected a single row but got none") }
-    }
-    return { data: result.data, error: null }
-  }
-
-  async maybeSingle(): Promise<{ data: Record<string, unknown> | null; error: Error | null }> {
-    try {
-      const rows = await this.execute()
-      if (rows.length === 0) return { data: null, error: null }
-      return { data: rows[0] as Record<string, unknown>, error: null }
-    } catch (err) {
-      return { data: null, error: err as Error }
-    }
-  }
-
-  // ─── Execution ────────────────────────────────────────────────────────
-
-  async execute(): Promise<unknown[]> {
-    const { table } = this.state
-
-    // INSERT
-    if (this.state.insertData) {
-      return this.executeInsert()
-    }
-
-    // UPDATE
-    if (this.state.updateData) {
-      return this.executeUpdate()
-    }
-
-    // DELETE
-    if (this.state.deleteAll) {
-      return this.executeDelete()
-    }
-
-    // SELECT
-    return this.executeSelect()
-  }
-
-  private executeInsert(): unknown[] {
-    const { table, insertData } = this.state
-    const rows = Array.isArray(insertData) ? insertData : [insertData]
-    const inserted: unknown[] = []
-
-    for (const row of rows) {
-      const data = camelizeKeys(row as Record<string, unknown>)
-      const columns = Object.keys(data)
-      const values = Object.values(data)
-      const placeholders = values.map(() => "?").join(", ")
-      const colList = columns.join(", ")
-
-      // Auto-generate UUIDs for id columns
-      const finalColumns = [...columns]
-      const finalValues = [...values]
-      if (!data.id) {
-        finalColumns.unshift("id")
-        finalValues.unshift(crypto.randomUUID())
-      }
-      if (!data.created_at) {
-        finalColumns.push("created_at")
-        finalValues.push(new Date().toISOString())
-      }
-      if (!data.updated_at && db.prepare(`PRAGMA table_info(${table})`).all().some((c: any) => c.name === "updated_at")) {
-        finalColumns.push("updated_at")
-        finalValues.push(new Date().toISOString())
-      }
-
-      const placeholdersFull = finalValues.map(() => "?").join(", ")
-      const sql = `INSERT INTO ${table} (${finalColumns.join(", ")}) VALUES (${placeholdersFull})`
-
-      const stmt = db.prepare(sql)
-      stmt.run(...finalValues)
-
-      // Return inserted row
-      const id = finalValues[finalColumns.indexOf("id")]
-      const fetched = db.prepare(`SELECT * FROM ${table} WHERE id = ?`).get(id)
-      if (fetched) {
-        inserted.push(rowToCamel(fetched as Record<string, unknown>))
-      }
-    }
-
-    return inserted
-  }
-
-  private executeUpdate(): unknown[] {
-    const { table, updateData, wheres, inClause } = this.state
-
-    if (!updateData) return []
-
-    const data = camelizeKeys(updateData)
-    const entries = Object.entries(data)
-
-    if (!entries.length) return []
-
-    // Auto-update updated_at
-    if (!data.updated_at && db.prepare(`PRAGMA table_info(${table})`).all().some((c: any) => c.name === "updated_at")) {
-      entries.push(["updated_at", new Date().toISOString()])
-    }
-
-    const setClause = entries.map(([col]) => `${col} = ?`).join(", ")
-    const values = entries.map(([, v]) => v)
-
-    let sql = `UPDATE ${table} SET ${setClause}`
-    const whereClauses: string[] = []
-    const whereValues: unknown[] = []
-
-    for (const w of wheres) {
-      const snakeCol = w.column.replace(/([A-Z])/g, "_$1").toLowerCase()
-      whereClauses.push(`${snakeCol} ${w.operator} ?`)
-      whereValues.push(w.value)
-    }
-
-    if (inClause) {
-      const snakeCol = inClause.column.replace(/([A-Z])/g, "_$1").toLowerCase()
-      const placeholders = inClause.values.map(() => "?").join(", ")
-      whereClauses.push(`${snakeCol} IN (${placeholders})`)
-      whereValues.push(...inClause.values)
-    }
-
-    if (whereClauses.length) {
-      sql += " WHERE " + whereClauses.join(" AND ")
-      values.push(...whereValues)
-    }
-
-    db.prepare(sql).run(...values)
-
-    // Return updated rows
-    const idCol = whereClauses.length ? wheres[0]?.column : null
-    if (idCol) {
-      const snakeIdCol = idCol.replace(/([A-Z])/g, "_$1").toLowerCase()
-      const idVal = wheres[0]?.value
-      const rows = db.prepare(`SELECT * FROM ${table} WHERE ${snakeIdCol} = ?`).all(idVal)
-      return rowsToCamel(rows as Record<string, unknown>[])
-    }
-
-    return []
-  }
-
-  private executeDelete(): unknown[] {
-    const { table, wheres, inClause } = this.state
-
-    let sql = `DELETE FROM ${table}`
-    const values: unknown[] = []
-    const whereClauses: string[] = []
-
-    for (const w of wheres) {
-      const snakeCol = w.column.replace(/([A-Z])/g, "_$1").toLowerCase()
-      whereClauses.push(`${snakeCol} ${w.operator} ?`)
-      values.push(w.value)
-    }
-
-    if (inClause) {
-      const snakeCol = inClause.column.replace(/([A-Z])/g, "_$1").toLowerCase()
-      const placeholders = inClause.values.map(() => "?").join(", ")
-      whereClauses.push(`${snakeCol} IN (${placeholders})`)
-      values.push(...inClause.values)
-    }
-
-    if (whereClauses.length) {
-      sql += " WHERE " + whereClauses.join(" AND ")
-    }
-
-    db.prepare(sql).run(...values)
-    return []
-  }
-
-  private executeSelect(): unknown[] {
-    const { table, selects, wheres, inClause } = this.state
-
-    // Column selection
-    const selectCols = selects === "*" ? "*" : selects.split(",").map((c) => c.trim()).map((c) => c.replace(/([A-Z])/g, "_$1").toLowerCase()).join(", ")
-
-    let sql = `SELECT ${selectCols} FROM ${table}`
-    const values: unknown[] = []
-    const whereClauses: string[] = []
-
-    for (const w of wheres) {
-      const snakeCol = w.column.replace(/([A-Z])/g, "_$1").toLowerCase()
-      whereClauses.push(`${snakeCol} ${w.operator} ?`)
-      values.push(w.value)
-    }
-
-    if (inClause) {
-      const snakeCol = inClause.column.replace(/([A-Z])/g, "_$1").toLowerCase()
-      const placeholders = inClause.values.map(() => "?").join(", ")
-      whereClauses.push(`${snakeCol} IN (${placeholders})`)
-      values.push(...inClause.values)
-    }
-
-    if (whereClauses.length) {
-      sql += " WHERE " + whereClauses.join(" AND ")
-    }
-
-    // ORDER BY
-    if (this.state.orderBy) {
-      const snakeCol = this.state.orderBy.column.replace(/([A-Z])/g, "_$1").toLowerCase()
-      const dir = this.state.orderBy.ascending ? "ASC" : "DESC"
-      sql += ` ORDER BY ${snakeCol} ${dir}`
-    }
-
-    // LIMIT / OFFSET
-    if (this.state.limitVal !== null) {
-      sql += ` LIMIT ${this.state.limitVal}`
-    }
-    if (this.state.offsetVal !== null) {
-      sql += ` OFFSET ${this.state.offsetVal}`
-    }
-
-    const rows = db.prepare(sql).all(...values)
-    return rowsToCamel(rows as Record<string, unknown>[])
-  }
+  return parts
 }
 
-// ─── Public API (Supabase-compatible) ──────────────────────────────────────
+// ─── Singleton ────────────────────────────────────────────────────────────
+
+let dbInstance: Database.Database | null = null
+
+function getDb(): Database.Database {
+  if (!dbInstance) {
+    dbInstance = createDatabaseConnection()
+  }
+  return dbInstance
+}
+
+// ─── Public API (Supabase-compatible) ─────────────────────────────────────
 
 export const sqlite = {
-  from(table: string) {
-    return new SQLiteQueryBuilder(table)
+  from(table: string): QueryBuilder {
+    return createQueryBuilder({ table })
   },
 
-  // Auth stub — SQLite doesn't manage auth sessions like Supabase
   auth: {
-    getSession: async () => ({ data: { session: null }, error: null }),
-    onAuthStateChange: () => ({
+    getSession: async (): Promise<{
+      data: { session: null }
+      error: null
+    }> => ({ data: { session: null }, error: null }),
+
+    onAuthStateChange: (): {
+      data: { subscription: { unsubscribe: () => void } }
+    } => ({
       data: { subscription: { unsubscribe: () => {} } },
     }),
-    signOut: async () => ({ error: null }),
-    signInWithPassword: async () => ({ data: null, error: new Error("Not supported in SQLite mode") }),
-    signUp: async () => ({ data: null, error: new Error("Not supported in SQLite mode") }),
-    updateUser: async () => ({ data: null, error: new Error("Not supported in SQLite mode") }),
+
+    signOut: async (): Promise<{ error: null }> => ({ error: null }),
+
+    signInWithPassword: async (): Promise<{
+      data: null
+      error: Error
+    }> => ({
+      data: null,
+      error: new Error("Not supported in SQLite mode"),
+    }),
+
+    signUp: async (): Promise<{
+      data: null
+      error: Error
+    }> => ({
+      data: null,
+      error: new Error("Not supported in SQLite mode"),
+    }),
+
+    updateUser: async (): Promise<{
+      data: null
+      error: Error
+    }> => ({
+      data: null,
+      error: new Error("Not supported in SQLite mode"),
+    }),
   },
 }
 
 // ─── Schema initialization ────────────────────────────────────────────────
 
 const SCHEMA_SQL = `
--- Profiles
 CREATE TABLE IF NOT EXISTS profiles (
   id TEXT PRIMARY KEY,
   username TEXT UNIQUE NOT NULL,
@@ -403,7 +458,6 @@ CREATE TABLE IF NOT EXISTS profiles (
   mixing_preferences TEXT DEFAULT '{}'
 );
 
--- Projects
 CREATE TABLE IF NOT EXISTS projects (
   id TEXT PRIMARY KEY,
   owner_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
@@ -424,7 +478,6 @@ CREATE TABLE IF NOT EXISTS projects (
   band_id TEXT REFERENCES bands(id) ON DELETE SET NULL
 );
 
--- Tracks
 CREATE TABLE IF NOT EXISTS tracks (
   id TEXT PRIMARY KEY,
   project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -436,7 +489,6 @@ CREATE TABLE IF NOT EXISTS tracks (
   order_index INTEGER NOT NULL
 );
 
--- Stems
 CREATE TABLE IF NOT EXISTS stems (
   id TEXT PRIMARY KEY,
   track_id TEXT NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
@@ -446,7 +498,6 @@ CREATE TABLE IF NOT EXISTS stems (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
--- Posts
 CREATE TABLE IF NOT EXISTS posts (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
@@ -457,7 +508,6 @@ CREATE TABLE IF NOT EXISTS posts (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
--- User Sessions
 CREATE TABLE IF NOT EXISTS user_sessions (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
@@ -469,7 +519,6 @@ CREATE TABLE IF NOT EXISTS user_sessions (
   last_active_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
--- Remixes
 CREATE TABLE IF NOT EXISTS remixes (
   id TEXT PRIMARY KEY,
   original_project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -479,7 +528,6 @@ CREATE TABLE IF NOT EXISTS remixes (
   UNIQUE(original_project_id, remixed_project_id)
 );
 
--- Project Reactions
 CREATE TABLE IF NOT EXISTS project_reactions (
   id TEXT PRIMARY KEY,
   project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -489,7 +537,6 @@ CREATE TABLE IF NOT EXISTS project_reactions (
   UNIQUE(project_id, user_id, reaction)
 );
 
--- Project Activity
 CREATE TABLE IF NOT EXISTS project_activity (
   id TEXT PRIMARY KEY,
   project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -500,7 +547,6 @@ CREATE TABLE IF NOT EXISTS project_activity (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
--- Bands
 CREATE TABLE IF NOT EXISTS bands (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
@@ -510,7 +556,6 @@ CREATE TABLE IF NOT EXISTS bands (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
--- Band Members
 CREATE TABLE IF NOT EXISTS band_members (
   id TEXT PRIMARY KEY,
   band_id TEXT NOT NULL REFERENCES bands(id) ON DELETE CASCADE,
@@ -522,15 +567,9 @@ CREATE TABLE IF NOT EXISTS band_members (
 `
 
 export function initializeSchema(): void {
-  db.exec(SCHEMA_SQL)
+  getDb().exec(SCHEMA_SQL)
 }
 
-// Initialize schema on import
 initializeSchema()
 
-// Graceful shutdown
-process.on("beforeExit", () => {
-  db.close()
-})
-
-export { db }
+export { getDb as db }
