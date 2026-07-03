@@ -4,6 +4,7 @@ const NAV_ITEMS = [
   { key: "index", label: "Feed", icon: "♫" },
   { key: "moments", label: "Momentos", icon: "♡" },
   { key: "library", label: "Biblioteca", icon: "☰" },
+  { key: "virtual-studio", label: "Studio", icon: "🏠" },
   { key: "explorer", label: "Explorer", icon: "🌍" },
   { key: "account", label: "Conta", icon: "●" },
   { key: "settings", label: "Ajustes", icon: "⚙" },

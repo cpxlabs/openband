@@ -12,6 +12,7 @@ function TabIcon({ label, focused }: { label: string; focused: boolean }) {
     Conta: "●",
     Ajustes: "⚙",
     Explorer: "🌍",
+    Studio: "🏠",
   };
   return (
     <View className="items-center justify-center gap-0.5 px-1">
@@ -46,6 +47,7 @@ export default function TabLayout() {
     account: "Conta",
     settings: "Ajustes",
     explorer: "Explorer",
+    "virtual-studio": "Studio",
   };
   const pageTitle = routeNameMap[currentSegment] || "OpenBand";
 
@@ -149,6 +151,14 @@ export default function TabLayout() {
             options={{
               tabBarIcon: ({ focused }) => (
                 <TabIcon label="Explorer" focused={focused} />
+              ),
+            }}
+          />
+          <Tabs.Screen
+            name="virtual-studio"
+            options={{
+              tabBarIcon: ({ focused }) => (
+                <TabIcon label="Studio" focused={focused} />
               ),
             }}
           />
