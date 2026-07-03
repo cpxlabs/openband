@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { Platform } from "react-native";
+
+const TIMEUPDATE_THROTTLE_MS = 500;
 
 /**
  * Web-only audio player using HTML5 <audio> element.
@@ -12,6 +14,7 @@ export function useWebAudioPlayer() {
   const [duration, setDuration] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
   const currentSrcRef = useRef<string>("");
+  const lastTimeUpdateRef = useRef(0);
 
   useEffect(() => {
     if (Platform.OS !== "web" || typeof document === "undefined") return;
@@ -21,13 +24,22 @@ export function useWebAudioPlayer() {
     document.body.appendChild(audio);
     audioRef.current = audio;
 
-    const onTimeUpdate = () => setCurrentTime(audio.currentTime);
+    const onTimeUpdate = () => {
+      const now = Date.now();
+      if (now - lastTimeUpdateRef.current >= TIMEUPDATE_THROTTLE_MS) {
+        lastTimeUpdateRef.current = now;
+        setCurrentTime(audio.currentTime);
+      }
+    };
     const onLoadedMetadata = () => {
       setDuration(audio.duration);
       setIsLoaded(true);
     };
     const onPlay = () => setIsPlaying(true);
-    const onPause = () => setIsPlaying(false);
+    const onPause = () => {
+      setIsPlaying(false);
+      setCurrentTime(audio.currentTime);
+    };
     const onEnded = () => {
       setIsPlaying(false);
       setCurrentTime(0);
@@ -134,7 +146,7 @@ export function useWebAudioPlayer() {
     }
   }, []);
 
-  return {
+  return useMemo(() => ({
     isPlaying,
     currentTime,
     duration,
@@ -145,5 +157,5 @@ export function useWebAudioPlayer() {
     seekTo,
     setVolume,
     setPlaybackRate,
-  };
+  }), [isPlaying, currentTime, duration, isLoaded, replace, play, pause, seekTo, setVolume, setPlaybackRate]);
 }

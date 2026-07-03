@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useMemo, useEffect } from "react";
+import { useState, useCallback, useRef, useMemo, useEffect, memo } from "react";
 import {
   FlatList,
   View,
@@ -199,6 +199,128 @@ function formatCount(n: number) {
   return String(n);
 }
 
+interface FeedPostCardProps {
+  item: FeedPost;
+  isPlaying: boolean;
+  progress: number;
+  onPlay: (post: FeedPost) => void;
+  onLike: (postId: string) => void;
+  onRemix: (post: FeedPost) => void;
+  onShare: (post: FeedPost) => void;
+  onPlayed: (postId: string) => void;
+}
+
+const FeedPostCard = memo(function FeedPostCard({
+  item,
+  isPlaying: isThisPlaying,
+  progress,
+  onPlay,
+  onLike,
+  onRemix,
+  onShare,
+  onPlayed,
+}: FeedPostCardProps) {
+  return (
+    <Card highlighted={isThisPlaying} className="mx-4 tablet:mx-2 mb-3">
+      <View className="p-4">
+        <View className="flex-row items-start gap-3">
+          <Avatar name={item.author} size="md" />
+          <View className="flex-1">
+            <View className="flex-row items-start justify-between">
+              <View className="flex-1 mr-2">
+                <Text className="text-white font-bold text-base leading-tight">
+                  {item.title}
+                </Text>
+                <Text className="text-gray-400 text-xs mt-0.5">
+                  {item.authorHandle}
+                </Text>
+              </View>
+              <Badge
+                text={formatCount(item.plays)}
+                icon="▶"
+                variant="play"
+              />
+            </View>
+
+            <View className="flex-row items-center gap-2 mt-2">
+              <Badge
+                text={item.genre.toUpperCase()}
+                variant="default"
+              />
+              <Badge text={item.key} variant="default" />
+              <Badge text={`${item.bpm} BPM`} variant="default" />
+              <Text className="text-gray-600 text-[10px]">
+                {Math.floor(item.duration / 60)}:
+                {String(item.duration % 60).padStart(2, "0")}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        <Pressable
+          onPress={() => {
+            onPlay(item);
+            onPlayed(item.id);
+          }}
+          className={`mt-3 h-10 rounded-xl items-center justify-center flex-row gap-2 ${
+            isThisPlaying ? "bg-green-600" : "btn-secondary"
+          }`}
+        >
+          <Text
+            className={`text-sm ${isThisPlaying ? "text-white" : "text-brand-primary"}`}
+          >
+            {isThisPlaying ? "⏸" : "▶"}
+          </Text>
+          <Text
+            className={`font-bold text-xs ${isThisPlaying ? "text-white" : "text-brand-primary"}`}
+          >
+            {isThisPlaying ? "Pausar" : "Ouvir"}
+          </Text>
+        </Pressable>
+
+        <View className="flex-row items-center gap-3 mt-3">
+          <Pressable
+            onPress={() => onLike(item.id)}
+            className="flex-row items-center gap-1 active:opacity-60"
+          >
+            <Text
+              className={`text-base ${item.userLiked ? "text-brand-primary" : "text-gray-500"}`}
+            >
+              {item.userLiked ? "❤" : "♡"}
+            </Text>
+            <Text
+              className={`text-xs font-semibold ${item.userLiked ? "text-brand-primary" : "text-gray-500"}`}
+            >
+              {formatCount(item.likes)}
+            </Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => onRemix(item)}
+            className="flex-row items-center gap-1 px-2.5 py-1 rounded-full bg-dark-elevated border border-dark-border active:opacity-70"
+          >
+            <Text className="text-gray-400 text-xs">🔄</Text>
+            <Text className="text-gray-400 text-[10px] font-semibold">
+              Remix
+            </Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => onShare(item)}
+            className="flex-row items-center gap-1 px-2.5 py-1 rounded-full bg-dark-elevated border border-dark-border active:opacity-70"
+          >
+            <Text className="text-gray-400 text-xs">↗</Text>
+            <Text className="text-gray-400 text-[10px] font-semibold">
+              Compartilhar
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+      {isThisPlaying && <ProgressBar progress={progress} />}
+    </Card>
+  );
+});
+
 export default function Feed() {
   const router = useRouter();
   const resp = useResponsive();
@@ -206,9 +328,13 @@ export default function Feed() {
   const expoPlayer = useAudioPlayer(null);
   const expoStatus = useAudioPlayerStatus(expoPlayer);
   const isWeb = Platform.OS === "web";
-  const status = isWeb
-    ? { playing: webAudio.isPlaying, currentTime: webAudio.currentTime, duration: webAudio.duration, isLoaded: webAudio.isLoaded }
-    : expoStatus;
+  const webAudioRef = useRef(webAudio);
+  webAudioRef.current = webAudio;
+  const expoPlayerRef = useRef(expoPlayer);
+  expoPlayerRef.current = expoPlayer;
+  const playing = isWeb ? webAudio.isPlaying : expoStatus.playing;
+  const currentTime = isWeb ? webAudio.currentTime : expoStatus.currentTime;
+  const audioDuration = isWeb ? webAudio.duration : expoStatus.duration;
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [showQuickTools, setShowQuickTools] = useState(false);
   const [hasProjects, setHasProjects] = useState(false);
@@ -226,11 +352,11 @@ export default function Feed() {
         webAudioPause();
         webAudioSeekTo(0);
       } else {
-        expoPlayer.pause();
-        expoPlayer.seekTo(0);
+        expoPlayerRef.current.pause();
+        expoPlayerRef.current.seekTo(0);
       }
     };
-  }, [isWeb, expoPlayer, webAudioPause, webAudioSeekTo]);
+  }, [isWeb, webAudioPause, webAudioSeekTo]);
   const [genreFilter, setGenreFilter] = useState("all");
   const [sortMode, setSortMode] = useState<SortMode>("recent");
   const [posts, setPosts] = useState(MOCK_POSTS);
@@ -249,10 +375,15 @@ export default function Feed() {
     return result;
   }, [posts, genreFilter, sortMode]);
 
+  const playingRef = useRef(playing);
+  playingRef.current = playing;
+  const playingIdRef = useRef(playingId);
+  playingIdRef.current = playingId;
+
   const handlePlay = useCallback(
     async (post: FeedPost) => {
-      if (playingId === post.id && status.playing) {
-        if (isWeb) webAudio.pause(); else expoPlayer.pause();
+      if (playingIdRef.current === post.id && playingRef.current) {
+        if (isWeb) webAudioRef.current.pause(); else expoPlayerRef.current.pause();
         setPlayingId(null);
         setMiniPlayerState({ visible: false, url: null });
         return;
@@ -260,12 +391,12 @@ export default function Feed() {
       const url = await generatePreviewUrl(post.id, post.duration);
       if (url) {
         if (isWeb) {
-          await webAudio.replace(url);
-          await webAudio.play();
+          await webAudioRef.current.replace(url);
+          await webAudioRef.current.play();
         } else {
-          await expoPlayer.replace(url);
+          await expoPlayerRef.current.replace(url);
           try {
-            expoPlayer.play();
+            expoPlayerRef.current.play();
           } catch (e) {
             console.warn("Native playback failed:", e);
           }
@@ -283,7 +414,7 @@ export default function Feed() {
         Alert.alert("Erro", "Falha ao carregar prévia do áudio.");
       }
     },
-    [playingId, status.playing, isWeb, expoPlayer, webAudio],
+    [isWeb],
   );
 
   const handleLike = useCallback((postId: string) => {
@@ -333,6 +464,26 @@ export default function Feed() {
       prev.map((p) => (p.id === postId ? { ...p, plays: p.plays + 1 } : p)),
     );
   }, []);
+
+  const progress = audioDuration
+    ? (currentTime / audioDuration) * 100
+    : 0;
+
+  const renderItem = useCallback(({ item }: { item: FeedPost }) => {
+    const isThisPlaying = playingId === item.id && playing;
+    return (
+      <FeedPostCard
+        item={item}
+        isPlaying={isThisPlaying}
+        progress={isThisPlaying ? progress : 0}
+        onPlay={handlePlay}
+        onLike={handleLike}
+        onRemix={handleRemix}
+        onShare={handleShare}
+        onPlayed={handlePlayed}
+      />
+    );
+  }, [playingId, playing, progress, handlePlay, handleLike, handleRemix, handleShare, handlePlayed]);
 
   const maxWidthStyle: Record<string, string | number | undefined> = { maxWidth: LAYOUT_MAX_WIDTHS.feedWide, alignSelf: "center" as const }
 
@@ -471,112 +622,7 @@ export default function Feed() {
                 </View>
               ) : null
             }
-            renderItem={({ item }) => {
-              const isThisPlaying = playingId === item.id && status.playing;
-              const progress = status.duration
-                ? (status.currentTime / status.duration) * 100
-                : 0;
-
-              return (
-                <Card highlighted={isThisPlaying} className="mx-4 tablet:mx-2 mb-3">
-                  <View className="p-4">
-                    <View className="flex-row items-start gap-3">
-                      <Avatar name={item.author} size="md" />
-                      <View className="flex-1">
-                        <View className="flex-row items-start justify-between">
-                          <View className="flex-1 mr-2">
-                            <Text className="text-white font-bold text-base leading-tight">
-                              {item.title}
-                            </Text>
-                            <Text className="text-gray-400 text-xs mt-0.5">
-                              {item.authorHandle}
-                            </Text>
-                          </View>
-                          <Badge
-                            text={formatCount(item.plays)}
-                            icon="▶"
-                            variant="play"
-                          />
-                        </View>
-
-                        <View className="flex-row items-center gap-2 mt-2">
-                          <Badge
-                            text={item.genre.toUpperCase()}
-                            variant="default"
-                          />
-                          <Badge text={item.key} variant="default" />
-                          <Badge text={`${item.bpm} BPM`} variant="default" />
-                          <Text className="text-gray-600 text-[10px]">
-                            {Math.floor(item.duration / 60)}:
-                            {String(item.duration % 60).padStart(2, "0")}
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
-
-                    <Pressable
-                      onPress={() => {
-                        handlePlay(item);
-                        handlePlayed(item.id);
-                      }}
-                      className={`mt-3 h-10 rounded-xl items-center justify-center flex-row gap-2 ${
-                        isThisPlaying ? "bg-green-600" : "btn-secondary"
-                      }`}
-                    >
-                      <Text
-                        className={`text-sm ${isThisPlaying ? "text-white" : "text-brand-primary"}`}
-                      >
-                        {isThisPlaying ? "⏸" : "▶"}
-                      </Text>
-                      <Text
-                        className={`font-bold text-xs ${isThisPlaying ? "text-white" : "text-brand-primary"}`}
-                      >
-                        {isThisPlaying ? "Pausar" : "Ouvir"}
-                      </Text>
-                    </Pressable>
-
-                    <View className="flex-row items-center gap-3 mt-3">
-                      <Pressable
-                        onPress={() => handleLike(item.id)}
-                        className="flex-row items-center gap-1 active:opacity-60"
-                      >
-                        <Text
-                          className={`text-base ${item.userLiked ? "text-brand-primary" : "text-gray-500"}`}
-                        >
-                          {item.userLiked ? "❤" : "♡"}
-                        </Text>
-                        <Text
-                          className={`text-xs font-semibold ${item.userLiked ? "text-brand-primary" : "text-gray-500"}`}
-                        >
-                          {formatCount(item.likes)}
-                        </Text>
-                      </Pressable>
-
-                      <Pressable
-                        onPress={() => handleRemix(item)}
-                        className="flex-row items-center gap-1 px-2.5 py-1 rounded-full bg-dark-elevated border border-dark-border active:opacity-70"
-                      >
-                        <Text className="text-gray-400 text-xs">🔄</Text>
-                        <Text className="text-gray-400 text-[10px] font-semibold">
-                          Remix
-                        </Text>
-                      </Pressable>
-
-                      <Pressable
-                        onPress={() => handleShare(item)}
-                        className="flex-row items-center gap-1 px-2.5 py-1 rounded-full bg-dark-elevated border border-dark-border active:opacity-70"
-                      >
-                        <Text className="text-gray-400 text-xs">↗</Text>
-                        <Text className="text-gray-400 text-[10px] font-semibold">
-                          Compartilhar
-                        </Text>
-                      </Pressable>
-                    </View>
-                  </View>
-                  {isThisPlaying && <ProgressBar progress={progress} />}
-                </Card>
-              );
-            }}
+            renderItem={renderItem}
           />
         </View>
 
