@@ -128,16 +128,21 @@ export default function VirtualStudio() {
         THREE = win.THREE;
       } else if (typeof window !== "undefined") {
         // Load from CDN via script tag (avoids Metro bundler)
-        await new Promise<void>((resolve, reject) => {
-          const s = document.createElement("script");
-          s.src = "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.min.js";
-          s.onload = () => {
-            THREE = (window as unknown as Record<string, unknown>).THREE;
-            resolve();
-          };
-          s.onerror = reject;
-          document.head.appendChild(s);
-        });
+        try {
+          await new Promise<void>((resolve, reject) => {
+            const s = document.createElement("script");
+            s.src = "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.min.js";
+            s.onload = () => {
+              THREE = (window as unknown as Record<string, unknown>).THREE;
+              resolve();
+            };
+            s.onerror = () => reject(new Error("Failed to load three.js from CDN"));
+            document.head.appendChild(s);
+          });
+        } catch (e) {
+          console.warn("Three.js CDN load failed, running without 3D scene:", e);
+          return;
+        }
       }
       if (cancelled || !THREE) return;
 
