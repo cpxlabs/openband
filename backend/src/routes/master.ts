@@ -137,7 +137,7 @@ router.post(
 );
 
 router.get("/master/download/:filename", (req: Request, res: Response) => {
-  const filename = req.params.filename;
+  const filename = req.params.filename as string;
   if (
     filename.includes("/") ||
     filename.includes("\\") ||

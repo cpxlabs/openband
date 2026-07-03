@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { getScale, resolveProgression } from "../lib/musicTheory";
+import { resolveProgression } from "../lib/musicTheory";
 
 const router = Router();
 
@@ -86,7 +86,6 @@ router.post("/generate-midi", (req: Request, res: Response) => {
   }
 
   const degrees = CHORD_PATTERNS[patternId] || ["I", "IV", "V"];
-  const scale = getScale(rootNote, scaleType);
   const progression = resolveProgression(degrees, rootNote, scaleType);
 
   const midiData: { note: number; start: number; duration: number; velocity: number }[] = [];

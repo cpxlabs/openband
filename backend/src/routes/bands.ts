@@ -1,4 +1,4 @@
-import { Router, Request, Response } from "express"
+import { Router, Response } from "express"
 import { supabase } from "../lib/supabase"
 import { requireAuth, type AuthenticatedRequest } from "../middleware/authMiddleware"
 
@@ -62,18 +62,18 @@ router.get("/bands/:id", requireAuth, async (req: AuthenticatedRequest, res: Res
     const { data: band, error } = await supabase
       .from("bands")
       .select("*")
-      .eq("id", req.params.id)
+      .eq("id", req.params.id as string)
       .single()
     if (error || !band) return res.status(404).json({ error: "Banda não encontrada." })
 
-    if (!(await requireRole(req, req.params.id, "VIEWER"))) {
+    if (!(await requireRole(req, req.params.id as string, "VIEWER"))) {
       return res.status(403).json({ error: "Acesso negado." })
     }
 
     const { data: members } = await supabase
       .from("band_members")
       .select("user_id, role, joined_at, profile:profiles(email, name)")
-      .eq("band_id", req.params.id)
+      .eq("band_id", req.params.id as string)
 
     res.json({ ...band, members: members || [] })
   } catch (e) {
@@ -83,13 +83,13 @@ router.get("/bands/:id", requireAuth, async (req: AuthenticatedRequest, res: Res
 
 router.post("/bands/:id/members", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    if (!(await requireRole(req, req.params.id, "OWNER"))) {
+    if (!(await requireRole(req, req.params.id as string, "OWNER"))) {
       return res.status(403).json({ error: "Apenas o dono pode adicionar membros." })
     }
     const { userId, role = "VIEWER" } = req.body
     const { error } = await supabase
       .from("band_members")
-      .insert({ band_id: req.params.id, user_id: userId, role })
+      .insert({ band_id: req.params.id as string, user_id: userId, role })
     if (error) throw error
     res.status(201).json({ success: true })
   } catch (e) {
@@ -99,14 +99,14 @@ router.post("/bands/:id/members", requireAuth, async (req: AuthenticatedRequest,
 
 router.delete("/bands/:id/members/:userId", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    if (!(await requireRole(req, req.params.id, "OWNER"))) {
+    if (!(await requireRole(req, req.params.id as string, "OWNER"))) {
       return res.status(403).json({ error: "Apenas o dono pode remover membros." })
     }
     const { error } = await supabase
       .from("band_members")
       .delete()
-      .eq("band_id", req.params.id)
-      .eq("user_id", req.params.userId)
+      .eq("band_id", req.params.id as string)
+      .eq("user_id", req.params.userId as string)
     if (error) throw error
     res.json({ success: true })
   } catch (e) {
@@ -116,14 +116,14 @@ router.delete("/bands/:id/members/:userId", requireAuth, async (req: Authenticat
 
 router.patch("/bands/:id", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    if (!(await requireRole(req, req.params.id, "OWNER"))) {
+    if (!(await requireRole(req, req.params.id as string, "OWNER"))) {
       return res.status(403).json({ error: "Apenas o dono pode editar a banda." })
     }
     const { name, description, avatar_url } = req.body
     const { data, error } = await supabase
       .from("bands")
       .update({ name, description, avatar_url })
-      .eq("id", req.params.id)
+      .eq("id", req.params.id as string)
       .select()
       .single()
     if (error) throw error
@@ -135,13 +135,13 @@ router.patch("/bands/:id", requireAuth, async (req: AuthenticatedRequest, res: R
 
 router.get("/bands/:id/projects", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    if (!(await requireRole(req, req.params.id, "VIEWER"))) {
+    if (!(await requireRole(req, req.params.id as string, "VIEWER"))) {
       return res.status(403).json({ error: "Acesso negado." })
     }
     const { data, error } = await supabase
       .from("projects")
       .select("*")
-      .eq("band_id", req.params.id)
+      .eq("band_id", req.params.id as string)
       .eq("is_deleted", false)
     if (error) throw error
     res.json(data || [])
@@ -152,13 +152,13 @@ router.get("/bands/:id/projects", requireAuth, async (req: AuthenticatedRequest,
 
 router.post("/bands/:id/projects", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    if (!(await requireRole(req, req.params.id, "EDITOR"))) {
+    if (!(await requireRole(req, req.params.id as string, "EDITOR"))) {
       return res.status(403).json({ error: "Permissão insuficiente." })
     }
     const { title, genre, mood, bpm, key } = req.body
     const { data, error } = await supabase
       .from("projects")
-      .insert({ title, genre, mood, bpm, key, band_id: req.params.id, owner_id: req.userTokenData!.userId })
+      .insert({ title, genre, mood, bpm, key, band_id: req.params.id as string, owner_id: req.userTokenData!.userId })
       .select()
       .single()
     if (error) throw error

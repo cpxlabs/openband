@@ -94,7 +94,7 @@ router.post("/extract", (req: Request, res: Response) => {
 });
 
 router.get("/stems/:filename", (req: Request, res: Response) => {
-  const filename = req.params.filename;
+  const filename = req.params.filename as string;
   if (
     filename.includes("/") ||
     filename.includes("\\") ||

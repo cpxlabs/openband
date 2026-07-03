@@ -1,4 +1,4 @@
-import { Router, Request, Response } from "express"
+import { Router, Response } from "express"
 import { supabase } from "../lib/supabase"
 import { requireAuth, type AuthenticatedRequest } from "../middleware/authMiddleware"
 

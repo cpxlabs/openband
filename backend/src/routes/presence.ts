@@ -84,7 +84,7 @@ function cleanupClient(projectId: string, clientEntry: ClientEntry): void {
 setInterval(() => {
   const now = Date.now();
   for (const [projectId, clients] of projectClients) {
-    for (const [id, client] of clients) {
+    for (const [, client] of clients) {
       const presence = getUserPresence(projectId);
       const data = presence.get(client.userId);
       if (data && now - (data as unknown as { lastSeen?: number }).lastSeen! > STALE_TIMEOUT_MS) {
@@ -103,7 +103,7 @@ const router = Router();
 router.get(
   "/api/presence/:projectId/subscribe",
   (req: Request, res: Response) => {
-    const { projectId } = req.params;
+    const { projectId } = req.params as { projectId: string };
 
     if (!isValidKey(projectId)) {
       res.status(400).json({ error: "Invalid projectId" });
@@ -183,7 +183,7 @@ router.get(
 router.post(
   "/api/presence/:projectId/cursor",
   (req: Request, res: Response) => {
-    const { projectId } = req.params;
+    const { projectId } = req.params as { projectId: string };
 
     if (!isValidKey(projectId)) {
       res.status(400).json({ error: "Invalid projectId" });
@@ -231,7 +231,7 @@ router.post(
 router.post(
   "/api/presence/:projectId/leave",
   (req: Request, res: Response) => {
-    const { projectId } = req.params;
+    const { projectId } = req.params as { projectId: string };
 
     if (!isValidKey(projectId)) {
       res.status(400).json({ error: "Invalid projectId" });
@@ -245,7 +245,7 @@ router.post(
     }
 
     const clients = getProjectClients(projectId);
-    for (const [id, client] of clients) {
+    for (const [, client] of clients) {
       if (client.userId === userId) {
         cleanupClient(projectId, client);
         break;

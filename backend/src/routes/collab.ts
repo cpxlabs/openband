@@ -95,7 +95,7 @@ setInterval(() => {
     if (lastSeenMap) {
       for (const [userId, timestamp] of lastSeenMap) {
         if (now - timestamp > STALE_TIMEOUT_MS) {
-          for (const [id, client] of clients) {
+          for (const [, client] of clients) {
             if (client.userId === userId) {
               cleanupClient(projectId, client);
               break;
@@ -118,7 +118,7 @@ const router = Router();
 router.get(
   "/api/collab/:projectId/subscribe",
   (req: Request, res: Response) => {
-    const { projectId } = req.params;
+    const { projectId } = req.params as { projectId: string };
     if (!isValidKey(projectId)) {
       res.status(400).json({ error: "Invalid projectId" });
       return;
@@ -200,13 +200,13 @@ router.get(
 router.post(
   "/api/collab/:projectId/operation",
   (req: Request, res: Response) => {
-    const { projectId } = req.params;
+    const { projectId } = req.params as { projectId: string };
     if (!isValidKey(projectId)) {
       res.status(400).json({ error: "Invalid projectId" });
       return;
     }
 
-    const { operation, userId, userName } = req.body as {
+    const { operation, userId } = req.body as {
       operation: CollabOperation;
       userId: string;
       userName?: string;

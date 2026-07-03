@@ -13,7 +13,7 @@ router.post("/stems/separate", (req: Request, res: Response) => {
 });
 
 router.get("/stems/status/:id", (req: Request, res: Response) => {
-  const { id } = req.params;
+  const { id } = req.params as { id: string };
   const job = getJobStatus(id);
   if (!job) {
     return res.status(404).json({ error: "Job not found" });
