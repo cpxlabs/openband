@@ -3,15 +3,15 @@ import { useWindowDimensions, Platform } from "react-native";
 export type Breakpoint = "mobile" | "tablet" | "desktop";
 
 export const LAYOUT_MAX_WIDTHS = {
-  feed: 768,
-  feedWide: 1200,
-  library: 768,
-  moments: 768,
-  extractor: 768,
-  mastering: 768,
-  account: 768,
-  settings: 768,
-  login: 448,
+  feed: undefined,
+  feedWide: undefined,
+  library: undefined,
+  moments: undefined,
+  extractor: undefined,
+  mastering: undefined,
+  account: undefined,
+  settings: undefined,
+  login: undefined,
 };
 
 export function useResponsive() {

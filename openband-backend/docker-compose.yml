@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: openband-redis
+    ports:
+      - "6379:6379"
+
+  collaboration-service:
+    build: ./services/collaboration
+    container_name: openband-collaboration
+    ports:
+      - "8001:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+
+  ai-separation-api:
+    build: ./services/ai-separation
+    container_name: openband-ai-api
+    ports:
+      - "8002:8000"
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+    depends_on:
+      - redis
+
+  ai-separation-worker:
+    build: ./services/ai-separation
+    command: celery -A worker.celery_app worker --loglevel=info
+    container_name: openband-ai-worker
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+    depends_on:
+      - redis
+
+  project-backup-service:
+    build: ./services/project-backup
+    container_name: openband-backup
+    ports:
+      - "8003:8000"
+    env_file:
+      - .env.example

@@ -85,6 +85,7 @@ import { setMasteringInput } from "../../src/lib/masteringBridge";
 import type { AutomationPoint } from "../../src/lib/types";
 import { pitchShift } from "../../src/lib/timeStretch";
 import { audioBufferToWavBlob } from "../../src/lib/audio";
+import { useWebAudioPlayer } from "../../src/hooks/useWebAudioPlayer";
 
 type BottomTab = "mixer" | "fx" | "mastering" | "groups" | "buses" | "mixes" | "chords";
 
@@ -165,6 +166,8 @@ export default function Studio() {
   const isScratch = Array.isArray(scratchParam) ? scratchParam[0] : scratchParam === "1";
   const player = useAudioPlayer(null);
   const status = useAudioPlayerStatus(player);
+  const webAudio = useWebAudioPlayer();
+  const isWeb = Platform.OS === "web";
   const hasLoadedRef = useRef(false);
   const currentUrlRef = useRef<string | null>(null);
 
@@ -285,8 +288,9 @@ export default function Studio() {
   });
 
   useEffect(() => {
-    player.playbackRate = playbackRate;
-  }, [playbackRate, player]);
+    if (isWeb) webAudio.setPlaybackRate(playbackRate);
+    else player.playbackRate = playbackRate;
+  }, [playbackRate, player, isWeb, webAudio]);
 
   useEffect(() => {
     const saved = loadProject(id);
@@ -360,9 +364,9 @@ export default function Studio() {
     projectMood,
   ]);
 
-  const isPlaying = player.playing;
-  const currentTime = status.currentTime || 0;
-  const duration = status.duration || 240;
+  const isPlaying = isWeb ? webAudio.isPlaying : player.playing;
+  const currentTime = isWeb ? webAudio.currentTime : status.currentTime || 0;
+  const duration = isWeb ? webAudio.duration : status.duration || 240;
   const anySolo = useMemo(() => tracks.some((t) => t.solo), [tracks]);
 
   // Pre-compute automation schedules once when automation data changes
@@ -412,8 +416,9 @@ export default function Studio() {
   }, [metronome.bpm, projectTimeSig]);
 
   const togglePlay = useCallback(async () => {
-    if (isPlaying) {
-      player.pause();
+    const playing = isWeb ? webAudio.isPlaying : player.playing;
+    if (playing) {
+      if (isWeb) webAudio.pause(); else player.pause();
       return;
     }
 
@@ -421,7 +426,7 @@ export default function Studio() {
 
     if (hasLoadedRef.current) {
       try {
-        await player.play();
+        if (isWeb) { await webAudio.play(); } else { await player.play(); }
       } catch (e) {
         console.warn("Resume playback failed:", e);
       }
@@ -459,16 +464,23 @@ export default function Studio() {
     if (url) {
       try {
         currentUrlRef.current = url;
-        await player.replace(url);
-        await player.play();
+        if (isWeb) {
+          await webAudio.replace(url);
+          await webAudio.play();
+        } else {
+          await player.replace(url);
+          await player.play();
+        }
       } catch (e) {
         console.warn("Playback failed:", e);
       }
     }
-  }, [isPlaying, player, tracks, initialBpm, buses, pitchCorrected, playbackRate]);
+  }, [isPlaying, player, webAudio, isWeb, tracks, initialBpm, buses, pitchCorrected, playbackRate]);
 
   // Stop playback when studio unmounts
-  useEffect(() => () => { player.pause(); }, [player]);
+  useEffect(() => () => {
+    if (isWeb) webAudio.pause(); else player.pause();
+  }, [player, isWeb, webAudio]);
 
   const toggleRecording = useCallback(async () => {
     try {
@@ -577,9 +589,15 @@ export default function Studio() {
         if (url) {
           try {
             currentUrlRef.current = url;
-            await player.replace(url);
-            player.currentTime = 0;
-            await player.play();
+            if (isWeb) {
+              await webAudio.replace(url);
+              webAudio.seekTo(0);
+              await webAudio.play();
+            } else {
+              await player.replace(url);
+              player.currentTime = 0;
+              await player.play();
+            }
           } catch (e) {
             console.warn("Auto-play after mute/solo failed:", e);
           }
@@ -588,7 +606,7 @@ export default function Studio() {
         console.warn("rerenderAfterMuteSolo render failed:", e);
       }
     },
-    [player, initialBpm, projectMood, buses, pitchCorrected, playbackRate],
+    [player, webAudio, isWeb, initialBpm, projectMood, buses, pitchCorrected, playbackRate],
   );
 
   const toggleMute = useCallback(

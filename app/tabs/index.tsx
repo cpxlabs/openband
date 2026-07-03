@@ -25,6 +25,7 @@ import { LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive";
 import { GENRES } from "../../src/lib/projectTemplates";
 import { useResponsive } from "../../src/lib/responsive";
 import { listProjectIndex } from "../../src/lib/projectStore";
+import { useWebAudioPlayer } from "../../src/hooks/useWebAudioPlayer";
 
 interface FeedPost {
   id: string;
@@ -199,8 +200,13 @@ function formatCount(n: number) {
 export default function Feed() {
   const router = useRouter();
   const resp = useResponsive();
-  const player = useAudioPlayer(null);
-  const status = useAudioPlayerStatus(player);
+  const webAudio = useWebAudioPlayer();
+  const expoPlayer = useAudioPlayer(null);
+  const expoStatus = useAudioPlayerStatus(expoPlayer);
+  const isWeb = Platform.OS === "web";
+  const status = isWeb
+    ? { playing: webAudio.isPlaying, currentTime: webAudio.currentTime, duration: webAudio.duration, isLoaded: webAudio.isLoaded }
+    : expoStatus;
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [showQuickTools, setShowQuickTools] = useState(false);
   const [hasProjects, setHasProjects] = useState(false);
@@ -212,10 +218,15 @@ export default function Feed() {
 
   useEffect(() => {
     return () => {
-      player.pause();
-      player.seekTo(0);
+      if (isWeb) {
+        webAudio.pause();
+        webAudio.seekTo(0);
+      } else {
+        expoPlayer.pause();
+        expoPlayer.seekTo(0);
+      }
     };
-  }, [player]);
+  }, [isWeb, expoPlayer, webAudio]);
   const [genreFilter, setGenreFilter] = useState("all");
   const [sortMode, setSortMode] = useState<SortMode>("recent");
   const [posts, setPosts] = useState(MOCK_POSTS);
@@ -236,22 +247,27 @@ export default function Feed() {
 
   const handlePlay = useCallback(
     async (post: FeedPost) => {
-      if (playingId === post.id && player.playing) {
-        player.pause();
+      if (playingId === post.id && status.playing) {
+        if (isWeb) webAudio.pause(); else expoPlayer.pause();
         setPlayingId(null);
         return;
       }
       const url = await generatePreviewUrl(post.id, post.duration);
       if (url) {
-        await player.replace(url);
-        player.play();
+        if (isWeb) {
+          await webAudio.replace(url);
+          await webAudio.play();
+        } else {
+          await expoPlayer.replace(url);
+          expoPlayer.play();
+        }
         currentPostRef.current = post;
         setPlayingId(post.id);
       } else {
         Alert.alert("Erro", "Falha ao carregar prévia do áudio.");
       }
     },
-    [playingId, player],
+    [playingId, status.playing, isWeb, expoPlayer, webAudio],
   );
 
   const handleLike = useCallback((postId: string) => {
@@ -440,7 +456,7 @@ export default function Feed() {
               ) : null
             }
             renderItem={({ item }) => {
-              const isThisPlaying = playingId === item.id && player.playing;
+              const isThisPlaying = playingId === item.id && status.playing;
               const progress = status.duration
                 ? (status.currentTime / status.duration) * 100
                 : 0;
