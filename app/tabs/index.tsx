@@ -418,7 +418,7 @@ export default function Feed() {
         } else {
           await expoPlayerRef.current.replace(url);
           try {
-            expoPlayerRef.current.play();
+            await expoPlayerRef.current.play();
           } catch (e) {
             console.warn("Native playback failed:", e);
           }
