@@ -29,9 +29,9 @@ const FURNITURE: FurnitureDef[] = [
 ];
 
 const THREE_CDNS = [
-  "https://unpkg.com/three@0.170.0/build/three.min.js",
-  "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.170.0/three.min.js",
-  "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.min.js",
+  "https://unpkg.com/three@0.160.0/build/three.min.js",
+  "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js",
+  "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js",
 ];
 const GRID_SIZE = 16;
 const FLOOR_COLOR = 0x1e293b;
