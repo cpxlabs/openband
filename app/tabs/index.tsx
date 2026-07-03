@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useMemo, useEffect } from "react";
+import { useState, useCallback, useRef, useMemo, useEffect, memo } from "react";
 import {
   FlatList,
   View,
@@ -18,7 +18,6 @@ import {
   PageHeader,
   Avatar,
   QuickActions,
-  MiniPlayer,
   setMiniPlayerState,
   QuickTools,
 } from "../../src/components";
@@ -199,36 +198,200 @@ function formatCount(n: number) {
   return String(n);
 }
 
+interface FeedPostCardProps {
+  item: FeedPost;
+  isPlaying: boolean;
+  isLoading: boolean;
+  audioRef: React.RefObject<HTMLAudioElement | null>;
+  onPlay: (post: FeedPost) => void;
+  onLike: (postId: string) => void;
+  onRemix: (post: FeedPost) => void;
+  onShare: (post: FeedPost) => void;
+  onPlayed: (postId: string) => void;
+}
+
+const LiveProgressBar = memo(function LiveProgressBar({
+  audioRef,
+}: {
+  audioRef: React.RefObject<HTMLAudioElement | null>;
+}) {
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+    let rafId: number;
+    const tick = () => {
+      const audio = audioRef.current;
+      if (audio && audio.duration) {
+        setProgress((audio.currentTime / audio.duration) * 100);
+      }
+      rafId = requestAnimationFrame(tick);
+    };
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [audioRef]);
+
+  return <ProgressBar progress={progress} />;
+});
+
+const FeedPostCard = memo(function FeedPostCard({
+  item,
+  isPlaying: isThisPlaying,
+  isLoading: isThisLoading,
+  audioRef,
+  onPlay,
+  onLike,
+  onRemix,
+  onShare,
+  onPlayed,
+}: FeedPostCardProps) {
+  return (
+    <Card highlighted={isThisPlaying} className="mx-4 tablet:mx-2 mb-3">
+      <View className="p-4">
+        <View className="flex-row items-start gap-3">
+          <Avatar name={item.author} size="md" />
+          <View className="flex-1">
+            <View className="flex-row items-start justify-between">
+              <View className="flex-1 mr-2">
+                <Text className="text-white font-bold text-base leading-tight">
+                  {item.title}
+                </Text>
+                <Text className="text-gray-400 text-xs mt-0.5">
+                  {item.authorHandle}
+                </Text>
+              </View>
+              <Badge
+                text={formatCount(item.plays)}
+                icon="▶"
+                variant="play"
+              />
+            </View>
+
+            <View className="flex-row items-center gap-2 mt-2">
+              <Badge
+                text={item.genre.toUpperCase()}
+                variant="default"
+              />
+              <Badge text={item.key} variant="default" />
+              <Badge text={`${item.bpm} BPM`} variant="default" />
+              <Text className="text-gray-600 text-[10px]">
+                {Math.floor(item.duration / 60)}:
+                {String(item.duration % 60).padStart(2, "0")}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        <Pressable
+          onPress={() => {
+            onPlay(item);
+            onPlayed(item.id);
+          }}
+          disabled={isThisLoading}
+          accessibilityRole="button"
+          accessibilityLabel={isThisLoading ? "Carregando áudio" : isThisPlaying ? "Pausar áudio" : "Ouvir áudio"}
+          accessibilityState={{ disabled: isThisLoading }}
+          className={`mt-3 h-10 rounded-xl items-center justify-center flex-row gap-2 ${
+            isThisPlaying ? "bg-green-600" : "btn-secondary"
+          }`}
+        >
+          <Text
+            className={`text-sm ${isThisPlaying ? "text-white" : "text-brand-primary"}`}
+          >
+            {isThisLoading ? "…" : isThisPlaying ? "⏸" : "▶"}
+          </Text>
+          <Text
+            className={`font-bold text-xs ${isThisPlaying ? "text-white" : "text-brand-primary"}`}
+          >
+            {isThisLoading ? "Carregando" : isThisPlaying ? "Pausar" : "Ouvir"}
+          </Text>
+        </Pressable>
+
+        <View className="flex-row items-center gap-3 mt-3">
+          <Pressable
+            onPress={() => onLike(item.id)}
+            className="flex-row items-center gap-1 active:opacity-60"
+          >
+            <Text
+              className={`text-base ${item.userLiked ? "text-brand-primary" : "text-gray-500"}`}
+            >
+              {item.userLiked ? "❤" : "♡"}
+            </Text>
+            <Text
+              className={`text-xs font-semibold ${item.userLiked ? "text-brand-primary" : "text-gray-500"}`}
+            >
+              {formatCount(item.likes)}
+            </Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => onRemix(item)}
+            className="flex-row items-center gap-1 px-2.5 py-1 rounded-full bg-dark-elevated border border-dark-border active:opacity-70"
+          >
+            <Text className="text-gray-400 text-xs">🔄</Text>
+            <Text className="text-gray-400 text-[10px] font-semibold">
+              Remix
+            </Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => onShare(item)}
+            className="flex-row items-center gap-1 px-2.5 py-1 rounded-full bg-dark-elevated border border-dark-border active:opacity-70"
+          >
+            <Text className="text-gray-400 text-xs">↗</Text>
+            <Text className="text-gray-400 text-[10px] font-semibold">
+              Compartilhar
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+      {isThisPlaying && <LiveProgressBar audioRef={audioRef} />}
+    </Card>
+  );
+});
+
 export default function Feed() {
   const router = useRouter();
   const resp = useResponsive();
-  const webAudio = useWebAudioPlayer();
+  const webAudio = useWebAudioPlayer({ trackTime: false });
   const expoPlayer = useAudioPlayer(null);
   const expoStatus = useAudioPlayerStatus(expoPlayer);
   const isWeb = Platform.OS === "web";
-  const status = isWeb
-    ? { playing: webAudio.isPlaying, currentTime: webAudio.currentTime, duration: webAudio.duration, isLoaded: webAudio.isLoaded }
-    : expoStatus;
+  const webAudioRef = useRef(webAudio);
+  webAudioRef.current = webAudio;
+  const expoPlayerRef = useRef(expoPlayer);
+  expoPlayerRef.current = expoPlayer;
+  const playing = isWeb ? webAudio.isPlaying : expoStatus.playing;
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [showQuickTools, setShowQuickTools] = useState(false);
   const [hasProjects, setHasProjects] = useState(false);
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     const index = listProjectIndex();
     setHasProjects(Object.keys(index).length > 0);
   }, []);
 
+  const webAudioPause = webAudio.pause;
+  const webAudioSeekTo = webAudio.seekTo;
   useEffect(() => {
     return () => {
       if (isWeb) {
-        webAudio.pause();
-        webAudio.seekTo(0);
+        webAudioPause();
+        webAudioSeekTo(0);
       } else {
-        expoPlayer.pause();
-        expoPlayer.seekTo(0);
+        expoPlayerRef.current.pause();
+        expoPlayerRef.current.seekTo(0);
       }
     };
-  }, [isWeb, expoPlayer, webAudio]);
+  }, [isWeb, webAudioPause, webAudioSeekTo]);
   const [genreFilter, setGenreFilter] = useState("all");
   const [sortMode, setSortMode] = useState<SortMode>("recent");
   const [posts, setPosts] = useState(MOCK_POSTS);
@@ -247,37 +410,57 @@ export default function Feed() {
     return result;
   }, [posts, genreFilter, sortMode]);
 
+  const playingRef = useRef(playing);
+  playingRef.current = playing;
+  const playingIdRef = useRef(playingId);
+  playingIdRef.current = playingId;
+  const loadingIdRef = useRef(loadingId);
+  loadingIdRef.current = loadingId;
+
   const handlePlay = useCallback(
     async (post: FeedPost) => {
-      if (playingId === post.id && status.playing) {
-        if (isWeb) webAudio.pause(); else expoPlayer.pause();
-        setPlayingId(null);
+      if (loadingIdRef.current) return;
+      if (playingIdRef.current === post.id && playingRef.current) {
+        if (isWeb) webAudioRef.current.pause(); else expoPlayerRef.current.pause();
+        if (isMountedRef.current) setPlayingId(null);
         setMiniPlayerState({ visible: false, url: null });
         return;
       }
-      const url = await generatePreviewUrl(post.id, post.duration);
-      if (url) {
+      if (isMountedRef.current) setLoadingId(post.id);
+      loadingIdRef.current = post.id;
+      try {
+        const url = await generatePreviewUrl(post.id, post.duration);
         if (isWeb) {
-          await webAudio.replace(url);
-          await webAudio.play();
+          await webAudioRef.current.replace(url);
+          await webAudioRef.current.play();
         } else {
-          await expoPlayer.replace(url);
-          expoPlayer.play();
+          await expoPlayerRef.current.replace(url);
+          try {
+            await expoPlayerRef.current.play();
+          } catch (e) {
+            console.warn("Native playback failed:", e);
+          }
         }
-        currentPostRef.current = post;
-        setPlayingId(post.id);
-        setMiniPlayerState({
-          title: post.title,
-          subtitle: post.author,
-          url,
-          projectId: post.id,
-          visible: true,
-        });
-      } else {
+        if (isMountedRef.current) {
+          currentPostRef.current = post;
+          setPlayingId(post.id);
+          setMiniPlayerState({
+            title: post.title,
+            subtitle: post.author,
+            url,
+            projectId: post.id,
+            visible: true,
+          });
+        }
+      } catch (error) {
+        console.warn("Feed playback failed:", error);
         Alert.alert("Erro", "Falha ao carregar prévia do áudio.");
+      } finally {
+        if (isMountedRef.current) setLoadingId(null);
+        loadingIdRef.current = null;
       }
     },
-    [playingId, status.playing, isWeb, expoPlayer, webAudio],
+    [isWeb],
   );
 
   const handleLike = useCallback((postId: string) => {
@@ -327,6 +510,25 @@ export default function Feed() {
       prev.map((p) => (p.id === postId ? { ...p, plays: p.plays + 1 } : p)),
     );
   }, []);
+
+
+  const renderItem = useCallback(({ item }: { item: FeedPost }) => {
+    const isThisPlaying = playingId === item.id && playing;
+    const isThisLoading = loadingId === item.id;
+    return (
+      <FeedPostCard
+        item={item}
+        isPlaying={isThisPlaying}
+        isLoading={isThisLoading}
+        audioRef={webAudio.audioRef}
+        onPlay={handlePlay}
+        onLike={handleLike}
+        onRemix={handleRemix}
+        onShare={handleShare}
+        onPlayed={handlePlayed}
+      />
+    );
+  }, [playingId, loadingId, playing, webAudio.audioRef, handlePlay, handleLike, handleRemix, handleShare, handlePlayed]);
 
   const maxWidthStyle: Record<string, string | number | undefined> = { maxWidth: LAYOUT_MAX_WIDTHS.feedWide, alignSelf: "center" as const }
 
@@ -465,112 +667,7 @@ export default function Feed() {
                 </View>
               ) : null
             }
-            renderItem={({ item }) => {
-              const isThisPlaying = playingId === item.id && status.playing;
-              const progress = status.duration
-                ? (status.currentTime / status.duration) * 100
-                : 0;
-
-              return (
-                <Card highlighted={isThisPlaying} className="mx-4 tablet:mx-2 mb-3">
-                  <View className="p-4">
-                    <View className="flex-row items-start gap-3">
-                      <Avatar name={item.author} size="md" />
-                      <View className="flex-1">
-                        <View className="flex-row items-start justify-between">
-                          <View className="flex-1 mr-2">
-                            <Text className="text-white font-bold text-base leading-tight">
-                              {item.title}
-                            </Text>
-                            <Text className="text-gray-400 text-xs mt-0.5">
-                              {item.authorHandle}
-                            </Text>
-                          </View>
-                          <Badge
-                            text={formatCount(item.plays)}
-                            icon="▶"
-                            variant="play"
-                          />
-                        </View>
-
-                        <View className="flex-row items-center gap-2 mt-2">
-                          <Badge
-                            text={item.genre.toUpperCase()}
-                            variant="default"
-                          />
-                          <Badge text={item.key} variant="default" />
-                          <Badge text={`${item.bpm} BPM`} variant="default" />
-                          <Text className="text-gray-600 text-[10px]">
-                            {Math.floor(item.duration / 60)}:
-                            {String(item.duration % 60).padStart(2, "0")}
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
-
-                    <Pressable
-                      onPress={() => {
-                        handlePlay(item);
-                        handlePlayed(item.id);
-                      }}
-                      className={`mt-3 h-10 rounded-xl items-center justify-center flex-row gap-2 ${
-                        isThisPlaying ? "bg-green-600" : "btn-secondary"
-                      }`}
-                    >
-                      <Text
-                        className={`text-sm ${isThisPlaying ? "text-white" : "text-brand-primary"}`}
-                      >
-                        {isThisPlaying ? "⏸" : "▶"}
-                      </Text>
-                      <Text
-                        className={`font-bold text-xs ${isThisPlaying ? "text-white" : "text-brand-primary"}`}
-                      >
-                        {isThisPlaying ? "Pausar" : "Ouvir"}
-                      </Text>
-                    </Pressable>
-
-                    <View className="flex-row items-center gap-3 mt-3">
-                      <Pressable
-                        onPress={() => handleLike(item.id)}
-                        className="flex-row items-center gap-1 active:opacity-60"
-                      >
-                        <Text
-                          className={`text-base ${item.userLiked ? "text-brand-primary" : "text-gray-500"}`}
-                        >
-                          {item.userLiked ? "❤" : "♡"}
-                        </Text>
-                        <Text
-                          className={`text-xs font-semibold ${item.userLiked ? "text-brand-primary" : "text-gray-500"}`}
-                        >
-                          {formatCount(item.likes)}
-                        </Text>
-                      </Pressable>
-
-                      <Pressable
-                        onPress={() => handleRemix(item)}
-                        className="flex-row items-center gap-1 px-2.5 py-1 rounded-full bg-dark-elevated border border-dark-border active:opacity-70"
-                      >
-                        <Text className="text-gray-400 text-xs">🔄</Text>
-                        <Text className="text-gray-400 text-[10px] font-semibold">
-                          Remix
-                        </Text>
-                      </Pressable>
-
-                      <Pressable
-                        onPress={() => handleShare(item)}
-                        className="flex-row items-center gap-1 px-2.5 py-1 rounded-full bg-dark-elevated border border-dark-border active:opacity-70"
-                      >
-                        <Text className="text-gray-400 text-xs">↗</Text>
-                        <Text className="text-gray-400 text-[10px] font-semibold">
-                          Compartilhar
-                        </Text>
-                      </Pressable>
-                    </View>
-                  </View>
-                  {isThisPlaying && <ProgressBar progress={progress} />}
-                </Card>
-              );
-            }}
+            renderItem={renderItem}
           />
         </View>
 
@@ -580,7 +677,6 @@ export default function Feed() {
           </View>
         )}
       </View>
-      <MiniPlayer />
     </View>
   );
 }

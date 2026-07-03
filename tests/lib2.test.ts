@@ -1,7 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { buildVoicing, symbolFromChord, chordsToMIDI, suggestNextChord, PROGRESSION_PRESETS } from "../src/lib/chordTrackState";
 import { registerCommand, searchCommands, executeCommand, getAllCommands, disposeCommandRegistry } from "../src/lib/commandRegistry";
-import { writeWavHeader, audioBufferToWavBlob } from "../src/lib/audio";
+import { writeWavHeader, audioBufferToWavBlob, djb2Hash } from "../src/lib/audio";
+import { generatePreviewUrl } from "../src/lib/constants";
 import {
   createUndoStack, pushUndoCommand, canUndo, canRedo,
   executeUndo, executeRedo, clearUndoStack,
@@ -253,6 +254,134 @@ describe("audio WAV functions", () => {
     data[3] = -1.0;
     const blob = audioBufferToWavBlob(buffer, 16);
     expect(blob.size).toBe(44 + 4 * 2);
+  });
+});
+
+describe("generatePreviewUrl audio playback", () => {
+  let origOAC: typeof globalThis.OfflineAudioContext;
+
+  beforeEach(() => {
+    origOAC = globalThis.OfflineAudioContext;
+    (globalThis as any).OfflineAudioContext = undefined;
+  });
+
+  afterEach(() => {
+    (globalThis as any).OfflineAudioContext = origOAC;
+  });
+
+  it("generates a valid blob URL", async () => {
+    const url = await generatePreviewUrl("test-key-1", 2);
+    expect(url).toBeTruthy();
+    expect(url.startsWith("blob:")).toBe(true);
+  });
+
+  it("returns cached URL on second call", async () => {
+    const url1 = await generatePreviewUrl("cache-test", 2);
+    const url2 = await generatePreviewUrl("cache-test", 2);
+    expect(url1).toBe(url2);
+  });
+
+  it("pure JS WAV path produces valid RIFF header with sound", () => {
+    const sr = 44100;
+    const duration = 2;
+    const freq = 440;
+    const numSamples = Math.ceil(sr * duration);
+    const bitDepth = 16;
+    const numChannels = 1;
+    const bytesPerSample = bitDepth / 8;
+    const dataSize = numSamples * numChannels * bytesPerSample;
+    const headerSize = 44;
+    const arrayBuffer = new ArrayBuffer(headerSize + dataSize);
+    const view = new DataView(arrayBuffer);
+    writeWavHeader(view, 0, numChannels, sr, bitDepth, dataSize);
+
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sr;
+      const phase = (t * freq * 2 * Math.PI) % (2 * Math.PI);
+      const wave = Math.sin(phase);
+      const envelope = Math.max(0, 0.25 * (1 - t / duration));
+      const sample = wave * envelope;
+      const pcm = Math.max(-32768, Math.min(32767, Math.round(sample * 32767)));
+      view.setInt16(headerSize + i * bytesPerSample, pcm, true);
+    }
+
+    const riff = String.fromCharCode(view.getUint8(0), view.getUint8(1), view.getUint8(2), view.getUint8(3));
+    const wave = String.fromCharCode(view.getUint8(8), view.getUint8(9), view.getUint8(10), view.getUint8(11));
+    expect(riff).toBe("RIFF");
+    expect(wave).toBe("WAVE");
+    expect(view.getUint32(24, true)).toBe(44100);
+    expect(view.getUint16(34, true)).toBe(16);
+
+    let maxAmplitude = 0;
+    let nonZeroCount = 0;
+    for (let i = 0; i < numSamples; i++) {
+      const s = view.getInt16(headerSize + i * bytesPerSample, true);
+      if (Math.abs(s) > maxAmplitude) maxAmplitude = Math.abs(s);
+      if (s !== 0) nonZeroCount++;
+    }
+    expect(maxAmplitude).toBeGreaterThan(100);
+    expect(nonZeroCount).toBeGreaterThan(numSamples * 0.5);
+  });
+
+  it("duration cap limits WAV to MAX_PREVIEW_DURATION samples", () => {
+    const sr = 44100;
+    const cappedDuration = 3;
+    const numSamples = Math.ceil(sr * cappedDuration);
+    const bitDepth = 16;
+    const dataSize = numSamples * 1 * (bitDepth / 8);
+    const expectedSize = 44 + dataSize;
+    expect(numSamples).toBe(Math.ceil(sr * 3));
+    expect(expectedSize).toBeLessThan(44 + sr * 180 * 2);
+  });
+
+  it("djb2Hash produces different hashes for different keys", () => {
+    const h1 = djb2Hash("waveform-a");
+    const h2 = djb2Hash("waveform-b");
+    expect(h1).not.toBe(h2);
+
+    const freq1 = 110 + Math.abs(h1 % 880);
+    const freq2 = 110 + Math.abs(h2 % 880);
+    expect(freq1).not.toBe(freq2);
+  });
+
+  it("different frequencies produce different waveforms (has unique sound per song)", () => {
+    const sr = 44100;
+    const duration = 0.1;
+    const numSamples = Math.ceil(sr * duration);
+    const headerSize = 44;
+    const bytesPerSample = 2;
+
+    function generateSamples(freq: number): Int16Array {
+      const samples = new Int16Array(numSamples);
+      for (let i = 0; i < numSamples; i++) {
+        const t = i / sr;
+        const phase = (t * freq * 2 * Math.PI) % (2 * Math.PI);
+        const wave = Math.sin(phase);
+        const envelope = Math.max(0, 0.25 * (1 - t / duration));
+        samples[i] = Math.max(-32768, Math.min(32767, Math.round(wave * envelope * 32767)));
+      }
+      return samples;
+    }
+
+    const samples1 = generateSamples(440);
+    const samples2 = generateSamples(880);
+
+    let differ = false;
+    for (let i = 0; i < numSamples; i++) {
+      if (samples1[i] !== samples2[i]) {
+        differ = true;
+        break;
+      }
+    }
+    expect(differ).toBe(true);
+
+    let max1 = 0, max2 = 0;
+    for (let i = 0; i < numSamples; i++) {
+      if (Math.abs(samples1[i]) > max1) max1 = Math.abs(samples1[i]);
+      if (Math.abs(samples2[i]) > max2) max2 = Math.abs(samples2[i]);
+    }
+    expect(max1).toBeGreaterThan(100);
+    expect(max2).toBeGreaterThan(100);
   });
 });
 

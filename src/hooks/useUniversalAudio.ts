@@ -14,13 +14,14 @@ export function useUniversalAudio(source: string | number | null) {
     if (!source) return;
 
     if (Platform.OS === "web" && typeof document !== "undefined") {
-      const resume = () => audioSystem.initialize();
-      document.addEventListener("click", resume, { once: true });
-      document.addEventListener("touchstart", resume, { once: true });
-      return () => {
-        document.removeEventListener("click", resume);
-        document.removeEventListener("touchstart", resume);
+      const controller = new AbortController();
+      const resume = () => {
+        audioSystem.initialize();
+        controller.abort();
       };
+      document.addEventListener("click", resume, { signal: controller.signal });
+      document.addEventListener("touchstart", resume, { signal: controller.signal });
+      return () => controller.abort();
     }
   }, [source]);
 

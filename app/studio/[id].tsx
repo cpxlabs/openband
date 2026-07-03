@@ -459,8 +459,9 @@ export default function Studio() {
           const rendered = await offline.startRendering();
           const blob = await audioBufferToWavBlob(rendered);
           const pitchUrl = URL.createObjectURL(blob);
-          URL.revokeObjectURL(url);
+          const originalUrl = url;
           url = pitchUrl;
+          URL.revokeObjectURL(originalUrl);
         } catch (e) {
           console.warn("Pitch correction failed, using original:", e);
         }
@@ -586,8 +587,9 @@ export default function Studio() {
               const rendered = await offline.startRendering();
               const blob = await audioBufferToWavBlob(rendered);
               const pitchUrl = URL.createObjectURL(blob);
-              URL.revokeObjectURL(url);
+              const originalUrl = url;
               url = pitchUrl;
+              URL.revokeObjectURL(originalUrl);
             } catch (e) {
               console.warn("Pitch correction failed in rerender:", e);
             }

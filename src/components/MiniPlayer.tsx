@@ -60,6 +60,22 @@ export function MiniPlayer() {
 
   const progressBarRef = useRef<View>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const playerRef = useRef(player);
+  playerRef.current = player;
+  const loadingRef = useRef(false);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const setLoading = useCallback((loading: boolean) => {
+    loadingRef.current = loading;
+    if (mountedRef.current) setIsLoading(loading);
+  }, []);
 
   const calculateSeekPosition = useCallback((x: number, containerWidth: number) => {
     if (!status.duration || containerWidth <= 0) return;
@@ -102,15 +118,34 @@ export function MiniPlayer() {
   }, [player, status.duration]);
 
   useEffect(() => {
-    if (state.url && !status.isLoaded && state.visible) {
-      player.replace(state.url);
-    }
-  }, [state.url]);
+    const load = async () => {
+      if (!state.url || !state.visible || status.isLoaded || loadingRef.current) return;
+      setLoading(true);
+      try {
+        await playerRef.current.replace(state.url);
+      } finally {
+        setLoading(false);
+      }
+    };
+    void load();
+  }, [setLoading, state.url, state.visible, status.isLoaded]);
 
   const togglePlay = useCallback(async () => {
-    if (status.playing) player.pause();
-    else await player.play();
-  }, [player, status.playing]);
+    if (loadingRef.current) return;
+    if (status.playing) {
+      playerRef.current.pause();
+      return;
+    }
+    setLoading(true);
+    try {
+      if (!status.isLoaded && state.url) {
+        await playerRef.current.replace(state.url);
+      }
+      await playerRef.current.play();
+    } finally {
+      setLoading(false);
+    }
+  }, [setLoading, state.url, status.isLoaded, status.playing]);
 
   const stop = useCallback(() => {
     player.pause();
@@ -180,8 +215,14 @@ export function MiniPlayer() {
           <Pressable onPress={rewind} className="w-7 h-7 rounded items-center justify-center active:opacity-60">
             <Text className="text-gray-300 text-sm">⏮</Text>
           </Pressable>
-          <Pressable onPress={togglePlay} className="w-9 h-9 rounded-full bg-brand-primary items-center justify-center active:opacity-80">
-            <Text className="text-white text-base">{status.playing ? "⏸" : "▶"}</Text>
+          <Pressable
+            onPress={togglePlay}
+            accessibilityRole="button"
+            accessibilityLabel={isLoading ? "Carregando áudio" : status.playing ? "Pausar áudio" : "Reproduzir áudio"}
+            accessibilityState={{ busy: isLoading }}
+            className="w-9 h-9 rounded-full bg-brand-primary items-center justify-center active:opacity-80"
+          >
+            <Text className="text-white text-base">{isLoading ? "…" : status.playing ? "⏸" : "▶"}</Text>
           </Pressable>
           <Pressable onPress={forward} className="w-7 h-7 rounded items-center justify-center active:opacity-60">
             <Text className="text-gray-300 text-sm">⏭</Text>
