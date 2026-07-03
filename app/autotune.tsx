@@ -12,7 +12,6 @@ const THREE_CDNS = [
 ];
 
 const ACCENT = 0x00ffaa;
-const ACCENT_HEX = "#00ffaa";
 const TARGET = [0, 1.8, -2] as [number, number, number];
 const NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 const RETUNE_COLORS = [0xff0055, 0xff5500, 0xffcc00, 0x00ffaa];
@@ -254,10 +253,8 @@ export default function AutoTuneStudio() {
       });
 
       // Animation
-      let lastTime = performance.now();
       function animate(time: number) {
         animationId = requestAnimationFrame(animate);
-        lastTime = time;
 
         // Animate pitch blobs
         const isHardTune = retuneMode === 0;

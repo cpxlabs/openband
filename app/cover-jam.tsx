@@ -12,7 +12,6 @@ const THREE_CDNS = [
 ];
 
 const ACCENT = 0x00e5ff;
-const ACCENT_HEX = "#00e5ff";
 const TARGET = [0, 2, -2] as [number, number, number];
 
 interface StemPedal {
@@ -184,7 +183,6 @@ export default function CoverJamStudio() {
       scene.add(speedGroup);
 
       // State refs for animation loop
-      const speeds = ["50% SPEED", "75% SPEED", "100% SPEED"];
       let speedIdx = 2;
 
       // Click handling via raycaster
@@ -287,13 +285,10 @@ export default function CoverJamStudio() {
       renderer.domElement.addEventListener("touchend", () => { isDragging = false; });
 
       // Animation
-      let lastTime = performance.now();
       let beatCount = 0;
       function animate(time: number) {
         animationId = requestAnimationFrame(animate);
         const elapsed = time * 0.001;
-        const delta = (time - lastTime) / 1000;
-        lastTime = time;
 
         // Visual metronome (120 BPM = 2 beats/sec)
         const pulse = Math.floor(elapsed * 2) % 4;

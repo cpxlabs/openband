@@ -12,7 +12,6 @@ const THREE_CDNS = [
 ];
 
 const ACCENT = 0xff0055;
-const ACCENT_HEX = "#ff0055";
 const ROOM_W = 12;
 const ROOM_D = 12;
 const ROOM_H = 6;
@@ -288,8 +287,6 @@ export default function BeatmakerStudio() {
       let prevMouseY = 0;
       let rotY = 0;
       let rotX = 0.3;
-      const targetRotY = 0;
-      const targetRotX = 0.3;
       const radius = 8;
       const lookAtTarget = new THREE.Vector3(0, 1, -1);
       const sensitivity = 0.005;
@@ -328,12 +325,8 @@ export default function BeatmakerStudio() {
       renderer.domElement.addEventListener("wheel", handleWheel);
 
       // --- Animation Loop ---
-      let lastTime = performance.now();
-
       function animate(time: number) {
         animationId = requestAnimationFrame(animate);
-        const delta = (time - lastTime) / 1000;
-        lastTime = time;
 
         // Smooth camera orbit
         const targetX = radius * Math.sin(rotY) * Math.cos(rotX);

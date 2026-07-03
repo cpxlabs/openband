@@ -12,7 +12,6 @@ const THREE_CDNS = [
 ];
 
 const ACCENT = 0x10b981;
-const ACCENT_HEX = "#10b981";
 const CAM_POS = [0, 5, 8] as [number, number, number];
 const TARGET = [0, 1.5, -2] as [number, number, number];
 

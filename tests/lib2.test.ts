@@ -348,8 +348,6 @@ describe("generatePreviewUrl audio playback", () => {
     const sr = 44100;
     const duration = 0.1;
     const numSamples = Math.ceil(sr * duration);
-    const headerSize = 44;
-    const bytesPerSample = 2;
 
     function generateSamples(freq: number): Int16Array {
       const samples = new Int16Array(numSamples);
