@@ -55,3 +55,4 @@ export { BranchManager } from "./BranchManager";
 export { Patchbay } from "./Patchbay";
 export { CommitModal, VersionHistory } from "./CommitModal";
 export { CommandPalette } from "./CommandPalette";
+export { VuMeter } from "./VuMeter";

@@ -52,6 +52,7 @@ import {
   BranchManager,
   CommitModal,
   OutputSelector,
+  VuMeter,
 } from "../../src/components";
 import { registerCommand, initKeyBindings, disposeKeyBindings } from "../../src/lib/commandRegistry";
 import { chordsToMIDINotes } from "../../src/lib/harmonicAssistant";
@@ -232,6 +233,9 @@ export default function Studio() {
   const [editingPluginSource, setEditingPluginSource] =
     useState<PluginSource>(null);
   const [showAutomation, setShowAutomation] = useState<Record<string, boolean>>(
+    {},
+  );
+  const [showPanAutomation, setShowPanAutomation] = useState<Record<string, boolean>>(
     {},
   );
   const [groups, setGroups] = useState<GroupDef[]>([]);
@@ -1596,9 +1600,17 @@ export default function Studio() {
                 }`}
                 style={{ height: trackH }}
               >
-                <Text className="text-gray-200 text-xs font-semibold truncate">
-                  {track.name}
-                </Text>
+                <View className="flex-row items-center gap-1.5">
+                  <Text className="text-gray-200 text-xs font-semibold truncate flex-1">
+                    {track.name}
+                  </Text>
+                  <View className="h-8">
+                    <VuMeter
+                      level={track.volume / 100}
+                      peakLevel={isAudible(track) ? Math.min(1, track.volume / 100 + Math.random() * 0.05) : 0}
+                    />
+                  </View>
+                </View>
                 <View className="flex-row items-center gap-1 mt-0.5">
                   {track.plugins
                     .filter((p) => p.enabled)
@@ -1647,7 +1659,22 @@ export default function Studio() {
                     <Text
                       className={`text-xs font-bold ${showAutomation[track.id] ? "text-brand-accent" : "text-gray-400"}`}
                     >
-                      A
+                      V
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() =>
+                      setShowPanAutomation((prev) => ({
+                        ...prev,
+                        [track.id]: !prev[track.id],
+                      }))
+                    }
+                    className={`w-7 h-7 rounded items-center justify-center border ${showPanAutomation[track.id] ? "bg-brand-accent/20 border-brand-accent" : "bg-dark-muted/40 border-dark-border"}`}
+                  >
+                    <Text
+                      className={`text-xs font-bold ${showPanAutomation[track.id] ? "text-brand-accent" : "text-gray-400"}`}
+                    >
+                      P
                     </Text>
                   </Pressable>
                   <Pressable
@@ -1710,14 +1737,16 @@ export default function Studio() {
             >
               {tracks.map((track, trackIndex) => {
                 const showAuto = showAutomation[track.id];
+                const showPanAuto = showPanAutomation[track.id];
                 const trackH = resp.isDesktop ? 104 : 80;
+                const laneCount = (showAuto ? 1 : 0) + (showPanAuto ? 1 : 0);
                 return (
                   <View
                     key={track.id}
                     className="absolute w-full"
                     style={{
-                      height: showAuto ? trackH + 26 : trackH,
-                      top: trackIndex * (showAuto ? trackH + 26 : trackH),
+                      height: showAuto || showPanAuto ? trackH + laneCount * 26 : trackH,
+                      top: trackIndex * (showAuto || showPanAuto ? trackH + laneCount * 26 : trackH),
                     }}
                   >
                     <View
@@ -1760,6 +1789,22 @@ export default function Studio() {
                           visible
                           label="Volume"
                           minValue={0}
+                          maxValue={100}
+                        />
+                      </View>
+                    )}
+                    {showPanAuto && (
+                      <View className="h-[26px] bg-dark-bg/20 border-b border-dark-border/20">
+                        <AutomationLane
+                          points={track.automation.pan || []}
+                          onChange={(pts) =>
+                            updateAutomation(track.id, "pan", pts)
+                          }
+                          duration={duration}
+                          color="#bf5af2"
+                          visible
+                          label="Pan"
+                          minValue={-100}
                           maxValue={100}
                         />
                       </View>
@@ -1911,23 +1956,29 @@ export default function Studio() {
                           </Text>
                         </Pressable>
                       </View>
-                      <Pressable
-                        onPress={() =>
-                          setTrackVolume(
-                            track.id,
-                            Math.min(
-                              100,
-                              Math.max(0, trackVolume(track.id) - 10),
-                            ),
-                          )
-                        }
-                        className="w-3 flex-1 bg-dark-bg rounded-full relative justify-end overflow-hidden active:opacity-80"
-                      >
-                        <View
-                          style={{ height: `${effVol}%` }}
-                          className={`w-full rounded-full ${isAudible(track) ? "bg-brand-accent" : "bg-gray-600"}`}
+                      <View className="flex-row items-stretch flex-1 w-full gap-1">
+                        <VuMeter
+                          level={effVol / 100}
+                          peakLevel={isAudible(track) ? Math.min(1, effVol / 100 + Math.random() * 0.05) : 0}
                         />
-                      </Pressable>
+                        <Pressable
+                          onPress={() =>
+                            setTrackVolume(
+                              track.id,
+                              Math.min(
+                                100,
+                                Math.max(0, trackVolume(track.id) - 10),
+                              ),
+                            )
+                          }
+                          className="w-3 flex-1 bg-dark-bg rounded-full relative justify-end overflow-hidden active:opacity-80"
+                        >
+                          <View
+                            style={{ height: `${effVol}%` }}
+                            className={`w-full rounded-full ${isAudible(track) ? "bg-brand-accent" : "bg-gray-600"}`}
+                          />
+                        </Pressable>
+                      </View>
                       <View className="flex-row items-center gap-1">
                         <Pressable
                           onPress={() =>
