@@ -169,7 +169,6 @@ export default function Studio() {
   const status = useAudioPlayerStatus(player);
   const webAudio = useWebAudioPlayer();
   const isWeb = Platform.OS === "web";
-  const hasLoadedRef = useRef(false);
   const currentUrlRef = useRef<string | null>(null);
 
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
@@ -425,15 +424,6 @@ export default function Studio() {
 
     await audioSystem.ensureContext();
 
-    if (hasLoadedRef.current) {
-      try {
-        if (isWeb) { await webAudio.play(); } else { await player.play(); }
-      } catch (e) {
-        console.warn("Resume playback failed:", e);
-      }
-      return;
-    }
-    hasLoadedRef.current = true;
     if (currentUrlRef.current) URL.revokeObjectURL(currentUrlRef.current);
     let url = await renderTracksToUrl(tracks, initialBpm, projectMood, buses);
     if (url && pitchCorrected && playbackRate !== 1) {
@@ -455,8 +445,9 @@ export default function Studio() {
           source.start();
           const rendered = await offline.startRendering();
           const blob = await audioBufferToWavBlob(rendered);
+          const pitchUrl = URL.createObjectURL(blob);
           URL.revokeObjectURL(url);
-          url = URL.createObjectURL(blob);
+          url = pitchUrl;
         } catch (e) {
           console.warn("Pitch correction failed, using original:", e);
         }
@@ -476,7 +467,7 @@ export default function Studio() {
         console.warn("Playback failed:", e);
       }
     }
-  }, [isPlaying, player, webAudio, isWeb, tracks, initialBpm, buses, pitchCorrected, playbackRate]);
+  }, [player, webAudio, isWeb, tracks, initialBpm, projectMood, buses, pitchCorrected, playbackRate]);
 
   // Stop playback when studio unmounts
   useEffect(() => () => {
@@ -560,7 +551,6 @@ export default function Studio() {
     async (updatedTracks: TrackDef[]) => {
       try {
         await audioSystem.ensureContext();
-        hasLoadedRef.current = false;
         if (currentUrlRef.current) URL.revokeObjectURL(currentUrlRef.current);
         let url = await renderTracksToUrl(updatedTracks, initialBpm, projectMood, buses);
         if (url && pitchCorrected && playbackRate !== 1) {
@@ -582,7 +572,9 @@ export default function Studio() {
               source.start();
               const rendered = await offline.startRendering();
               const blob = await audioBufferToWavBlob(rendered);
-              url = URL.createObjectURL(blob);
+              const pitchUrl = URL.createObjectURL(blob);
+              URL.revokeObjectURL(url);
+              url = pitchUrl;
             } catch (e) {
               console.warn("Pitch correction failed in rerender:", e);
             }
