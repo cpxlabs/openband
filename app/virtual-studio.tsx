@@ -54,7 +54,7 @@ export default function VirtualStudio() {
   const [userName] = useState(() => `User${Math.floor(Math.random() * 999)}`);
   const myPosRef = useRef({ x: 0, z: 0 });
 
-  // Connect to collaboration WebSocket
+  // Connect to collaboration WebSocket (optional — runs in local mode if unavailable)
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -81,14 +81,19 @@ export default function VirtualStudio() {
             const others = avatarsArr.filter((a) => a.id !== userId);
             setConnectedUsers(others.length + 1);
           }
-        } catch {}
+        } catch { /* ignore malformed messages */ }
       };
 
       ws.onerror = () => {
-        // WebSocket not available — run in local mode
+        // Collaboration service unavailable — run in local mode
+        wsRef.current = null;
+      };
+
+      ws.onclose = () => {
+        wsRef.current = null;
       };
     } catch {
-      // WebSocket not available
+      // WebSocket not supported or connection failed — local mode
     }
 
     return () => {
