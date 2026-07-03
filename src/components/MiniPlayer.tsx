@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { View, Text, Pressable, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
@@ -58,6 +58,49 @@ export function MiniPlayer() {
 
   const progress = status.duration > 0 ? (status.currentTime / status.duration) * 100 : 0;
 
+  const progressBarRef = useRef<View>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const calculateSeekPosition = useCallback((x: number, containerWidth: number) => {
+    if (!status.duration || containerWidth <= 0) return;
+    const ratio = Math.max(0, Math.min(1, x / containerWidth));
+    player.seekTo(ratio * status.duration);
+  }, [player, status.duration]);
+
+  const handleResponderGrant = useCallback(() => {
+    setIsDragging(true);
+  }, []);
+
+  const handleResponderMove = useCallback((event: any) => {
+    if (!isDragging) return;
+    const x = event.nativeEvent.pageX;
+    // The progress bar spans the full screen width (left-0 right-0)
+    const containerWidth = typeof window !== "undefined" ? window.innerWidth : 300;
+    calculateSeekPosition(Math.max(0, Math.min(containerWidth, x)), containerWidth);
+  }, [isDragging, calculateSeekPosition]);
+
+  const handleResponderRelease = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  const handleMouseMove = useCallback((event: any) => {
+    if (!isDragging || !status.duration) return;
+    const rect = (event.target as HTMLElement).getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    calculateSeekPosition(x, rect.width);
+  }, [isDragging, calculateSeekPosition, status.duration]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  const handleProgressPress = useCallback((e: any) => {
+    const x = (e as unknown as { nativeEvent: { offsetX: number } }).nativeEvent.offsetX;
+    if (x !== undefined && status.duration) {
+      player.seekTo((x / 300) * status.duration);
+    }
+  }, [player, status.duration]);
+
   useEffect(() => {
     if (state.url && !status.isLoaded && state.visible) {
       player.replace(state.url);
@@ -97,14 +140,22 @@ export function MiniPlayer() {
 
   return (
     <View className="absolute bottom-0 left-0 right-0 bg-dark-surface/95 backdrop-blur-sm border-t border-dark-border">
-      {/* Progress bar (clickable) */}
-      <Pressable className="h-1.5 bg-dark-muted overflow-hidden" onPress={(e) => {
-        const x = (e as unknown as { nativeEvent: { offsetX: number } }).nativeEvent.offsetX;
-        if (x !== undefined && status.duration) {
-          player.seekTo((x / 300) * status.duration);
-        }
-      }}>
-        <View className="h-full bg-brand-primary transition-all" style={{ width: `${progress}%` }} />
+      {/* Progress bar (draggable) */}
+      <Pressable
+        ref={progressBarRef}
+        className="h-1.5 bg-dark-muted overflow-hidden cursor-pointer"
+        onPress={handleProgressPress}
+        onResponderGrant={handleResponderGrant}
+        onResponderMove={handleResponderMove}
+        onResponderRelease={handleResponderRelease}
+        // @ts-expect-error web pointer events
+        onMouseMove={Platform.OS === "web" ? handleMouseMove : undefined}
+        onMouseUp={Platform.OS === "web" ? handleMouseUp : undefined}
+      >
+        <View
+          className="h-full bg-brand-primary transition-all"
+          style={{ width: `${progress}%`, pointerEvents: "none" }}
+        />
       </Pressable>
 
       <View className="flex-row items-center gap-3 px-4 py-2.5">

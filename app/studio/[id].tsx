@@ -53,6 +53,7 @@ import {
   CommitModal,
   OutputSelector,
   VuMeter,
+  TrackColorPicker,
 } from "../../src/components";
 import { registerCommand, initKeyBindings, disposeKeyBindings } from "../../src/lib/commandRegistry";
 import { chordsToMIDINotes } from "../../src/lib/harmonicAssistant";
@@ -111,13 +112,18 @@ const GROUP_COLORS = [
   "#00d4aa",
 ];
 const TRACK_COLORS = [
-  "bg-red-500",
   "bg-blue-500",
   "bg-green-500",
   "bg-purple-500",
+  "bg-red-500",
   "bg-amber-500",
-  "bg-pink-500",
   "bg-cyan-500",
+  "bg-pink-500",
+  "bg-indigo-500",
+  "bg-teal-500",
+  "bg-orange-500",
+  "bg-lime-500",
+  "bg-rose-500",
 ];
 
 type PluginSource = "mastering" | "masterRack" | "track" | null;
@@ -219,6 +225,7 @@ export default function Studio() {
   const [showBranchManager, setShowBranchManager] = useState(false);
   const [showCommitModal, setShowCommitModal] = useState(false);
   const [showOutputSelector, setShowOutputSelector] = useState(false);
+  const [colorPickerTrackId, setColorPickerTrackId] = useState<string | null>(null);
   const [oneKnobValues, setOneKnobValues] = useState<
     Record<string, Record<string, number>>
   >({});
@@ -653,6 +660,13 @@ export default function Studio() {
   const setTrackPan = useCallback(
     (trackId: string, pan: number) => {
       setTracks(tracks.map((t) => (t.id === trackId ? { ...t, pan } : t)));
+    },
+    [tracks, setTracks],
+  );
+
+  const setTrackColor = useCallback(
+    (trackId: string, color: string) => {
+      setTracks(tracks.map((t) => (t.id === trackId ? { ...t, color } : t)));
     },
     [tracks, setTracks],
   );
@@ -1586,79 +1600,87 @@ export default function Studio() {
             const gv = getGroupVolume(groups, track.id);
             const trackH = resp.isMobile ? 80 : resp.isDesktop ? 104 : 80;
             return (
-              <Pressable
-                key={track.id}
-                onPress={() =>
-                  setSelectedTrackId(
-                    track.id === selectedTrackId ? null : track.id,
-                  )
-                }
-                className={`p-2 border-b border-dark-border justify-between bg-dark-surface/30 ${
-                  selectedTrackId === track.id
-                    ? "border-l-2 border-brand-accent bg-dark-elevated/50"
-                    : ""
-                }`}
-                style={{ height: trackH }}
-              >
-                <View className="flex-row items-center gap-1.5">
-                  <Text className="text-gray-200 text-xs font-semibold truncate flex-1">
-                    {track.name}
-                  </Text>
-                  <View className="h-8">
-                    <VuMeter
-                      level={track.volume / 100}
-                      peakLevel={isAudible(track) ? Math.min(1, track.volume / 100 + Math.random() * 0.05) : 0}
-                    />
-                  </View>
-                </View>
-                <View className="flex-row items-center gap-1 mt-0.5">
-                  {track.plugins
-                    .filter((p) => p.enabled)
-                    .slice(0, 3)
-                    .map((p) => (
-                      <View
-                        key={p.id}
-                        className="w-1.5 h-1.5 rounded-full"
-                        style={{ backgroundColor: p.color }}
+              <View key={track.id} className="relative">
+                <Pressable
+                  onPress={() =>
+                    setSelectedTrackId(
+                      track.id === selectedTrackId ? null : track.id,
+                    )
+                  }
+                  className={`p-2 border-b border-dark-border justify-between bg-dark-surface/30 ${
+                    selectedTrackId === track.id
+                      ? "border-l-2 border-brand-accent bg-dark-elevated/50"
+                      : ""
+                  }`}
+                  style={{ height: trackH }}
+                >
+                  <View className="flex-row items-center gap-1.5">
+                    <Text className="text-gray-200 text-xs font-semibold truncate flex-1">
+                      {track.name}
+                    </Text>
+                    <View className="h-8">
+                      <VuMeter
+                        level={track.volume / 100}
+                        peakLevel={isAudible(track) ? Math.min(1, track.volume / 100 + Math.random() * 0.05) : 0}
                       />
-                    ))}
-                  {gv && (
-                    <View className="w-3 h-1.5 rounded-full bg-gray-600" />
-                  )}
-                </View>
-                <View className="flex-row gap-1.5 mt-1">
-                  <Pressable
-                    onPress={() => toggleMute(track.id)}
-                    className={`w-7 h-7 rounded items-center justify-center border ${track.muted ? "bg-amber-500 border-amber-400" : "bg-dark-muted/40 border-dark-border"}`}
-                  >
-                    <Text
-                      className={`text-xs font-bold ${track.muted ? "text-white" : "text-gray-400"}`}
+                    </View>
+                  </View>
+                  <View className="flex-row items-center gap-1 mt-0.5">
+                    {track.plugins
+                      .filter((p) => p.enabled)
+                      .slice(0, 3)
+                      .map((p) => (
+                        <View
+                          key={p.id}
+                          className="w-1.5 h-1.5 rounded-full"
+                          style={{ backgroundColor: p.color }}
+                        />
+                      ))}
+                    {gv && (
+                      <View className="w-3 h-1.5 rounded-full bg-gray-600" />
+                    )}
+                  </View>
+                  <View className="flex-row gap-1.5 mt-1">
+                    <Pressable
+                      onPress={() =>
+                        setColorPickerTrackId(
+                          colorPickerTrackId === track.id ? null : track.id,
+                        )
+                      }
+                      className={`w-7 h-7 rounded items-center justify-center border ${track.color} border-dark-border`}
+                    />
+                    <Pressable
+                      onPress={() => toggleMute(track.id)}
+                      className={`w-7 h-7 rounded items-center justify-center border ${track.muted ? "bg-amber-500 border-amber-400" : "bg-dark-muted/40 border-dark-border"}`}
                     >
-                      M
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={() => toggleSolo(track.id)}
-                    className={`w-7 h-7 rounded items-center justify-center border ${track.solo ? "bg-green-500 border-green-400" : "bg-dark-muted/40 border-dark-border"}`}
-                  >
-                    <Text
-                      className={`text-xs font-bold ${track.solo ? "text-white" : "text-gray-400"}`}
+                      <Text
+                        className={`text-xs font-bold ${track.muted ? "text-white" : "text-gray-400"}`}
+                      >
+                        M
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => toggleSolo(track.id)}
+                      className={`w-7 h-7 rounded items-center justify-center border ${track.solo ? "bg-green-500 border-green-400" : "bg-dark-muted/40 border-dark-border"}`}
                     >
-                      S
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={() =>
-                      setShowAutomation((prev) => ({
-                        ...prev,
-                        [track.id]: !prev[track.id],
-                      }))
-                    }
-                    className={`w-7 h-7 rounded items-center justify-center border ${showAutomation[track.id] ? "bg-brand-accent/20 border-brand-accent" : "bg-dark-muted/40 border-dark-border"}`}
-                  >
-                    <Text
-                      className={`text-xs font-bold ${showAutomation[track.id] ? "text-brand-accent" : "text-gray-400"}`}
+                      <Text
+                        className={`text-xs font-bold ${track.solo ? "text-white" : "text-gray-400"}`}
+                      >
+                        S
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() =>
+                        setShowAutomation((prev) => ({
+                          ...prev,
+                          [track.id]: !prev[track.id],
+                        }))
+                      }
+                      className={`w-7 h-7 rounded items-center justify-center border ${showAutomation[track.id] ? "bg-brand-accent/20 border-brand-accent" : "bg-dark-muted/40 border-dark-border"}`}
                     >
+                      <Text
+                        className={`text-xs font-bold ${showAutomation[track.id] ? "text-brand-accent" : "text-gray-400"}`}
+                      >
                       V
                     </Text>
                   </Pressable>
@@ -1687,6 +1709,13 @@ export default function Studio() {
                   </Pressable>
                 </View>
               </Pressable>
+              <TrackColorPicker
+                visible={colorPickerTrackId === track.id}
+                currentColor={track.color}
+                onSelect={(color) => setTrackColor(track.id, color)}
+                onClose={() => setColorPickerTrackId(null)}
+              />
+            </View>
             );
           })}
           <View className="p-1.5 gap-1 border-t border-dark-border bg-dark-surface/20">
@@ -1790,6 +1819,7 @@ export default function Studio() {
                           label="Volume"
                           minValue={0}
                           maxValue={100}
+                          showCurveToggle
                         />
                       </View>
                     )}
@@ -1806,6 +1836,7 @@ export default function Studio() {
                           label="Pan"
                           minValue={-100}
                           maxValue={100}
+                          showCurveToggle
                         />
                       </View>
                     )}

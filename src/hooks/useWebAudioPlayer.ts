@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Platform } from "react-native";
-import { audioSystem } from "../lib/universalAudio";
 
 /**
  * Web-only audio player using HTML5 <audio> element.
@@ -17,6 +16,8 @@ export function useWebAudioPlayer() {
     if (Platform.OS !== "web" || typeof document === "undefined") return;
 
     const audio = new Audio();
+    audio.style.display = "none";
+    document.body.appendChild(audio);
     audioRef.current = audio;
 
     const onTimeUpdate = () => setCurrentTime(audio.currentTime);
@@ -30,12 +31,17 @@ export function useWebAudioPlayer() {
       setIsPlaying(false);
       setCurrentTime(0);
     };
+    const onError = (e: Event) => {
+      console.warn("Audio element error:", (e as ErrorEvent).message);
+      setIsLoaded(false);
+    };
 
     audio.addEventListener("timeupdate", onTimeUpdate);
     audio.addEventListener("loadedmetadata", onLoadedMetadata);
     audio.addEventListener("play", onPlay);
     audio.addEventListener("pause", onPause);
     audio.addEventListener("ended", onEnded);
+    audio.addEventListener("error", onError);
 
     return () => {
       audio.removeEventListener("timeupdate", onTimeUpdate);
@@ -43,8 +49,10 @@ export function useWebAudioPlayer() {
       audio.removeEventListener("play", onPlay);
       audio.removeEventListener("pause", onPause);
       audio.removeEventListener("ended", onEnded);
+      audio.removeEventListener("error", onError);
       audio.pause();
       audio.src = "";
+      if (audio.parentNode) audio.parentNode.removeChild(audio);
       audioRef.current = null;
     };
   }, []);
@@ -53,58 +61,41 @@ export function useWebAudioPlayer() {
     const audio = audioRef.current;
     if (!audio) return;
 
-    // Reset previous state
     audio.pause();
-    audio.src = "";
+    audio.src = url;
     setIsLoaded(false);
     setCurrentTime(0);
     setDuration(0);
 
-    return new Promise<void>((resolve) => {
-      let resolved = false;
-      const timeout = setTimeout(() => {
-        if (!resolved) {
-          resolved = true;
-          audio.removeEventListener("canplaythrough", onCanPlay);
-          audio.removeEventListener("loadeddata", onLoadedData);
-          setIsLoaded(true);
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const onReady = () => {
+          audio.removeEventListener("canplaythrough", onReady);
+          audio.removeEventListener("loadeddata", onReady);
+          audio.removeEventListener("error", onError);
           resolve();
-        }
-      }, 2000);
-
-      const onCanPlay = () => {
-        if (!resolved) {
-          resolved = true;
-          clearTimeout(timeout);
-          audio.removeEventListener("canplaythrough", onCanPlay);
-          audio.removeEventListener("loadeddata", onLoadedData);
-          setIsLoaded(true);
-          resolve();
-        }
-      };
-      const onLoadedData = () => {
-        if (!resolved) {
-          resolved = true;
-          clearTimeout(timeout);
-          audio.removeEventListener("canplaythrough", onCanPlay);
-          audio.removeEventListener("loadeddata", onLoadedData);
-          setIsLoaded(true);
-          resolve();
-        }
-      };
-
-      audio.addEventListener("canplaythrough", onCanPlay, { once: true });
-      audio.addEventListener("loadeddata", onLoadedData, { once: true });
-      audio.src = url;
-      audio.load();
-    });
+        };
+        const onError = () => {
+          audio.removeEventListener("canplaythrough", onReady);
+          audio.removeEventListener("loadeddata", onReady);
+          audio.removeEventListener("error", onError);
+          reject(new Error("Failed to load audio"));
+        };
+        audio.addEventListener("canplaythrough", onReady, { once: true });
+        audio.addEventListener("loadeddata", onReady, { once: true });
+        audio.addEventListener("error", onError, { once: true });
+        audio.load();
+      });
+      setIsLoaded(true);
+    } catch {
+      setIsLoaded(true);
+    }
   }, []);
 
   const play = useCallback(async () => {
     const audio = audioRef.current;
     if (!audio) return;
     try {
-      await audioSystem.ensureContext();
       await audio.play();
     } catch (e) {
       console.warn("WebAudio play failed:", e);

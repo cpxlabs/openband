@@ -495,29 +495,48 @@ export default function Extractor() {
                 icon="+"
                 onPress={() => {
                   const projectId = `stems-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-                  const tracks = results.map((stem) => ({
-                    id: `track-${stem.type}`,
-                    name: stem.label,
-                    color: "bg-blue-500",
-                    muted: false,
-                    solo: false,
-                    volume: 75,
-                    pan: 0,
-                    sends: {},
-                    sidechainSource: null,
-                    regions: [
-                      {
-                        id: `region-${stem.type}`,
-                        start: 0,
-                        duration: 30,
-                        url: stem.url,
-                      },
-                    ],
-                    plugins: [],
-                    automation: {},
-                  }));
+
+                  const stemDefaults: Record<
+                    StemType,
+                    { name: string; volume: number; pan: number }
+                  > = {
+                    drums: { name: "Drums", volume: 80, pan: 0 },
+                    bass: { name: "Bass", volume: 75, pan: 0 },
+                    vocals: { name: "Vocals", volume: 85, pan: 0 },
+                    other: { name: "Other", volume: 70, pan: 10 },
+                  };
+
+                  const tracks = results.map((stem) => {
+                    const defaults = stemDefaults[stem.type];
+                    return {
+                      id: `track-${stem.type}`,
+                      name: defaults.name,
+                      color: "bg-blue-500",
+                      muted: false,
+                      solo: false,
+                      volume: defaults.volume,
+                      pan: defaults.pan,
+                      sends: {},
+                      sidechainSource: null,
+                      regions: [
+                        {
+                          id: `region-${stem.type}`,
+                          start: 0,
+                          duration: stem.duration,
+                          url: stem.url,
+                        },
+                      ],
+                      plugins: [],
+                      automation: {},
+                    };
+                  });
+
+                  const projectTitle = results
+                    .map((s) => stemDefaults[s.type].name)
+                    .join(" + ");
+
                   saveProject(projectId, {
-                    title: "multi_stems",
+                    title: projectTitle,
                     genre: "pop",
                     key: "C",
                     bpm: 120,
@@ -549,7 +568,9 @@ export default function Extractor() {
                       preRoll: 0,
                     },
                   });
-                  router.push(`/studio/${projectId}?title=multi_stems`);
+                  router.push(
+                    `/studio/${projectId}?title=${encodeURIComponent(projectTitle)}`,
+                  );
                 }}
               />
               <Button
