@@ -1,5 +1,5 @@
 import { Platform } from "react-native";
-import { hashStr, audioBufferToWavBlob } from "./audio";
+import { djb2Hash, audioBufferToWavBlob } from "./audio";
 
 export const DEMO_AUDIO_URL =
   "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
@@ -16,7 +16,7 @@ export async function generatePreviewUrl(
   const cached = previewUrlCache.get(key);
   if (cached) return cached;
   const sr = 44100;
-  const h = hashStr(key);
+  const h = djb2Hash(key);
   const freq = 110 + Math.abs(h % 880);
   const types: OscillatorType[] = ["sine", "triangle", "sawtooth", "square"];
   if (Platform.OS !== "web" || typeof OfflineAudioContext === "undefined") return "";

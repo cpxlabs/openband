@@ -19,6 +19,7 @@ import {
 } from "expo-audio";
 import { renderTracksToUrl, disposeAudioContext } from "../../src/lib/midiSynth";
 import { audioSystem } from "../../src/lib/universalAudio";
+import { API_BASE_URL } from "../../src/lib/apiUrl";
 import { startClock, stopClock, onClockTick, disposeClockManager } from "../../src/lib/clockManager";
 import { assignTrackToBus } from "../../src/lib/busRouter";
 import { buildAutomationSchedule, interpolateAutomationValue, type ScheduledAutomationPoint } from "../../src/lib/automationEngine";
@@ -1074,7 +1075,7 @@ export default function Studio() {
   const handlePromptMidiRender = useCallback(
     async (data: { prompt: string; bpm: number; key: string }) => {
       try {
-        const apiBase = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3001";
+        const apiBase = API_BASE_URL || (process.env.EXPO_PUBLIC_API_URL as string) || "";
         const response = await fetch(
           `${apiBase}/api/generate-midi`,
           {

@@ -1,9 +1,9 @@
-import { Router, Response } from "express"
+import { Router, Request, Response } from "express"
 import { supabase } from "../lib/supabase"
 
 const router = Router()
 
-router.get("/projects/:id/activity", async (req: any, res: Response) => {
+router.get("/projects/:id/activity", async (req: Request<{ id: string }>, res: Response) => {
   try {
     const { data, error } = await supabase
       .from("project_activity")
@@ -20,7 +20,7 @@ router.get("/projects/:id/activity", async (req: any, res: Response) => {
   }
 })
 
-router.post("/projects/:id/activity", async (req: any, res: Response) => {
+router.post("/projects/:id/activity", async (req: Request<{ id: string }, unknown, { userId?: string; userName?: string; action?: string; details?: string }>, res: Response) => {
   try {
     const { userId, userName, action, details } = req.body
     const { error } = await supabase

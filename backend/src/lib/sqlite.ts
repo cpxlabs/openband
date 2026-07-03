@@ -362,7 +362,7 @@ function hasColumn(table: string, column: string): boolean {
 
 function buildWhereClauses(
   wheres: WhereClause[],
-  inClause: InClause | null,
+  inClause: InClause | null | undefined,
   outValues: unknown[],
 ): string[] {
   const parts: string[] = []

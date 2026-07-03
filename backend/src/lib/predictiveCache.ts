@@ -1,6 +1,6 @@
 import type { TrackDef } from "../types"
 
-interface CachedProject {
+export interface CachedProject {
   id: string
   title: string
   genre: string

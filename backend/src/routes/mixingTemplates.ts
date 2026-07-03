@@ -4,6 +4,12 @@ import { requireAuth, type AuthenticatedRequest } from "../middleware/authMiddle
 
 const router = Router()
 
+interface ProjectTrack {
+  name?: string
+  type?: string
+  [key: string]: unknown
+}
+
 router.get("/users/mixing-preferences", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { data, error } = await supabase
@@ -50,8 +56,8 @@ router.post("/users/mixing-preferences/apply/:projectId", requireAuth, async (re
       .maybeSingle()
     if (projErr || !project) return res.status(404).json({ error: "Projeto não encontrado." })
 
-    const tracks = (project.tracks || []).map((track: any) => {
-      const defaults = trackDefaults[track.name] || trackDefaults[track.type] || {}
+    const tracks = (project.tracks || []).map((track: ProjectTrack) => {
+      const defaults = (track.name && trackDefaults[track.name]) || (track.type && trackDefaults[track.type]) || {}
       return { ...track, ...defaults }
     })
 

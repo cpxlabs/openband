@@ -265,14 +265,14 @@ describe("audioGraphValidation", () => {
   });
 
   it("validateGraph validates tracks without bus outputs", () => {
-    const tracks = [{ id: "t1", name: "Vocal", type: "audio", volume: 75, pan: 0, muted: false, solo: false, outputId: null, plugins: [] }];
+    const tracks = [{ id: "t1", name: "Vocal", type: "audio", color: "bg-blue-500", volume: 75, pan: 0, muted: false, solo: false, outputId: null, sends: {}, regions: [], sidechainSource: null, automation: {}, plugins: [] }];
     const graph = buildAudioGraph(tracks, []);
     expect(validateGraph(graph).valid).toBe(true);
   });
 
   it("validateGraph validates track connected to bus", () => {
-    const tracks = [{ id: "t1", name: "Vocal", type: "audio", volume: 75, pan: 0, muted: false, solo: false, outputId: "bus-a", plugins: [] }];
-    const buses = [{ id: "bus-a", name: "Drums", type: "audio", volume: 80, pan: 0, muted: false, solo: false, outputId: null }];
+    const tracks = [{ id: "t1", name: "Vocal", type: "audio", color: "bg-blue-500", volume: 75, pan: 0, muted: false, solo: false, outputId: "bus-a", sends: {}, regions: [], sidechainSource: null, automation: {}, plugins: [] }];
+    const buses = [{ id: "bus-a", name: "Drums", type: "audio", color: "bg-gray-500", volume: 80, pan: 0, muted: false, solo: false, outputId: null, plugins: [] }];
     const graph = buildAudioGraph(tracks, buses);
     expect(validateGraph(graph).valid).toBe(true);
   });

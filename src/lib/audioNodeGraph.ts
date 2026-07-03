@@ -12,14 +12,14 @@ export class AudioNodeGraph {
   private ctx: AudioContext
   private slots: PluginSlot[] = []
   private inputNode: AudioNode
-  private outputNode: AudioNode
+  private outputNode: AudioNode | AudioDestinationNode
   private _isConnected: boolean = false
 
   get isConnected(): boolean {
     return this._isConnected
   }
 
-  constructor(ctx: AudioContext, inputNode: AudioNode, outputNode: AudioNode) {
+  constructor(ctx: AudioContext, inputNode: AudioNode, outputNode: AudioNode | AudioDestinationNode) {
     this.ctx = ctx
     this.inputNode = inputNode
     this.outputNode = outputNode
@@ -84,7 +84,7 @@ export class AudioNodeGraph {
     const activeSlots = this.slots.filter(s => s.enabled)
     if (activeSlots.length === 0) {
       try { this.inputNode.disconnect() } catch {}
-      this.inputNode.connect(this.outputNode as any)
+      this.inputNode.connect(this.outputNode)
       this._isConnected = true
       return
     }
@@ -100,7 +100,15 @@ export class AudioNodeGraph {
       activeSlots[i].node!.connect(activeSlots[i + 1].node!)
     }
 
-    activeSlots[activeSlots.length - 1].node!.connect(this.outputNode as any)
+    activeSlots[activeSlots.length - 1].node!.connect(this.outputNode)
     this._isConnected = true
   }
+}
+
+export function createAudioNodeGraph(
+  ctx: AudioContext,
+  inputNode: AudioNode,
+  outputNode: AudioNode | AudioDestinationNode,
+): AudioNodeGraph {
+  return new AudioNodeGraph(ctx, inputNode, outputNode)
 }

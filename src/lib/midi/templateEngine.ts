@@ -13,7 +13,7 @@ export const GENRE_TEMPLATES_REGISTRY: Record<
 };
 
 class GenreTemplateFactory {
-  private static apiBaseUrl = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3001";
+  private static apiBaseUrl = process.env.EXPO_PUBLIC_API_URL || "";
 
   public static createProject(genreKey: string, projectId: string): ProjectStarter {
     switch (genreKey) {

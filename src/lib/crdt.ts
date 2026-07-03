@@ -151,3 +151,11 @@ export function decodeState(
     return { clock: 0, clientId: "unknown", operations: [] };
   }
 }
+
+export function createState(): CrdtState {
+  return {
+    vectorClock: {},
+    operations: [],
+    pending: [],
+  };
+}

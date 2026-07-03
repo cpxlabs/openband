@@ -2,9 +2,9 @@ import { Router, Request, Response } from "express"
 import crypto from "crypto"
 import jwt from "jsonwebtoken"
 import { supabase } from "../lib/supabase"
+import { getJwtSecret } from "../config/jwt"
 
 const router = Router()
-const JWT_SECRET = process.env.JWT_SECRET || "openband_jwt_secret_dev"
 const MAGIC_LINK_TTL_MS = 15 * 60 * 1000
 
 const tokenStore = new Map<string, { email: string; expiresAt: number }>()
@@ -19,7 +19,7 @@ function cleanupExpired() {
 }
 
 function signToken(userId: string, tier: string): string {
-  return jwt.sign({ userId, tier }, JWT_SECRET, { expiresIn: "7d" })
+  return jwt.sign({ userId, tier }, getJwtSecret(), { expiresIn: "7d" })
 }
 
 async function createSession(userId: string, token: string, req: Request) {

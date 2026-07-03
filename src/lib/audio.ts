@@ -9,7 +9,7 @@ export function generateWaveform(seed: string, count: number): number[] {
     if (firstKey !== undefined) cache.delete(firstKey);
   }
   const data: number[] = [];
-  let h = hashStr(seed);
+  let h = djb2Hash(seed);
   for (let i = 0; i < count; i++) {
     h = (h * 1103515245 + 12345) & 0x7fffffff;
     const t = i / count;
@@ -27,7 +27,7 @@ export function generateWaveform(seed: string, count: number): number[] {
   return data;
 }
 
-export function hashStr(s: string): number {
+export function djb2Hash(s: string): number {
   let h = 0;
   for (let i = 0; i < s.length; i++) {
     h = ((h << 5) - h + s.charCodeAt(i)) | 0;

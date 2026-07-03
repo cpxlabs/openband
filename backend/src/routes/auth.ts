@@ -3,13 +3,13 @@ import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 import { OAuth2Client } from "google-auth-library"
 import { supabase } from "../lib/supabase"
+import { getJwtSecret } from "../config/jwt"
 
 const router = Router()
-const JWT_SECRET = process.env.JWT_SECRET || "openband_jwt_secret_dev"
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || ""
 
 function signToken(userId: string, tier: string): string {
-  return jwt.sign({ userId, tier }, JWT_SECRET, { expiresIn: "7d" })
+  return jwt.sign({ userId, tier }, getJwtSecret(), { expiresIn: "7d" })
 }
 
 async function createSession(userId: string, token: string, req: Request) {
@@ -170,7 +170,7 @@ router.get("/auth/me", async (req: Request, res: Response) => {
     }
 
     const token = authHeader.split(" ")[1]
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; tier: string }
+    const decoded = jwt.verify(token, getJwtSecret()) as { userId: string; tier: string }
 
     const { data: user, error } = await supabase
       .from("profiles")

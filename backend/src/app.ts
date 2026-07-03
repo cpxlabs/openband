@@ -26,15 +26,18 @@ import { checkBlacklist } from "./middleware/sessionBlacklist";
 const app = express();
 app.set("trust proxy", 1);
 
-const ALLOWED_ORIGINS = [
-  "http://localhost:8081",
-  "http://localhost:3000",
-  "http://localhost:19006",
-  "exp://localhost:19000",
-  "exp://localhost:19001",
-  "http://127.0.0.1:8081",
-  /\.vercel\.app$/,
-];
+const ALLOWED_ORIGINS_ENV = process.env.ALLOWED_ORIGINS || "";
+const ALLOWED_ORIGINS: (string | RegExp)[] = ALLOWED_ORIGINS_ENV
+  ? ALLOWED_ORIGINS_ENV.split(",").map((o) => o.trim())
+  : [
+      "http://localhost:8081",
+      "http://localhost:3000",
+      "http://localhost:19006",
+      "exp://localhost:19000",
+      "exp://localhost:19001",
+      "http://127.0.0.1:8081",
+      /\.vercel\.app$/,
+    ];
 app.use(
   cors({
     origin: (origin, callback) => {

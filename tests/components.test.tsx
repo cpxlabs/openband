@@ -1764,7 +1764,7 @@ describe("testID Contract", () => {
       const viewElement = container.firstChild?.firstChild;
       expect(viewElement).toBeTruthy();
       const styleAttr = (viewElement as HTMLElement).getAttribute("style");
-      expect(styleAttr).toContain("max-width: 448px");
+      expect(styleAttr).toContain("width: 100%");
 
       spy.mockRestore();
     });
@@ -1777,7 +1777,7 @@ describe("testID Contract", () => {
       const viewElement = container.firstChild?.firstChild;
       expect(viewElement).toBeTruthy();
       const styleAttr = (viewElement as HTMLElement).getAttribute("style");
-      expect(styleAttr).toContain("max-width: 448px");
+      expect(styleAttr).toContain("width: 100%");
 
       spy.mockRestore();
     });

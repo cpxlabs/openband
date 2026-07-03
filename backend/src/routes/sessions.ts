@@ -1,11 +1,9 @@
 import { Router, Response } from "express"
-import jwt from "jsonwebtoken"
 import { supabase } from "../lib/supabase"
 import { AuthenticatedRequest, requireAuth } from "../middleware/authMiddleware"
 import { addToBlacklist } from "../middleware/sessionBlacklist"
 
 const router = Router()
-const JWT_SECRET = process.env.JWT_SECRET || "openband_jwt_secret_dev"
 
 router.get("/auth/sessions", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {

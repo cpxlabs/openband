@@ -52,8 +52,20 @@ router.delete("/projects/:id", requireAuth, async (req: AuthenticatedRequest, re
 })
 
 interface TrackData {
-  id?: string
-  [key: string]: any
+  id: string;
+  name?: string;
+  color?: string;
+  muted?: boolean;
+  solo?: boolean;
+  volume?: number;
+  pan?: number;
+  sends?: Record<string, number>;
+  regions?: Array<{ id: string; start: number; duration: number; url?: string }>;
+  midiNotes?: Array<{ pitch: number; start: number; duration: number; velocity: number }>;
+  plugins?: Array<{ id: string; name: string; type: string; enabled: boolean; params: Record<string, number> }>;
+  automation?: Record<string, Array<{ time: number; value: number; curve: string }>>;
+  sidechainSource?: string | null;
+  outputId?: string | null;
 }
 
 router.patch("/projects/:id/tracks/:trackId", async (req, res) => {

@@ -1,4 +1,5 @@
 import { Platform } from "react-native";
+import { API_BASE_URL } from "./apiUrl";
 
 export interface AudioMetrics {
   underruns: number;
@@ -201,7 +202,7 @@ export function disposeTelemetry(): void {
 
 export async function sendTelemetryReport(
   metrics: AudioMetrics,
-  serverUrl: string = "http://localhost:3001",
+  serverUrl: string = API_BASE_URL,
 ): Promise<boolean> {
   try {
     const url = `${serverUrl.replace(/\/+$/, "")}/api/telemetry`;

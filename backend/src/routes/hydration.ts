@@ -1,6 +1,6 @@
 import { Router, Response } from "express"
 import { supabase } from "../lib/supabase"
-import { getCachedProjects, warmCacheOnLogin } from "../lib/predictiveCache"
+import { getCachedProjects, warmCacheOnLogin, type CachedProject } from "../lib/predictiveCache"
 import { requireAuth, type AuthenticatedRequest } from "../middleware/authMiddleware"
 
 const router = Router()
@@ -8,7 +8,7 @@ const router = Router()
 router.post("/users/hydrate", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.userTokenData!.userId
-    await warmCacheOnLogin(userId, async (uid) => {
+    await warmCacheOnLogin(userId, async (uid): Promise<CachedProject[]> => {
       const { data } = await supabase
         .from("projects")
         .select("id, title, genre, mood, bpm, key, tracks")
@@ -16,7 +16,16 @@ router.post("/users/hydrate", requireAuth, async (req: AuthenticatedRequest, res
         .eq("is_deleted", false)
         .order("updated_at", { ascending: false })
         .limit(3)
-      return (data || []).map((p: any) => ({ ...p, tracks: p.tracks || [] }))
+      return (data || []).map((p) => ({
+        id: p.id,
+        title: p.title ?? "",
+        genre: p.genre ?? "",
+        mood: p.mood ?? "",
+        bpm: p.bpm ?? 0,
+        key: p.key ?? "",
+        tracks: p.tracks ?? [],
+        cachedAt: Date.now(),
+      }))
     })
     res.json({ success: true })
   } catch (e) {

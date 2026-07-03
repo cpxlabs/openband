@@ -1,3 +1,5 @@
+import { API_BASE_URL } from "./apiUrl";
+
 export interface CRDTOperation {
   id: string;
   lamport: number;
@@ -43,7 +45,7 @@ let ws: WebSocket | null = null;
 let syncCallback: ((docId: string, ops: CRDTOperation[]) => void) | null = null;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let reconnectAttempts = 0;
-let wsUrl = "ws://localhost:3001/collab";
+let wsUrl = API_BASE_URL ? `${API_BASE_URL.replace(/^http/, "ws")}/collab` : "ws://localhost:3001/collab";
 
 function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;

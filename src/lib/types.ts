@@ -13,7 +13,16 @@ export interface BusDef {
   plugins: Plugin[];
 }
 
-export type EqBandType = 0 | 1 | 2 | 3 | 4 | 5;
+export const EQ_BAND_TYPES = {
+  LOW_CUT: 0,
+  LOW_SHELF: 1,
+  PEAK: 2,
+  NOTCH: 3,
+  HIGH_SHELF: 4,
+  HIGH_CUT: 5,
+} as const;
+
+export type EqBandType = (typeof EQ_BAND_TYPES)[keyof typeof EQ_BAND_TYPES];
 export const EQ_BAND_LABELS: Record<number, string> = {
   0: "LC",
   1: "LS",

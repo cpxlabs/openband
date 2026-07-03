@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from "express"
 import jwt from "jsonwebtoken"
-
-const JWT_SECRET = process.env.JWT_SECRET || "openband_jwt_secret_dev"
+import { getJwtSecret } from "../config/jwt"
 
 export interface AuthenticatedRequest extends Request {
   userTokenData?: { userId: string; tier: string }
@@ -18,7 +17,7 @@ export function requireAuth(req: AuthenticatedRequest, res: Response, next: Next
   const token = authHeader.split(" ")[1]
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; tier: string }
+    const decoded = jwt.verify(token, getJwtSecret()) as { userId: string; tier: string }
     req.userTokenData = decoded
     next()
   } catch {
