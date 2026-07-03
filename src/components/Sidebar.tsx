@@ -10,12 +10,12 @@ const NAV_ITEMS = [
     label: "3D Studio",
     icon: "🏠",
     subItems: [
-      { key: "mixer", label: "Mixing Console", icon: "🎛", route: "/studio" },
+      { key: "mixer", label: "Mixing Console", icon: "🎛", route: "/studio/:id?title=Mixing%20Console&scratch=1&tab=mixer" },
       { key: "mastering-3d", label: "Mastering Suite", icon: "🎚", route: "/mastering" },
-      { key: "timeline", label: "Timeline", icon: "🎬", route: "/studio" },
-      { key: "piano-roll", label: "Piano Roll", icon: "🎹", route: "/studio" },
-      { key: "pedalboard", label: "Pedalboard", icon: "🎸", route: "/studio" },
-      { key: "synth", label: "Synthesizer", icon: "🎹", route: "/studio" },
+      { key: "timeline", label: "Timeline", icon: "🎬", route: "/studio/:id?title=Timeline&scratch=1&tab=mixes" },
+      { key: "piano-roll", label: "Piano Roll", icon: "🎹", route: "/studio/:id?title=Piano%20Roll&scratch=1&tab=chords&tool=piano" },
+      { key: "pedalboard", label: "Pedalboard", icon: "🎸", route: "/studio/:id?title=Pedalboard&scratch=1&tab=fx" },
+      { key: "synth", label: "Synthesizer", icon: "🎹", route: "/studio/:id?title=Synthesizer&scratch=1&tab=fx&tool=synth" },
     ],
   },
   { key: "explorer", label: "Explorer", icon: "🌍" },
@@ -24,6 +24,10 @@ const NAV_ITEMS = [
 ];
 
 const LOGO = require("../../assets/logo-dark.png");
+
+function buildRoute(route: string) {
+  return route.includes(":id") ? route.replace(":id", `proj-${Date.now()}`) : route;
+}
 
 interface SidebarProps {
   currentRoute: string;
@@ -137,7 +141,7 @@ export function Sidebar({
                     <Pressable
                       key={sub.key}
                       onPress={() => {
-                        onNavigate(sub.key);
+                        onNavigate(sub.route ? buildRoute(sub.route) : sub.key);
                         if (!isPersistent) onClose();
                       }}
                       className="flex-row items-center gap-2 px-3 py-2 rounded-lg active:opacity-70 hover:bg-dark-muted/60 border border-transparent"

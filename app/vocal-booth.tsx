@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { View, Text, Pressable } from "react-native";
 import { useRouter } from "expo-router";
+import { addSceneBulb } from "../src/lib/sceneLighting";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ThreeAny = any;
@@ -113,6 +114,8 @@ export default function VocalBooth() {
       const rimLight = new THREE.PointLight(SPOTLIGHT_COLOR, 0.6, 8);
       rimLight.position.set(-2, 4, 1);
       scene.add(rimLight);
+
+      addSceneBulb(THREE, scene);
 
       // ── Floor ────────────────────────────────────────────────
       const floor = new THREE.Mesh(

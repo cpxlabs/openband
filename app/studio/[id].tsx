@@ -147,6 +147,8 @@ export default function Studio() {
     numBars: numBarsParam,
     timeSignature: tsParam,
     scratch: scratchParam,
+    tab: tabParam,
+    tool: toolParam,
   } = useLocalSearchParams<{
     id: string;
     genre?: string;
@@ -157,8 +159,12 @@ export default function Studio() {
     numBars?: string;
     timeSignature?: string;
     scratch?: string;
+    tab?: string;
+    tool?: string;
   }>();
   const rawMood = Array.isArray(moodParam) ? moodParam[0] : moodParam;
+  const rawTab = Array.isArray(tabParam) ? tabParam[0] : tabParam;
+  const rawTool = Array.isArray(toolParam) ? toolParam[0] : toolParam;
   const allMoods: Mood[] = ["dark", "bright", "warm", "cold", "aggressive", "chill", "epic", "minimal", "nostalgic", "euphoric"];
   const projectMood: Mood | undefined = allMoods.includes(rawMood as Mood) ? (rawMood as Mood) : undefined;
   const router = useRouter();
@@ -210,9 +216,16 @@ export default function Studio() {
 
   const resp = useResponsive();
 
+  const initialBottomTab = (() => {
+    if (rawTab === "fx" || rawTab === "mastering" || rawTab === "groups" || rawTab === "buses" || rawTab === "mixes" || rawTab === "chords") {
+      return rawTab;
+    }
+    return "mixer";
+  })();
+
   const [isRecording, setIsRecording] = useState(false);
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
-  const [bottomTab, setBottomTab] = useState<BottomTab>("mixer");
+  const [bottomTab, setBottomTab] = useState<BottomTab>(initialBottomTab);
   const [showRecordOptions, setShowRecordOptions] = useState(false);
   const [showBounce, setShowBounce] = useState(false);
   const [showSampleBrowser, setShowSampleBrowser] = useState(false);
@@ -220,7 +233,7 @@ export default function Studio() {
   const [showTuner, setShowTuner] = useState(false);
   const [showLooper, setShowLooper] = useState(false);
   const [showSampler, setShowSampler] = useState(false);
-  const [showSynth, setShowSynth] = useState(false);
+  const [showSynth, setShowSynth] = useState(rawTool === "synth");
   const [showPromptSampler, setShowPromptSampler] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showBranchManager, setShowBranchManager] = useState(false);
@@ -233,7 +246,7 @@ export default function Studio() {
   const [chords, setChords] = useState<
     { id: string; degree: number; quality: import("../../src/lib/harmony").ChordQuality; beats: number }[]
   >([]);
-  const [showPianoRoll, setShowPianoRoll] = useState(false);
+  const [showPianoRoll, setShowPianoRoll] = useState(rawTool === "piano");
   const [editingMidiTrackId, setEditingMidiTrackId] = useState<string | null>(
     null,
   );
@@ -322,6 +335,11 @@ export default function Studio() {
       if (saved.recordSettings) setRecordSettings(saved.recordSettings);
     }
   }, [id]);
+
+  useEffect(() => {
+    if (rawTool !== "piano" || editingMidiTrackId || !showPianoRoll) return;
+    setEditingMidiTrackId(tracks[0]?.id ?? null);
+  }, [rawTool, editingMidiTrackId, showPianoRoll, tracks]);
 
   useEffect(() => {
     const timer = setTimeout(() => {

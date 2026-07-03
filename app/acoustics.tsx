@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { View, Text, Pressable } from "react-native";
 import { useRouter } from "expo-router";
+import { addSceneBulb } from "../src/lib/sceneLighting";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ThreeAny = any;
@@ -87,6 +88,8 @@ export default function AcousticsLab() {
       const accentLight = new THREE.PointLight(ACCENT, 3, 15);
       accentLight.position.set(0, 4, -2);
       scene.add(accentLight);
+
+      addSceneBulb(THREE, scene);
 
       // Room shell
       const roomMat = new THREE.MeshStandardMaterial({

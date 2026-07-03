@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { View, Text, Pressable } from "react-native";
 import { useRouter } from "expo-router";
+import { addSceneBulb } from "../src/lib/sceneLighting";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ThreeAny = any;
@@ -374,6 +375,8 @@ export default function MixingConsole() {
       const stripLight = new THREE.PointLight(ACCENT, 0.3, 8);
       stripLight.position.set(0, 0.5, 2);
       scene.add(stripLight);
+
+      addSceneBulb(THREE, scene);
 
       // Floor
       const floorGeo = new THREE.PlaneGeometry(20, 20);
