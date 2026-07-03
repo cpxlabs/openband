@@ -2,8 +2,8 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { View, Text, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 
-// Collaboration service URL
-const COLLAB_URL = process.env.EXPO_PUBLIC_COLLAB_URL || "ws://localhost:8001";
+// Collaboration service URL (only connect when explicitly configured)
+const COLLAB_URL = process.env.EXPO_PUBLIC_COLLAB_URL;
 
 interface Avatar {
   id: string;
@@ -54,13 +54,17 @@ export default function VirtualStudio() {
   const [userName] = useState(() => `User${Math.floor(Math.random() * 999)}`);
   const myPosRef = useRef({ x: 0, z: 0 });
 
-  // Connect to collaboration WebSocket (optional — runs in local mode if unavailable)
+  // Connect to collaboration WebSocket (optional — skip if backend not running)
   useEffect(() => {
     if (typeof window === "undefined") return;
 
+    // Only attempt connection if COLLAB_URL is explicitly configured
+    const collabUrl = process.env.EXPO_PUBLIC_COLLAB_URL;
+    if (!collabUrl) return;
+
     let ws: WebSocket | null = null;
     try {
-      ws = new WebSocket(`${COLLAB_URL}/ws/project/studio-room`);
+      ws = new WebSocket(`${collabUrl}/ws/project/studio-room`);
       wsRef.current = ws;
 
       ws.onopen = () => {
@@ -84,16 +88,10 @@ export default function VirtualStudio() {
         } catch { /* ignore malformed messages */ }
       };
 
-      ws.onerror = () => {
-        // Collaboration service unavailable — run in local mode
-        wsRef.current = null;
-      };
-
-      ws.onclose = () => {
-        wsRef.current = null;
-      };
+      ws.onerror = () => { wsRef.current = null; };
+      ws.onclose = () => { wsRef.current = null; };
     } catch {
-      // WebSocket not supported or connection failed — local mode
+      // WebSocket not supported — local mode
     }
 
     return () => {
@@ -518,18 +516,73 @@ export default function VirtualStudio() {
         </View>
       </View>
 
-      {/* 3D Canvas */}
-      <View className="flex-1 relative bg-black">
+      {/* 3D Room (CSS mock when Three.js unavailable) */}
+      <View className="flex-1 relative bg-gray-900 overflow-hidden">
         <div
           ref={containerRef as React.RefObject<HTMLDivElement>}
           style={{ position: "absolute", inset: 0 }}
         />
 
+        {/* Mock room fallback */}
+        <View className="absolute inset-0 items-center justify-center">
+          <View className="w-full h-full relative">
+            {/* Floor grid */}
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                backgroundImage:
+                  "linear-gradient(rgba(59,130,246,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.1) 1px, transparent 1px)",
+                backgroundSize: "40px 40px",
+                perspective: "800px",
+                transform: "rotateX(60deg) scale(2)",
+                transformOrigin: "center top",
+              }}
+            />
+
+            {/* Furniture cards */}
+            <View className="absolute inset-0 flex-row flex-wrap items-center justify-center gap-4 p-6">
+              {FURNITURE.map((f) => (
+                <Pressable
+                  key={f.id}
+                  onPress={() => router.push(f.route)}
+                  style={{
+                    width: 140,
+                    height: 100,
+                    borderRadius: 12,
+                    backgroundColor: f.color + "22",
+                    borderColor: f.color,
+                    borderWidth: 2,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                  }}
+                >
+                  <Text style={{ fontSize: 32 }}>{f.icon}</Text>
+                  <Text style={{ color: "#fff", fontSize: 13, fontWeight: "600" }}>
+                    {f.name}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
+            {/* User avatar */}
+            <View className="absolute bottom-8 left-1/2" style={{ marginLeft: -40 }}>
+              <View className="bg-brand-primary rounded-full w-10 h-10 items-center justify-center">
+                <Text className="text-white text-lg">👤</Text>
+              </View>
+              <Text className="text-gray-400 text-xs text-center mt-1">{userName}</Text>
+            </View>
+          </View>
+        </View>
+
         {/* Controls overlay */}
         <View className="absolute bottom-6 left-4">
           <View className="bg-dark-surface/80 backdrop-blur-sm rounded-lg px-3 py-2">
-            <Text className="text-gray-300 text-xs">🎮 WASD to move • Right-click drag to orbit • Scroll to zoom</Text>
-            <Text className="text-gray-500 text-[10px]">Click furniture to open tools</Text>
+            <Text className="text-gray-300 text-xs">🎮 Click furniture to open tools</Text>
+            <Text className="text-gray-500 text-[10px]">
+              {COLLAB_URL ? "Multi-user mode" : "Local mode — set EXPO_PUBLIC_COLLAB_URL for collaboration"}
+            </Text>
           </View>
         </View>
       </View>
