@@ -28,6 +28,34 @@ interface ElectronAPI {
   removeMenuActionListener(): void;
 }
 
+interface MIDIInputMap extends Map<string, MIDIInput> {}
+interface MIDIOutputMap extends Map<string, MIDIOutput> {}
+
+interface MIDIAccess {
+  inputs: MIDIInputMap;
+  outputs: MIDIOutputMap;
+  sysexEnabled: boolean;
+  onstatechange: ((this: MIDIAccess, ev: Event) => void) | null;
+}
+
+interface MIDIInput extends EventTarget {
+  id: string;
+  name: string;
+  manufacturer: string;
+  state: "disconnected" | "connected";
+  connection: "open" | "closed" | "pending";
+  onmidimessage: ((this: MIDIInput, ev: MIDIMessageEvent) => void) | null;
+}
+
+interface WebMidiMessageEvent extends Event {
+  data: Uint8Array;
+  receivedTime: number;
+}
+
+interface Navigator {
+  requestMIDIAccess?: (options?: { sysex?: boolean }) => Promise<MIDIAccess>;
+}
+
 interface Window {
   electronAPI?: ElectronAPI;
   __TAURI__?: unknown;

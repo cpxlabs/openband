@@ -7,7 +7,6 @@ import {
   processMidiCC,
   startLearning,
   stopLearning,
-  clearMappings,
   loadMappings,
   isLearning,
   type MidiLearnState,
@@ -27,6 +26,8 @@ function ParamRow({
   param,
   value,
   onChange,
+  onLearn,
+  isLearning: learning = false,
 }: {
   param: {
     id: string;
@@ -38,6 +39,8 @@ function ParamRow({
   };
   value: number;
   onChange: (v: number) => void;
+  onLearn?: () => void;
+  isLearning?: boolean;
 }) {
   const range = param.max - param.min;
   const pct = range === 0 ? 0 : ((value - param.min) / range) * 100;
@@ -47,7 +50,17 @@ function ParamRow({
   return (
     <View className="mb-3">
       <View className="flex-row items-center justify-between mb-1">
-        <Text className="text-gray-400 text-xs font-medium">{param.label}</Text>
+        <Pressable
+          onPress={onLearn}
+          className={`flex-row items-center gap-1 ${learning ? "opacity-100" : ""}`}
+        >
+          <Text className={`text-xs font-medium ${learning ? "text-brand-accent" : "text-gray-400"}`}>
+            {param.label}
+          </Text>
+          {learning && (
+            <View className="w-2 h-2 rounded-full bg-brand-accent animate-pulse" />
+          )}
+        </Pressable>
         <Text className="text-white font-mono text-[11px]">
           {displayVal}
           {param.unit ? ` ${param.unit}` : ""}
@@ -275,6 +288,8 @@ function CompressorEditor({
 }: {
   plugin: Plugin;
   onParamChange: (id: string, v: number) => void;
+  onParamLearn?: (paramId: string) => void;
+  midiLearnState?: MidiLearnState;
 }) {
   const threshold = plugin.params.threshold ?? -18;
   const ratio = plugin.params.ratio ?? 4;
@@ -1724,6 +1739,8 @@ function UtilityEditor({
 type EditorComp = (props: {
   plugin: Plugin;
   onParamChange: (id: string, v: number) => void;
+  onParamLearn?: (paramId: string) => void;
+  midiLearnState?: MidiLearnState;
   bpm?: number;
 }) => React.JSX.Element;
 
@@ -1754,7 +1771,95 @@ export function PluginEditor({
   onClose,
   bpm,
   testID,
+  trackId,
 }: PluginEditorProps) {
+  const [midiLearnState, setMidiLearnState] = useState<MidiLearnState>(() => ({
+    mappings: loadMappings(),
+    learningMode: false,
+    activeTarget: null,
+  }));
+
+  const stateRef = useRef(midiLearnState);
+  stateRef.current = midiLearnState;
+
+  const toggleLearnMode = useCallback(() => {
+    setMidiLearnState((prev) => {
+      if (prev.learningMode) {
+        stopLearning(prev);
+        return { ...prev };
+      }
+      return { ...prev };
+    });
+  }, []);
+
+  const handleMidiCC = useCallback(
+    (cc: number, value: number) => {
+      const result = processMidiCC(cc, value, stateRef.current);
+      if (result) {
+        onParamChange(result.pluginId, result.paramId, result.normalizedValue);
+      }
+    },
+    [onParamChange],
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof navigator === "undefined") return;
+
+    const handleMidiMessage = (event: MIDIMessageEvent) => {
+      const data = event.data;
+      if (!data || data.length < 3) return;
+      const status = data[0];
+      const cc = data[1];
+      const value = data[2];
+      const isCC = (status & 0xf0) === 0xb0;
+      if (isCC) {
+        handleMidiCC(cc, value);
+      }
+    };
+
+    let midiAccess: MIDIAccess | null = null;
+
+    navigator.requestMIDIAccess?.({ sysex: false }).then(
+      (access) => {
+        midiAccess = access;
+        access.inputs.forEach((input) => {
+          input.onmidimessage = handleMidiMessage;
+        });
+        access.onstatechange = () => {
+          access.inputs.forEach((input) => {
+            input.onmidimessage = handleMidiMessage;
+          });
+        };
+      },
+      () => {
+        // MIDI not available
+      },
+    );
+
+    return () => {
+      if (midiAccess) {
+        midiAccess.inputs.forEach((input) => {
+          input.onmidimessage = null;
+        });
+      }
+    };
+  }, [handleMidiCC]);
+
+  const handleParamLearn = useCallback(
+    (pluginId: string, paramId: string) => {
+      if (!midiLearnState.learningMode || !trackId) return;
+      setMidiLearnState((prev) => {
+        if (!prev.learningMode) return prev;
+        startLearning(
+          { pluginId, paramId, trackId },
+          prev,
+        );
+        return { ...prev };
+      });
+    },
+    [midiLearnState.learningMode, trackId],
+  );
+
   if (!plugin) return null;
 
   const spec = PLUGIN_SPECS[plugin.type];
@@ -1796,12 +1901,32 @@ export function PluginEditor({
               </Text>
             </View>
           </View>
-          <Pressable
-            onPress={onClose}
-            className="w-8 h-8 rounded-full bg-dark-surface items-center justify-center active:opacity-70"
-          >
-            <Text className="text-gray-400 text-lg">✕</Text>
-          </Pressable>
+          <View className="flex-row items-center gap-2">
+            <Pressable
+              onPress={toggleLearnMode}
+              className={`px-3 py-1.5 rounded-lg border items-center ${
+                midiLearnState.learningMode
+                  ? "bg-brand-accent/20 border-brand-accent"
+                  : "bg-dark-surface border-dark-border"
+              }`}
+            >
+              <Text
+                className={`text-xs font-bold ${
+                  midiLearnState.learningMode
+                    ? "text-brand-accent"
+                    : "text-gray-400"
+                }`}
+              >
+                MIDI Learn
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={onClose}
+              className="w-8 h-8 rounded-full bg-dark-surface items-center justify-center active:opacity-70"
+            >
+              <Text className="text-gray-400 text-lg">✕</Text>
+            </Pressable>
+          </View>
         </View>
 
         <ScrollView className="px-5 py-4" style={{ maxHeight: 500 }}>
@@ -1809,6 +1934,8 @@ export function PluginEditor({
             <EditorComponent
               plugin={plugin}
               onParamChange={handleParamChange}
+              onParamLearn={handleParamLearn}
+              midiLearnState={midiLearnState}
               bpm={bpm}
             />
           ) : spec ? (
@@ -1819,6 +1946,20 @@ export function PluginEditor({
                   param={p}
                   value={plugin.params[p.id] ?? p.default}
                   onChange={(v) => handleParamChange(p.id, v)}
+                  onLearn={
+                    midiLearnState.learningMode
+                      ? () => handleParamLearn(plugin.id, p.id)
+                      : undefined
+                  }
+                  isLearning={
+                    midiLearnState.learningMode &&
+                    isLearning(
+                      midiLearnState,
+                      plugin.id,
+                      p.id,
+                      trackId ?? "",
+                    )
+                  }
                 />
               ))}
             </View>
