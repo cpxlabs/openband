@@ -229,3 +229,186 @@ export const KNOB_PRESETS: Record<string, Record<OneKnobType, number>> = {
     telephone: 0,
   },
 };
+
+// ---------------------------------------------------------------------------
+// One-Knob Simplifiers — each type maps to a preset chain of EQ + compressor
+// + reverb settings. The knob value (0-1) controls intensity.
+// ---------------------------------------------------------------------------
+
+export interface OneKnobEffectChain {
+  eqBands: {
+    freq: number;
+    gain: number; // dB, interpolated from 0 at knob=0
+    q: number;
+    type: number; // 0=LC, 1=LS, 2=PK, 3=NT, 4=HS, 5=HC
+    enabled: number; // 0 or 1
+  }[];
+  compressor: {
+    threshold: number; // dB
+    ratio: number;
+    attack: number; // ms
+    release: number; // ms
+    makeupGain: number; // dB
+  } | null;
+  reverb: {
+    mix: number; // 0-100
+    decay: number; // seconds
+    damping: number; // 0-100
+    size: number; // 0-100
+    preDelay: number; // ms
+  } | null;
+  lowpassFreq: number | null; // Hz, for Lo-Fi / Telephone
+  highpassFreq: number | null; // Hz, for Telephone
+}
+
+function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * t;
+}
+
+/**
+ * Returns the effect-chain parameters for a given knob type and intensity (0-1).
+ */
+export function getOneKnobChain(type: OneKnobType, value: number): OneKnobEffectChain {
+  const t = Math.max(0, Math.min(1, value));
+
+  switch (type) {
+    case "warmth": {
+      const gain = lerp(0, 2, t);
+      return {
+        eqBands: [
+          { freq: 200, gain, q: 0.71, type: 1, enabled: t > 0 ? 1 : 0 },
+        ],
+        compressor:
+          t > 0
+            ? { threshold: -18, ratio: lerp(1, 2, t), attack: 3, release: 150, makeupGain: 0 }
+            : null,
+        reverb: null,
+        lowpassFreq: null,
+        highpassFreq: null,
+      };
+    }
+
+    case "presence": {
+      const gain = lerp(0, 3, t);
+      return {
+        eqBands: [
+          { freq: 4000, gain, q: 1.2, type: 2, enabled: t > 0 ? 1 : 0 },
+        ],
+        compressor: null,
+        reverb: null,
+        lowpassFreq: null,
+        highpassFreq: null,
+      };
+    }
+
+    case "bassBoost": {
+      const gain = lerp(0, 6, t);
+      return {
+        eqBands: [
+          { freq: 80, gain, q: 0.71, type: 1, enabled: t > 0 ? 1 : 0 },
+        ],
+        compressor: null,
+        reverb: null,
+        lowpassFreq: null,
+        highpassFreq: null,
+      };
+    }
+
+    case "air": {
+      const gain = lerp(0, 3, t);
+      return {
+        eqBands: [
+          { freq: 12000, gain, q: 0.71, type: 4, enabled: t > 0 ? 1 : 0 },
+        ],
+        compressor: null,
+        reverb: null,
+        lowpassFreq: null,
+        highpassFreq: null,
+      };
+    }
+
+    case "room": {
+      const mix = lerp(0, 40, t);
+      const decay = lerp(0.3, 1.5, t);
+      return {
+        eqBands: [],
+        compressor: null,
+        reverb: {
+          mix,
+          decay,
+          damping: 40,
+          size: lerp(10, 60, t),
+          preDelay: 10,
+        },
+        lowpassFreq: null,
+        highpassFreq: null,
+      };
+    }
+
+    case "punch": {
+      const ratio = lerp(1, 4, t);
+      const makeup = lerp(0, 3, t);
+      return {
+        eqBands: [],
+        compressor: {
+          threshold: -24,
+          ratio,
+          attack: 10,
+          release: 100,
+          makeupGain: makeup,
+        },
+        reverb: null,
+        lowpassFreq: null,
+        highpassFreq: null,
+      };
+    }
+
+    case "loFi": {
+      const lpFreq = lerp(20000, 4000, t);
+      const reverbMix = lerp(0, 20, t);
+      return {
+        eqBands: [
+          { freq: lpFreq, gain: 0, q: 0.71, type: 5, enabled: t > 0 ? 1 : 0 },
+        ],
+        compressor:
+          t > 0
+            ? { threshold: -12, ratio: 2, attack: 5, release: 80, makeupGain: 2 }
+            : null,
+        reverb: {
+          mix: reverbMix,
+          decay: 0.8,
+          damping: 60,
+          size: 20,
+          preDelay: 0,
+        },
+        lowpassFreq: Math.round(lpFreq),
+        highpassFreq: null,
+      };
+    }
+
+    case "telephone": {
+      const hpFreq = lerp(20, 300, t);
+      const lpFreq = lerp(20000, 3000, t);
+      return {
+        eqBands: [
+          { freq: hpFreq, gain: 0, q: 0.71, type: 0, enabled: t > 0 ? 1 : 0 },
+          { freq: lpFreq, gain: 0, q: 0.71, type: 5, enabled: t > 0 ? 1 : 0 },
+        ],
+        compressor: null,
+        reverb: null,
+        lowpassFreq: t > 0 ? Math.round(lpFreq) : null,
+        highpassFreq: t > 0 ? Math.round(hpFreq) : null,
+      };
+    }
+
+    default: {
+      return {
+        eqBands: [],
+        compressor: null,
+        reverb: null,
+        lowpassFreq: null,
+        highpassFreq: null,
+      };
+    }
+  }
+}

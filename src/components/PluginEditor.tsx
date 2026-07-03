@@ -288,7 +288,7 @@ function CompressorEditor({
 }: {
   plugin: Plugin;
   onParamChange: (id: string, v: number) => void;
-  onParamLearn?: (paramId: string) => void;
+  onParamLearn?: (pluginId: string, paramId: string) => void;
   midiLearnState?: MidiLearnState;
 }) {
   const threshold = plugin.params.threshold ?? -18;
@@ -1739,7 +1739,7 @@ function UtilityEditor({
 type EditorComp = (props: {
   plugin: Plugin;
   onParamChange: (id: string, v: number) => void;
-  onParamLearn?: (paramId: string) => void;
+  onParamLearn?: (pluginId: string, paramId: string) => void;
   midiLearnState?: MidiLearnState;
   bpm?: number;
 }) => React.JSX.Element;

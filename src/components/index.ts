@@ -36,6 +36,8 @@ export {
   OneKnobProcessor,
   ONE_KNOB_TYPES,
   KNOB_PRESETS,
+  getOneKnobChain,
+  type OneKnobEffectChain,
 } from "./OneKnob";
 export { ChordTrack } from "./ChordTrack";
 export { Sampler } from "./Sampler";
