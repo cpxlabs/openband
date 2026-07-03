@@ -53,18 +53,50 @@ export function useWebAudioPlayer() {
     const audio = audioRef.current;
     if (!audio) return;
 
+    // Reset previous state
+    audio.pause();
+    audio.src = "";
+    setIsLoaded(false);
+    setCurrentTime(0);
+    setDuration(0);
+
     return new Promise<void>((resolve) => {
+      let resolved = false;
+      const timeout = setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          audio.removeEventListener("canplaythrough", onCanPlay);
+          audio.removeEventListener("loadeddata", onLoadedData);
+          setIsLoaded(true);
+          resolve();
+        }
+      }, 2000);
+
       const onCanPlay = () => {
-        audio.removeEventListener("canplaythrough", onCanPlay);
-        setIsLoaded(true);
-        resolve();
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timeout);
+          audio.removeEventListener("canplaythrough", onCanPlay);
+          audio.removeEventListener("loadeddata", onLoadedData);
+          setIsLoaded(true);
+          resolve();
+        }
       };
+      const onLoadedData = () => {
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timeout);
+          audio.removeEventListener("canplaythrough", onCanPlay);
+          audio.removeEventListener("loadeddata", onLoadedData);
+          setIsLoaded(true);
+          resolve();
+        }
+      };
+
       audio.addEventListener("canplaythrough", onCanPlay, { once: true });
+      audio.addEventListener("loadeddata", onLoadedData, { once: true });
       audio.src = url;
       audio.load();
-      setIsLoaded(false);
-      setCurrentTime(0);
-      setDuration(0);
     });
   }, []);
 
