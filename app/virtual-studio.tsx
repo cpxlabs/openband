@@ -48,7 +48,7 @@ export default function VirtualStudio() {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
-  const sceneRef = useRef<any>(null);
+  const sceneRef = useRef<unknown>(null);
   const [connectedUsers, setConnectedUsers] = useState(1);
   const [userId] = useState(() => `user-${Math.random().toString(36).slice(2, 8)}`);
   const [userName] = useState(() => `User${Math.floor(Math.random() * 999)}`);
@@ -116,15 +116,20 @@ export default function VirtualStudio() {
 
     async function init() {
       // Load three.js dynamically — avoids Metro build-time resolution
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let THREE: any;
-      if (typeof window !== "undefined" && (window as any).THREE) {
-        THREE = (window as any).THREE;
+      const win = window as unknown as Record<string, unknown>;
+      if (typeof window !== "undefined" && win.THREE) {
+        THREE = win.THREE;
       } else if (typeof window !== "undefined") {
         // Load from CDN via script tag (avoids Metro bundler)
         await new Promise<void>((resolve, reject) => {
           const s = document.createElement("script");
           s.src = "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.min.js";
-          s.onload = () => { THREE = (window as any).THREE; resolve(); };
+          s.onload = () => {
+            THREE = (window as unknown as Record<string, unknown>).THREE;
+            resolve();
+          };
           s.onerror = reject;
           document.head.appendChild(s);
         });
@@ -217,7 +222,7 @@ export default function VirtualStudio() {
       scene.add(rightWall);
 
       // Furniture
-      const furnitureMeshes: any[] = [];
+      const furnitureMeshes: unknown[] = [];
       const furnitureGroup = new THREE.Group();
       scene.add(furnitureGroup);
 
@@ -445,10 +450,10 @@ export default function VirtualStudio() {
         camera.lookAt(avatarGroup.position.x, 0, avatarGroup.position.z);
 
         // Animate furniture glow
-        furnitureGroup.children.forEach((group: any, i: number) => {
-          const ring = group.children[3] as any;
+        furnitureGroup.children.forEach((group: { children: Array<{ material?: { opacity: number } }> }, i: number) => {
+          const ring = group.children[3];
           if (ring?.material) {
-            (ring.material as any).opacity = 0.2 + Math.sin(time * 0.002 + i) * 0.15;
+            ring.material.opacity = 0.2 + Math.sin(time * 0.002 + i) * 0.15;
           }
         });
 
@@ -506,7 +511,7 @@ export default function VirtualStudio() {
       {/* 3D Canvas */}
       <View className="flex-1 relative bg-black">
         <div
-          ref={containerRef as any}
+          ref={containerRef as React.RefObject<HTMLDivElement>}
           style={{ position: "absolute", inset: 0 }}
         />
 

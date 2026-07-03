@@ -1,3 +1,5 @@
+import type { TrackDef } from "./types"
+
 interface ProjectState {
   id: string
   title: string
@@ -5,7 +7,7 @@ interface ProjectState {
   key: string
   genre: string
   mood?: string
-  tracks: any[]
+  tracks: TrackDef[]
   chords: string[]
 }
 

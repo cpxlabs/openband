@@ -14,7 +14,15 @@ export function detectNetworkQuality(): NetworkInfo {
     return { quality: "high", rtt: 0, downlink: 10, effectiveType: "4g" }
   }
 
-  const conn = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection
+  interface NetworkInformation {
+    rtt?: number
+    downlink?: number
+    effectiveType?: string
+  }
+
+  const conn = (navigator as unknown as { connection?: NetworkInformation; mozConnection?: NetworkInformation; webkitConnection?: NetworkInformation }).connection
+    || (navigator as unknown as { mozConnection?: NetworkInformation }).mozConnection
+    || (navigator as unknown as { webkitConnection?: NetworkInformation }).webkitConnection
 
   if (!conn) {
     return { quality: "high", rtt: 0, downlink: 10, effectiveType: "4g" }

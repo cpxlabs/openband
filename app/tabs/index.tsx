@@ -318,7 +318,7 @@ export default function Feed() {
     );
   }, []);
 
-  const maxWidthStyle: any = { maxWidth: LAYOUT_MAX_WIDTHS.feedWide, alignSelf: "center" as const }
+  const maxWidthStyle: Record<string, string | number | undefined> = { maxWidth: LAYOUT_MAX_WIDTHS.feedWide, alignSelf: "center" as const }
 
   return (
     <View className="flex-1 bg-dark-bg">

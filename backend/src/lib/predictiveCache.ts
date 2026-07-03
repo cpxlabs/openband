@@ -1,3 +1,5 @@
+import type { TrackDef } from "../types"
+
 interface CachedProject {
   id: string
   title: string
@@ -5,7 +7,7 @@ interface CachedProject {
   mood: string
   bpm: number
   key: string
-  tracks: any[]
+  tracks: TrackDef[]
   cachedAt: number
 }
 

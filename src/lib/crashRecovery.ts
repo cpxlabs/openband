@@ -60,7 +60,11 @@ export async function restoreCrashState(projectId: string): Promise<object | nul
     const store = tx.objectStore("project_states")
     const request = store.get(projectId)
 
-    const result = await new Promise<any>((resolve, reject) => {
+    interface IDBResult {
+      state: Record<string, unknown> | null
+    }
+
+    const result = await new Promise<IDBResult | null>((resolve, reject) => {
       request.onsuccess = () => resolve(request.result)
       request.onerror = () => reject(request.error)
     })
@@ -94,13 +98,18 @@ export async function getAllCrashStates(): Promise<{ projectId: string; savedAt:
     const store = tx.objectStore("project_states")
     const request = store.getAll()
 
-    const results = await new Promise<any[]>((resolve, reject) => {
+    interface SnapshotMeta {
+      projectId: string
+      savedAt: number
+    }
+
+    const results = await new Promise<SnapshotMeta[]>((resolve, reject) => {
       request.onsuccess = () => resolve(request.result)
       request.onerror = () => reject(request.error)
     })
 
     db.close()
-    return results.map((r: any) => ({ projectId: r.projectId, savedAt: r.savedAt }))
+    return results.map((r) => ({ projectId: r.projectId, savedAt: r.savedAt }))
   } catch {
     return []
   }
