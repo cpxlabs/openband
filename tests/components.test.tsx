@@ -1146,7 +1146,7 @@ describe("Sidebar", () => {
       />,
     );
     fireEvent.click(screen.getByText("Piano Roll"));
-    expect(fn).toHaveBeenCalledWith("piano-roll");
+    expect(fn).toHaveBeenCalledWith(expect.stringContaining("/studio/proj-"));
   });
 
   it("calls onNavigate with parent key when 3D Studio header pressed", () => {

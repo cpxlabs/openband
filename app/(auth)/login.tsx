@@ -9,7 +9,6 @@ import {
 import { Button, TextInput } from "../../src/components";
 import { supabase } from "../../src/lib/supabase";
 import { LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive";
-import { VISITOR_MODE } from "../../src/lib/flags";
 import { useAuth } from "../../src/context/AuthContext";
 
 export default function Login() {
@@ -148,19 +147,17 @@ export default function Login() {
           </Text>
         </Pressable>
 
-        {VISITOR_MODE && (
-          <View className="mt-8 pt-6 border-t border-dark-border">
-            <Button
-              title="Entrar como Visitante"
-              variant="secondary"
-              icon="👤"
-              onPress={signInAsVisitor}
-            />
-            <Text className="text-gray-600 text-[10px] text-center mt-2">
-              Modo desenvolvimento — perfil Admin
-            </Text>
-          </View>
-        )}
+        <View className="mt-8 pt-6 border-t border-dark-border">
+          <Button
+            title="Entrar como Visitante"
+            variant="secondary"
+            icon="👤"
+            onPress={signInAsVisitor}
+          />
+          <Text className="text-gray-600 text-[10px] text-center mt-2">
+            Explore o app sem criar uma conta
+          </Text>
+        </View>
       </View>
     </KeyboardAvoidingView>
   );
