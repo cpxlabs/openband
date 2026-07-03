@@ -18,7 +18,6 @@ import {
   PageHeader,
   Avatar,
   QuickActions,
-  MiniPlayer,
   setMiniPlayerState,
   QuickTools,
 } from "../../src/components";
@@ -202,6 +201,7 @@ function formatCount(n: number) {
 interface FeedPostCardProps {
   item: FeedPost;
   isPlaying: boolean;
+  isLoading: boolean;
   audioRef: React.RefObject<HTMLAudioElement | null>;
   onPlay: (post: FeedPost) => void;
   onLike: (postId: string) => void;
@@ -237,6 +237,7 @@ const LiveProgressBar = memo(function LiveProgressBar({
 const FeedPostCard = memo(function FeedPostCard({
   item,
   isPlaying: isThisPlaying,
+  isLoading: isThisLoading,
   audioRef,
   onPlay,
   onLike,
@@ -286,6 +287,7 @@ const FeedPostCard = memo(function FeedPostCard({
             onPlay(item);
             onPlayed(item.id);
           }}
+          disabled={isThisLoading}
           className={`mt-3 h-10 rounded-xl items-center justify-center flex-row gap-2 ${
             isThisPlaying ? "bg-green-600" : "btn-secondary"
           }`}
@@ -293,12 +295,12 @@ const FeedPostCard = memo(function FeedPostCard({
           <Text
             className={`text-sm ${isThisPlaying ? "text-white" : "text-brand-primary"}`}
           >
-            {isThisPlaying ? "⏸" : "▶"}
+            {isThisLoading ? "…" : isThisPlaying ? "⏸" : "▶"}
           </Text>
           <Text
             className={`font-bold text-xs ${isThisPlaying ? "text-white" : "text-brand-primary"}`}
           >
-            {isThisPlaying ? "Pausar" : "Ouvir"}
+            {isThisLoading ? "Carregando" : isThisPlaying ? "Pausar" : "Ouvir"}
           </Text>
         </Pressable>
 
@@ -360,6 +362,14 @@ export default function Feed() {
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [showQuickTools, setShowQuickTools] = useState(false);
   const [hasProjects, setHasProjects] = useState(false);
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     const index = listProjectIndex();
@@ -401,17 +411,22 @@ export default function Feed() {
   playingRef.current = playing;
   const playingIdRef = useRef(playingId);
   playingIdRef.current = playingId;
+  const loadingIdRef = useRef(loadingId);
+  loadingIdRef.current = loadingId;
 
   const handlePlay = useCallback(
     async (post: FeedPost) => {
+      if (loadingIdRef.current) return;
       if (playingIdRef.current === post.id && playingRef.current) {
         if (isWeb) webAudioRef.current.pause(); else expoPlayerRef.current.pause();
-        setPlayingId(null);
+        if (isMountedRef.current) setPlayingId(null);
         setMiniPlayerState({ visible: false, url: null });
         return;
       }
-      const url = await generatePreviewUrl(post.id, post.duration);
-      if (url) {
+      if (isMountedRef.current) setLoadingId(post.id);
+      loadingIdRef.current = post.id;
+      try {
+        const url = await generatePreviewUrl(post.id, post.duration);
         if (isWeb) {
           await webAudioRef.current.replace(url);
           await webAudioRef.current.play();
@@ -423,17 +438,22 @@ export default function Feed() {
             console.warn("Native playback failed:", e);
           }
         }
-        currentPostRef.current = post;
-        setPlayingId(post.id);
-        setMiniPlayerState({
-          title: post.title,
-          subtitle: post.author,
-          url,
-          projectId: post.id,
-          visible: true,
-        });
-      } else {
+        if (isMountedRef.current) {
+          currentPostRef.current = post;
+          setPlayingId(post.id);
+          setMiniPlayerState({
+            title: post.title,
+            subtitle: post.author,
+            url,
+            projectId: post.id,
+            visible: true,
+          });
+        }
+      } catch {
         Alert.alert("Erro", "Falha ao carregar prévia do áudio.");
+      } finally {
+        if (isMountedRef.current) setLoadingId(null);
+        loadingIdRef.current = null;
       }
     },
     [isWeb],
@@ -490,10 +510,12 @@ export default function Feed() {
 
   const renderItem = useCallback(({ item }: { item: FeedPost }) => {
     const isThisPlaying = playingId === item.id && playing;
+    const isThisLoading = loadingId === item.id;
     return (
       <FeedPostCard
         item={item}
         isPlaying={isThisPlaying}
+        isLoading={isThisLoading}
         audioRef={webAudio.audioRef}
         onPlay={handlePlay}
         onLike={handleLike}
@@ -502,7 +524,7 @@ export default function Feed() {
         onPlayed={handlePlayed}
       />
     );
-  }, [playingId, playing, webAudio.audioRef, handlePlay, handleLike, handleRemix, handleShare, handlePlayed]);
+  }, [playingId, loadingId, playing, webAudio.audioRef, handlePlay, handleLike, handleRemix, handleShare, handlePlayed]);
 
   const maxWidthStyle: Record<string, string | number | undefined> = { maxWidth: LAYOUT_MAX_WIDTHS.feedWide, alignSelf: "center" as const }
 
@@ -651,7 +673,6 @@ export default function Feed() {
           </View>
         )}
       </View>
-      <MiniPlayer />
     </View>
   );
 }
