@@ -11,6 +11,7 @@ function TabIcon({ label, focused }: { label: string; focused: boolean }) {
     Biblioteca: "☰",
     Conta: "●",
     Ajustes: "⚙",
+    Explorer: "🌍",
   };
   return (
     <View className="items-center justify-center gap-0.5 px-1">
@@ -44,6 +45,7 @@ export default function TabLayout() {
     library: "Biblioteca",
     account: "Conta",
     settings: "Ajustes",
+    explorer: "Explorer",
   };
   const pageTitle = routeNameMap[currentSegment] || "OpenBand";
 
@@ -139,6 +141,14 @@ export default function TabLayout() {
             options={{
               tabBarIcon: ({ focused }) => (
                 <TabIcon label="Ajustes" focused={focused} />
+              ),
+            }}
+          />
+          <Tabs.Screen
+            name="explorer"
+            options={{
+              tabBarIcon: ({ focused }) => (
+                <TabIcon label="Explorer" focused={focused} />
               ),
             }}
           />

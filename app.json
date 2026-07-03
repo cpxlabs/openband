@@ -33,13 +33,7 @@
       "favicon": "./assets/favicon.png",
       "backgroundColor": "#0f0f11",
       "themeColor": "#ff3b30",
-      "description": "OpenBand - Open-source music production platform",
-      "manifest": "./assets/manifest.json",
-      "meta": {
-        "mobile-web-app-capable": "yes",
-        "apple-mobile-web-app-status-bar-style": "black-translucent",
-        "apple-touch-icon": "/assets/icon-192.png"
-      }
+      "description": "OpenBand - Open-source music production platform"
     },
     "plugins": ["expo-audio", "expo-asset", "expo-router"],
     "cli": {

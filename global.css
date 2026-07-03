@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* NativeWind dark mode configuration: class-based toggling */
+:root {
+  --css-interop-darkMode: class dark;
+}
+
 @layer base {
   :root,
   [data-theme="dark"] {
