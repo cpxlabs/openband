@@ -60,6 +60,7 @@ import { chordsToMIDINotes } from "../../src/lib/harmonicAssistant";
 import { useHistory } from "../../src/lib/history";
 import { useKeyboardShortcuts } from "../../src/lib/keyboard";
 import { saveProject, loadProject } from "../../src/lib/projectStore";
+import { useCloudSync } from "../../src/lib/cloudSync";
 import { parseMidi, midiToTrackRegions } from "../../src/lib/midiParser";
 import { getGroupVolume } from "../../src/components/TrackGroup";
 import type {
@@ -262,6 +263,7 @@ export default function Studio() {
   const [activeMixId, setActiveMixId] = useState<string | undefined>();
   const [lastSavedLabel, setLastSavedLabel] = useState<string | null>(null);
   const saveLabelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const syncState = useCloudSync(id);
 
   const {
     state: tracks,
@@ -1553,6 +1555,8 @@ export default function Studio() {
           {lastSavedLabel && (
             <Text className="text-gray-500 text-[10px] font-medium">
               {lastSavedLabel}
+              {syncState.pending ? " · syncing..." : ""}
+              {syncState.error ? ` · ${syncState.error}` : ""}
             </Text>
           )}
           <Pressable
