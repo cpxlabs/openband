@@ -202,7 +202,7 @@ function formatCount(n: number) {
 interface FeedPostCardProps {
   item: FeedPost;
   isPlaying: boolean;
-  progress: number;
+  audioRef: React.RefObject<HTMLAudioElement | null>;
   onPlay: (post: FeedPost) => void;
   onLike: (postId: string) => void;
   onRemix: (post: FeedPost) => void;
@@ -210,10 +210,34 @@ interface FeedPostCardProps {
   onPlayed: (postId: string) => void;
 }
 
+const LiveProgressBar = memo(function LiveProgressBar({
+  audioRef,
+}: {
+  audioRef: React.RefObject<HTMLAudioElement | null>;
+}) {
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+    let rafId: number;
+    const tick = () => {
+      const audio = audioRef.current;
+      if (audio && audio.duration) {
+        setProgress((audio.currentTime / audio.duration) * 100);
+      }
+      rafId = requestAnimationFrame(tick);
+    };
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [audioRef]);
+
+  return <ProgressBar progress={progress} />;
+});
+
 const FeedPostCard = memo(function FeedPostCard({
   item,
   isPlaying: isThisPlaying,
-  progress,
+  audioRef,
   onPlay,
   onLike,
   onRemix,
@@ -316,7 +340,7 @@ const FeedPostCard = memo(function FeedPostCard({
           </Pressable>
         </View>
       </View>
-      {isThisPlaying && <ProgressBar progress={progress} />}
+      {isThisPlaying && <LiveProgressBar audioRef={audioRef} />}
     </Card>
   );
 });
@@ -324,7 +348,7 @@ const FeedPostCard = memo(function FeedPostCard({
 export default function Feed() {
   const router = useRouter();
   const resp = useResponsive();
-  const webAudio = useWebAudioPlayer();
+  const webAudio = useWebAudioPlayer({ trackTime: false });
   const expoPlayer = useAudioPlayer(null);
   const expoStatus = useAudioPlayerStatus(expoPlayer);
   const isWeb = Platform.OS === "web";
@@ -333,8 +357,6 @@ export default function Feed() {
   const expoPlayerRef = useRef(expoPlayer);
   expoPlayerRef.current = expoPlayer;
   const playing = isWeb ? webAudio.isPlaying : expoStatus.playing;
-  const currentTime = isWeb ? webAudio.currentTime : expoStatus.currentTime;
-  const audioDuration = isWeb ? webAudio.duration : expoStatus.duration;
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [showQuickTools, setShowQuickTools] = useState(false);
   const [hasProjects, setHasProjects] = useState(false);
@@ -465,9 +487,6 @@ export default function Feed() {
     );
   }, []);
 
-  const progress = audioDuration
-    ? (currentTime / audioDuration) * 100
-    : 0;
 
   const renderItem = useCallback(({ item }: { item: FeedPost }) => {
     const isThisPlaying = playingId === item.id && playing;
@@ -475,7 +494,7 @@ export default function Feed() {
       <FeedPostCard
         item={item}
         isPlaying={isThisPlaying}
-        progress={isThisPlaying ? progress : 0}
+        audioRef={webAudio.audioRef}
         onPlay={handlePlay}
         onLike={handleLike}
         onRemix={handleRemix}
@@ -483,7 +502,7 @@ export default function Feed() {
         onPlayed={handlePlayed}
       />
     );
-  }, [playingId, playing, progress, handlePlay, handleLike, handleRemix, handleShare, handlePlayed]);
+  }, [playingId, playing, webAudio.audioRef, handlePlay, handleLike, handleRemix, handleShare, handlePlayed]);
 
   const maxWidthStyle: Record<string, string | number | undefined> = { maxWidth: LAYOUT_MAX_WIDTHS.feedWide, alignSelf: "center" as const }
 

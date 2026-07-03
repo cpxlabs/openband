@@ -6,8 +6,14 @@ const TIMEUPDATE_THROTTLE_MS = 500;
 /**
  * Web-only audio player using HTML5 <audio> element.
  * Used as a fallback when expo-audio doesn't handle blob URLs on web.
+ *
+ * @param options.trackTime - When false, skips `currentTime` state updates
+ *   from `timeupdate`/`pause`/`ended` events, preventing re-renders in
+ *   the consuming component during playback. Use `audioRef` to read
+ *   current time directly when needed (e.g. via requestAnimationFrame).
  */
-export function useWebAudioPlayer() {
+export function useWebAudioPlayer(options?: { trackTime?: boolean }) {
+  const trackTime = options?.trackTime !== false;
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -25,6 +31,7 @@ export function useWebAudioPlayer() {
     audioRef.current = audio;
 
     const onTimeUpdate = () => {
+      if (!trackTime) return;
       const now = Date.now();
       if (now - lastTimeUpdateRef.current >= TIMEUPDATE_THROTTLE_MS) {
         lastTimeUpdateRef.current = now;
@@ -38,11 +45,11 @@ export function useWebAudioPlayer() {
     const onPlay = () => setIsPlaying(true);
     const onPause = () => {
       setIsPlaying(false);
-      setCurrentTime(audio.currentTime);
+      if (trackTime) setCurrentTime(audio.currentTime);
     };
     const onEnded = () => {
       setIsPlaying(false);
-      setCurrentTime(0);
+      if (trackTime) setCurrentTime(0);
     };
     const onError = (e: Event) => {
       console.warn("Audio element error:", (e as ErrorEvent).message);
@@ -157,5 +164,6 @@ export function useWebAudioPlayer() {
     seekTo,
     setVolume,
     setPlaybackRate,
+    audioRef,
   }), [isPlaying, currentTime, duration, isLoaded, replace, play, pause, seekTo, setVolume, setPlaybackRate]);
 }

@@ -9,7 +9,7 @@ export const SCREEN_BOTTOM_PADDING = 100;
 const MAX_CACHE_SIZE = 50;
 const previewUrlCache = new Map<string, string>();
 
-const MAX_PREVIEW_DURATION = 10;
+const MAX_PREVIEW_DURATION = 3;
 
 export async function generatePreviewUrl(
   key: string,
