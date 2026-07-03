@@ -7,10 +7,11 @@ extracted_at: '2026-07-03T13:27:26.036Z'
 
 ## When to Use
 
-- Embedding three.js / WebGL viewers in a React Native Web app
-- Loading CDN-based JavaScript libraries that aren't npm-installable
+- Embedding CDN-based WebGL content in a React Native Web app via iframe
+- Quick prototyping of 3D viewers without npm dependencies
 - Isolating heavy WebGL content from the main React render tree
-- Features requiring `importmap` or ES module imports from CDN
+
+**Note:** For deeper integration, prefer the `habbo-studio-virtual-environment` pattern which uses Three.js directly in React components instead of iframes.
 
 ## Pattern
 

@@ -115,15 +115,21 @@ export default function VirtualStudio() {
     let animationId = 0;
 
     async function init() {
-      // Load three.js dynamically from CDN if not available
+      // Load three.js dynamically — avoids Metro build-time resolution
       let THREE: any;
       if (typeof window !== "undefined" && (window as any).THREE) {
         THREE = (window as any).THREE;
-      } else {
-        // @ts-ignore — three.js may not be installed, loaded dynamically
-        THREE = await import("three");
+      } else if (typeof window !== "undefined") {
+        // Load from CDN via script tag (avoids Metro bundler)
+        await new Promise<void>((resolve, reject) => {
+          const s = document.createElement("script");
+          s.src = "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.min.js";
+          s.onload = () => { THREE = (window as any).THREE; resolve(); };
+          s.onerror = reject;
+          document.head.appendChild(s);
+        });
       }
-      if (cancelled) return;
+      if (cancelled || !THREE) return;
 
       const container = containerRef.current!;
       const width = container.clientWidth;

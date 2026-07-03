@@ -13,9 +13,11 @@ Built with **Expo Router**, **TypeScript**, **NativeWind v4 (Tailwind CSS v3)**,
 | Language         | TypeScript ~6.0                                                                                        |
 | Auth / DB (dev)  | [SQLite](https://sqlite.org/) via `better-sqlite3` — zero-config local database                       |
 | Auth / DB (prod) | [Supabase](https://supabase.com/) (PostgreSQL + Auth)                                                  |
-| Audio            | [`expo-audio`](https://docs.expo.dev/versions/v56.0.0/sdk/audio/) (SDK 56)                             |
+| Audio            | [`expo-audio`](https://docs.expo.dev/versions/v56.0.0/sdk/audio/) (SDK 56) + HTML5 Audio (web)         |
 | Audio Processing | [Demucs](https://github.com/facebookresearch/demucs) (HTDEMUCS model) via Python subprocess            |
 | Desktop          | [Electron 35](https://www.electronjs.org/) with swappable bridge (`src/bridge/`)                       |
+| 3D / WebGL       | [Three.js](https://threejs.org/) — Virtual Studio (Habbo-style)                                        |
+| Backend          | FastAPI + Redis + Celery (Docker microservices, optional)                                              |
 | Testing          | [Vitest](https://vitest.dev/) (537 tests) + [Playwright](https://playwright.dev/) (E2E) + legacy `node:test` (24 tests) |
 
 ## Getting Started
@@ -443,6 +445,36 @@ const projects = await OpenBandNative.listProjects();
 ```
 
 The bridge auto-detects Electron, Tauri (future), or browser — swap the backend by replacing one file.
+
+### Virtual Studio (`app/tabs/virtual-studio.tsx`)
+
+3D "Habbo Hotel"-style collaborative studio environment:
+
+- Three.js WebGL room with floor, walls, grid, and dynamic lighting
+- 6 interactive furniture pieces (Mixer, Mastering, Tracks, Piano Roll, Looper, Sampler)
+- WASD movement + right-click drag camera orbit + scroll zoom
+- Click any furniture to open the corresponding tool
+- Multi-user avatars synced via WebSocket (collaboration service)
+- Each user has independent playback — no audio conflicts
+- Glowing ring animations around furniture
+
+### Docker Backend (`openband-backend/`)
+
+Optional microservices backend for collaboration and AI features:
+
+```bash
+cd openband-backend
+docker compose up --build
+```
+
+| Service | Port | Purpose |
+|---------|------|---------|
+| Redis | 6379 | Message broker + state cache |
+| Collaboration | 8001 | WebSocket rooms for multi-user sync |
+| AI Separation | 8002 | FastAPI + Celery for stem separation |
+| Project Backup | 8003 | S3/R2 presigned URLs for cloud storage |
+
+**The frontend works 100% offline** — the backend is optional for cloud features.
 
 ## Environment Variables
 
