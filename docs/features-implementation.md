@@ -429,7 +429,7 @@ function autoMix(tracks: TrackDef[], genre: string): TrackDef[] {
 ✅ Sample browser · ✅ Plugin system (19 types) · ✅ Track grouping
 ✅ Keyboard shortcuts · ✅ Metronome · ✅ Waveform visualization
 ✅ Responsive layout · ✅ Sidebar drawer · ✅ Tuner · ✅ MIDI import
-✅ Automation (volume) · ✅ Desktop (Electron shell + swappable bridge) · ✅ MIDI synth
+✅ Automation (volume + pan) · ✅ Desktop (Electron shell + swappable bridge) · ✅ MIDI synth
 ✅ Audio recording · ✅ Piano roll MIDI editor · ✅ Looper / Overdub · ✅ Sidechain
 ✅ **Synth** (16-voice polyphonic, 25 presets, OSC/FLT/ENV/LFO/ARP tabs, piano keyboard)
 ✅ **Sampler** (velocity, melodic keyboard, transient slicing, stereo slicing)
@@ -437,6 +437,9 @@ function autoMix(tracks: TrackDef[], genre: string): TrackDef[] {
 ✅ **AutoMix** (LUFS targets, spectral centroid, transient density, role classification)
 ✅ **Collaboration** (JSON export/import, cross-platform download, remix, favorites)
 ✅ **Time-stretch / pitch-shift** (granular synthesis + phase vocoder, transport controls)
+✅ **VU Meters** (per-track, green/yellow/red zones, peak hold)
+✅ **Pan Automation** (parallel to volume lane, purple color curve)
+✅ **Multi-Band EQ Display** (20Hz-20kHz curve, 5 band labels, spectrum analyzer, draggable)
 
 **All features shipped. No remaining gaps.**
 
