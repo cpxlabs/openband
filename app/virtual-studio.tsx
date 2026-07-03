@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { View, Text, Pressable } from "react-native";
 import { useRouter } from "expo-router";
+import { addSceneBulb } from "../src/lib/sceneLighting";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ThreeAny = any;
@@ -147,6 +148,8 @@ export default function VirtualStudio() {
       const fillLight = new THREE.PointLight(0x3b82f6, 0.4, 20);
       fillLight.position.set(-5, 5, -5);
       scene.add(fillLight);
+
+      addSceneBulb(THREE, scene);
 
       // Floor
       const floor = new THREE.Mesh(

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { View, Text, Pressable } from "react-native";
 import { useRouter } from "expo-router";
+import { addSceneBulb } from "../src/lib/sceneLighting";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ThreeAny = any;
@@ -94,6 +95,8 @@ export default function CoverJamStudio() {
       const fillLight = new THREE.PointLight(0x7c3aed, 0.8, 12);
       fillLight.position.set(-4, 3, -1);
       scene.add(fillLight);
+
+      addSceneBulb(THREE, scene);
 
       // Floor
       const floor = new THREE.Mesh(new THREE.PlaneGeometry(16, 16), new THREE.MeshStandardMaterial({ color: 0x111118, roughness: 0.85 }));

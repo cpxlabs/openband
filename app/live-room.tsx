@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { View, Text, Pressable } from "react-native";
 import { useRouter } from "expo-router";
+import { addSceneBulb } from "../src/lib/sceneLighting";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ThreeAny = any;
@@ -83,6 +84,8 @@ export default function LiveRoom() {
       const fillLight = new THREE.PointLight(0x3b82f6, 0.8, 12);
       fillLight.position.set(-4, 3, -1);
       scene.add(fillLight);
+
+      addSceneBulb(THREE, scene);
 
       // Floor
       const floorMat = new THREE.MeshStandardMaterial({ color: 0x111118, roughness: 0.85 });
