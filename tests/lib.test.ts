@@ -558,10 +558,10 @@ describe("generateTracksForGenre", () => {
     }
   });
 
-  it("all tracks have empty plugins and automation", () => {
+  it("tracks have genre-matching plugins and empty automation", () => {
     const tracks = generateTracksForGenre("lofi");
     for (const t of tracks) {
-      expect(t.plugins).toHaveLength(0);
+      expect(t.plugins.length).toBeGreaterThan(0);
       expect(Object.keys(t.automation)).toHaveLength(0);
     }
   });

@@ -16,6 +16,12 @@ interface NewProjectProps {
     timeSignature?: string;
   }) => void;
   onStartFromScratch?: () => void;
+  initialGenre?: GenreTemplate;
+  initialKey?: string;
+  initialBpm?: number;
+  initialMood?: Mood;
+  initialTitle?: string;
+  initialTimeSignature?: string;
   testID?: string;
 }
 
@@ -24,16 +30,32 @@ export function NewProject({
   onClose,
   onCreate,
   onStartFromScratch,
+  initialGenre,
+  initialKey,
+  initialBpm,
+  initialMood,
+  initialTitle,
+  initialTimeSignature,
   testID,
 }: NewProjectProps) {
-  const [name, setName] = useState("");
-  const [selectedGenre, setSelectedGenre] = useState<GenreTemplate>(GENRES[0]);
-  const [bpm, setBpm] = useState(selectedGenre.defaultBpm);
-  const [selectedKey, setSelectedKey] = useState(selectedGenre.defaultKey);
-  const [selectedMood, setSelectedMood] = useState<Mood | undefined>();
+  const [name, setName] = useState(initialTitle ?? "");
+  const [selectedGenre, setSelectedGenre] = useState<GenreTemplate>(
+    initialGenre ?? GENRES[0],
+  );
+  const [bpm, setBpm] = useState(
+    initialBpm ?? initialGenre?.defaultBpm ?? GENRES[0].defaultBpm,
+  );
+  const [selectedKey, setSelectedKey] = useState(
+    initialKey ?? initialGenre?.defaultKey ?? GENRES[0].defaultKey,
+  );
+  const [selectedMood, setSelectedMood] = useState<Mood | undefined>(initialMood);
   const [numBars, setNumBars] = useState(8);
-  const [timeSignature, setTimeSignature] = useState("4/4");
-  const [step, setStep] = useState<"genre" | "mood" | "details">("genre");
+  const [timeSignature, setTimeSignature] = useState(
+    initialTimeSignature ?? "4/4",
+  );
+  const [step, setStep] = useState<"genre" | "mood" | "details">(
+    initialMood ? "details" : initialGenre ? "mood" : "genre",
+  );
 
   const handleSelectGenre = useCallback((genre: GenreTemplate) => {
     setSelectedGenre(genre);
@@ -54,15 +76,7 @@ export function NewProject({
 
   const handleCreate = useCallback(() => {
     const finalName = name.trim() || `${selectedGenre.name} - Novo Projeto`;
-    onCreate({
-      name: finalName,
-      genre: selectedGenre,
-      key: selectedKey,
-      bpm,
-      mood: selectedMood,
-      numBars,
-      timeSignature,
-    });
+    const config = { name: finalName, genre: selectedGenre, key: selectedKey, bpm, mood: selectedMood, numBars, timeSignature };
     setName("");
     setSelectedGenre(GENRES[0]);
     setBpm(GENRES[0].defaultBpm);
@@ -71,6 +85,7 @@ export function NewProject({
     setNumBars(8);
     setTimeSignature("4/4");
     setStep("genre");
+    onCreate(config);
   }, [name, selectedGenre, selectedKey, bpm, selectedMood, numBars, timeSignature, onCreate]);
 
   const handleClose = useCallback(() => {

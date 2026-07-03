@@ -20,10 +20,12 @@ import {
   QuickActions,
   setMiniPlayerState,
   QuickTools,
+  NewProject,
 } from "../../src/components";
 import { generatePreviewUrl, SCREEN_BOTTOM_PADDING } from "../../src/lib/constants";
 import { LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive";
 import { GENRES } from "../../src/lib/projectTemplates";
+import type { GenreTemplate, Mood } from "../../src/lib/projectTemplates";
 import { useResponsive } from "../../src/lib/responsive";
 import { listProjectIndex } from "../../src/lib/projectStore";
 import { useWebAudioPlayer } from "../../src/hooks/useWebAudioPlayer";
@@ -364,6 +366,7 @@ export default function Feed() {
   const playing = isWeb ? webAudio.isPlaying : expoStatus.playing;
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [showQuickTools, setShowQuickTools] = useState(false);
+  const [showNewProject, setShowNewProject] = useState(false);
   const [hasProjects, setHasProjects] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const isMountedRef = useRef(true);
@@ -491,6 +494,36 @@ export default function Feed() {
     setShowQuickTools(true);
   }, []);
 
+  const handleOpenNewProject = useCallback(() => {
+    setShowNewProject(true);
+  }, []);
+
+  const handleCreateProject = useCallback(
+    (config: {
+      name: string;
+      genre: GenreTemplate;
+      key: string;
+      bpm: number;
+      mood?: Mood;
+      numBars?: number;
+      timeSignature?: string;
+    }) => {
+      const projectId = `proj-${Date.now()}`;
+      const params = new URLSearchParams({
+        title: config.name,
+        genre: config.genre.id,
+        key: config.key,
+        bpm: String(config.bpm),
+        numBars: String(config.numBars ?? 8),
+        timeSignature: config.timeSignature ?? "4/4",
+      });
+      if (config.mood) params.set("mood", config.mood);
+      setShowNewProject(false);
+      router.push(`/studio/${projectId}?${params.toString()}`);
+    },
+    [router],
+  );
+
   const handleShare = useCallback(async (post: FeedPost) => {
     if (Platform.OS === "web") {
       await navigator.clipboard.writeText(
@@ -537,6 +570,12 @@ export default function Feed() {
       <QuickTools
         visible={showQuickTools}
         onClose={() => setShowQuickTools(false)}
+        onNewProject={handleOpenNewProject}
+      />
+      <NewProject
+        visible={showNewProject}
+        onClose={() => setShowNewProject(false)}
+        onCreate={handleCreateProject}
       />
       <View style={maxWidthStyle}>
         <View className="pt-4 tablet:pt-12 px-4 tablet:px-6 flex-row items-start justify-between">

@@ -1,4 +1,4 @@
-import type { MIDINote, TrackDef } from "./types";
+import type { MIDINote, PluginType, TrackDef } from "./types";
 import { keyToRootNote, PROGRESSION_PRESETS, resolveProgression, isMinorKey, getDefaultScaleType, SCALE_INTERVALS } from "./harmony";
 import type { HarmonicDegrees } from "./harmony";
 
@@ -75,6 +75,55 @@ export const MOODS: MoodPreset[] = [
 
 export const TIME_SIGNATURES = ["2/2", "3/4", "4/4", "5/4", "6/8", "7/8", "12/8"];
 
+interface PluginPreset {
+  type: string;
+  params: Record<string, number>;
+}
+
+const GENRE_PLUGINS: Record<string, PluginPreset[]> = {
+  pop: [
+    { type: 'compressor', params: { threshold: -18, ratio: 3, attack: 5, release: 50 } },
+    { type: 'reverb', params: { decay: 1.2, mix: 0.2 } },
+  ],
+  rock: [
+    { type: 'distortion', params: { drive: 0.6, tone: 0.5, mix: 0.8 } },
+    { type: 'compressor', params: { threshold: -20, ratio: 4, attack: 3, release: 30 } },
+  ],
+  edm: [
+    { type: 'compressor', params: { threshold: -16, ratio: 5, attack: 2, release: 20 } },
+    { type: 'reverb', params: { decay: 2.0, mix: 0.3 } },
+    { type: 'distortion', params: { drive: 0.3, tone: 0.7, mix: 0.5 } },
+  ],
+  hiphop: [
+    { type: 'compressor', params: { threshold: -14, ratio: 6, attack: 1, release: 15 } },
+    { type: 'distortion', params: { drive: 0.4, tone: 0.6, mix: 0.4 } },
+  ],
+  jazz: [
+    { type: 'reverb', params: { decay: 1.5, mix: 0.25 } },
+    { type: 'compressor', params: { threshold: -22, ratio: 2, attack: 10, release: 80 } },
+  ],
+  lofi: [
+    { type: 'distortion', params: { drive: 0.2, tone: 0.4, mix: 0.3 } },
+    { type: 'reverb', params: { decay: 3.0, mix: 0.35 } },
+  ],
+  rnb: [
+    { type: 'compressor', params: { threshold: -16, ratio: 3, attack: 8, release: 60 } },
+    { type: 'reverb', params: { decay: 1.8, mix: 0.2 } },
+  ],
+  metal: [
+    { type: 'distortion', params: { drive: 0.9, tone: 0.3, mix: 1.0 } },
+    { type: 'compressor', params: { threshold: -24, ratio: 6, attack: 1, release: 15 } },
+  ],
+  acoustic: [
+    { type: 'reverb', params: { decay: 1.0, mix: 0.15 } },
+    { type: 'compressor', params: { threshold: -20, ratio: 2, attack: 12, release: 100 } },
+  ],
+  blues: [
+    { type: 'distortion', params: { drive: 0.5, tone: 0.6, mix: 0.7 } },
+    { type: 'reverb', params: { decay: 1.2, mix: 0.2 } },
+  ],
+};
+
 export interface GenreTemplate {
   id: string;
   name: string;
@@ -83,7 +132,8 @@ export interface GenreTemplate {
   bpmRange: [number, number];
   defaultKey: string;
   description: string;
-  suggestedTracks: { name: string; color: string }[];
+  suggestedTracks: { name: string; color: string; trackType?: string }[];
+  subgenres?: string[];
 }
 
 export const GENRES: GenreTemplate[] = [
@@ -95,11 +145,12 @@ export const GENRES: GenreTemplate[] = [
     bpmRange: [90, 140],
     defaultKey: "C",
     description: "Pop melódico, bateria groove",
+    subgenres: [],
     suggestedTracks: [
-      { name: "Bateria", color: "bg-green-500" },
-      { name: "Baixo", color: "bg-purple-500" },
-      { name: "Violão", color: "bg-orange-500" },
-      { name: "Melodia", color: "bg-blue-500" },
+      { name: "Bateria", color: "bg-green-500", trackType: "drums" },
+      { name: "Baixo", color: "bg-purple-500", trackType: "bass" },
+      { name: "Violão", color: "bg-orange-500", trackType: "guitar" },
+      { name: "Melodia", color: "bg-blue-500", trackType: "vocal" },
     ],
   },
   {
@@ -110,11 +161,12 @@ export const GENRES: GenreTemplate[] = [
     bpmRange: [80, 200],
     defaultKey: "E",
     description: "Guitarras, bateria forte, energia ao vivo",
+    subgenres: ["classic_rock", "indie"],
     suggestedTracks: [
-      { name: "Bateria", color: "bg-green-500" },
-      { name: "Baixo", color: "bg-purple-500" },
-      { name: "Guitarra Solo", color: "bg-blue-500" },
-      { name: "Guitarra Base", color: "bg-cyan-500" },
+      { name: "Bateria", color: "bg-green-500", trackType: "drums" },
+      { name: "Baixo", color: "bg-purple-500", trackType: "bass" },
+      { name: "Guitarra Solo", color: "bg-blue-500", trackType: "guitar" },
+      { name: "Guitarra Base", color: "bg-cyan-500", trackType: "guitar" },
     ],
   },
   {
@@ -125,11 +177,12 @@ export const GENRES: GenreTemplate[] = [
     bpmRange: [110, 160],
     defaultKey: "F#m",
     description: "Eletrônico, drops e synths",
+    subgenres: ["synthwave", "techno", "house"],
     suggestedTracks: [
-      { name: "Kick Bass", color: "bg-yellow-500" },
-      { name: "Drums", color: "bg-green-500" },
-      { name: "Synth Lead", color: "bg-blue-500" },
-      { name: "Pad", color: "bg-indigo-400" },
+      { name: "Kick Bass", color: "bg-yellow-500", trackType: "drums" },
+      { name: "Drums", color: "bg-green-500", trackType: "drums" },
+      { name: "Synth Lead", color: "bg-blue-500", trackType: "synth_lead" },
+      { name: "Pad", color: "bg-indigo-400", trackType: "pad" },
     ],
   },
   {
@@ -140,11 +193,12 @@ export const GENRES: GenreTemplate[] = [
     bpmRange: [70, 130],
     defaultKey: "D#m",
     description: "Beats pesados, 808s, melodias",
+    subgenres: ["trap", "boombap", "lofi_urban"],
     suggestedTracks: [
-      { name: "Drums", color: "bg-green-500" },
-      { name: "808 Bass", color: "bg-orange-500" },
-      { name: "Melodia", color: "bg-blue-500" },
-      { name: "Sample", color: "bg-purple-500" },
+      { name: "Drums", color: "bg-green-500", trackType: "drums" },
+      { name: "808 Bass", color: "bg-orange-500", trackType: "bass" },
+      { name: "Melodia", color: "bg-blue-500", trackType: "vocal" },
+      { name: "Sample", color: "bg-purple-500", trackType: "sample" },
     ],
   },
   {
@@ -155,11 +209,12 @@ export const GENRES: GenreTemplate[] = [
     bpmRange: [60, 180],
     defaultKey: "Bb",
     description: "Acústico, improviso, swing",
+    subgenres: [],
     suggestedTracks: [
-      { name: "Bateria", color: "bg-green-500" },
-      { name: "Baixo Acústico", color: "bg-purple-500" },
-      { name: "Piano", color: "bg-blue-500" },
-      { name: "Sax", color: "bg-yellow-500" },
+      { name: "Bateria", color: "bg-green-500", trackType: "drums" },
+      { name: "Baixo Acústico", color: "bg-purple-500", trackType: "bass" },
+      { name: "Piano", color: "bg-blue-500", trackType: "keys" },
+      { name: "Sax", color: "bg-yellow-500", trackType: "keys" },
     ],
   },
   {
@@ -170,11 +225,12 @@ export const GENRES: GenreTemplate[] = [
     bpmRange: [60, 100],
     defaultKey: "Am",
     description: "Chill, samples, vinil",
+    subgenres: ["lofi_urban"],
     suggestedTracks: [
-      { name: "Drums Lo-Fi", color: "bg-green-500" },
-      { name: "Baixo", color: "bg-purple-500" },
-      { name: "Melodia", color: "bg-yellow-500" },
-      { name: "Sample", color: "bg-blue-500" },
+      { name: "Drums Lo-Fi", color: "bg-green-500", trackType: "drums" },
+      { name: "Baixo", color: "bg-purple-500", trackType: "bass" },
+      { name: "Melodia", color: "bg-yellow-500", trackType: "vocal" },
+      { name: "Sample", color: "bg-blue-500", trackType: "sample" },
     ],
   },
   {
@@ -185,10 +241,11 @@ export const GENRES: GenreTemplate[] = [
     bpmRange: [60, 110],
     defaultKey: "C#m",
     description: "Groove suave, teclas, soul",
+    subgenres: [],
     suggestedTracks: [
-      { name: "Bateria", color: "bg-green-500" },
-      { name: "Baixo", color: "bg-purple-500" },
-      { name: "Piano/Keys", color: "bg-blue-500" },
+      { name: "Bateria", color: "bg-green-500", trackType: "drums" },
+      { name: "Baixo", color: "bg-purple-500", trackType: "bass" },
+      { name: "Piano/Keys", color: "bg-blue-500", trackType: "keys" },
     ],
   },
   {
@@ -199,11 +256,12 @@ export const GENRES: GenreTemplate[] = [
     bpmRange: [120, 240],
     defaultKey: "E",
     description: "Pesado, rápido, distorcido",
+    subgenres: ["metal_core"],
     suggestedTracks: [
-      { name: "Bateria", color: "bg-green-500" },
-      { name: "Baixo", color: "bg-purple-500" },
-      { name: "Guitarra Rítmica", color: "bg-orange-500" },
-      { name: "Guitarra Solo", color: "bg-blue-500" },
+      { name: "Bateria", color: "bg-green-500", trackType: "drums" },
+      { name: "Baixo", color: "bg-purple-500", trackType: "bass" },
+      { name: "Guitarra Rítmica", color: "bg-orange-500", trackType: "guitar" },
+      { name: "Guitarra Solo", color: "bg-blue-500", trackType: "guitar" },
     ],
   },
   {
@@ -214,10 +272,11 @@ export const GENRES: GenreTemplate[] = [
     bpmRange: [60, 140],
     defaultKey: "G",
     description: "Orgânico, violão, dedilhado",
+    subgenres: [],
     suggestedTracks: [
-      { name: "Percussão", color: "bg-green-500" },
-      { name: "Baixo Acústico", color: "bg-purple-500" },
-      { name: "Violão", color: "bg-orange-500" },
+      { name: "Percussão", color: "bg-green-500", trackType: "percussion" },
+      { name: "Baixo Acústico", color: "bg-purple-500", trackType: "bass" },
+      { name: "Violão", color: "bg-orange-500", trackType: "guitar" },
     ],
   },
   {
@@ -228,14 +287,30 @@ export const GENRES: GenreTemplate[] = [
     bpmRange: [60, 160],
     defaultKey: "A",
     description: "Progressão I-IV-V, alma",
+    subgenres: [],
     suggestedTracks: [
-      { name: "Bateria", color: "bg-green-500" },
-      { name: "Baixo", color: "bg-purple-500" },
-      { name: "Guitarra Lead", color: "bg-blue-500" },
-      { name: "Guitarra Base", color: "bg-cyan-500" },
+      { name: "Bateria", color: "bg-green-500", trackType: "drums" },
+      { name: "Baixo", color: "bg-purple-500", trackType: "bass" },
+      { name: "Guitarra Lead", color: "bg-blue-500", trackType: "guitar" },
+      { name: "Guitarra Base", color: "bg-cyan-500", trackType: "guitar" },
     ],
   },
 ];
+
+export function genreSubgenreMap(): Record<string, string[]> {
+  const map: Record<string, string[]> = {};
+  for (const g of GENRES) {
+    map[g.id] = g.subgenres ?? [];
+  }
+  return map;
+}
+
+export function subgenreToGenreId(subgenreId: string): string | undefined {
+  for (const g of GENRES) {
+    if (g.subgenres?.includes(subgenreId)) return g.id;
+  }
+  return undefined;
+}
 
 const ALL_KEYS = [
   "C",
@@ -286,7 +361,7 @@ export function generateTracksForGenre(
   const now = Date.now();
 
   return suggested.map((track, i) => {
-    const midiNotes = generateMidiForTrack(track.name, genreId, rootNote, bpmVal, mood);
+    const midiNotes = generateMidiForTrack(track.name, genreId, rootNote, bpmVal, mood, numBars, track.trackType);
     return {
       id: `track-${now}-${i}`,
       name: track.name,
@@ -300,7 +375,13 @@ export function generateTracksForGenre(
       regions: [
         { id: nextRegionId(), start: 0, duration: Math.round(regionDuration) },
       ],
-      plugins: [],
+      plugins: GENRE_PLUGINS[genreId]?.map((p, i) => ({
+        id: `plugin-${now}-${i}`,
+        name: p.type.charAt(0).toUpperCase() + p.type.slice(1),
+        type: p.type as PluginType,
+        enabled: true,
+        params: { ...p.params },
+      })) ?? [],
       automation: {},
       ...(midiNotes.length > 0 ? { midiNotes } : {}),
     };
@@ -309,7 +390,8 @@ export function generateTracksForGenre(
 
 type TrackType = 'drums' | 'percussion' | 'bass' | 'guitar' | 'keys' | 'synth_lead' | 'pad' | 'sample' | 'vocal' | 'fx' | 'other'
 
-function getTrackType(trackName: string): TrackType {
+function getTrackType(trackName: string, trackType?: string): TrackType {
+  if (trackType === 'drums' || trackType === 'percussion' || trackType === 'bass' || trackType === 'guitar' || trackType === 'keys' || trackType === 'synth_lead' || trackType === 'pad' || trackType === 'sample' || trackType === 'vocal' || trackType === 'fx') return trackType
   const l = trackName.toLowerCase()
   if (l.includes('bateria') || l.includes('drums') || l.includes('bumbo') || l.includes('kick')) return 'drums'
   if (l.includes('percussão') || l.includes('percussion')) return 'percussion'
@@ -324,9 +406,9 @@ function getTrackType(trackName: string): TrackType {
   return 'other'
 }
 
-function getPercussionPattern(secPerBeat: number): MIDINote[] {
+function getPercussionPattern(secPerBeat: number, numBars: number = 8): MIDINote[] {
   const notes: MIDINote[] = []
-  for (let bar = 0; bar < 8; bar++) {
+  for (let bar = 0; bar < numBars; bar++) {
     const b = bar * 4 * secPerBeat
     for (let beat = 0; beat < 4; beat++) {
       if (beat === 0) {
@@ -351,12 +433,61 @@ function getPercussionPattern(secPerBeat: number): MIDINote[] {
   return notes
 }
 
-function getDrumPattern(genreId: string, secPerBeat: number): MIDINote[] {
+function getDrumPattern(genreId: string, secPerBeat: number, numBars: number = 8): MIDINote[] {
   const notes: MIDINote[] = []
 
   switch (genreId) {
+    case 'pop': {
+      for (let bar = 0; bar < numBars; bar++) {
+        const b = bar * 4 * secPerBeat
+        notes.push({ pitch: 36, start: b, duration: secPerBeat * 0.35, velocity: 115 })
+        notes.push({ pitch: 38, start: b + 2 * secPerBeat, duration: secPerBeat * 0.25, velocity: 105 })
+        for (let e = 0; e < 8; e++) {
+          notes.push({ pitch: 42, start: b + e * 0.5 * secPerBeat, duration: secPerBeat * 0.06, velocity: e % 2 === 0 ? 80 : 55 })
+        }
+        if (bar % 2 === 1) {
+          notes.push({ pitch: 36, start: b + 1.5 * secPerBeat, duration: secPerBeat * 0.25, velocity: 85 })
+        }
+      }
+      break
+    }
+    case 'rock': {
+      for (let bar = 0; bar < numBars; bar++) {
+        const b = bar * 4 * secPerBeat
+        notes.push({ pitch: 36, start: b, duration: secPerBeat * 0.3, velocity: 120 })
+        notes.push({ pitch: 36, start: b + 2 * secPerBeat, duration: secPerBeat * 0.3, velocity: 85 })
+        notes.push({ pitch: 38, start: b + 2 * secPerBeat, duration: secPerBeat * 0.3, velocity: 110 })
+        for (let e = 0; e < 8; e++) {
+          if (e % 2 === 0) {
+            notes.push({ pitch: 51, start: b + e * 0.5 * secPerBeat, duration: secPerBeat * 0.2, velocity: 80 })
+          } else {
+            notes.push({ pitch: 51, start: b + e * 0.5 * secPerBeat, duration: secPerBeat * 0.1, velocity: 60 })
+          }
+        }
+        if (bar % 4 === 3) {
+          notes.push({ pitch: 49, start: b + 3 * secPerBeat, duration: secPerBeat * 0.8, velocity: 100 })
+        }
+      }
+      break
+    }
+    case 'acoustic': {
+      for (let bar = 0; bar < numBars; bar++) {
+        const b = bar * 4 * secPerBeat
+        notes.push({ pitch: 36, start: b, duration: secPerBeat * 0.25, velocity: 90 })
+        notes.push({ pitch: 37, start: b + 2 * secPerBeat, duration: secPerBeat * 0.2, velocity: 80 })
+        for (let e = 0; e < 8; e++) {
+          if (e % 2 === 0) {
+            notes.push({ pitch: 64, start: b + e * 0.5 * secPerBeat, duration: secPerBeat * 0.08, velocity: 55 })
+          }
+        }
+        if (bar % 2 === 1) {
+          notes.push({ pitch: 63, start: b + 1.5 * secPerBeat, duration: secPerBeat * 0.2, velocity: 75 })
+        }
+      }
+      break
+    }
     case 'edm': {
-      for (let bar = 0; bar < 8; bar++) {
+      for (let bar = 0; bar < numBars; bar++) {
         const b = bar * 4 * secPerBeat
         for (let beat = 0; beat < 4; beat++) {
           notes.push({ pitch: 36, start: b + beat * secPerBeat, duration: secPerBeat * 0.3, velocity: 125 })
@@ -381,7 +512,7 @@ function getDrumPattern(genreId: string, secPerBeat: number): MIDINote[] {
       break
     }
     case 'hiphop': {
-      for (let bar = 0; bar < 8; bar++) {
+      for (let bar = 0; bar < numBars; bar++) {
         const b = bar * 4 * secPerBeat
         notes.push({ pitch: 36, start: b, duration: secPerBeat * 0.5, velocity: 115 })
         notes.push({ pitch: 36, start: b + 1.5 * secPerBeat, duration: secPerBeat * 0.3, velocity: 90 })
@@ -397,7 +528,7 @@ function getDrumPattern(genreId: string, secPerBeat: number): MIDINote[] {
       break
     }
     case 'metal': {
-      for (let bar = 0; bar < 8; bar++) {
+      for (let bar = 0; bar < numBars; bar++) {
         const b = bar * 4 * secPerBeat
         for (let beat = 0; beat < 4; beat++) {
           notes.push({ pitch: 36, start: b + beat * secPerBeat, duration: secPerBeat * 0.3, velocity: 120 })
@@ -418,7 +549,7 @@ function getDrumPattern(genreId: string, secPerBeat: number): MIDINote[] {
       break
     }
     case 'jazz': {
-      for (let bar = 0; bar < 8; bar++) {
+      for (let bar = 0; bar < numBars; bar++) {
         const b = bar * 4 * secPerBeat
         notes.push({ pitch: 36, start: b, duration: secPerBeat * 0.5, velocity: 90 })
         notes.push({ pitch: 36, start: b + 2.5 * secPerBeat, duration: secPerBeat * 0.3, velocity: 70 })
@@ -434,7 +565,7 @@ function getDrumPattern(genreId: string, secPerBeat: number): MIDINote[] {
       break
     }
     case 'lofi': {
-      for (let bar = 0; bar < 8; bar++) {
+      for (let bar = 0; bar < numBars; bar++) {
         const b = bar * 4 * secPerBeat
         notes.push({ pitch: 36, start: b, duration: secPerBeat * 0.4, velocity: 100 })
         if (bar % 2 === 0) {
@@ -452,7 +583,7 @@ function getDrumPattern(genreId: string, secPerBeat: number): MIDINote[] {
       break
     }
     case 'rnb': {
-      for (let bar = 0; bar < 8; bar++) {
+      for (let bar = 0; bar < numBars; bar++) {
         const b = bar * 4 * secPerBeat
         notes.push({ pitch: 36, start: b, duration: secPerBeat * 0.5, velocity: 110 })
         notes.push({ pitch: 36, start: b + 1.5 * secPerBeat, duration: secPerBeat * 0.3, velocity: 80 })
@@ -468,7 +599,7 @@ function getDrumPattern(genreId: string, secPerBeat: number): MIDINote[] {
       break
     }
     case 'blues': {
-      for (let bar = 0; bar < 8; bar++) {
+      for (let bar = 0; bar < numBars; bar++) {
         const b = bar * 4 * secPerBeat
         notes.push({ pitch: 36, start: b, duration: secPerBeat * 0.5, velocity: 110 })
         notes.push({ pitch: 38, start: b + 2 * secPerBeat, duration: secPerBeat * 0.3, velocity: 100 })
@@ -480,7 +611,7 @@ function getDrumPattern(genreId: string, secPerBeat: number): MIDINote[] {
       break
     }
     default: {
-      for (let bar = 0; bar < 8; bar++) {
+      for (let bar = 0; bar < numBars; bar++) {
         const b = bar * 4 * secPerBeat
         notes.push({ pitch: 36, start: b, duration: secPerBeat * 0.4, velocity: 120 })
         if (bar % 2 === 1) notes.push({ pitch: 36, start: b + 2 * secPerBeat, duration: secPerBeat * 0.3, velocity: 70 })
@@ -502,13 +633,15 @@ function generateMidiForTrack(
   rootNote: number,
   bpm: number,
   mood?: Mood,
+  numBars: number = 8,
+  overrideTrackType?: string,
 ): MIDINote[] {
-  const trackType = getTrackType(trackName)
+  const trackType = getTrackType(trackName, overrideTrackType)
   const genre = GENRES.find(g => g.id === genreId)
   const scaleType = getDefaultScaleType(genre?.defaultKey ?? 'C')
   const secPerBeat = 60 / bpm
-  const bars = 8
   const beatsPerBar = 4
+  const bars = numBars
 
   const moodPreset = mood ? MOODS.find((m) => m.id === mood) : undefined
   const isDrumOrPerc = trackType === 'drums' || trackType === 'percussion'
@@ -522,11 +655,11 @@ function generateMidiForTrack(
   let result: MIDINote[]
   switch (trackType) {
     case 'drums': {
-      result = getDrumPattern(genreId, secPerBeat)
+      result = getDrumPattern(genreId, secPerBeat, numBars)
       break
     }
     case 'percussion': {
-      result = getPercussionPattern(secPerBeat)
+      result = getPercussionPattern(secPerBeat, numBars)
       break
     }
     case 'bass': {

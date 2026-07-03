@@ -8,12 +8,14 @@ import {
   Button,
   Badge,
   ProgressBar,
+  NewProject,
 } from "../src/components";
 import { DEMO_AUDIO_URL, SCREEN_BOTTOM_PADDING } from "../src/lib/constants";
 import { LAYOUT_MAX_WIDTHS } from "../src/lib/responsive";
 import { saveProject } from "../src/lib/projectStore";
 import { setMasteringInput } from "../src/lib/masteringBridge";
 import type { TrackDef, TrackRegion } from "../src/lib/types";
+import type { GenreTemplate, Mood } from "../src/lib/projectTemplates";
 import { useWebAudioPlayer } from "../src/hooks/useWebAudioPlayer";
 
 type StemType = "drums" | "bass" | "vocals" | "other";
@@ -140,6 +142,10 @@ export default function Extractor() {
   const [selectedTrack, setSelectedTrack] = useState<string | null>(null);
   const [results, setResults] = useState<StemResult[]>([]);
   const [animTick, setAnimTick] = useState(0);
+  const [showNewProject, setShowNewProject] = useState(false);
+  const [newProjectPrefill, setNewProjectPrefill] = useState<{
+    title?: string;
+  }>({});
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const animRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -232,6 +238,97 @@ export default function Extractor() {
   }, []);
 
   const router = useRouter();
+
+  const handleCreateProject = useCallback(
+    (config: {
+      name: string;
+      genre: GenreTemplate;
+      key: string;
+      bpm: number;
+      mood?: Mood;
+      numBars?: number;
+      timeSignature?: string;
+    }) => {
+      const stemDefaults: Record<
+        StemType,
+        { name: string; volume: number; pan: number }
+      > = {
+        drums: { name: "Drums", volume: 80, pan: 0 },
+        bass: { name: "Bass", volume: 75, pan: 0 },
+        vocals: { name: "Vocals", volume: 85, pan: 0 },
+        other: { name: "Other", volume: 70, pan: 10 },
+      };
+
+      const projectId = `stems-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      const tracks = results.map((stem) => {
+        const defaults = stemDefaults[stem.type];
+        return {
+          id: `track-${stem.type}`,
+          name: defaults.name,
+          color: "bg-blue-500",
+          muted: false,
+          solo: false,
+          volume: defaults.volume,
+          pan: defaults.pan,
+          sends: {},
+          sidechainSource: null,
+          regions: [
+            {
+              id: `region-${stem.type}`,
+              start: 0,
+              duration: stem.duration,
+              url: stem.url,
+            },
+          ],
+          plugins: [],
+          automation: {},
+        };
+      });
+
+      const projectTitle = results
+        .map((s) => stemDefaults[s.type].name)
+        .join(" + ");
+
+      saveProject(projectId, {
+        title: config.name || projectTitle,
+        genre: config.genre.id,
+        key: config.key,
+        bpm: config.bpm,
+        tracks,
+        groups: [],
+        buses: [],
+        trackAssignments: {},
+        masterPlugins: [],
+        masteringChain: [],
+        sendBuses: [],
+        trackAmpChains: {},
+        mixSnapshots: [],
+        activeMixId: undefined,
+        metronome: {
+          bpm: config.bpm,
+          timeSig: [4, 4],
+          accentInterval: 4,
+          volume: 60,
+          enabled: true,
+          countIn: true,
+          countInBars: 2,
+        },
+        recordSettings: {
+          armed: false,
+          inputSource: "mic",
+          quality: "high",
+          sampleRate: 44100,
+          mono: false,
+          preRoll: 0,
+        },
+      });
+      setShowNewProject(false);
+      router.push(
+        `/studio/${projectId}?title=${encodeURIComponent(config.name || projectTitle)}`,
+      );
+    },
+    [results, router],
+  );
 
   const handleAddToProject = useCallback(
     (stem: StemResult) => {
@@ -494,83 +591,11 @@ export default function Extractor() {
                 title="Adicionar todos ao estúdio"
                 icon="+"
                 onPress={() => {
-                  const projectId = `stems-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-
-                  const stemDefaults: Record<
-                    StemType,
-                    { name: string; volume: number; pan: number }
-                  > = {
-                    drums: { name: "Drums", volume: 80, pan: 0 },
-                    bass: { name: "Bass", volume: 75, pan: 0 },
-                    vocals: { name: "Vocals", volume: 85, pan: 0 },
-                    other: { name: "Other", volume: 70, pan: 10 },
-                  };
-
-                  const tracks = results.map((stem) => {
-                    const defaults = stemDefaults[stem.type];
-                    return {
-                      id: `track-${stem.type}`,
-                      name: defaults.name,
-                      color: "bg-blue-500",
-                      muted: false,
-                      solo: false,
-                      volume: defaults.volume,
-                      pan: defaults.pan,
-                      sends: {},
-                      sidechainSource: null,
-                      regions: [
-                        {
-                          id: `region-${stem.type}`,
-                          start: 0,
-                          duration: stem.duration,
-                          url: stem.url,
-                        },
-                      ],
-                      plugins: [],
-                      automation: {},
-                    };
-                  });
-
-                  const projectTitle = results
-                    .map((s) => stemDefaults[s.type].name)
+                  const title = results
+                    .map((s) => STEM_META[s.type].label)
                     .join(" + ");
-
-                  saveProject(projectId, {
-                    title: projectTitle,
-                    genre: "pop",
-                    key: "C",
-                    bpm: 120,
-                    tracks,
-                    groups: [],
-                    buses: [],
-                    trackAssignments: {},
-                    masterPlugins: [],
-                    masteringChain: [],
-                    sendBuses: [],
-                    trackAmpChains: {},
-                    mixSnapshots: [],
-                    activeMixId: undefined,
-                    metronome: {
-                      bpm: 120,
-                      timeSig: [4, 4],
-                      accentInterval: 4,
-                      volume: 60,
-                      enabled: true,
-                      countIn: true,
-                      countInBars: 2,
-                    },
-                    recordSettings: {
-                      armed: false,
-                      inputSource: "mic",
-                      quality: "high",
-                      sampleRate: 44100,
-                      mono: false,
-                      preRoll: 0,
-                    },
-                  });
-                  router.push(
-                    `/studio/${projectId}?title=${encodeURIComponent(projectTitle)}`,
-                  );
+                  setNewProjectPrefill({ title });
+                  setShowNewProject(true);
                 }}
               />
               <Button
@@ -598,6 +623,14 @@ export default function Extractor() {
           </View>
         )}
       </ScrollView>
+
+      <NewProject
+        key={`np-${showNewProject}`}
+        visible={showNewProject}
+        onClose={() => setShowNewProject(false)}
+        onCreate={handleCreateProject}
+        initialTitle={newProjectPrefill.title}
+      />
     </View>
   );
 }

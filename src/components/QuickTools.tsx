@@ -30,10 +30,11 @@ const QUICK_ACTIONS: QuickAction[] = [
 interface QuickToolsProps {
   visible: boolean;
   onClose: () => void;
+  onNewProject?: () => void;
   testID?: string;
 }
 
-export function QuickTools({ visible, onClose, testID }: QuickToolsProps) {
+export function QuickTools({ visible, onClose, onNewProject, testID }: QuickToolsProps) {
   const router = useRouter();
 
   if (!visible) return null;
@@ -48,9 +49,7 @@ export function QuickTools({ visible, onClose, testID }: QuickToolsProps) {
       return;
     }
     if (action.id === "new-project") {
-      const projectId = `proj-${Date.now()}`;
-      const route = `/studio/${projectId}?title=${encodeURIComponent("Novo Projeto")}&genre=pop&bpm=120&key=C` as `"/studio/${string}"`;
-      router.push(route);
+      onNewProject?.();
       onClose();
       return;
     }

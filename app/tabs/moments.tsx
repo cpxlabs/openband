@@ -1,9 +1,11 @@
 import { useState, useCallback } from "react";
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
-import { PageHeader, Button, Badge } from "../../src/components";
+import { PageHeader, Button, Badge, NewProject } from "../../src/components";
 import { MomentCard } from "../../src/components";
 import type { MomentData } from "../../src/components/MomentCard";
+import { GENRES } from "../../src/lib/projectTemplates";
+import type { GenreTemplate, Mood } from "../../src/lib/projectTemplates";
 import { LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive";
 import { SCREEN_BOTTOM_PADDING } from "../../src/lib/constants";
 
@@ -153,23 +155,66 @@ const FREE_SAMPLE_PACKS = [
   },
 ];
 
+const PACK_GENRE_MAP: Record<string, string> = {
+  Guitarra: "rock",
+  Sintetizador: "edm",
+  Bateria: "hiphop",
+  Baixo: "rnb",
+  Vocal: "pop",
+  Melódico: "lofi",
+};
+
 export default function Moments() {
   const router = useRouter();
   const [tab, setTab] = useState<"moments" | "packs">("moments");
   const [credits, setCredits] = useState<{ artist: string; sample: string }[]>(
     [],
   );
+  const [showNewProject, setShowNewProject] = useState(false);
+  const [newProjectPrefill, setNewProjectPrefill] = useState<{
+    title?: string;
+    genre?: GenreTemplate;
+  }>({});
 
   const handleUsePack = useCallback(
     (pack: (typeof FREE_SAMPLE_PACKS)[0], sampleName: string) => {
-      const projectId = `proj-sample-${Date.now()}`;
       setCredits((prev) => [
         ...prev,
         { artist: pack.artist, sample: sampleName },
       ]);
-      router.push(
-        `/studio/${projectId}?title=Sample: ${sampleName}&genre=pop&key=C&bpm=120`,
-      );
+      const genreId = PACK_GENRE_MAP[pack.instrument] ?? "pop";
+      const genre = GENRES.find((g) => g.id === genreId) ?? GENRES[0];
+      setNewProjectPrefill({
+        title: `Sample: ${sampleName}`,
+        genre,
+      });
+      setShowNewProject(true);
+    },
+    [],
+  );
+
+  const handleCreateProject = useCallback(
+    (config: {
+      name: string;
+      genre: GenreTemplate;
+      key: string;
+      bpm: number;
+      mood?: Mood;
+      numBars?: number;
+      timeSignature?: string;
+    }) => {
+      const projectId = `proj-sample-${Date.now()}`;
+      const params = new URLSearchParams({
+        title: config.name,
+        genre: config.genre.id,
+        key: config.key,
+        bpm: String(config.bpm),
+        numBars: String(config.numBars ?? 8),
+        timeSignature: config.timeSignature ?? "4/4",
+      });
+      if (config.mood) params.set("mood", config.mood);
+      setShowNewProject(false);
+      router.push(`/studio/${projectId}?${params.toString()}`);
     },
     [router],
   );
@@ -308,6 +353,15 @@ export default function Moments() {
           </View>
         )}
       </ScrollView>
+
+      <NewProject
+        key={`np-${showNewProject}`}
+        visible={showNewProject}
+        onClose={() => setShowNewProject(false)}
+        onCreate={handleCreateProject}
+        initialTitle={newProjectPrefill.title}
+        initialGenre={newProjectPrefill.genre}
+      />
     </View>
   );
 }

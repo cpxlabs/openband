@@ -81,7 +81,7 @@ const SUBGENRE_STRUCTURES: Record<string, EnergySection[]> = {
 }
 
 export function generateArrangement(subgenreId: string): EnergySection[] {
-  return SUBGENRE_STRUCTURES[subgenreId] ?? SUBGENRE_STRUCTURES.trap
+  return SUBGENRE_STRUCTURES[subgenreId] ?? []
 }
 
 export function getEnergyLabel(energy: EnergyLevel): string {
