@@ -11,6 +11,7 @@ export function useWebAudioPlayer() {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
+  const currentSrcRef = useRef<string>("");
 
   useEffect(() => {
     if (Platform.OS !== "web" || typeof document === "undefined") return;
@@ -54,6 +55,10 @@ export function useWebAudioPlayer() {
       audio.src = "";
       if (audio.parentNode) audio.parentNode.removeChild(audio);
       audioRef.current = null;
+      if (currentSrcRef.current && currentSrcRef.current.startsWith("blob:")) {
+        URL.revokeObjectURL(currentSrcRef.current);
+        currentSrcRef.current = "";
+      }
     };
   }, []);
 
@@ -62,6 +67,10 @@ export function useWebAudioPlayer() {
     if (!audio) return;
 
     audio.pause();
+    if (currentSrcRef.current && currentSrcRef.current.startsWith("blob:")) {
+      URL.revokeObjectURL(currentSrcRef.current);
+    }
+    currentSrcRef.current = url;
     audio.src = url;
     setIsLoaded(false);
     setCurrentTime(0);
@@ -88,7 +97,7 @@ export function useWebAudioPlayer() {
       });
       setIsLoaded(true);
     } catch {
-      setIsLoaded(true);
+      setIsLoaded(false);
     }
   }, []);
 

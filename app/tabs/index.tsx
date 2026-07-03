@@ -262,7 +262,11 @@ export default function Feed() {
           await webAudio.play();
         } else {
           await expoPlayer.replace(url);
-          expoPlayer.play();
+          try {
+            expoPlayer.play();
+          } catch (e) {
+            console.warn("Native playback failed:", e);
+          }
         }
         currentPostRef.current = post;
         setPlayingId(post.id);
