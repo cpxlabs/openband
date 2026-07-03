@@ -9,12 +9,15 @@ export const SCREEN_BOTTOM_PADDING = 100;
 const MAX_CACHE_SIZE = 50;
 const previewUrlCache = new Map<string, string>();
 
+const MAX_PREVIEW_DURATION = 10;
+
 export async function generatePreviewUrl(
   key: string,
   duration: number = 4,
 ): Promise<string> {
   const cached = previewUrlCache.get(key);
   if (cached) return cached;
+  duration = Math.min(duration, MAX_PREVIEW_DURATION);
   const sr = 44100;
   const h = djb2Hash(key);
   const freq = 110 + Math.abs(h % 880);

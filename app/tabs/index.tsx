@@ -218,17 +218,19 @@ export default function Feed() {
     setHasProjects(Object.keys(index).length > 0);
   }, []);
 
+  const webAudioPause = webAudio.pause;
+  const webAudioSeekTo = webAudio.seekTo;
   useEffect(() => {
     return () => {
       if (isWeb) {
-        webAudio.pause();
-        webAudio.seekTo(0);
+        webAudioPause();
+        webAudioSeekTo(0);
       } else {
         expoPlayer.pause();
         expoPlayer.seekTo(0);
       }
     };
-  }, [isWeb, expoPlayer, webAudio]);
+  }, [isWeb, expoPlayer, webAudioPause, webAudioSeekTo]);
   const [genreFilter, setGenreFilter] = useState("all");
   const [sortMode, setSortMode] = useState<SortMode>("recent");
   const [posts, setPosts] = useState(MOCK_POSTS);
