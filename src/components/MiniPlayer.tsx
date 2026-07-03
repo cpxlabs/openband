@@ -8,10 +8,6 @@ interface NativeTouchEvent {
   nativeEvent: { pageX: number; pageY: number };
 }
 
-interface WebMouseEvent extends React.MouseEvent {
-  target: EventTarget & HTMLElement;
-}
-
 interface MiniPlayerState {
   title: string;
   subtitle: string;
@@ -106,18 +102,7 @@ export function MiniPlayer() {
     setIsDragging(false);
   }, []);
 
-  const handleMouseMove = useCallback((event: WebMouseEvent) => {
-    if (!isDragging || !status.duration) return;
-    const rect = (event.target as HTMLElement).getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    calculateSeekPosition(x, rect.width);
-  }, [isDragging, calculateSeekPosition, status.duration]);
-
-  const handleMouseUp = useCallback(() => {
-    setIsDragging(false);
-  }, []);
-
-  const handleProgressPress = useCallback((e: import("react-native").GestureResponderEvent) => {
+  const handleProgressPress = useCallback((_e: import("react-native").GestureResponderEvent) => {
     // RN web events don't have offsetX, so use the screen width as fallback
     const x = typeof window !== "undefined" ? window.innerWidth / 2 : 150;
     if (status.duration) {
@@ -191,8 +176,6 @@ export function MiniPlayer() {
         onResponderGrant={handleResponderGrant}
         onResponderMove={handleResponderMove}
         onResponderRelease={handleResponderRelease}
-        onMouseMove={Platform.OS === "web" ? handleMouseMove : undefined}
-        onMouseUp={Platform.OS === "web" ? handleMouseUp : undefined}
       >
         <View
           className="h-full bg-brand-primary transition-all"

@@ -204,7 +204,8 @@ function renderMidiNotesNative(
     }
   }
 
-  const beatDuration = 60 / (tracks[0]?.bpm || 120);
+  const moodPreset = mood ? MOODS.find((m) => m.id === mood) : undefined;
+  const beatDuration = 60 / 120;
 
   for (const track of audible) {
     if (!track.midiNotes || track.midiNotes.length === 0) continue;
@@ -257,28 +258,28 @@ function renderMidiNotesNative(
   }
 
   // Apply mood effects (simple filter + reverb approximation)
-  if (mood) {
+  if (moodPreset) {
     // Apply filter if present
-    if (mood.filter) {
-      if (mood.filter.type === "lowpass") {
+    if (moodPreset.filter) {
+      if (moodPreset.filter.type === "lowpass") {
         for (let ch = 0; ch < 2; ch++) {
           const buf = ch === 0 ? left : right;
-          const filtered = applySimpleLowPass(buf, mood.filter.freq, sampleRate);
+          const filtered = applySimpleLowPass(buf, moodPreset.filter.freq, sampleRate);
           (ch === 0 ? left : right).set(filtered);
         }
-      } else if (mood.filter.type === "highpass") {
+      } else if (moodPreset.filter.type === "highpass") {
         for (let ch = 0; ch < 2; ch++) {
           const buf = ch === 0 ? left : right;
-          const filtered = applySimpleHighPass(buf, mood.filter.freq, sampleRate);
+          const filtered = applySimpleHighPass(buf, moodPreset.filter.freq, sampleRate);
           (ch === 0 ? left : right).set(filtered);
         }
       }
     }
 
     // Simple reverb approximation (add delayed, attenuated copies)
-    if (mood.reverb) {
-      const mix = mood.reverb.mix * 0.5;
-      const decay = Math.min(mood.reverb.decay, 2);
+    if (moodPreset.reverb) {
+      const mix = moodPreset.reverb.mix * 0.5;
+      const decay = Math.min(moodPreset.reverb.decay, 2);
       const delaySamples = Math.floor(sampleRate * 0.03); // 30ms delay
       for (let ch = 0; ch < 2; ch++) {
         const buf = ch === 0 ? left : right;
@@ -768,12 +769,12 @@ export async function renderTracksToUrl(
         muted: t.muted || false,
         solo: t.solo || false,
         midiNotes: t.midiNotes,
-        outputId: t.outputId,
+        outputId: t.outputId || undefined,
       })),
       buses,
       duration,
       sampleRate,
-      moodPreset,
+      mood,
     );
     const blob = interleaveToWavBlob(interleaved, sampleRate);
     return createTrackedBlob(blob);
