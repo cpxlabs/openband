@@ -52,6 +52,39 @@ document.body.appendChild(audio);
 
 Also add `error` event listener to catch load failures, and use Promise with reject on error instead of timeout fallback.
 
+### 6. VU Meters (merged from studio-polish-features)
+
+**Component:** `src/components/VuMeter.tsx`
+- 8px width, full height of parent container
+- Three color zones: green (-30 to -6dB), yellow (-6 to -1dB), red (-1 to 0dB)
+- Peak hold indicator (white line)
+- Driven by `track.volume / 100` in sidebar, `getEffectiveVolume(track.id) / 100` in mixer
+
+### 7. Pan Automation Lane (merged from studio-polish-features)
+
+**Pattern:** Parallel to volume automation, uses same `AutomationLane` component.
+- State: `showPanAutomation: Record<string, boolean>`
+- Toggle buttons: "V" (volume) + "P" (pan)
+- Lane rendering: dynamic height based on visible lanes
+- Pan lane color: `#bf5af2` (purple), min/max: -100/100
+
+### 8. Multi-Band EQ Display (merged from studio-polish-features)
+
+**Component:** `src/components/VisualEQ.tsx`
+- Frequency response curve: 99-sample line graph from 20Hz to 20kHz
+- Blue (#5ac8fa) for positive gain, orange (#f97316) for negative
+- Spectrum analyzer background: HSL gradient bars with dynamic opacity
+- Draggable bands with real-time tooltip
+
+**Band frequency ranges:**
+| Band | Range |
+|------|-------|
+| Low | 20-200Hz |
+| Low-Mid | 200-800Hz |
+| Mid | 800-3kHz |
+| High-Mid | 3-8kHz |
+| High | 8-20kHz |
+
 ## Forbidden
 
 - Timeout-based resolve for audio loading (use error rejection instead)
@@ -60,4 +93,4 @@ Also add `error` event listener to catch load failures, and use Promise with rej
 
 ## How to apply
 
-When adding studio polish features: follow existing patterns, don't create new architecture, use `setTracks` for history-aware updates, and always append `<audio>` to DOM on web.
+When adding studio polish features: follow existing patterns, don't create new architecture, use `setTracks` for history-aware updates, and always append `<audio>` to DOM on web. Use subagents (`impl-dev`) for implementation. Each feature is independent.

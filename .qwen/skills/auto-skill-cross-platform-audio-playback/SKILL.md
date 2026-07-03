@@ -11,6 +11,19 @@ extracted_at: '2026-07-03T16:04:30.845Z'
 
 expo-audio doesn't handle blob URLs reliably on web. Native platforms need expo-audio for proper audio routing. The solution: a dual-path pattern that routes to the right player based on `Platform.OS`.
 
+### Web Audio HTML5 Fallback (merged from web-audio-html5-fallback)
+
+`expo-audio`'s web implementation doesn't reliably handle `blob:` URLs created by `OfflineAudioContext` → `audioBufferToWavBlob()` → `URL.createObjectURL()`. The `useWebAudioPlayer` hook wraps HTML5 `<audio>` element as fallback.
+
+**Key rule:** HTML5 `<audio>` element **must be appended to document.body** for reliable playback in all browsers. Without DOM attachment, `canplaythrough`/`loadeddata` events may never fire.
+
+```ts
+const audio = new Audio();
+audio.style.display = "none";
+document.body.appendChild(audio);
+// On cleanup: if (audio.parentNode) audio.parentNode.removeChild(audio);
+```
+
 ### Web vs Native Dual-Path Pattern
 
 Every playback surface follows the same structure:
@@ -121,6 +134,31 @@ else { await player.replace(url); await player.play(); }
 ```
 
 Key: revoke the original URL BEFORE assigning the new one. Track via ref for unmount cleanup.
+
+### P0: Playback System Fixes (merged from playback-system-fixes)
+
+**AudioContext Lifecycle:** Always use `try/finally` to guarantee cleanup:
+```ts
+const ctx = new AudioContext();
+try { /* process */ } finally { await ctx.close(); }
+```
+
+**Blob URL ordering:** Revoke BEFORE creating new URL:
+```ts
+URL.revokeObjectURL(url);  // revoke old first
+url = URL.createObjectURL(blob);  // then create new
+```
+
+**Pause/resume:** Don't reset `currentTime` to 0 on every play — only on first load:
+```ts
+if (hasLoadedRef.current) { await player.play(); return; }
+hasLoadedRef.current = true;
+```
+
+**Cleanup on unmount:** Always stop playback when component unmounts:
+```ts
+useEffect(() => () => { player.pause(); }, [player]);
+```
 
 ### Stem-to-Mastering Bridge
 

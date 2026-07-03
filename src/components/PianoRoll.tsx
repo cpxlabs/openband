@@ -12,6 +12,8 @@ interface PointerHandlerArgs {
   nativeEvent: { clientX: number; clientY: number; pageX: number; pageY: number };
 }
 
+type PointerEventHandler = (e: PointerHandlerArgs) => void;
+
 interface PianoRollProps {
   notes: MIDINote[];
   onChange: (notes: MIDINote[]) => void;
@@ -545,9 +547,9 @@ export function PianoRoll({
                 >
                   <View
                     ref={gridRef}
-                    onPointerDown={handlePointerDown as any}
-                    onPointerUp={handlePointerUp as any}
-                    onPointerMove={handlePointerMove as any}
+                    onPointerDown={handlePointerDown as PointerEventHandler}
+                    onPointerUp={handlePointerUp as PointerEventHandler}
+                    onPointerMove={handlePointerMove as PointerEventHandler}
                     onPointerCancel={() => {
                       if (holdTimer.current) clearTimeout(holdTimer.current);
                       holdTimer.current = null;

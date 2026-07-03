@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { VisualEQ } from "../src/components";
 import { View } from "react-native";
+import type { EqBand } from "../src/lib/types";
 
 const meta: Meta<typeof VisualEQ> = {
   title: "VisualEQ",
@@ -31,7 +32,7 @@ const defaultBands = [
 export const Default: Story = {
   args: {
     bands: defaultBands,
-    onChange: (index: number, params: any) =>
+    onChange: (index: number, params: Partial<EqBand>) =>
       console.log("Band", index, params),
     spectrum: Array.from({ length: 60 }, () => Math.random()),
     height: 140,

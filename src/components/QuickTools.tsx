@@ -49,7 +49,8 @@ export function QuickTools({ visible, onClose, testID }: QuickToolsProps) {
     }
     if (action.id === "new-project") {
       const projectId = `proj-${Date.now()}`;
-      router.push(`/studio/${projectId}?title=${encodeURIComponent("Novo Projeto")}&genre=pop&bpm=120&key=C` as any);
+      const route = `/studio/${projectId}?title=${encodeURIComponent("Novo Projeto")}&genre=pop&bpm=120&key=C` as `"/studio/${string}"`;
+      router.push(route);
       onClose();
       return;
     }
@@ -57,7 +58,7 @@ export function QuickTools({ visible, onClose, testID }: QuickToolsProps) {
       const params = action.params
         ? "?" + Object.entries(action.params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&")
         : "";
-      router.push(`${action.route}${params}` as any);
+      router.push(`${action.route}${params}` as `/studio/${string}` | `"/mastering"` | `"/extractor"`);
       onClose();
     }
   };

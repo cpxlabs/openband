@@ -40,7 +40,7 @@ export function QuickActions({ testID }: { testID?: string }) {
       const params = action.params
         ? "?" + Object.entries(action.params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&")
         : "";
-      router.push(`${action.route}${params}` as any);
+      router.push(`${action.route}${params}` as `/studio/${string}` | `"/mastering"` | `"/extractor"`);
     }
   };
 

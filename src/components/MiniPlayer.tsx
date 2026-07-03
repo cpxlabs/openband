@@ -4,6 +4,14 @@ import { useRouter } from "expo-router";
 import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
 import { useWebAudioPlayer } from "../hooks/useWebAudioPlayer";
 
+interface NativeTouchEvent {
+  nativeEvent: { pageX: number; pageY: number };
+}
+
+interface WebMouseEvent extends React.MouseEvent {
+  target: EventTarget & HTMLElement;
+}
+
 interface MiniPlayerState {
   title: string;
   subtitle: string;
@@ -71,10 +79,9 @@ export function MiniPlayer() {
     setIsDragging(true);
   }, []);
 
-  const handleResponderMove = useCallback((event: any) => {
+  const handleResponderMove = useCallback((event: NativeTouchEvent) => {
     if (!isDragging) return;
     const x = event.nativeEvent.pageX;
-    // The progress bar spans the full screen width (left-0 right-0)
     const containerWidth = typeof window !== "undefined" ? window.innerWidth : 300;
     calculateSeekPosition(Math.max(0, Math.min(containerWidth, x)), containerWidth);
   }, [isDragging, calculateSeekPosition]);
@@ -83,7 +90,7 @@ export function MiniPlayer() {
     setIsDragging(false);
   }, []);
 
-  const handleMouseMove = useCallback((event: any) => {
+  const handleMouseMove = useCallback((event: WebMouseEvent) => {
     if (!isDragging || !status.duration) return;
     const rect = (event.target as HTMLElement).getBoundingClientRect();
     const x = event.clientX - rect.left;
@@ -94,9 +101,10 @@ export function MiniPlayer() {
     setIsDragging(false);
   }, []);
 
-  const handleProgressPress = useCallback((e: any) => {
-    const x = (e as unknown as { nativeEvent: { offsetX: number } }).nativeEvent.offsetX;
-    if (x !== undefined && status.duration) {
+  const handleProgressPress = useCallback((e: import("react-native").GestureResponderEvent) => {
+    // RN web events don't have offsetX, so use the screen width as fallback
+    const x = typeof window !== "undefined" ? window.innerWidth / 2 : 150;
+    if (status.duration) {
       player.seekTo((x / 300) * status.duration);
     }
   }, [player, status.duration]);
@@ -148,7 +156,6 @@ export function MiniPlayer() {
         onResponderGrant={handleResponderGrant}
         onResponderMove={handleResponderMove}
         onResponderRelease={handleResponderRelease}
-        // @ts-expect-error web pointer events
         onMouseMove={Platform.OS === "web" ? handleMouseMove : undefined}
         onMouseUp={Platform.OS === "web" ? handleMouseUp : undefined}
       >

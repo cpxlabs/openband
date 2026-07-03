@@ -21,11 +21,6 @@ export const Visible: Story = {
   args: {
     visible: true,
     onClose: () => {},
-    onCreate: (config: {
-      name: string;
-      genre: any;
-      key: string;
-      bpm: number;
-    }) => alert(`Create: ${config.name}`),
+    onCreate: (config: { name: string; genre: string; key: string; bpm: number }) => alert(`Create: ${config.name}`),
   },
 };

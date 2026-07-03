@@ -95,7 +95,7 @@ export default function ExplorerScreen() {
 
       <View className="flex-1 relative bg-black">
         <iframe
-          ref={iframeRef as any}
+          ref={iframeRef as React.RefObject<HTMLIFrameElement>}
           srcDoc={srcDoc}
           title="3D Globe Explorer"
           className="w-full h-full border-0"

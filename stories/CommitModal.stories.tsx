@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { CommitModal } from "../src/components";
 import { View } from "react-native";
+import type { ProjectCommit } from "../src/lib/types";
 
 const meta: Meta<typeof CommitModal> = {
   title: "CommitModal",
@@ -21,7 +22,7 @@ export const Visible: Story = {
   args: {
     visible: true,
     onClose: () => alert("Close"),
-    onCommit: (commit: any) => console.log("Commit", commit),
-    onSync: (result: any) => console.log("Sync", result),
+    onCommit: (commit: ProjectCommit) => console.log("Commit", commit),
+    onSync: (result: { pushed: number; conflicts: number }) => console.log("Sync", result),
   },
 };
