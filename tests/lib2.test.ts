@@ -325,12 +325,12 @@ describe("generatePreviewUrl audio playback", () => {
 
   it("duration cap limits WAV to MAX_PREVIEW_DURATION samples", () => {
     const sr = 44100;
-    const cappedDuration = 10;
+    const cappedDuration = 3;
     const numSamples = Math.ceil(sr * cappedDuration);
     const bitDepth = 16;
     const dataSize = numSamples * 1 * (bitDepth / 8);
     const expectedSize = 44 + dataSize;
-    expect(numSamples).toBe(Math.ceil(sr * 10));
+    expect(numSamples).toBe(Math.ceil(sr * 3));
     expect(expectedSize).toBeLessThan(44 + sr * 180 * 2);
   });
 

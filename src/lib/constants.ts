@@ -76,11 +76,11 @@ export async function generatePreviewUrl(
   if (previewUrlCache.size >= MAX_CACHE_SIZE) {
     const firstKey = previewUrlCache.keys().next().value;
     if (firstKey !== undefined) {
-    const oldUrl = previewUrlCache.get(firstKey)
-    if (oldUrl !== undefined) {
-      URL.revokeObjectURL(oldUrl)
-      previewUrlCache.delete(firstKey)
-    }
+      const oldUrl = previewUrlCache.get(firstKey);
+      if (oldUrl !== undefined) {
+        URL.revokeObjectURL(oldUrl);
+        previewUrlCache.delete(firstKey);
+      }
     }
   }
   previewUrlCache.set(key, url);
