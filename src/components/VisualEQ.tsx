@@ -349,7 +349,6 @@ export function VisualEQ({
           {curvePathPoints.map((pt, i) => {
             if (i === 0) return null;
             const prev = curvePathPoints[i - 1];
-            const midY = (prev.y + pt.y) / 2;
             const fillBottom = h;
             return (
               <View
@@ -481,7 +480,6 @@ export function VisualEQ({
           const r = freqRanges[i];
           const xStart = freqToX(r.start, w);
           const xEnd = freqToX(r.end, w);
-          const center = (xStart + xEnd) / 2;
           return (
             <View
               key={i}
