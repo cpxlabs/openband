@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "dependencies": {
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.6.1",
     "@supabase/supabase-js": "^2.50.0",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.11.1",
@@ -26,7 +28,8 @@
     "react-native-screens": "~4.25.2",
     "react-native-url-polyfill": "^3.0.0",
     "react-native-web": "~0.21.0",
-    "tailwindcss": "^3.4.17"
+    "tailwindcss": "^3.4.17",
+    "three": "^0.160.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
@@ -42,6 +45,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^1.4.12",
     "@types/react": "~19.2.3",
+    "@types/three": "^0.185.0",
     "babel-preset-expo": "~56.0.15",
     "jsdom": "^29.1.1",
     "prettier-plugin-tailwindcss": "^0.5.11",
