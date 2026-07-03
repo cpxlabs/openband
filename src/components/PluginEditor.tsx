@@ -1,8 +1,17 @@
-import { useMemo } from "react";
+import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { View, Text, Pressable, ScrollView } from "react-native";
 import type { Plugin } from "../lib/types";
 import { PLUGIN_SPECS, PLUGIN_ICONS, EQ_BAND_LABELS } from "../lib/types";
 import { getOversampleLabel } from "../lib/mastering";
+import {
+  processMidiCC,
+  startLearning,
+  stopLearning,
+  clearMappings,
+  loadMappings,
+  isLearning,
+  type MidiLearnState,
+} from "../lib/midiLearn";
 
 interface PluginEditorProps {
   plugin: Plugin | null;
@@ -11,6 +20,7 @@ interface PluginEditorProps {
   onClose: () => void;
   bpm?: number;
   testID?: string;
+  trackId?: string;
 }
 
 function ParamRow({

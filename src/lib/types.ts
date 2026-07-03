@@ -569,27 +569,53 @@ export const PLUGIN_SPECS: Record<PluginType, PluginTypeSpec> = {
         default: 30,
         unit: "%",
       },
+      {
+        id: "shimmerPitch",
+        label: "Shimmer Pitch",
+        min: -12,
+        max: 12,
+        step: 1,
+        default: 0,
+        unit: "st",
+      },
+      {
+        id: "modulation",
+        label: "Modulation",
+        min: 0,
+        max: 100,
+        step: 1,
+        default: 0,
+        unit: "%",
+      },
     ],
     presets: [
       {
         name: "Hall",
-        values: { decay: 3.5, preDelay: 30, damping: 30, size: 70, mix: 30 },
+        values: { decay: 3.5, preDelay: 30, damping: 30, size: 70, mix: 30, shimmerPitch: 0, modulation: 0 },
       },
       {
         name: "Room",
-        values: { decay: 1.2, preDelay: 10, damping: 50, size: 40, mix: 25 },
+        values: { decay: 1.2, preDelay: 10, damping: 50, size: 40, mix: 25, shimmerPitch: 0, modulation: 0 },
       },
       {
         name: "Plate",
-        values: { decay: 2, preDelay: 5, damping: 20, size: 50, mix: 35 },
+        values: { decay: 2, preDelay: 5, damping: 20, size: 50, mix: 35, shimmerPitch: 0, modulation: 0 },
       },
       {
         name: "Spring",
-        values: { decay: 1.5, preDelay: 0, damping: 60, size: 30, mix: 20 },
+        values: { decay: 1.5, preDelay: 0, damping: 60, size: 30, mix: 20, shimmerPitch: 0, modulation: 0 },
       },
       {
         name: "Ambiente",
-        values: { decay: 0.8, preDelay: 5, damping: 70, size: 25, mix: 15 },
+        values: { decay: 0.8, preDelay: 5, damping: 70, size: 25, mix: 15, shimmerPitch: 0, modulation: 0 },
+      },
+      {
+        name: "Vocal Verb",
+        values: { decay: 1.8, preDelay: 20, damping: 45, size: 50, mix: 30, shimmerPitch: 0, modulation: 0 },
+      },
+      {
+        name: "Shimmer",
+        values: { decay: 4.0, preDelay: 25, damping: 20, size: 80, mix: 50, shimmerPitch: 12, modulation: 30 },
       },
     ],
   },
