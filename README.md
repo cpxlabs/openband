@@ -344,18 +344,66 @@ npm run desktop:dev       # Hot-reload dev (Expo + Electron concurrently)
 npx tsc --noEmit          # TypeScript check
 npx vitest run            # Run 283 component + lib tests
 cd backend && npm run dev # Backend dev server (port 3001)
+
+# Electron packaging (run from electron/ directory)
+cd electron && npm run build:electron  # Package for current platform
+cd electron && npm run build:linux     # Package Linux (AppImage + deb)
+cd electron && npm run build:mac       # Package macOS (DMG)
+cd electron && npm run build:win       # Package Windows (NSIS)
 ```
 
 ### Electron Desktop
 
+**Development:**
+
 ```bash
 cd electron
 npm install
-npm run start             # Launch Electron (loads dist/ or dev server)
-npm run build:linux       # Package Linux AppImage / deb
-npm run build:mac         # Package macOS DMG
-npm run build:win         # Package Windows NSIS installer
+cd ..
+npm run desktop:dev       # Hot-reload dev (Expo + Electron concurrently)
 ```
+
+**Building distributable packages:**
+
+```bash
+# 1. Build the web export bundle first
+npm run build
+
+# 2. Package for your current platform
+cd electron
+npm run build:electron
+```
+
+The packaged output lands in `electron/out/`.
+
+**Platform-specific builds:**
+
+| Platform      | Command                      | Output format                      |
+| ------------- | ---------------------------- | ---------------------------------- |
+| **Linux**     | `npm run build:linux`        | AppImage + `.deb` (Debian/Ubuntu)  |
+| **macOS**     | `npm run build:mac`          | `.dmg` installer                   |
+| **Windows**   | `npm run build:win`          | NSIS `.exe` installer              |
+| **All**       | `npm run build:electron`     | Current platform only              |
+
+**Prerequisites per platform:**
+
+| Platform    | Requirements                                                              |
+| ----------- | ------------------------------------------------------------------------- |
+| **Linux**   | `dpkg` (for `.deb`), `libfuse2` (for AppImage on some distros)            |
+| **macOS**   | Xcode Command Line Tools, valid code signing identity (optional for dev)  |
+| **Windows** | None — NSIS is bundled by electron-builder automatically                  |
+
+**Cross-platform builds:**
+
+To build for a different platform from your current machine, pass the `--` flag:
+
+```bash
+cd electron
+npx electron-builder --linux --win   # Linux + Windows from any OS
+npx electron-builder --mac           # macOS (macOS host required)
+```
+
+> **Note:** Cross-compiling macOS binaries requires a macOS host. Linux and Windows packages can be built from any platform.
 
 Project files are persisted to `~/Documents/OpenBand/projects/` on desktop.
 
