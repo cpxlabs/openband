@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { View, Text, Pressable } from "react-native";
 import { useRouter } from "expo-router";
-import { addSceneBulb } from "../src/lib/sceneLighting";
+import { addSceneBulb, addRGBStrip } from "../src/lib/sceneLighting";
+import LightControls from "../src/components/LightControls";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ThreeAny = any;
@@ -28,6 +29,7 @@ export default function VocalBooth() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [threeLoaded, setThreeLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const lightRef = useRef({ color: SPOTLIGHT_COLOR, intensity: 8 });
 
   useEffect(() => {
     if (typeof window === "undefined" || !containerRef.current) return;
@@ -87,15 +89,15 @@ export default function VocalBooth() {
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 0.9;
+      renderer.toneMappingExposure = 1.3;
       container.appendChild(renderer.domElement);
 
       // ── Lighting ─────────────────────────────────────────────
-      const ambientLight = new THREE.AmbientLight(0x1a1a2e, 0.3);
+      const ambientLight = new THREE.AmbientLight(0x404060, 0.8);
       scene.add(ambientLight);
 
       // Warm amber spotlight from above (key light)
-      const spotlight = new THREE.SpotLight(SPOTLIGHT_COLOR, 3, 15, Math.PI / 6, 0.5, 1);
+      const spotlight = new THREE.SpotLight(SPOTLIGHT_COLOR, 8, 20, Math.PI / 6, 0.5, 1);
       spotlight.position.set(0, ROOM_HEIGHT - 0.3, 0);
       spotlight.target.position.set(0, 1.2, 0);
       spotlight.castShadow = true;
@@ -106,16 +108,17 @@ export default function VocalBooth() {
       scene.add(spotlight.target);
 
       // Subtle fill light from behind
-      const fillLight = new THREE.PointLight(0x3b82f6, 0.3, 12);
+      const fillLight = new THREE.PointLight(0x3b82f6, 1.0, 15);
       fillLight.position.set(0, 3, -3);
       scene.add(fillLight);
 
       // Rim light for mic silhouette
-      const rimLight = new THREE.PointLight(SPOTLIGHT_COLOR, 0.6, 8);
+      const rimLight = new THREE.PointLight(SPOTLIGHT_COLOR, 1.5, 12);
       rimLight.position.set(-2, 4, 1);
       scene.add(rimLight);
 
       addSceneBulb(THREE, scene);
+      const { stripMat, dotMat } = addRGBStrip(THREE, scene, { color: SPOTLIGHT_COLOR });
 
       // ── Floor ────────────────────────────────────────────────
       const floor = new THREE.Mesh(
@@ -417,14 +420,20 @@ export default function VocalBooth() {
         animationId = requestAnimationFrame(animate);
 
         // Subtle spotlight flicker
-        spotlight.intensity = 3 + Math.sin(time * 0.001) * 0.15;
+        const lc = lightRef.current;
+        spotlight.color.setHex(lc.color);
+        spotlight.intensity = lc.intensity + Math.sin(time * 0.001) * (lc.intensity * 0.06);
+        rimLight.color.setHex(lc.color);
+        rimLight.intensity = lc.intensity * 0.18;
 
         // Pop filter subtle sway
         popFilter.rotation.z = Math.sin(time * 0.0008) * 0.03;
         popMesh.rotation.z = popFilter.rotation.z;
 
-        // Rim light pulse
-        rimLight.intensity = 0.6 + Math.sin(time * 0.0015) * 0.1;
+        // Strip sync
+        stripMat.color.setHex(lc.color);
+        stripMat.emissive.setHex(lc.color);
+        dotMat.color.setHex(lc.color);
 
         renderer.render(scene, camera);
       }
@@ -513,6 +522,7 @@ export default function VocalBooth() {
             </View>
           </View>
         )}
+        <LightControls ref={lightRef} defaultColor={SPOTLIGHT_COLOR} defaultIntensity={8} />
       </View>
     </View>
   );

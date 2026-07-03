@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { View, Text, Pressable } from "react-native";
 import { useRouter } from "expo-router";
-import { addSceneBulb } from "../src/lib/sceneLighting";
+import { addSceneBulb, addRGBStrip } from "../src/lib/sceneLighting";
+import LightControls from "../src/components/LightControls";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ThreeAny = any;
@@ -21,6 +22,7 @@ export default function DJStudio() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [threeLoaded, setThreeLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const lightRef = useRef({ color: ACCENT, intensity: 6 });
 
   useEffect(() => {
     if (typeof window === "undefined" || !containerRef.current) return;
@@ -73,19 +75,20 @@ export default function DJStudio() {
       container.appendChild(renderer.domElement);
 
       // Lighting
-      scene.add(new THREE.AmbientLight(0x303040, 0.5));
-      const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+      scene.add(new THREE.AmbientLight(0x505070, 1.0));
+      const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
       dirLight.position.set(5, 8, 5);
       dirLight.castShadow = true;
       scene.add(dirLight);
-      const accentLight = new THREE.PointLight(ACCENT, 3, 15);
+      const accentLight = new THREE.PointLight(ACCENT, 6, 20);
       accentLight.position.set(0, 4, -2);
       scene.add(accentLight);
-      const fillLight = new THREE.PointLight(0x3b82f6, 0.8, 12);
+      const fillLight = new THREE.PointLight(0x3b82f6, 1.5, 15);
       fillLight.position.set(-4, 3, -1);
       scene.add(fillLight);
 
       addSceneBulb(THREE, scene);
+      const { stripMat, dotMat } = addRGBStrip(THREE, scene, { color: ACCENT });
 
       // Floor
       const floorMat = new THREE.MeshStandardMaterial({ color: 0x111118, roughness: 0.85 });
@@ -279,7 +282,12 @@ export default function DJStudio() {
         }
 
         // Pulsing accent light
-        accentLight.intensity = 3 + Math.sin(time * 0.003) * 0.5;
+        const lc = lightRef.current;
+        accentLight.color.setHex(lc.color);
+        accentLight.intensity = lc.intensity + Math.sin(time * 0.003) * (lc.intensity * 0.15);
+        stripMat.color.setHex(lc.color);
+        stripMat.emissive.setHex(lc.color);
+        dotMat.color.setHex(lc.color);
 
         // Random VU meter animation
         scene.traverse((obj: ThreeAny) => {
@@ -351,6 +359,7 @@ export default function DJStudio() {
             </View>
           </View>
         )}
+        <LightControls ref={lightRef} defaultColor={ACCENT} defaultIntensity={6} />
       </View>
     </View>
   );

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { View, Text, Pressable } from "react-native";
 import { useRouter } from "expo-router";
-import { addSceneBulb } from "../src/lib/sceneLighting";
+import { addSceneBulb, addRGBStrip } from "../src/lib/sceneLighting";
+import LightControls from "../src/components/LightControls";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ThreeAny = any;
@@ -296,6 +297,7 @@ export default function MixingConsole() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [threeLoaded, setThreeLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const lightRef = useRef({ color: ACCENT, intensity: 1.5 });
 
   useEffect(() => {
     if (typeof window === "undefined" || !containerRef.current) return;
@@ -357,26 +359,27 @@ export default function MixingConsole() {
       container.appendChild(renderer.domElement);
 
       // Lighting
-      scene.add(new THREE.AmbientLight(0x202040, 0.6));
+      scene.add(new THREE.AmbientLight(0x404060, 1.2));
 
-      const keyLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      const keyLight = new THREE.DirectionalLight(0xffffff, 1.8);
       keyLight.position.set(3, 6, 4);
       scene.add(keyLight);
 
-      const fillLight = new THREE.PointLight(ACCENT, 0.5, 15);
+      const fillLight = new THREE.PointLight(ACCENT, 1.5, 18);
       fillLight.position.set(-4, 4, 2);
       scene.add(fillLight);
 
-      const rimLight = new THREE.PointLight(0x3b82f6, 0.4, 12);
+      const rimLight = new THREE.PointLight(0x3b82f6, 1.2, 15);
       rimLight.position.set(0, 3, -4);
       scene.add(rimLight);
 
       // Accent strip light along desk front edge
-      const stripLight = new THREE.PointLight(ACCENT, 0.3, 8);
+      const stripLight = new THREE.PointLight(ACCENT, 1.0, 12);
       stripLight.position.set(0, 0.5, 2);
       scene.add(stripLight);
 
       addSceneBulb(THREE, scene);
+      const { stripMat, dotMat } = addRGBStrip(THREE, scene, { color: ACCENT });
 
       // Floor
       const floorGeo = new THREE.PlaneGeometry(20, 20);
@@ -602,6 +605,15 @@ export default function MixingConsole() {
           }
         }
 
+        const lc = lightRef.current;
+        fillLight.color.setHex(lc.color);
+        fillLight.intensity = lc.intensity;
+        stripLight.color.setHex(lc.color);
+        stripLight.intensity = lc.intensity * 0.6;
+        stripMat.color.setHex(lc.color);
+        stripMat.emissive.setHex(lc.color);
+        dotMat.color.setHex(lc.color);
+
         renderer.render(scene, camera);
       }
 
@@ -684,6 +696,7 @@ export default function MixingConsole() {
             </View>
           </View>
         )}
+        <LightControls ref={lightRef} defaultColor={ACCENT} defaultIntensity={1.5} />
       </View>
     </View>
   );

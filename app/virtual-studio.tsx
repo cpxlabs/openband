@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { View, Text, Pressable } from "react-native";
 import { useRouter } from "expo-router";
-import { addSceneBulb } from "../src/lib/sceneLighting";
+import { addSceneBulb, addRGBStrip } from "../src/lib/sceneLighting";
+import LightControls from "../src/components/LightControls";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ThreeAny = any;
@@ -73,6 +74,7 @@ export default function VirtualStudio() {
   const [selectedFurniture, setSelectedFurniture] = useState<FurnitureDef | null>(null);
   const [threeLoaded, setThreeLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const lightRef = useRef({ color: 0x3b82f6, intensity: 6 });
 
   useEffect(() => {
     if (typeof window === "undefined" || !containerRef.current) return;
@@ -139,17 +141,18 @@ export default function VirtualStudio() {
       container.appendChild(renderer.domElement);
 
       // Lighting
-      scene.add(new THREE.AmbientLight(0x404060, 0.8));
+      scene.add(new THREE.AmbientLight(0x606080, 1.5));
 
-      const mainLight = new THREE.DirectionalLight(0xffffff, 1);
+      const mainLight = new THREE.DirectionalLight(0xffffff, 2.0);
       mainLight.position.set(5, 10, 5);
       scene.add(mainLight);
 
-      const fillLight = new THREE.PointLight(0x3b82f6, 0.4, 20);
+      const fillLight = new THREE.PointLight(0x3b82f6, 1.0, 20);
       fillLight.position.set(-5, 5, -5);
       scene.add(fillLight);
 
       addSceneBulb(THREE, scene);
+      const { stripMat, dotMat } = addRGBStrip(THREE, scene, { color: 0x3b82f6 });
 
       // Floor
       const floor = new THREE.Mesh(
@@ -294,6 +297,13 @@ export default function VirtualStudio() {
           furnitureMeshes[i].material.emissive = furnitureBaseColors[i].clone().multiplyScalar(pulse);
         }
 
+        const lc = lightRef.current;
+        fillLight.color.setHex(lc.color);
+        fillLight.intensity = lc.intensity * 0.3;
+        stripMat.color.setHex(lc.color);
+        stripMat.emissive.setHex(lc.color);
+        dotMat.color.setHex(lc.color);
+
         renderer.render(scene, camera);
       }
 
@@ -402,6 +412,7 @@ export default function VirtualStudio() {
             </View>
           </View>
         )}
+        <LightControls ref={lightRef} defaultColor={0x3b82f6} defaultIntensity={6} />
       </View>
     </View>
   );

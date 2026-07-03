@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { View, Text, Pressable } from "react-native";
 import { useRouter } from "expo-router";
-import { addSceneBulb } from "../src/lib/sceneLighting";
+import { addSceneBulb, addRGBStrip } from "../src/lib/sceneLighting";
+import LightControls from "../src/components/LightControls";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ThreeAny = any;
@@ -211,6 +212,7 @@ export default function SynthLab() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [threeLoaded, setThreeLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const lightRef = useRef({ color: ACCENT, intensity: 4 });
 
   useEffect(() => {
     if (typeof window === "undefined" || !containerRef.current) return;
@@ -272,27 +274,28 @@ export default function SynthLab() {
       container.appendChild(renderer.domElement);
 
       // Lighting
-      const ambient = new THREE.AmbientLight(0x303050, 0.6);
+      const ambient = new THREE.AmbientLight(0x505080, 1.2);
       scene.add(ambient);
 
-      const mainLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      const mainLight = new THREE.DirectionalLight(0xffffff, 1.8);
       mainLight.position.set(3, 8, 5);
       scene.add(mainLight);
 
       // Accent point lights (electric purple)
-      const accentLight1 = new THREE.PointLight(ACCENT, 1.5, 15);
+      const accentLight1 = new THREE.PointLight(ACCENT, 4.0, 20);
       accentLight1.position.set(-4, 5, 2);
       scene.add(accentLight1);
 
-      const accentLight2 = new THREE.PointLight(ACCENT, 1.0, 12);
+      const accentLight2 = new THREE.PointLight(ACCENT, 3.0, 18);
       accentLight2.position.set(4, 3, -2);
       scene.add(accentLight2);
 
-      const fillLight = new THREE.PointLight(0x3b82f6, 0.4, 10);
+      const fillLight = new THREE.PointLight(0x3b82f6, 1.0, 15);
       fillLight.position.set(0, 2, 6);
       scene.add(fillLight);
 
       addSceneBulb(THREE, scene);
+      const { stripMat, dotMat } = addRGBStrip(THREE, scene, { color: ACCENT });
 
       // Floor
       const floor = new THREE.Mesh(
@@ -427,8 +430,14 @@ export default function SynthLab() {
         });
 
         // Accent lights subtle pulse
-        accentLight1.intensity = 1.5 + Math.sin(time * 0.002) * 0.3;
-        accentLight2.intensity = 1.0 + Math.sin(time * 0.002 + Math.PI) * 0.2;
+        const lc = lightRef.current;
+        accentLight1.color.setHex(lc.color);
+        accentLight1.intensity = lc.intensity + Math.sin(time * 0.002) * (lc.intensity * 0.2);
+        accentLight2.color.setHex(lc.color);
+        accentLight2.intensity = lc.intensity * 0.7 + Math.sin(time * 0.002 + Math.PI) * (lc.intensity * 0.15);
+        stripMat.color.setHex(lc.color);
+        stripMat.emissive.setHex(lc.color);
+        dotMat.color.setHex(lc.color);
 
         renderer.render(scene, camera);
       }
@@ -514,6 +523,7 @@ export default function SynthLab() {
             </View>
           </View>
         )}
+        <LightControls ref={lightRef} defaultColor={ACCENT} defaultIntensity={4} />
       </View>
     </View>
   );

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { View, Text, Pressable } from "react-native";
 import { useRouter } from "expo-router";
-import { addSceneBulb } from "../src/lib/sceneLighting";
+import { addSceneBulb, addRGBStrip } from "../src/lib/sceneLighting";
+import LightControls from "../src/components/LightControls";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ThreeAny = any;
@@ -22,6 +23,7 @@ export default function BeatmakerStudio() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [threeLoaded, setThreeLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const lightRef = useRef({ color: ACCENT, intensity: 5 });
 
   useEffect(() => {
     if (typeof window === "undefined" || !containerRef.current) return;
@@ -83,10 +85,10 @@ export default function BeatmakerStudio() {
       container.appendChild(renderer.domElement);
 
       // --- Lighting ---
-      const ambientLight = new THREE.AmbientLight(0x404060, 0.5);
+      const ambientLight = new THREE.AmbientLight(0x606080, 1.0);
       scene.add(ambientLight);
 
-      const mainLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      const mainLight = new THREE.DirectionalLight(0xffffff, 1.8);
       mainLight.position.set(3, 8, 4);
       mainLight.castShadow = true;
       mainLight.shadow.mapSize.width = 1024;
@@ -99,15 +101,16 @@ export default function BeatmakerStudio() {
       mainLight.shadow.camera.bottom = -10;
       scene.add(mainLight);
 
-      const accentLight = new THREE.PointLight(ACCENT, 2, 20);
+      const accentLight = new THREE.PointLight(ACCENT, 5, 20);
       accentLight.position.set(0, 4, -3);
       scene.add(accentLight);
 
-      const fillLight = new THREE.PointLight(0x3b82f6, 0.5, 15);
+      const fillLight = new THREE.PointLight(0x3b82f6, 1.2, 15);
       fillLight.position.set(-5, 3, 3);
       scene.add(fillLight);
 
       addSceneBulb(THREE, scene);
+      const { stripMat, dotMat } = addRGBStrip(THREE, scene, { color: ACCENT });
 
       // --- Floor ---
       const floorMat = new THREE.MeshStandardMaterial({
@@ -358,7 +361,12 @@ export default function BeatmakerStudio() {
         }
 
         // Accent light pulse
-        accentLight.intensity = 1.5 + Math.sin(time * 0.004) * 0.5;
+        const lc = lightRef.current;
+        accentLight.color.setHex(lc.color);
+        accentLight.intensity = lc.intensity + Math.sin(time * 0.004) * (lc.intensity * 0.2);
+        stripMat.color.setHex(lc.color);
+        stripMat.emissive.setHex(lc.color);
+        dotMat.color.setHex(lc.color);
 
         renderer.render(scene, camera);
       }
@@ -443,6 +451,7 @@ export default function BeatmakerStudio() {
             </View>
           </View>
         )}
+        <LightControls ref={lightRef} defaultColor={ACCENT} defaultIntensity={5} />
       </View>
     </View>
   );

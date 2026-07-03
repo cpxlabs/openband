@@ -17,10 +17,10 @@ export function addSceneBulb(
     x = 0,
     y = 4.8,
     z = 0,
-    intensity = 2.4,
+    intensity = 6.0,
     color = 0xfff1c1,
     bulbColor = 0xfff5d6,
-    distance = 18,
+    distance = 30,
   } = options;
 
   const group = new THREE.Group();
@@ -45,7 +45,7 @@ export function addSceneBulb(
     new THREE.MeshStandardMaterial({
       color: bulbColor,
       emissive: color,
-      emissiveIntensity: 1.8,
+      emissiveIntensity: 3.5,
       roughness: 0.15,
       metalness: 0.05,
     }),
@@ -55,7 +55,7 @@ export function addSceneBulb(
 
   const halo = new THREE.Mesh(
     new THREE.SphereGeometry(0.32, 16, 12),
-    new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.16 }),
+    new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.35 }),
   );
   halo.position.y = -0.62;
   group.add(halo);
@@ -66,4 +66,39 @@ export function addSceneBulb(
 
   scene.add(group);
   return group;
+}
+
+export function addRGBStrip(
+  THREE: ThreeAny,
+  scene: ThreeAny,
+  options: {
+    x?: number;
+    y?: number;
+    z?: number;
+    length?: number;
+    color?: number;
+  } = {},
+) {
+  const { x = 0, y = 0.02, z = -5.5, length = 14, color = 0x00e5ff } = options;
+
+  const stripMat = new THREE.MeshStandardMaterial({
+    color,
+    emissive: color,
+    emissiveIntensity: 2.0,
+    roughness: 0.2,
+  });
+
+  const strip = new THREE.Mesh(new THREE.BoxGeometry(length, 0.015, 0.04), stripMat);
+  strip.position.set(x, y, z);
+  scene.add(strip);
+
+  const dotMat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.7 });
+  const dotCount = Math.floor(length * 2.5);
+  for (let i = 0; i < dotCount; i++) {
+    const dot = new THREE.Mesh(new THREE.SphereGeometry(0.025, 6, 6), dotMat);
+    dot.position.set(-length / 2 + i * (length / dotCount), y + 0.012, z + 0.025);
+    scene.add(dot);
+  }
+
+  return { stripMat, dotMat };
 }
