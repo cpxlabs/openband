@@ -7,7 +7,11 @@ dist/
 .secrets/
 backend/.venv/
 .env
+backend/.env
 backend/package-lock.json
+backend/data/*.sqlite
+backend/data/*.sqlite-wal
+backend/data/*.sqlite-shm
 uploads/
 stems/
 .vercel

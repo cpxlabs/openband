@@ -11,7 +11,8 @@ Built with **Expo Router**, **TypeScript**, **NativeWind v4 (Tailwind CSS v3)**,
 | Framework        | [Expo SDK 56](https://docs.expo.dev/versions/v56.0.0/) + [Expo Router](https://expo.github.io/router/) |
 | Styling          | [NativeWind v4](https://www.nativewind.dev/) + Tailwind CSS v3                                         |
 | Language         | TypeScript ~6.0                                                                                        |
-| Auth / DB        | [Supabase](https://supabase.com/) (PostgreSQL + Auth)                                                  |
+| Auth / DB (dev)  | [SQLite](https://sqlite.org/) via `better-sqlite3` — zero-config local database                       |
+| Auth / DB (prod) | [Supabase](https://supabase.com/) (PostgreSQL + Auth)                                                  |
 | Audio            | [`expo-audio`](https://docs.expo.dev/versions/v56.0.0/sdk/audio/) (SDK 56)                             |
 | Audio Processing | [Demucs](https://github.com/facebookresearch/demucs) (HTDEMUCS model) via Python subprocess            |
 | Desktop          | [Electron 35](https://www.electronjs.org/) with swappable bridge (`src/bridge/`)                       |
@@ -49,13 +50,28 @@ pip install demucs==4.0.1
 
 If Demucs isn't installed, the backend falls back to mock WAV generation.
 
-### 4. Configure Supabase
+### 4. Configure database (SQLite by default)
 
-Copy `.env.example` to `.env` and fill in your project credentials:
+The backend uses **SQLite** as the default development database — zero configuration needed:
 
 ```bash
-cp .env.example .env
+cd backend
+npm run dev
 ```
+
+This auto-creates `backend/data/openband.sqlite` with the full schema on first run.
+
+See **[docs/sqlite.md](docs/sqlite.md)** for SQLite management, inspection, and reset.
+
+### 4b. (Optional) Configure Supabase for production
+
+When ready to deploy with a real multi-user database:
+
+```bash
+cp backend/.env.example backend/.env
+```
+
+Fill in your Supabase credentials in `backend/.env` and set `DATABASE_MODE=supabase`.
 
 Run `supabase/schema.sql` in your Supabase SQL editor.
 
@@ -430,6 +446,8 @@ The bridge auto-detects Electron, Tauri (future), or browser — swap the backen
 
 ## Environment Variables
 
+### Frontend (`.env` at project root)
+
 ```env
 EXPO_PUBLIC_SUPABASE_URL=https://seu-projeto.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=sua-chave-anonima-aqui
@@ -437,3 +455,17 @@ EXPO_PUBLIC_API_URL=http://localhost:3001
 ```
 
 No `.env` required for development — the app falls back to a mock auth client.
+
+### Backend (`backend/.env`)
+
+```env
+DATABASE_MODE=sqlite              # sqlite (dev) or supabase (prod)
+SQLITE_DB_PATH=data/openband.sqlite
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-key
+JWT_SECRET=your-jwt-secret
+GOOGLE_CLIENT_ID=your-google-client-id
+PORT=3001
+```
+
+See **[docs/sqlite.md](docs/sqlite.md)** for full database configuration details.

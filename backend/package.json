@@ -9,7 +9,9 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.5",
+    "@types/better-sqlite3": "^7.6.13",
     "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^12.11.1",
     "cors": "^2.8.5",
     "express": "^4.21.0",
     "google-auth-library": "^10.9.0",
