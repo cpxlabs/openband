@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { View, Text, Pressable, ScrollView, Alert } from "react-native";
+import { View, Text, Pressable, ScrollView, Alert, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
 import {
@@ -12,7 +12,9 @@ import {
 import { DEMO_AUDIO_URL, SCREEN_BOTTOM_PADDING } from "../src/lib/constants";
 import { LAYOUT_MAX_WIDTHS } from "../src/lib/responsive";
 import { saveProject } from "../src/lib/projectStore";
+import { setMasteringInput } from "../src/lib/masteringBridge";
 import type { TrackDef, TrackRegion } from "../src/lib/types";
+import { useWebAudioPlayer } from "../src/hooks/useWebAudioPlayer";
 
 type StemType = "drums" | "bass" | "vocals" | "other";
 
@@ -55,8 +57,16 @@ function StemPlayer({
   stem: StemResult;
   onAddToProject: () => void;
 }) {
-  const player = useAudioPlayer(stem.url);
-  const status = useAudioPlayerStatus(player);
+  const isWeb = Platform.OS === "web";
+  const webPlayer = useWebAudioPlayer();
+  const expoPlayer = useAudioPlayer(stem.url);
+  const expoStatus = useAudioPlayerStatus(expoPlayer);
+
+  const status = isWeb
+    ? { playing: webPlayer.isPlaying, currentTime: webPlayer.currentTime, duration: webPlayer.duration }
+    : expoStatus;
+  const player = isWeb ? webPlayer : expoPlayer;
+
   const meta = STEM_META[stem.type];
 
   return (
@@ -89,7 +99,18 @@ function StemPlayer({
 
         <View className="gap-2">
           <Pressable
-            onPress={() => (status.playing ? player.pause() : player.play())}
+            onPress={async () => {
+              if (status.playing) {
+                player.pause();
+              } else {
+                if (isWeb) {
+                  await webPlayer.replace(stem.url);
+                  await webPlayer.play();
+                } else {
+                  expoPlayer.play();
+                }
+              }
+            }}
             className={`w-10 h-10 rounded-full items-center justify-center ${
               status.playing
                 ? "bg-green-600"
@@ -538,6 +559,19 @@ export default function Extractor() {
                 onPress={() =>
                   Alert.alert("Exportação", "Exportação iniciada (demo)")
                 }
+              />
+              <Button
+                title="Masterizar stems"
+                variant="secondary"
+                icon="🎚"
+                onPress={() => {
+                  setMasteringInput({
+                    url: results[0]?.url || "",
+                    filename: "stem_mix",
+                    stems: results.map((s) => ({ name: s.label, url: s.url })),
+                  });
+                  router.push("/mastering");
+                }}
               />
             </View>
           </View>
