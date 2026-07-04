@@ -54,10 +54,11 @@ function startServer() {
   });
 }
 
-async function takeScreenshots() {
-  const server = await startServer();
-  const browser = await chromium.launch({ headless: true });
+function routeToFilename(route) {
+  return route.replace(/^\//, "").replace(/\//g, "-") || "index";
+}
 
+async function captureRoutes(browser, routes) {
   const page = await browser.newPage({
     viewport: { width: 1440, height: 900 },
   });
@@ -67,41 +68,40 @@ async function takeScreenshots() {
   });
   page.on("pageerror", (err) => console.log("  [page error]", err.message));
 
+  await page.goto(BASE, { waitUntil: "domcontentloaded" });
+  await page.evaluate(() => {
+    localStorage.setItem(
+      "openband_visitor_session",
+      JSON.stringify({
+        id: "00000000-0000-4000-8000-000000000001",
+        createdAt: new Date().toISOString(),
+      }),
+    );
+  });
+
+  for (const route of routes) {
+    const filename = routeToFilename(route);
+    console.log(`\nNavigating to ${route}...`);
+    await page.goto(`${BASE}${route}`, { waitUntil: "networkidle", timeout: 30000 });
+    await page.waitForTimeout(3000);
+
+    await page.screenshot({
+      path: join(OUT, `${filename}.png`),
+      fullPage: false,
+    });
+    console.log(`  ✓ ${filename}.png saved`);
+  }
+}
+
+async function takeScreenshots() {
+  const server = await startServer();
+  const browser = await chromium.launch({ headless: true });
+
+  const args = process.argv.slice(2);
+  const routes = args.length > 0 ? args : ["/tabs", "/mastering"];
+
   try {
-    // Set visitor session in localStorage before any navigation
-    await page.goto(BASE, { waitUntil: "domcontentloaded" });
-    await page.evaluate(() => {
-      localStorage.setItem(
-        "openband_visitor_session",
-        JSON.stringify({
-          id: "00000000-0000-4000-8000-000000000001",
-          createdAt: new Date().toISOString(),
-        }),
-      );
-    });
-
-    // --- Feed / Tabs ---
-    console.log("\nNavigating to Feed...");
-    await page.goto(`${BASE}/tabs`, { waitUntil: "networkidle", timeout: 30000 });
-    await page.waitForTimeout(3000);
-
-    await page.screenshot({
-      path: join(OUT, "feed.png"),
-      fullPage: false,
-    });
-    console.log("  ✓ feed.png saved");
-
-    // --- Mastering Suite ---
-    console.log("\nNavigating to Mastering Suite...");
-    await page.goto(`${BASE}/mastering`, { waitUntil: "networkidle", timeout: 30000 });
-    await page.waitForTimeout(3000);
-
-    await page.screenshot({
-      path: join(OUT, "mastering-suite.png"),
-      fullPage: false,
-    });
-    console.log("  ✓ mastering-suite.png saved");
-
+    await captureRoutes(browser, routes);
   } finally {
     await browser.close();
     server.close();
