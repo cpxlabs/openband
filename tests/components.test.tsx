@@ -1064,7 +1064,7 @@ describe("Sidebar", () => {
   it("renders nav items", () => {
     render(
       <Sidebar
-        currentRoute="index"
+        currentRoute="feed"
         onNavigate={() => {}}
         isOpen={true}
         onClose={() => {}}
@@ -1092,7 +1092,7 @@ describe("Sidebar", () => {
     const fn = vi.fn();
     render(
       <Sidebar
-        currentRoute="index"
+        currentRoute="feed"
         onNavigate={fn}
         isOpen={true}
         onClose={() => {}}
@@ -1106,7 +1106,7 @@ describe("Sidebar", () => {
   it("renders nothing when not open and not persistent", () => {
     const { container } = render(
       <Sidebar
-        currentRoute="index"
+        currentRoute="feed"
         onNavigate={() => {}}
         isOpen={false}
         onClose={() => {}}
@@ -1153,7 +1153,7 @@ describe("Sidebar", () => {
     const fn = vi.fn();
     render(
       <Sidebar
-        currentRoute="index"
+        currentRoute="feed"
         onNavigate={fn}
         isOpen={true}
         onClose={() => {}}

@@ -87,44 +87,72 @@ function parseArgs() {
   return { mode, maxHeight, routes: routes.length > 0 ? routes : ["/tabs", "/mastering"] };
 }
 
-async function expandPage(h) {
-  const html = document.documentElement;
-  const body = document.body;
-  html.style.overflow = "visible";
-  html.style.maxHeight = `${h}px`;
-  body.style.overflow = "visible";
-  body.style.maxHeight = `${h}px`;
-  body.style.height = "auto";
-
-  const all = document.querySelectorAll("*");
-  for (let i = 0; i < all.length; i++) {
-    const el = all[i];
-    if (!(el instanceof HTMLElement)) continue;
-    const cs = getComputedStyle(el);
-    if (
-      cs.overflow === "auto" || cs.overflow === "scroll" ||
-      cs.overflowX === "auto" || cs.overflowX === "scroll" ||
-      cs.overflowY === "auto" || cs.overflowY === "scroll"
-    ) {
-      el.style.overflow = "visible";
-      el.style.overflowX = "visible";
-      el.style.overflowY = "visible";
-      el.style.maxHeight = "none";
-      el.style.height = "auto";
-      el.style.flex = "none";
+async function getContentHeight(page, maxHeight) {
+  return page.evaluate((h) => {
+    document.documentElement.style.overflow = "visible";
+    document.documentElement.style.height = "auto";
+    document.body.style.overflow = "visible";
+    document.body.style.height = "auto";
+    const root = document.getElementById("root");
+    if (root) {
+      root.style.height = "auto";
+      root.style.flex = "none";
+      root.style.minHeight = "auto";
     }
-  }
+
+    // 1. Measure the bottom-most element bounding rect
+    let maxBottom = 0;
+    const all = document.querySelectorAll("*");
+    for (let i = 0; i < all.length; i++) {
+      const el = all[i];
+      if (!(el instanceof HTMLElement)) continue;
+      const r = el.getBoundingClientRect();
+      const b = r.top + r.height;
+      if (b > maxBottom) maxBottom = b;
+    }
+
+    // 2. Account for scroll containers whose content is clipped
+    //    (RNW ScrollViews have fixed height + overflow — getBoundingClientRect
+    //     only measures the visible rect, not the scrollable content underneath)
+    let maxContentBottom = maxBottom;
+    for (let i = 0; i < all.length; i++) {
+      const el = all[i];
+      if (!(el instanceof HTMLElement)) continue;
+      if (el.scrollHeight > el.clientHeight + 2) {
+        const rect = el.getBoundingClientRect();
+        const containerBottom = rect.top + el.clientHeight;
+        const hiddenOverflow = el.scrollHeight - el.clientHeight;
+        const contentBottom = containerBottom + hiddenOverflow;
+        if (contentBottom > maxContentBottom) maxContentBottom = contentBottom;
+      }
+    }
+
+    return Math.min(Math.ceil(maxContentBottom), h);
+  }, maxHeight);
 }
 
 async function captureFullPage(page, route, maxHeight = 10000) {
   const filename = routeToFilename(route);
-  await page.evaluate(expandPage, maxHeight);
-  await page.waitForTimeout(800);
+
+  await page.goto(`${BASE}${route}`, { waitUntil: "networkidle", timeout: 30000 });
+  await page.waitForTimeout(3000);
+
+  // Wait for actual UI content to render — not just spinners
+  try {
+    await page.waitForSelector("text=Mastering Suite", { timeout: 5000 }).catch(() => {});
+    await page.waitForSelector("text=OpenBand", { timeout: 5000 }).catch(() => {});
+  } catch {}
+
+  // Measure actual content height and resize viewport to fit
+  const contentHeight = await getContentHeight(page, maxHeight);
+  await page.setViewportSize({ width: 1440, height: contentHeight });
+  await page.waitForTimeout(500);
+
   await page.screenshot({
     path: join(OUT, `${filename}.png`),
-    fullPage: true,
+    fullPage: false,
   });
-  console.log(`  ✓ ${filename}.png (full page, max ${maxHeight}px)`);
+  console.log(`  ✓ ${filename}.png (${1440}x${contentHeight}, max ${maxHeight}px)`);
 }
 
 async function captureViewport(page, route) {
@@ -165,8 +193,8 @@ async function captureRoutes(browser, mode, maxHeight, routes) {
   });
   page.on("pageerror", (err) => console.log("  [page error]", err.message));
 
-  await page.goto(BASE, { waitUntil: "domcontentloaded" });
-  await page.evaluate(() => {
+  // Set visitor session before any SPA JavaScript runs
+  await page.addInitScript(() => {
     localStorage.setItem(
       "openband_visitor_session",
       JSON.stringify({

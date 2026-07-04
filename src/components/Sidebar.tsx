@@ -2,7 +2,7 @@ import { useState } from "react";
 import { View, Text, Pressable, ScrollView, Image } from "react-native";
 
 const NAV_ITEMS = [
-  { key: "index", label: "Feed", icon: "♫" },
+  { key: "feed", label: "Feed", icon: "♫" },
   { key: "moments", label: "Momentos", icon: "♡" },
   { key: "library", label: "Biblioteca", icon: "☰" },
   {

@@ -42,6 +42,7 @@ export default function TabLayout() {
   const currentSegment = lastSegment === "tabs" ? "index" : lastSegment
   const routeNameMap: Record<string, string> = {
     index: "Feed",
+    feed: "Feed",
     moments: "Momentos",
     library: "Biblioteca",
     account: "Conta",
@@ -62,7 +63,7 @@ export default function TabLayout() {
       return;
     }
     // "index" maps to /tabs (canonical URL), not /tabs/index
-    const target = route === "index" ? "/tabs" : `/tabs/${route}`;
+    const target = route === "index" ? "/tabs/feed" : `/tabs/${route}`;
     router.replace(target as Href);
     setDrawerOpen(false);
   }, [currentSegment, router]);

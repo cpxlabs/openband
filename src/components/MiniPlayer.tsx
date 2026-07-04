@@ -161,7 +161,7 @@ export function MiniPlayer() {
 
   const openProject = useCallback(() => {
     if (state.projectId) router.push(`/studio/${state.projectId}`);
-    else router.push("/tabs");
+    else router.push("/tabs/feed");
   }, [state.projectId]);
 
   if (!state.visible || !state.url) return null;
