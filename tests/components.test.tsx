@@ -1103,6 +1103,21 @@ describe("Sidebar", () => {
     expect(fn).toHaveBeenCalledWith("library");
   });
 
+  it("calls onNavigate with feed when Feed item pressed", () => {
+    const fn = vi.fn();
+    render(
+      <Sidebar
+        currentRoute="feed"
+        onNavigate={fn}
+        isOpen={true}
+        onClose={() => {}}
+        isPersistent={true}
+      />,
+    );
+    fireEvent.click(screen.getByText("Feed"));
+    expect(fn).toHaveBeenCalledWith("feed");
+  });
+
   it("renders nothing when not open and not persistent", () => {
     const { container } = render(
       <Sidebar

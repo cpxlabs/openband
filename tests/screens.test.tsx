@@ -4,6 +4,7 @@ import Extractor from "../app/extractor";
 import Settings from "../app/tabs/settings";
 import Account from "../app/tabs/account";
 import MasteringScreen from "../app/mastering/index";
+import FeedRoute from "../app/tabs/feed";
 
 const {
   mockResponsiveFn,
@@ -309,6 +310,13 @@ describe("Account Screen", () => {
     render(<Account />);
     expect(screen.getByText("Conta")).toBeTruthy();
     expect(screen.getByText("Sair")).toBeTruthy();
+  });
+});
+
+describe("Feed Route Alias", () => {
+  it("app/tabs/feed re-exports the Feed component", () => {
+    expect(FeedRoute).toBeDefined();
+    expect(typeof FeedRoute).toBe("function");
   });
 });
 
