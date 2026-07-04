@@ -57,7 +57,8 @@ function startServer() {
 }
 
 function routeToFilename(route) {
-  return route.replace(/^\//, "").replace(/\//g, "-") || "index";
+  const path = route.split("?")[0].split("#")[0];
+  return path.replace(/^\//, "").replace(/\//g, "-") || "index";
 }
 
 function parseArgs() {
