@@ -37,9 +37,9 @@ const FURNITURE: FurnitureDef[] = [
 ];
 
 const THREE_CDNS = [
-  "https://unpkg.com/three@0.160.0/build/three.min.js",
-  "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js",
-  "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js",
+  "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.js",
+  "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
 ];
 const GRID_SIZE = 16;
 const FLOOR_COLOR = 0x1e293b;
@@ -83,19 +83,11 @@ export default function VirtualStudio() {
     let animationId = 0;
 
     async function loadThree(): Promise<ThreeAny> {
-      const existing = ((window as unknown) as Record<string, unknown>).THREE as ThreeAny;
-      if (existing) return existing;
 
       for (const url of THREE_CDNS) {
         try {
-          const three = await new Promise<ThreeAny>((resolve, reject) => {
-            const script = document.createElement("script");
-            script.src = url;
-            script.onload = () => resolve(((window as unknown) as Record<string, unknown>).THREE as ThreeAny);
-            script.onerror = () => reject(new Error(`Failed to load Three.js from ${url}`));
-            document.head.appendChild(script);
-          });
-          return three;
+          const mod = await new Function('url', 'return import(url)')(url);
+          return mod;
         } catch {
           continue;
         }
