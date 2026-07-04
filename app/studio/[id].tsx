@@ -2612,6 +2612,9 @@ export default function Studio() {
                     url: urls[0].url,
                     filename: `${projectTitle}-stems`,
                     stems: urls,
+                    bpm: initialBpm,
+                    key: projectKey,
+                    timeSignature: projectTimeSig,
                   });
                 } else {
                   try {
@@ -2621,6 +2624,9 @@ export default function Studio() {
                         url,
                         filename: projectTitle,
                         stems: tracks.map((t) => ({ name: t.name, url })),
+                        bpm: initialBpm,
+                        key: projectKey,
+                        timeSignature: projectTimeSig,
                       });
                     }
                   } catch (e) {

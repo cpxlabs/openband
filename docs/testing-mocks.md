@@ -115,6 +115,33 @@ vi.mock("../src/lib/masteringSuite", () => ({
   createVersion: vi.fn(),
   MasteringInput: class {},
   MasteringSession: class {},
+  formatSampleRate: (r: number) => `${(r / 1000).toFixed(1)}kHz`,
+}));
+
+### MasteringInput Metadata Fields
+
+The `MasteringInput` type now carries project metadata for timing/key preservation:
+
+```ts
+export interface MasteringInput {
+  // ... existing fields
+  bpm?: number;           // project tempo (e.g. 128)
+  key?: string;           // musical key (e.g. "Am")
+  timeSignature?: string; // time signature (e.g. "4/4")
+}
+```
+
+When testing components that display these fields, mock the bridge to return metadata:
+
+```ts
+vi.mock("../src/lib/masteringBridge", () => ({
+  takeMasteringInput: () => ({
+    url: "blob:test",
+    filename: "test-mix",
+    bpm: 128,
+    key: "Am",
+    timeSignature: "4/4",
+  }),
 }));
 ```
 

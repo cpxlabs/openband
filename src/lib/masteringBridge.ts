@@ -7,6 +7,9 @@ interface PendingMasteringData {
   url: string;
   filename: string;
   stems?: StemInput[];
+  bpm?: number;
+  key?: string;
+  timeSignature?: string;
 }
 
 let _pending: PendingMasteringData | null = null;

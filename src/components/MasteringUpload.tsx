@@ -75,7 +75,7 @@ export function MasteringUpload({
               <Text className="text-white text-xs font-semibold">
                 {input.filename}
               </Text>
-              <View className="flex-row gap-3 mt-1">
+              <View className="flex-row gap-3 mt-1 flex-wrap">
                 <Text className="text-gray-500 text-[9px]">
                   {formatSampleRate(input.sampleRate)}
                 </Text>
@@ -85,6 +85,15 @@ export function MasteringUpload({
                 <Text className="text-gray-500 text-[9px]">
                   {formatFileSize(input.size)}
                 </Text>
+                {input.bpm ? (
+                  <Text className="text-gray-500 text-[9px]">{input.bpm} BPM</Text>
+                ) : null}
+                {input.key ? (
+                  <Text className="text-gray-500 text-[9px]">Key: {input.key}</Text>
+                ) : null}
+                {input.timeSignature ? (
+                  <Text className="text-gray-500 text-[9px]">{input.timeSignature}</Text>
+                ) : null}
               </View>
               {mode === "stems" && input.stems ? (
                 <View className="flex-row gap-2 mt-1.5 flex-wrap">

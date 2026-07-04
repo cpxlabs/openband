@@ -19,6 +19,7 @@ import {
   formatSampleRate,
 } from "../src/lib/masteringSuite";
 import "../src/lib/types";
+import { setMasteringInput, takeMasteringInput } from "../src/lib/masteringBridge";
 
 const mockAudioCtx = {
   createOscillator: vi.fn(() => ({
@@ -759,6 +760,63 @@ describe("masteringSuite.ts", () => {
   it("formatSampleRate returns kHz string", () => {
     expect(formatSampleRate(44100)).toBe("44.1kHz");
     expect(formatSampleRate(96000)).toBe("96.0kHz");
+  });
+});
+
+describe("masteringBridge.ts", () => {
+  beforeEach(() => {
+    takeMasteringInput();
+  });
+
+  it("setMasteringInput stores data with bpm/key/timeSignature", () => {
+    setMasteringInput({
+      url: "test-url",
+      filename: "test-mix",
+      bpm: 128,
+      key: "Am",
+      timeSignature: "4/4",
+      stems: [
+        { name: "Drums", url: "drums-url" },
+        { name: "Bass", url: "bass-url" },
+      ],
+    });
+    const result = takeMasteringInput();
+    expect(result).not.toBeNull();
+    expect(result!.bpm).toBe(128);
+    expect(result!.key).toBe("Am");
+    expect(result!.timeSignature).toBe("4/4");
+    expect(result!.filename).toBe("test-mix");
+    expect(result!.stems).toHaveLength(2);
+  });
+
+  it("setMasteringInput stores data without optional fields", () => {
+    setMasteringInput({
+      url: "test-url",
+      filename: "test-mix",
+    });
+    const result = takeMasteringInput();
+    expect(result).not.toBeNull();
+    expect(result!.bpm).toBeUndefined();
+    expect(result!.key).toBeUndefined();
+    expect(result!.timeSignature).toBeUndefined();
+    expect(result!.stems).toBeUndefined();
+  });
+
+  it("takeMasteringInput clears pending data", () => {
+    setMasteringInput({
+      url: "test-url",
+      filename: "test-mix",
+      bpm: 120,
+    });
+    const first = takeMasteringInput();
+    expect(first!.bpm).toBe(120);
+    const second = takeMasteringInput();
+    expect(second).toBeNull();
+  });
+
+  it("takeMasteringInput returns null when no data set", () => {
+    const result = takeMasteringInput();
+    expect(result).toBeNull();
   });
 });
 

@@ -25,6 +25,9 @@ export interface MasteringInput {
   duration: number;
   url: string;
   stems?: { name: string; url: string }[];
+  bpm?: number;
+  key?: string;
+  timeSignature?: string;
 }
 
 export const MASTERING_PLUGIN_DEFS: {

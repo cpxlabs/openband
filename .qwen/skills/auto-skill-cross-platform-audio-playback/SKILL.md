@@ -162,17 +162,37 @@ useEffect(() => () => { player.pause(); }, [player]);
 
 ### Stem-to-Mastering Bridge
 
-Use a simple in-memory bridge to pass stem URLs from extractor to mastering suite:
+Use a simple in-memory bridge to pass stem URLs + metadata from extractor/studio to mastering suite:
 
 ```ts
 // masteringBridge.ts
 interface StemInput { name: string; url: string; }
-let _pending: { url: string; filename: string; stems?: StemInput[] } | null = null;
+let _pending: {
+  url: string;
+  filename: string;
+  stems?: StemInput[];
+  bpm?: number;          // project tempo — preserves timing
+  key?: string;          // musical key — preserves tonality
+  timeSignature?: string; // time signature — preserves meter
+} | null = null;
 export function setMasteringInput(data: typeof _pending) { _pending = data; }
 export function takeMasteringInput() { const v = _pending; _pending = null; return v; }
 ```
 
-**Extractor sends:**
+**Studio sends (with project metadata):**
+```tsx
+setMasteringInput({
+  url: urls[0].url,
+  filename: `${projectTitle}-stems`,
+  stems: urls,
+  bpm: initialBpm,       // ← preserves project timing
+  key: projectKey,       // ← preserves musical key
+  timeSignature: projectTimeSig, // ← preserves time signature
+});
+router.push("/mastering");
+```
+
+**Extractor sends (stems-only, no project context):**
 ```tsx
 setMasteringInput({
   url: results[0]?.url || "",
@@ -182,13 +202,19 @@ setMasteringInput({
 router.push("/mastering");
 ```
 
-**MasteringSuite consumes on mount:**
+**MasteringSuite consumes on mount (preserves all metadata):**
 ```tsx
 const [session, setSession] = useState<MasteringSession>(() => {
   const pending = takeMasteringInput();
   if (pending) {
     return {
-      inputFile: { url: pending.url, stems: pending.stems, /* ... */ },
+      inputFile: {
+        url: pending.url,
+        stems: pending.stems,
+        bpm: pending.bpm,               // ← preserved
+        key: pending.key,               // ← preserved
+        timeSignature: pending.timeSignature, // ← preserved
+      },
       versions: [], activeVersionId: null, bypassed: false,
     };
   }

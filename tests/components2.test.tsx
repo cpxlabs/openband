@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { PromptSampler, MasteringSuite } from "../src/components";
+import { PromptSampler, MasteringSuite, MasteringUpload } from "../src/components";
+import type { MasteringInput } from "../src/lib/masteringSuite";
 
 vi.mock("../src/bridge", () => ({
   OpenBandNative: {
@@ -218,5 +219,136 @@ describe("MasteringSuite", () => {
     fireEvent.click(screen.getAllByText("Export")[0]);
     const renderBtn = screen.getByText("Faça upload primeiro");
     expect(renderBtn).toBeTruthy();
+  });
+});
+
+describe("MasteringUpload metadata", () => {
+  const baseInput: MasteringInput = {
+    type: "stems",
+    filename: "test-mix.wav",
+    size: 51200,
+    sampleRate: 44100,
+    bitDepth: 24,
+    duration: 180,
+    url: "blob:test",
+    stems: [
+      { name: "Drums", url: "drums-url" },
+      { name: "Bass", url: "bass-url" },
+    ],
+  };
+
+  it("renders filename, sample rate, bit depth, and file size", () => {
+    render(
+      <MasteringUpload
+        input={baseInput}
+        mode="stems"
+        onModeChange={() => {}}
+        onUpload={() => {}}
+        onClear={() => {}}
+      />,
+    );
+    expect(screen.getByText("test-mix.wav")).toBeTruthy();
+    expect(screen.getByText("44.1kHz")).toBeTruthy();
+    expect(screen.getByText("24-bit")).toBeTruthy();
+    expect(screen.getByText("50 KB")).toBeTruthy();
+  });
+
+  it("renders BPM when provided", () => {
+    render(
+      <MasteringUpload
+        input={{ ...baseInput, bpm: 128 }}
+        mode="stems"
+        onModeChange={() => {}}
+        onUpload={() => {}}
+        onClear={() => {}}
+      />,
+    );
+    expect(screen.getByText("128 BPM")).toBeTruthy();
+  });
+
+  it("renders key when provided", () => {
+    render(
+      <MasteringUpload
+        input={{ ...baseInput, key: "Am" }}
+        mode="stems"
+        onModeChange={() => {}}
+        onUpload={() => {}}
+        onClear={() => {}}
+      />,
+    );
+    expect(screen.getByText("Key: Am")).toBeTruthy();
+  });
+
+  it("renders time signature when provided", () => {
+    render(
+      <MasteringUpload
+        input={{ ...baseInput, timeSignature: "4/4" }}
+        mode="stems"
+        onModeChange={() => {}}
+        onUpload={() => {}}
+        onClear={() => {}}
+      />,
+    );
+    expect(screen.getByText("4/4")).toBeTruthy();
+  });
+
+  it("renders all metadata together", () => {
+    render(
+      <MasteringUpload
+        input={{
+          ...baseInput,
+          bpm: 140,
+          key: "Cm",
+          timeSignature: "6/8",
+        }}
+        mode="stems"
+        onModeChange={() => {}}
+        onUpload={() => {}}
+        onClear={() => {}}
+      />,
+    );
+    expect(screen.getByText("140 BPM")).toBeTruthy();
+    expect(screen.getByText("Key: Cm")).toBeTruthy();
+    expect(screen.getByText("6/8")).toBeTruthy();
+  });
+
+  it("does not render BPM when not provided", () => {
+    render(
+      <MasteringUpload
+        input={baseInput}
+        mode="stems"
+        onModeChange={() => {}}
+        onUpload={() => {}}
+        onClear={() => {}}
+      />,
+    );
+    expect(screen.queryByText("BPM", { exact: false })).toBeNull();
+  });
+
+  it("does not render key when not provided", () => {
+    render(
+      <MasteringUpload
+        input={baseInput}
+        mode="stems"
+        onModeChange={() => {}}
+        onUpload={() => {}}
+        onClear={() => {}}
+      />,
+    );
+    expect(screen.queryByText("Key:", { exact: false })).toBeNull();
+  });
+
+  it("renders stem names in stems mode", () => {
+    render(
+      <MasteringUpload
+        input={baseInput}
+        mode="stems"
+        onModeChange={() => {}}
+        onUpload={() => {}}
+        onClear={() => {}}
+      />,
+    );
+    expect(screen.getByText("Drums")).toBeTruthy();
+    expect(screen.getByText("Bass")).toBeTruthy();
   });
 });

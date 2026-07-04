@@ -108,7 +108,7 @@ Available in `src/components/`:
 | `MasteringSuite`          | `audioUri, onExport, onClose, visible`                                                                      | Full mastering chain with EQ, comp, limiter, LUFS          |
 | `MasteringChain`          | `plugins, onToggle, onReset`                                                                                | Mastering chain slot UI with ON/OFF toggles                |
 | `MasteringVersionManager` | `versions, activeId, onSelect, onSave, onDelete, onBypass`                                                  | A/B version compare + snapshot management                  |
-| `MasteringUpload`         | `input, onInputChange, mode`                                                                                | Upload/drop zone for audio files and stems                 |
+| `MasteringUpload`         | `input, onModeChange, onUpload, onClear, mode, testID?`                                                     | Upload/drop zone for audio files and stems (displays bpm/key/timeSignature if present) |
 | `ChordTrack`              | `chords, onChange, keySignature, numBars, visible, onClose`                                                 | Chord progression timeline with presets + Markov suggestions |
 | `PluginUI`                | `descriptor, paramValues, onParamChange, onToggle?, onClose?`                                              | Generic Wasm plugin UI generator (renders knobs/sliders from schema) |
 | `BranchManager`           | `visible, onClose, onBranchSwitch?, onMerge?`                                                              | Git-like branch fork/merge/diff viewer for CRDT state        |

@@ -61,7 +61,7 @@ const LightControls = forwardRef<LightControlHandle, LightControlsProps>(
               })}
             </View>
             <Text className="text-white text-xs font-bold mb-1">BRIGHTNESS</Text>
-            <View className="flex-row gap-1">
+            <View className="flex-row gap-1 mb-2">
               {[2, 4, 6, 8, 10].map((v) => (
                 <Pressable
                   key={v}
@@ -69,6 +69,21 @@ const LightControls = forwardRef<LightControlHandle, LightControlsProps>(
                   className={`flex-1 py-1.5 rounded items-center ${Math.round(intensity) === v ? "bg-white/20" : "bg-dark-muted/40"}`}
                 >
                   <Text className={`text-xs ${Math.round(intensity) === v ? "text-white" : "text-gray-400"}`}>{v}</Text>
+                </Pressable>
+              ))}
+            </View>
+            <Text className="text-white text-xs font-bold mb-1">MULTIPLIER</Text>
+            <View className="flex-row gap-1">
+              {[
+                { label: "×2", factor: 2 },
+                { label: "×4", factor: 4 },
+              ].map(({ label, factor }) => (
+                <Pressable
+                  key={label}
+                  onPress={() => setIntensity((p) => Math.min(p * factor, 40))}
+                  className="flex-1 py-1.5 rounded items-center bg-accent/20 border border-accent/40"
+                >
+                  <Text className="text-xs text-accent font-bold">{label}</Text>
                 </Pressable>
               ))}
             </View>
