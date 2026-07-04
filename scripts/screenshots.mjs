@@ -64,12 +64,15 @@ function routeToFilename(route) {
 function parseArgs() {
   const args = process.argv.slice(2);
   let mode = "fullpage";
+  let maxHeight = 10000;
   const routes = [];
 
   for (const a of args) {
     if (a.startsWith("--mode=")) {
       const m = a.split("=")[1];
       if (CAPTURE_MODES.includes(m)) mode = m;
+    } else if (a.startsWith("--max-height=")) {
+      maxHeight = parseInt(a.split("=")[1], 10) || 10000;
     } else if (a === "--viewport") {
       mode = "viewport";
     } else if (a === "--sections") {
@@ -81,16 +84,47 @@ function parseArgs() {
     }
   }
 
-  return { mode, routes: routes.length > 0 ? routes : ["/tabs", "/mastering"] };
+  return { mode, maxHeight, routes: routes.length > 0 ? routes : ["/tabs", "/mastering"] };
 }
 
-async function captureFullPage(page, route) {
+async function expandPage(h) {
+  const html = document.documentElement;
+  const body = document.body;
+  html.style.overflow = "visible";
+  html.style.maxHeight = `${h}px`;
+  body.style.overflow = "visible";
+  body.style.maxHeight = `${h}px`;
+  body.style.height = "auto";
+
+  const all = document.querySelectorAll("*");
+  for (let i = 0; i < all.length; i++) {
+    const el = all[i];
+    if (!(el instanceof HTMLElement)) continue;
+    const cs = getComputedStyle(el);
+    if (
+      cs.overflow === "auto" || cs.overflow === "scroll" ||
+      cs.overflowX === "auto" || cs.overflowX === "scroll" ||
+      cs.overflowY === "auto" || cs.overflowY === "scroll"
+    ) {
+      el.style.overflow = "visible";
+      el.style.overflowX = "visible";
+      el.style.overflowY = "visible";
+      el.style.maxHeight = "none";
+      el.style.height = "auto";
+      el.style.flex = "none";
+    }
+  }
+}
+
+async function captureFullPage(page, route, maxHeight = 10000) {
   const filename = routeToFilename(route);
+  await page.evaluate(expandPage, maxHeight);
+  await page.waitForTimeout(800);
   await page.screenshot({
     path: join(OUT, `${filename}.png`),
     fullPage: true,
   });
-  console.log(`  ✓ ${filename}.png (full page)`);
+  console.log(`  ✓ ${filename}.png (full page, max ${maxHeight}px)`);
 }
 
 async function captureViewport(page, route) {
@@ -121,7 +155,7 @@ async function captureSections(page, route) {
   }
 }
 
-async function captureRoutes(browser, mode, routes) {
+async function captureRoutes(browser, mode, maxHeight, routes) {
   const page = await browser.newPage({
     viewport: { width: 1440, height: 900 },
   });
@@ -143,7 +177,7 @@ async function captureRoutes(browser, mode, routes) {
   });
 
   const capturers = {
-    fullpage: captureFullPage,
+    fullpage: (p, r) => captureFullPage(p, r, maxHeight),
     viewport: captureViewport,
     sections: captureSections,
   };
@@ -161,10 +195,10 @@ async function takeScreenshots() {
   const server = await startServer();
   const browser = await chromium.launch({ headless: true });
 
-  const { mode, routes } = parseArgs();
+  const { mode, maxHeight, routes } = parseArgs();
 
   try {
-    await captureRoutes(browser, mode, routes);
+    await captureRoutes(browser, mode, maxHeight, routes);
   } finally {
     await browser.close();
     server.close();
