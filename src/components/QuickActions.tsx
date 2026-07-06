@@ -1,5 +1,6 @@
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
+import { showToast } from "./Toast";
 
 interface QuickAction {
   id: string;
@@ -34,6 +35,7 @@ export function QuickActions({ testID }: { testID?: string }) {
 
   const handlePress = (action: QuickAction) => {
     if (action.alert) {
+      showToast({ message: action.alert, type: "info", icon: "🚧" });
       return;
     }
     if (action.route) {

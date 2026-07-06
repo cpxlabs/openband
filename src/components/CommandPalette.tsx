@@ -64,7 +64,7 @@ export function CommandPalette({ visible, onClose }: CommandPaletteProps) {
     <View className="absolute inset-0 z-50 flex items-start justify-center pt-[15vh]">
       <Pressable className="absolute inset-0 bg-black/40" onPress={onClose} />
 
-      <View className="bg-neutral-900 border border-neutral-700 rounded-xl w-[520px] shadow-2xl overflow-hidden">
+      <View className="bg-neutral-900 border border-neutral-700 rounded-xl w-[90%] max-w-[520px] shadow-2xl overflow-hidden">
         <View className="flex-row items-center px-4 border-b border-neutral-800">
           <Text className="text-neutral-500 text-lg mr-2">⌘</Text>
           <TextInput
@@ -102,7 +102,7 @@ export function CommandPalette({ visible, onClose }: CommandPaletteProps) {
                   return (
                     <Pressable
                       key={cmd.id}
-                      className={`flex-row items-center justify-between px-4 py-2 ${
+                      className={`flex-row items-center justify-between px-4 py-2.5 transition-colors duration-normal ${
                         isSelected ? "bg-purple-600/20" : "bg-transparent"
                       }`}
                       onPress={() => handleSelect(cmd)}

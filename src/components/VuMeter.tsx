@@ -42,14 +42,14 @@ export function VuMeter({ level, peakLevel = 0, testID }: VuMeterProps) {
 
       {/* Active level fill */}
       <View
-        className="absolute bottom-0 left-0 right-0 rounded"
+        className="absolute bottom-0 left-0 right-0 rounded transition-all duration-fast ease-out-quart"
         style={{ height: `${fillHeightPct}%`, backgroundColor: fillColor }}
       />
 
       {/* Peak hold indicator */}
       {peak > 0.01 && (
         <View
-          className="absolute left-0 right-0"
+          className="absolute left-0 right-0 transition-all duration-slow ease-out-quart"
           style={{ top: `${peakTopPct}%`, height: 2, backgroundColor: "#ffffff", opacity: 0.9 }}
         />
       )}

@@ -51,7 +51,7 @@ export function TrackColorPicker({
         </Text>
         <Pressable
           onPress={onClose}
-          className="w-5 h-5 items-center justify-center"
+          className="w-8 h-8 items-center justify-center pressable-scale"
         >
           <Text className="text-gray-500 text-xs">✕</Text>
         </Pressable>
@@ -65,7 +65,7 @@ export function TrackColorPicker({
               onSelect(c.tw);
               onClose();
             }}
-            className={`w-8 h-8 rounded-md ${c.tw} ${
+            className={`w-9 h-9 rounded-md transition-transform duration-normal pressable-scale ${c.tw} ${
               currentColor === c.tw ? "ring-2 ring-white ring-offset-2 ring-offset-dark-elevated" : ""
             }`}
           />
@@ -96,7 +96,7 @@ export function TrackColorPicker({
                 onSelect(customHex);
                 onClose();
               }}
-              className="flex-1 h-7 rounded-md bg-brand-primary/20 border border-brand-primary/40 items-center justify-center"
+              className="flex-1 h-9 rounded-md bg-brand-primary/20 border border-brand-primary/40 items-center justify-center pressable-scale"
             >
               <Text className="text-brand-accent text-[10px] font-bold">
                 Apply

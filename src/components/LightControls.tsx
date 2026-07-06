@@ -34,7 +34,7 @@ const LightControls = forwardRef<LightControlHandle, LightControlsProps>(
       <View className="absolute bottom-20 right-4 z-50">
         <Pressable
           onPress={() => setOpen(!open)}
-          className="w-10 h-10 rounded-full bg-dark-surface/90 border border-dark-border items-center justify-center"
+          className="w-11 h-11 rounded-full bg-dark-surface/90 border border-dark-border items-center justify-center pressable-scale"
         >
           <Text className="text-base">💡</Text>
         </Pressable>
@@ -48,7 +48,7 @@ const LightControls = forwardRef<LightControlHandle, LightControlsProps>(
                   <Pressable
                     key={p.label}
                     onPress={() => setColor(p.color)}
-                    className="w-7 h-7 rounded-full items-center justify-center"
+                    className="w-9 h-9 rounded-full items-center justify-center pressable-scale"
                     style={{
                       backgroundColor: `#${p.color.toString(16).padStart(6, "0")}`,
                       borderWidth: active ? 2 : 0,
@@ -66,7 +66,7 @@ const LightControls = forwardRef<LightControlHandle, LightControlsProps>(
                 <Pressable
                   key={v}
                   onPress={() => setIntensity(v)}
-                  className={`flex-1 py-1.5 rounded items-center ${Math.round(intensity) === v ? "bg-white/20" : "bg-dark-muted/40"}`}
+                  className={`flex-1 py-2 rounded items-center transition-colors duration-normal pressable-scale ${Math.round(intensity) === v ? "bg-white/20" : "bg-dark-muted/40"}`}
                 >
                   <Text className={`text-xs ${Math.round(intensity) === v ? "text-white" : "text-gray-400"}`}>{v}</Text>
                 </Pressable>
@@ -81,7 +81,7 @@ const LightControls = forwardRef<LightControlHandle, LightControlsProps>(
                 <Pressable
                   key={label}
                   onPress={() => setIntensity((p) => Math.min(p * factor, 40))}
-                  className="flex-1 py-1.5 rounded items-center bg-accent/20 border border-accent/40"
+                  className="flex-1 py-2 rounded items-center bg-accent/20 border border-accent/40 pressable-scale"
                 >
                   <Text className="text-xs text-accent font-bold">{label}</Text>
                 </Pressable>

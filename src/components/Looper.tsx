@@ -146,7 +146,7 @@ export function Looper({
                     <Pressable
                       key={b}
                       onPress={() => setBars(slot.id, b)}
-                      className={`px-2 py-1 rounded-lg border ${slot.bars === b ? "bg-brand-accent/20 border-brand-accent" : "bg-dark-muted/30 border-dark-border"}`}
+                      className={`px-3 py-1.5 rounded-lg border transition-colors duration-normal pressable-scale ${slot.bars === b ? "bg-brand-accent/20 border-brand-accent" : "bg-dark-muted/30 border-dark-border"}`}
                     >
                       <Text
                         className={`text-[10px] ${slot.bars === b ? "text-brand-accent" : "text-gray-400"}`}
@@ -161,7 +161,7 @@ export function Looper({
               <View className="flex-row gap-2">
                 <Pressable
                   onPress={() => toggleRecord(slot.id)}
-                  className="flex-1 py-2 rounded-xl items-center active:opacity-70"
+                  className="flex-1 py-2.5 rounded-xl items-center transition-all duration-normal pressable-scale"
                   style={{
                     backgroundColor: slot.recording ? "#ff375f" : "#1c1c1e",
                   }}
@@ -177,7 +177,7 @@ export function Looper({
                 {slot.hasContent && (
                   <Pressable
                     onPress={() => clearSlot(slot.id)}
-                    className="px-3 py-2 rounded-xl bg-dark-muted items-center active:opacity-70"
+                    className="px-4 py-2.5 rounded-xl bg-dark-muted items-center pressable-scale"
                   >
                     <Text className="text-gray-400 text-xs">Clear</Text>
                   </Pressable>
@@ -188,7 +188,7 @@ export function Looper({
 
           <Pressable
             onPress={onClose}
-            className="mt-2 py-3 rounded-xl border border-dark-border items-center active:opacity-70"
+            className="mt-2 py-3 rounded-xl border border-dark-border items-center pressable-scale"
           >
             <Text className="text-gray-400 text-sm font-semibold">Close</Text>
           </Pressable>

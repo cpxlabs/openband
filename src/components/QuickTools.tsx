@@ -1,5 +1,6 @@
-import { View, Text, Pressable, ScrollView, Alert, Platform } from "react-native";
+import { View, Text, Pressable, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
+import { showToast } from "./Toast";
 
 interface QuickAction {
   id: string;
@@ -41,11 +42,7 @@ export function QuickTools({ visible, onClose, onNewProject, testID }: QuickTool
 
   const handlePress = (action: QuickAction) => {
     if (action.alert) {
-      if (Platform.OS === "web") {
-        window.alert(action.alert);
-      } else {
-        Alert.alert("Em breve", action.alert);
-      }
+      showToast({ message: action.alert, type: "info", icon: "🚧" });
       return;
     }
     if (action.id === "new-project") {
@@ -72,7 +69,7 @@ export function QuickTools({ visible, onClose, onNewProject, testID }: QuickTool
           <Text className="text-white text-lg font-bold">Ferramentas Rápidas</Text>
           <Pressable
             onPress={onClose}
-            className="w-8 h-8 rounded-full bg-dark-surface items-center justify-center active:opacity-70"
+            className="w-10 h-10 rounded-full bg-dark-surface items-center justify-center pressable-scale"
           >
             <Text className="text-gray-400 text-lg">✕</Text>
           </Pressable>
@@ -83,7 +80,7 @@ export function QuickTools({ visible, onClose, onNewProject, testID }: QuickTool
             <Pressable
               key={action.id}
               onPress={() => handlePress(action)}
-              className="flex-row items-center gap-3 p-3.5 rounded-xl bg-dark-surface hover:bg-dark-muted active:opacity-70 mb-1.5"
+              className="flex-row items-center gap-3 p-3.5 rounded-xl bg-dark-surface hover:bg-dark-muted transition-colors duration-normal pressable-scale mb-1.5"
               accessibilityRole="button"
               accessibilityLabel={action.label}
             >

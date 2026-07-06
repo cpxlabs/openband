@@ -12,7 +12,7 @@ export function VoiceCommandButton({
   return (
     <Pressable
       onPress={onToggle}
-      className={`p-3 rounded-full ${isListening ? "bg-red-500" : "bg-dark-surface border border-dark-border"} items-center justify-center`}
+      className={`p-3 rounded-full transition-all duration-normal pressable-scale ${isListening ? "bg-red-500" : "bg-dark-surface border border-dark-border"} items-center justify-center`}
     >
       <Text className="text-lg">{isListening ? "🔴" : "🎤"}</Text>
     </Pressable>

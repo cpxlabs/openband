@@ -71,7 +71,7 @@ export function RecordOptions({
           </View>
           <Pressable
             onPress={onClose}
-            className="w-8 h-8 rounded-full bg-dark-surface items-center justify-center active:opacity-70"
+            className="w-10 h-10 rounded-full bg-dark-surface items-center justify-center pressable-scale"
           >
             <Text className="text-gray-400 text-lg">✕</Text>
           </Pressable>
@@ -81,7 +81,7 @@ export function RecordOptions({
           <Text className="label mb-2 text-gray-300">Armar Gravação</Text>
           <Pressable
             onPress={() => onChange({ ...settings, armed: !settings.armed })}
-            className={`flex-row items-center justify-between p-3 rounded-xl border mb-4 ${
+            className={`flex-row items-center justify-between p-3 rounded-xl border mb-4 transition-colors duration-normal pressable-scale ${
               settings.armed
                 ? "bg-red-500/10 border-red-500/40"
                 : "bg-dark-surface border-dark-border"
@@ -107,7 +107,7 @@ export function RecordOptions({
               <Pressable
                 key={src.id}
                 onPress={() => onChange({ ...settings, inputSource: src.id })}
-                className={`flex-1 p-3 rounded-xl border items-center gap-1 ${
+                className={`flex-1 p-3 rounded-xl border items-center gap-1 transition-colors duration-normal pressable-scale ${
                   settings.inputSource === src.id
                     ? "bg-brand-accent/10 border-brand-accent"
                     : "bg-dark-surface border-dark-border"
@@ -133,7 +133,7 @@ export function RecordOptions({
               <Pressable
                 key={q}
                 onPress={() => onChange({ ...settings, quality: q })}
-                className={`flex-1 p-2.5 rounded-xl border items-center gap-0.5 ${
+                className={`flex-1 p-3 rounded-xl border items-center gap-0.5 transition-colors duration-normal pressable-scale ${
                   settings.quality === q
                     ? "bg-brand-primary/10 border-brand-primary"
                     : "bg-dark-surface border-dark-border"
@@ -168,7 +168,7 @@ export function RecordOptions({
                     sampleRate: sr as RecordSettings["sampleRate"],
                   })
                 }
-                className={`flex-1 p-3 rounded-xl border items-center ${
+                className={`flex-1 p-3 rounded-xl border items-center transition-colors duration-normal pressable-scale ${
                   settings.sampleRate === sr
                     ? "bg-brand-accent/10 border-brand-accent"
                     : "bg-dark-surface border-dark-border"
@@ -196,7 +196,7 @@ export function RecordOptions({
               <Pressable
                 key={ch.label}
                 onPress={() => onChange({ ...settings, mono: ch.id })}
-                className={`flex-1 p-3 rounded-xl border items-center gap-1 ${
+                className={`flex-1 p-3 rounded-xl border items-center gap-1 transition-colors duration-normal pressable-scale ${
                   settings.mono === ch.id
                     ? "bg-brand-accent/10 border-brand-accent"
                     : "bg-dark-surface border-dark-border"
@@ -226,7 +226,7 @@ export function RecordOptions({
               <Pressable
                 key={n}
                 onPress={() => onChange({ ...settings, preRoll: n })}
-                className={`flex-1 p-3 rounded-xl border items-center ${
+                className={`flex-1 p-3 rounded-xl border items-center transition-colors duration-normal pressable-scale ${
                   settings.preRoll === n
                     ? "bg-dark-muted border-gray-500"
                     : "bg-dark-surface border-dark-border"
@@ -246,7 +246,7 @@ export function RecordOptions({
           <Text className="label mb-2 text-gray-300">Monitoramento Direto</Text>
           <Pressable
             onPress={handleToggleMonitoring}
-            className={`flex-row items-center justify-between p-3 rounded-xl border mb-4 ${
+            className={`flex-row items-center justify-between p-3 rounded-xl border mb-4 transition-colors duration-normal pressable-scale ${
               monitoring
                 ? "bg-green-500/10 border-green-500/40"
                 : "bg-dark-surface border-dark-border"

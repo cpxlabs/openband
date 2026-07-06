@@ -440,7 +440,7 @@ export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
               </Text>
               <Pressable
                 onPress={() => setShowExport(false)}
-                className="w-8 h-8 rounded-full bg-dark-surface items-center justify-center"
+                className="w-10 h-10 rounded-full bg-dark-surface items-center justify-center pressable-scale"
               >
                 <Text className="text-gray-400 text-lg">✕</Text>
               </Pressable>
@@ -455,7 +455,7 @@ export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
                   <Pressable
                     key={f}
                     onPress={() => setExportFormat(f)}
-                    className={`flex-1 py-3 rounded-xl items-center border ${exportFormat === f ? "bg-brand-accent/20 border-brand-accent" : "bg-dark-surface border-dark-border"}`}
+                    className={`flex-1 py-3 rounded-xl items-center border transition-colors duration-normal pressable-scale ${exportFormat === f ? "bg-brand-accent/20 border-brand-accent" : "bg-dark-surface border-dark-border"}`}
                   >
                     <Text
                       className={`text-xs font-bold uppercase ${exportFormat === f ? "text-brand-accent" : "text-gray-400"}`}
@@ -477,7 +477,7 @@ export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
                     <Pressable
                       key={b}
                       onPress={() => setExportBitDepth(b)}
-                      className={`flex-1 py-3 rounded-xl items-center border ${exportBitDepth === b ? "bg-brand-accent/20 border-brand-accent" : "bg-dark-surface border-dark-border"}`}
+                      className={`flex-1 py-3 rounded-xl items-center border transition-colors duration-normal pressable-scale ${exportBitDepth === b ? "bg-brand-accent/20 border-brand-accent" : "bg-dark-surface border-dark-border"}`}
                     >
                       <Text
                         className={`text-xs font-bold ${exportBitDepth === b ? "text-brand-accent" : "text-gray-400"}`}
@@ -513,7 +513,7 @@ export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
                   <Pressable
                     key={r}
                     onPress={() => setExportSampleRate(r)}
-                    className={`flex-1 py-3 rounded-xl items-center border ${exportSampleRate === r ? "bg-brand-accent/20 border-brand-accent" : "bg-dark-surface border-dark-border"}`}
+                    className={`flex-1 py-3 rounded-xl items-center border transition-colors duration-normal pressable-scale ${exportSampleRate === r ? "bg-brand-accent/20 border-brand-accent" : "bg-dark-surface border-dark-border"}`}
                   >
                     <Text
                       className={`text-xs font-bold ${exportSampleRate === r ? "text-brand-accent" : "text-gray-400"}`}
@@ -528,7 +528,7 @@ export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
             <Pressable
               onPress={handleExport}
               disabled={!session.inputFile || exporting}
-              className={`py-3 rounded-xl items-center ${session.inputFile && !exporting ? "bg-brand-accent" : "bg-dark-muted"}`}
+              className={`py-3 rounded-xl items-center transition-all duration-normal pressable-scale ${session.inputFile && !exporting ? "bg-brand-accent" : "bg-dark-muted"}`}
             >
               <Text
                 className={`text-sm font-bold ${session.inputFile && !exporting ? "text-white" : "text-gray-500"}`}

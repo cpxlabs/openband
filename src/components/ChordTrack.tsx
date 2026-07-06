@@ -199,19 +199,19 @@ export function ChordTrack({
         <View className="flex-row gap-1">
           <Pressable
             onPress={() => setShowPresets(!showPresets)}
-            className="px-2 py-0.5 rounded bg-dark-muted active:opacity-70"
+            className="px-3 py-1 rounded-lg bg-dark-muted pressable-scale"
           >
             <Text className="text-gray-400 text-[9px]">Presets</Text>
           </Pressable>
           <Pressable
             onPress={() => setShowSuggestions(!showSuggestions)}
-            className="px-2 py-0.5 rounded bg-dark-muted active:opacity-70"
+            className="px-3 py-1 rounded-lg bg-dark-muted pressable-scale"
           >
             <Text className="text-gray-400 text-[9px]">Suggest</Text>
           </Pressable>
           <Pressable
             onPress={onClose}
-            className="w-5 h-5 rounded items-center justify-center active:opacity-60"
+            className="w-8 h-8 rounded items-center justify-center pressable-scale"
           >
             <Text className="text-gray-500 text-[10px]">✕</Text>
           </Pressable>
@@ -224,7 +224,7 @@ export function ChordTrack({
             <Pressable
               key={p.id}
               onPress={() => applyPreset(p.id)}
-              className="px-2 py-1 rounded-md bg-dark-surface border border-dark-border active:opacity-70"
+              className="px-3 py-1.5 rounded-md bg-dark-surface border border-dark-border pressable-scale"
             >
               <Text className="text-gray-300 text-[9px] font-medium">
                 {p.name}
@@ -243,7 +243,7 @@ export function ChordTrack({
             <Pressable
               key={i}
               onPress={() => addChord(s.degree, s.quality)}
-              className="px-2 py-1 rounded-md border border-dark-border active:opacity-70"
+              className="px-3 py-1.5 rounded-md border border-dark-border pressable-scale"
               style={{ backgroundColor: `${QUALITY_COLORS[s.quality]}15` }}
             >
               <Text
@@ -304,7 +304,7 @@ export function ChordTrack({
           {currentBeats < totalBeats && (
             <Pressable
               onPress={() => addChord(0, "maj")}
-              className="w-12 h-12 rounded-lg border border-dashed border-dark-border items-center justify-center"
+              className="w-12 h-12 rounded-lg border border-dashed border-dark-border items-center justify-center pressable-scale"
             >
               <Text className="text-gray-600 text-lg">+</Text>
             </Pressable>
@@ -316,28 +316,28 @@ export function ChordTrack({
         <View className="flex-row items-center justify-center gap-2 px-3 py-2 border-t border-dark-border">
           <Pressable
             onPress={() => cycleDegree(selectedId, -1)}
-            className="w-7 h-7 rounded bg-dark-muted items-center justify-center active:opacity-70"
+            className="w-8 h-8 rounded-lg bg-dark-muted items-center justify-center pressable-scale"
           >
             <Text className="text-gray-400 text-xs">←</Text>
           </Pressable>
           <Text className="text-gray-400 text-[9px]">Degree</Text>
           <Pressable
             onPress={() => cycleDegree(selectedId, 1)}
-            className="w-7 h-7 rounded bg-dark-muted items-center justify-center active:opacity-70"
+            className="w-8 h-8 rounded-lg bg-dark-muted items-center justify-center pressable-scale"
           >
             <Text className="text-gray-400 text-xs">→</Text>
           </Pressable>
           <View className="w-px h-5 bg-dark-border" />
           <Pressable
             onPress={() => cycleQuality(selectedId)}
-            className="px-2 py-1 rounded bg-dark-muted active:opacity-70"
+            className="px-3 py-1.5 rounded-lg bg-dark-muted pressable-scale"
           >
             <Text className="text-gray-400 text-[9px]">Quality</Text>
           </Pressable>
           <View className="w-px h-5 bg-dark-border" />
           <Pressable
             onPress={() => removeChord(selectedId)}
-            className="px-2 py-1 rounded bg-red-500/20 active:opacity-70"
+            className="px-3 py-1.5 rounded-lg bg-red-500/20 pressable-scale"
           >
             <Text className="text-red-400 text-[9px]">Delete</Text>
           </Pressable>

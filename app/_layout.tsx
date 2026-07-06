@@ -6,7 +6,7 @@ import { useEffect } from "react";
 import { AuthProvider, useAuth } from "../src/context/AuthContext";
 import { ThemeProvider } from "../src/context/ThemeContext";
 import { View, Platform } from "react-native";
-import { Loading } from "../src/components";
+import { Loading, Toast } from "../src/components";
 import { AudioEngineProvider } from "../src/context/AudioEngine";
 import { audioSystem, disposeAllAudio } from "../src/lib/universalAudio";
 
@@ -111,6 +111,7 @@ export default function RootLayout() {
           <AuthProvider>
             <AudioEngineProvider>
               <RootLayoutProtected />
+              <Toast />
             </AudioEngineProvider>
           </AuthProvider>
         </ThemeProvider>

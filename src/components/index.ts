@@ -58,5 +58,6 @@ export { Patchbay } from "./Patchbay";
 export { CommitModal, VersionHistory } from "./CommitModal";
 export { CommandPalette } from "./CommandPalette";
 export { default as LightControls } from "./LightControls";
+export { Toast, showToast } from "./Toast";
 export { VuMeter } from "./VuMeter";
 export { TrackColorPicker } from "./TrackColorPicker";

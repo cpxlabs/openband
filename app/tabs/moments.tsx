@@ -232,7 +232,7 @@ export default function Moments() {
       >
         <Pressable
           onPress={() => setTab("moments")}
-          className={`flex-1 py-2 rounded-xl items-center border ${tab === "moments" ? "bg-brand-primary/20 border-brand-primary" : "bg-dark-elevated border-dark-border"}`}
+          className={`flex-1 py-2 rounded-xl items-center border transition-colors duration-normal pressable-scale ${tab === "moments" ? "bg-brand-primary/20 border-brand-primary" : "bg-dark-elevated border-dark-border"}`}
         >
           <Text
             className={`text-xs font-bold ${tab === "moments" ? "text-brand-primary" : "text-white"}`}
@@ -242,7 +242,7 @@ export default function Moments() {
         </Pressable>
         <Pressable
           onPress={() => setTab("packs")}
-          className={`flex-1 py-2 rounded-xl items-center border ${tab === "packs" ? "bg-brand-accent/20 border-brand-accent" : "bg-dark-elevated border-dark-border"}`}
+          className={`flex-1 py-2.5 rounded-xl items-center border transition-colors duration-normal pressable-scale ${tab === "packs" ? "bg-brand-accent/20 border-brand-accent" : "bg-dark-elevated border-dark-border"}`}
         >
           <Text
             className={`text-xs font-bold ${tab === "packs" ? "text-brand-accent" : "text-white"}`}
@@ -293,7 +293,7 @@ export default function Moments() {
           </View>
         ) : (
           <View
-            className="px-4 tablet:px-6 gap-3 tablet:flex-row tablet:flex-wrap tablet:gap-4"
+            className="px-4 tablet:px-6 gap-3 tablet:flex-row tablet:flex-wrap tablet:gap-4 desktop:gap-6"
           >
             <View className="card p-3 mb-1 w-full">
               <Text className="text-gray-400 text-xs leading-relaxed">
@@ -304,7 +304,7 @@ export default function Moments() {
             {FREE_SAMPLE_PACKS.map((pack) => (
               <View
                 key={pack.id}
-                className="card overflow-hidden w-full tablet:w-[49%]"
+                className="card overflow-hidden w-full tablet:w-[49%] desktop:w-[32%]"
               >
                 <View className="p-4">
                   <View className="flex-row items-start gap-3 mb-3">
