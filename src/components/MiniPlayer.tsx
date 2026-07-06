@@ -167,18 +167,18 @@ export function MiniPlayer() {
   if (!state.visible || !state.url) return null;
 
   return (
-    <View className="absolute bottom-0 left-0 right-0 bg-dark-surface/95 backdrop-blur-sm border-t border-dark-border">
+    <View className="absolute bottom-0 left-0 right-0 bg-dark-surface/95 backdrop-blur-sm border-t border-dark-border animate-slide-up">
       {/* Progress bar (draggable) */}
       <Pressable
         ref={progressBarRef}
-        className="h-1.5 bg-dark-muted overflow-hidden cursor-pointer"
+        className="h-1.5 bg-dark-muted/50 overflow-hidden cursor-pointer"
         onPress={handleProgressPress}
         onResponderGrant={handleResponderGrant}
         onResponderMove={handleResponderMove}
         onResponderRelease={handleResponderRelease}
       >
         <View
-          className="h-full bg-brand-primary transition-all"
+          className="h-full bg-brand-primary rounded-full transition-all duration-normal ease-out-quart"
           style={{ width: `${progress}%`, pointerEvents: "none" }}
         />
       </Pressable>

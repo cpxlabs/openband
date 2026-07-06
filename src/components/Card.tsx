@@ -30,7 +30,7 @@ export function Card({
       onPress={onPress}
       accessibilityRole={onPress ? "button" : undefined}
       accessibilityLabel={onPress ? (accessibilityLabel ?? "Card") : undefined}
-      className={`${elevated ? "card-elevated" : "card"} ${isHighlighted ? "border-brand-primary/50" : ""} ${onPress ? "active:opacity-80 active:scale-[0.98] hover:bg-dark-elevated" : ""} ${className}`.trim().replace(/\s+/g, " ")}
+      className={`${elevated ? "card-elevated shadow-card" : "card"} ${isHighlighted ? "glow-border" : ""} pressable-scale ${onPress ? "hover:bg-dark-elevated" : ""} ${className}`.trim().replace(/\s+/g, " ")}
     >
       {children}
     </Container>
@@ -51,7 +51,7 @@ export function CardRow({
       onPress={onPress}
       accessibilityRole={onPress ? "button" : undefined}
       accessibilityLabel={onPress ? (accessibilityLabel ?? "Card row") : undefined}
-      className={`card flex-row items-center p-4 ${onPress ? "active:border-brand-accent/50 active:scale-[0.98] hover:bg-dark-elevated" : ""} ${className}`.trim().replace(/\s+/g, " ")}
+      className={`card flex-row items-center p-4 pressable-scale ${onPress ? "hover:bg-dark-elevated" : ""} ${className}`.trim().replace(/\s+/g, " ")}
     >
       {children}
     </Container>

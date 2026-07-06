@@ -29,7 +29,7 @@ export function TextInput({
       {label && <Text className="label ml-1" nativeID={labelId}>{label}</Text>}
       <RNTextInput
         testID={testID}
-        className={`input-field p-4 ${focused ? "input-field-focused" : ""} ${error ? "border-red-500" : ""} ${className}`}
+        className={`input-field p-4 transition-all duration-normal ${focused ? "input-field-focused border-opacity-100" : "border-opacity-60"} ${error ? "border-red-500" : ""} ${className}`}
         placeholderTextColor="#555"
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
@@ -38,8 +38,9 @@ export function TextInput({
         {...props}
       />
       {error && (
-        <View className="flex-row items-center gap-1 ml-1" nativeID={errorId}>
-          <Text className="text-red-400 text-xs">{error}</Text>
+        <View className="flex-row items-center gap-1.5 ml-1" nativeID={errorId}>
+          <View className="w-1 h-1 rounded-full bg-red-400" />
+          <Text className="text-red-400 text-xs font-medium">{error}</Text>
         </View>
       )}
     </View>

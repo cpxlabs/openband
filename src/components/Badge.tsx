@@ -23,10 +23,10 @@ export function Badge({ text, icon, variant = "default", testID }: BadgeProps) {
   return (
     <View
       testID={testID}
-      className={`badge ${variantStyles[variant]}`}
+      className={`badge ${variantStyles[variant]} ${variant === "active" ? "animate-pulse-soft" : ""}`}
     >
       {icon && <Text className={`text-xs ${textStyles[variant]}`}>{icon}</Text>}
-      <Text className={`${textStyles[variant]} text-xs font-medium`} numberOfLines={1}>
+      <Text className={`${textStyles[variant]} text-xs font-semibold`} numberOfLines={1}>
         {text}
       </Text>
     </View>

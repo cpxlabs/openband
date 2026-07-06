@@ -293,7 +293,7 @@ const FeedPostCard = memo(function FeedPostCard({
           accessibilityRole="button"
           accessibilityLabel={isThisLoading ? "Carregando áudio" : isThisPlaying ? "Pausar áudio" : "Ouvir áudio"}
           accessibilityState={{ disabled: isThisLoading }}
-          className={`mt-3 h-10 rounded-xl items-center justify-center flex-row gap-2 ${
+          className={`mt-3 h-11 rounded-xl items-center justify-center flex-row gap-2 pressable-scale ${
             isThisPlaying ? "bg-green-600" : "btn-secondary"
           }`}
         >
@@ -312,10 +312,10 @@ const FeedPostCard = memo(function FeedPostCard({
         <View className="flex-row items-center gap-3 mt-3">
           <Pressable
             onPress={() => onLike(item.id)}
-            className="flex-row items-center gap-1 active:opacity-60"
+            className="flex-row items-center gap-1.5 pressable-scale"
           >
             <Text
-              className={`text-base ${item.userLiked ? "text-brand-primary" : "text-gray-500"}`}
+              className={`text-base transition-all duration-normal ${item.userLiked ? "text-brand-primary" : "text-gray-500"}`}
             >
               {item.userLiked ? "❤" : "♡"}
             </Text>
@@ -328,7 +328,7 @@ const FeedPostCard = memo(function FeedPostCard({
 
           <Pressable
             onPress={() => onRemix(item)}
-            className="flex-row items-center gap-1 px-2.5 py-1 rounded-full bg-dark-elevated border border-dark-border active:opacity-70"
+            className="flex-row items-center gap-1.5 px-3 py-1.5 rounded-full bg-dark-elevated border border-dark-border pressable-scale"
           >
             <Text className="text-gray-400 text-xs">🔄</Text>
             <Text className="text-gray-400 text-[10px] font-semibold">
@@ -338,7 +338,7 @@ const FeedPostCard = memo(function FeedPostCard({
 
           <Pressable
             onPress={() => onShare(item)}
-            className="flex-row items-center gap-1 px-2.5 py-1 rounded-full bg-dark-elevated border border-dark-border active:opacity-70"
+            className="flex-row items-center gap-1.5 px-3 py-1.5 rounded-full bg-dark-elevated border border-dark-border pressable-scale"
           >
             <Text className="text-gray-400 text-xs">↗</Text>
             <Text className="text-gray-400 text-[10px] font-semibold">
@@ -584,7 +584,7 @@ export default function Feed() {
           </View>
           <Pressable
             onPress={handleNewProject}
-            className="bg-brand-primary rounded-full px-5 py-2.5 flex-row items-center gap-2 active:opacity-80 hover:bg-brand-primaryDark"
+            className="bg-brand-primary rounded-full px-5 py-2.5 flex-row items-center gap-2 pressable-scale"
             accessibilityRole="button"
             accessibilityLabel="Novo Projeto"
           >
@@ -604,7 +604,7 @@ export default function Feed() {
                 <Pressable
                   key={genre.id}
                   onPress={() => setGenreFilter(genre.id)}
-                  className={`px-3 py-1.5 rounded-full border flex-row items-center gap-1 ${
+                  className={`px-3 py-2 rounded-full border flex-row items-center gap-1.5 transition-all duration-normal pressable-scale ${
                     genreFilter === genre.id
                       ? "bg-brand-primary/20 border-brand-primary"
                       : "bg-dark-elevated border-dark-border"
@@ -630,7 +630,7 @@ export default function Feed() {
               <Pressable
                 key={mode}
                 onPress={() => setSortMode(mode)}
-                className={`px-3 py-1 rounded-lg border ${sortMode === mode ? "bg-dark-muted border-brand-accent/40" : "bg-dark-elevated border-dark-border"}`}
+                  className={`px-3 py-1.5 rounded-lg border transition-all duration-normal pressable-scale ${sortMode === mode ? "bg-dark-muted border-brand-accent/40" : "bg-dark-elevated border-dark-border"}`}
               >
                 <Text
                   className={`text-[10px] font-semibold ${sortMode === mode ? "text-brand-accent" : "text-gray-400"}`}
@@ -647,9 +647,9 @@ export default function Feed() {
         </View>
 
         {playingId && (
-          <View className="px-4 tablet:px-6 py-3 bg-brand-primary/10 border-b border-brand-primary/20">
+          <View className="px-4 tablet:px-6 py-3 bg-brand-primary/10 border-b border-brand-primary/20 animate-fade-in">
             <View className="flex-row items-center gap-2.5">
-              <View className="w-2.5 h-2.5 rounded-full bg-green-500" />
+              <View className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse-soft" />
               <Text className="text-green-400 text-xs font-medium flex-1">
                 Tocando: {currentPostRef.current.title}
               </Text>
@@ -677,8 +677,8 @@ export default function Feed() {
             }
             ListHeaderComponent={
               !hasProjects ? (
-                <View className="mx-4 mb-4 mt-2 p-5 rounded-2xl bg-brand-primary/10 border border-brand-primary/30">
-                  <Text className="text-2xl mb-2">🎸</Text>
+                <View className="mx-4 mb-4 mt-2 p-5 rounded-2xl bg-brand-primary/10 border border-brand-primary/30 animate-scale-in">
+                  <Text className="text-3xl mb-2">🎸</Text>
                   <Text className="text-white font-bold text-lg mb-1">
                     Bem-vindo ao OpenBand!
                   </Text>
@@ -688,7 +688,7 @@ export default function Feed() {
                   <View className="flex-row gap-2">
                     <Pressable
                       onPress={handleNewProject}
-                      className="flex-1 bg-brand-primary rounded-xl py-3 items-center"
+                      className="flex-1 bg-brand-primary rounded-xl py-3 items-center pressable-scale"
                     >
                       <Text className="text-white font-bold text-sm">
                         + Novo Projeto
@@ -696,7 +696,7 @@ export default function Feed() {
                     </Pressable>
                     <Pressable
                       onPress={() => router.push("/tabs/library")}
-                      className="flex-1 bg-dark-elevated border border-dark-border rounded-xl py-3 items-center"
+                      className="flex-1 bg-dark-elevated border border-dark-border rounded-xl py-3 items-center pressable-scale"
                     >
                       <Text className="text-white font-bold text-sm">
                         Ver Biblioteca

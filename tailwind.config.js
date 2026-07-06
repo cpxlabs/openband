@@ -63,6 +63,49 @@ module.exports = {
       borderWidth: {
         0.5: "0.5px",
       },
+      boxShadow: {
+        glow: "0 0 20px rgba(255,59,48,0.15)",
+        "glow-sm": "0 0 12px rgba(255,59,48,0.1)",
+        elevated: "0 8px 32px rgba(0,0,0,0.3)",
+        card: "0 2px 16px rgba(0,0,0,0.25)",
+      },
+      backgroundImage: {
+        shimmer:
+          "linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent)",
+      },
+      transitionTimingFunction: {
+        spring: "cubic-bezier(0.34, 1.56, 0.64, 1)",
+        "out-quart": "cubic-bezier(0.25, 1, 0.5, 1)",
+      },
+      animation: {
+        shimmer: "shimmer 2s infinite linear",
+        "pulse-soft": "pulse-soft 2s infinite ease-in-out",
+        "fade-in": "fade-in 0.3s ease-out",
+        "slide-up": "slide-up 0.3s ease-out",
+        "scale-in": "scale-in 0.2s ease-out",
+      },
+      keyframes: {
+        shimmer: {
+          "0%": { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" },
+        },
+        "pulse-soft": {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0.7" },
+        },
+        "fade-in": {
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" },
+        },
+        "slide-up": {
+          "0%": { opacity: "0", transform: "translateY(8px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        "scale-in": {
+          "0%": { transform: "scale(0.95)", opacity: "0" },
+          "100%": { transform: "scale(1)", opacity: "1" },
+        },
+      },
       zIndex: {
         dropdown: "50",
         sidebar: "60",

@@ -8,12 +8,12 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, subtitle, testID }: PageHeaderProps) {
   return (
-    <View testID={testID}>
-      <Text className="heading-1 mobile:text-2xl tablet:text-3xl">
+    <View testID={testID} className="gap-1">
+      <Text className="text-white font-bold text-2xl tablet:text-3xl tracking-tight">
         {title}
       </Text>
       {subtitle && (
-        <Text className="text-gray-500 text-xs mobile:text-sm tablet:text-base mt-1">
+        <Text className="text-gray-400 text-sm tablet:text-base leading-relaxed">
           {subtitle}
         </Text>
       )}

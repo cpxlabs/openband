@@ -44,10 +44,10 @@ export function Metronome({
 
   return (
     <View testID={testID}>
-      <Pressable
-        onPress={() => setExpanded(!expanded)}
-        className="flex-row items-center gap-2 bg-[#0b0b0d] px-3 py-1.5 rounded-lg border border-dark-border"
-      >
+        <Pressable
+          onPress={() => setExpanded(!expanded)}
+          className="flex-row items-center gap-2 bg-dark-bg px-3 py-2 rounded-xl border border-dark-border pressable-scale"
+        >
         <Text className="text-emerald-400 font-mono text-[10px] tracking-widest">
           {settings.enabled ? "♩" : "♪"}
         </Text>
@@ -55,7 +55,7 @@ export function Metronome({
       </Pressable>
 
       {expanded && (
-        <View className="absolute top-full mt-2 right-0 w-72 bg-dark-elevated border border-dark-border rounded-2xl p-4 z-50 shadow-xl">
+        <View className="absolute top-full mt-2 right-0 w-72 bg-dark-elevated border border-dark-border rounded-2xl p-4 z-50 shadow-elevated animate-scale-in">
           <View className="flex-row items-center justify-between mb-3">
             <Text className="label text-gray-300">Metrônomo</Text>
             <Pressable
@@ -76,7 +76,7 @@ export function Metronome({
               onPress={() =>
                 onChange({ ...settings, bpm: Math.max(40, settings.bpm - 1) })
               }
-              className="w-8 h-8 rounded-lg bg-dark-surface items-center justify-center active:opacity-70"
+              className="w-8 h-8 rounded-lg bg-dark-surface items-center justify-center pressable-scale"
             >
               <Text className="text-gray-300 text-lg">−</Text>
             </Pressable>
@@ -93,13 +93,13 @@ export function Metronome({
               onPress={() =>
                 onChange({ ...settings, bpm: Math.min(280, settings.bpm + 1) })
               }
-              className="w-8 h-8 rounded-lg bg-dark-surface items-center justify-center active:opacity-70"
+              className="w-8 h-8 rounded-lg bg-dark-surface items-center justify-center pressable-scale"
             >
               <Text className="text-gray-300 text-lg">+</Text>
             </Pressable>
             <Pressable
               onPress={handleTapTempo}
-              className="h-9 px-3 rounded-lg bg-brand-accent items-center justify-center active:opacity-70"
+              className="h-9 px-3 rounded-lg bg-brand-accent items-center justify-center pressable-scale"
             >
               <Text className="text-white text-xs font-bold">Tap</Text>
             </Pressable>
@@ -186,21 +186,22 @@ export function Metronome({
                   volume: Math.min(100, settings.volume + 10),
                 })
               }
-              className="w-6 h-6 rounded bg-dark-surface items-center justify-center active:opacity-70"
+              className="w-8 h-8 rounded-lg bg-dark-surface items-center justify-center pressable-scale"
             >
               <Text className="text-gray-400 text-xs">+</Text>
             </Pressable>
           </View>
 
           {isPlaying && (
-            <View className="flex-row gap-1 mt-3 justify-center">
+            <View className="flex-row gap-1.5 mt-3 justify-center">
               {Array.from({ length: settings.timeSig[0] }, (_, i) => (
                 <View
                   key={i}
-                  className={`w-2 h-2 rounded-full ${i % settings.accentInterval === 0 ? "bg-emerald-400" : "bg-emerald-600/50"}`}
-                  style={{
-                    opacity: 0.6 + Math.sin(Date.now() * 0.008 + i * 2) * 0.4,
-                  }}
+                  className={`w-2 h-2 rounded-full transition-all duration-normal ${
+                    i % settings.accentInterval === 0
+                      ? "bg-emerald-400 animate-pulse-soft"
+                      : "bg-emerald-600/40"
+                  }`}
                 />
               ))}
             </View>

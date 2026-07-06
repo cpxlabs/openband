@@ -195,7 +195,7 @@
   }
 
   .btn-secondary {
-    @apply bg-dark-muted border border-dark-border rounded-xl active:opacity-80;
+    @apply bg-dark-muted border border-dark-border rounded-xl;
   }
 
   .input-field {
@@ -212,5 +212,49 @@
 
   .badge {
     @apply bg-dark-muted px-2.5 py-1 rounded-full flex-row items-center gap-1;
+  }
+
+  .glass {
+    @apply bg-dark-surface/80 border border-dark-border/60;
+  }
+
+  .pressable {
+    @apply transition-all duration-normal ease-out-quart;
+  }
+
+  .pressable-scale {
+    @apply active:scale-[0.97] transition-all duration-normal ease-spring;
+  }
+
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-brand-accent/50;
+  }
+
+  .skeleton {
+    @apply bg-dark-muted/60 rounded-xl;
+  }
+
+  .skeleton-line {
+    @apply h-3 bg-dark-muted/60 rounded;
+  }
+
+  .skeleton-shimmer {
+    @apply bg-shimmer bg-[length:200%_100%] animate-shimmer;
+  }
+
+  .glow-border {
+    @apply border-brand-primary/30 shadow-glow-sm;
+  }
+
+  .toast {
+    @apply bg-dark-elevated border border-dark-border rounded-2xl px-4 py-3 shadow-elevated;
+  }
+
+  .toast-success {
+    @apply border-brand-green/30;
+  }
+
+  .toast-error {
+    @apply border-brand-primary/30;
   }
 }

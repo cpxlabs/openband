@@ -118,9 +118,9 @@ export function NewProject({
   return (
     <View
       testID={testID}
-      className="absolute inset-0 z-50 bg-black/70 justify-end"
+      className="absolute inset-0 z-50 bg-black/70 justify-end animate-fade-in"
     >
-      <View className="bg-dark-elevated border-t border-dark-border rounded-t-3xl max-h-[85%]">
+      <View className="bg-dark-elevated border-t border-dark-border rounded-t-3xl max-h-[85%] animate-slide-up">
         <View className="flex-row items-center justify-between px-5 py-4 border-b border-dark-border">
           <Text className="text-white text-lg font-bold">
             {step === "genre"

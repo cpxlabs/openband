@@ -7,9 +7,9 @@ interface AvatarProps {
 }
 
 const sizes = {
-  sm: "w-8 h-8 text-sm",
-  md: "w-12 h-12 text-xl",
-  lg: "w-16 h-16 text-2xl",
+  sm: "w-8 h-8",
+  md: "w-12 h-12",
+  lg: "w-16 h-16",
 };
 
 export function Avatar({ name, size = "md", testID }: AvatarProps) {
@@ -20,10 +20,10 @@ export function Avatar({ name, size = "md", testID }: AvatarProps) {
       testID={testID}
       accessibilityLabel={name}
       accessibilityRole="image"
-      className={`${sizes[size]} rounded-2xl bg-brand-primary/30 items-center justify-center`}
+      className={`${sizes[size]} rounded-2xl bg-brand-primary/20 items-center justify-center border border-brand-primary/10`}
     >
       <Text
-        className={`${sizes[size]} text-white font-bold text-center leading-none`}
+        className={`text-white font-bold text-center leading-none ${size === "sm" ? "text-sm" : size === "md" ? "text-xl" : "text-2xl"}`}
       >
         {initial}
       </Text>

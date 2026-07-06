@@ -11,6 +11,7 @@ export function ProgressBar({
   className = "",
   testID,
 }: ProgressBarProps) {
+  const clamped = Math.min(100, Math.max(0, progress));
   return (
     <View
       testID={testID}
@@ -18,11 +19,11 @@ export function ProgressBar({
       aria-valuenow={progress}
       aria-valuemin={0}
       aria-valuemax={100}
-      className={`h-1 bg-dark-border rounded-full overflow-hidden ${className}`}
+      className={`h-1.5 bg-dark-muted/50 rounded-full overflow-hidden ${className}`}
     >
       <View
-        className="h-full bg-brand-primary rounded-full"
-        style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+        className="h-full bg-brand-primary rounded-full transition-all duration-normal ease-out-quart"
+        style={{ width: `${clamped}%` }}
       />
     </View>
   );

@@ -31,7 +31,7 @@ function RootLayoutProtected() {
   if (loading) {
     return (
       <View className="flex-1 bg-dark-bg items-center justify-center">
-        <Loading message="Carregando..." />
+        <Loading message="Preparando seu estúdio..." />
       </View>
     );
   }

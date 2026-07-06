@@ -131,6 +131,34 @@ CSS component classes (from `global.css`):
 - `badge` — badge container
 - `label` — text style
 
+Interaction & animation utilities:
+
+- `pressable` — base pressable with `transition-all duration-normal ease-out-quart`
+- `pressable-scale` — pressable with `active:scale-[0.97]` spring feedback
+- `glass` — semi-transparent surface with border (glassmorphism)
+- `glow-border` — active/selected border glow (`border-brand-primary/30 shadow-glow-sm`)
+- `focus-ring` — keyboard focus outline (`focus:ring-2 focus:ring-brand-accent/50`)
+
+Loading & skeleton utilities:
+
+- `skeleton` — rounded skeleton block (`bg-dark-muted/60 rounded-xl`)
+- `skeleton-line` — text-height skeleton line (`h-3 bg-dark-muted/60 rounded`)
+- `skeleton-shimmer` — animated shimmer sweep over skeleton
+
+Toast utilities:
+
+- `toast` — base notification container
+- `toast-success` — green-accented toast
+- `toast-error` — red-accented toast
+
+Animation classes (web, animate on mount):
+
+- `animate-fade-in` — opacity 0→1 in 0.3s
+- `animate-slide-up` — fade + translateY(8→0) in 0.3s
+- `animate-scale-in` — scale(0.95→1) + fade in 0.2s
+- `animate-shimmer` — infinite shimmer sweep (2s)
+- `animate-pulse-soft` — gentle opacity pulse (2s)
+
 ### Desktop Bridge (`src/bridge/`)
 
 All native desktop capabilities **must** go through `src/bridge/` — **never** use `require('fs')`, Electron `ipcRenderer`, or Tauri APIs in frontend code.

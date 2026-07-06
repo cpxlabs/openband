@@ -102,7 +102,7 @@ export function Sidebar({
                   onNavigate(item.key);
                   if (!isPersistent) onClose();
                 }}
-                className={`flex-row items-center gap-3 px-3 py-2.5 rounded-xl active:opacity-70 hover:bg-dark-muted ${
+                className={`flex-row items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-normal hover:bg-dark-muted pressable-scale ${
                   isActive
                     ? "bg-brand-primary/15 border border-brand-primary/30"
                     : "border border-transparent"
@@ -136,7 +136,7 @@ export function Sidebar({
                 )}
               </Pressable>
               {hasSubItems && isExpanded && (item as typeof item & { subItems: typeof item.subItems }).subItems && (
-                <View className="ml-4 mt-1 mb-1">
+                <View className="ml-4 mt-1 mb-1 animate-fade-in">
                   {((item as typeof item & { subItems: typeof item.subItems }).subItems || []).map((sub) => (
                     <Pressable
                       key={sub.key}
@@ -144,7 +144,7 @@ export function Sidebar({
                         onNavigate(sub.route ? buildRoute(sub.route) : sub.key);
                         if (!isPersistent) onClose();
                       }}
-                      className="flex-row items-center gap-2 px-3 py-2 rounded-lg active:opacity-70 hover:bg-dark-muted/60 border border-transparent"
+                      className="flex-row items-center gap-2 px-3 py-2 rounded-lg transition-all duration-normal hover:bg-dark-muted/60 border border-transparent pressable-scale"
                       accessibilityRole="button"
                     >
                       <View className="w-6 h-6 rounded-md items-center justify-center bg-dark-muted/30">
@@ -184,7 +184,7 @@ export function Sidebar({
 
   return (
     <View className="absolute inset-0 z-50 flex-row">
-      <Pressable className="flex-1 bg-black/60" onPress={onClose} />
+      <Pressable className="flex-1 bg-black/60 animate-fade-in" onPress={onClose} />
       {sidebarContent}
     </View>
   );

@@ -18,16 +18,20 @@ export function EmptyState({
   return (
     <View
       testID={testID}
-      className="flex-1 items-center justify-center px-8 py-20 gap-3"
+      className="flex-1 items-center justify-center px-8 py-20 gap-4"
     >
-      <Text className="text-5xl mb-2">{icon}</Text>
-      <Text className="text-gray-300 text-lg font-semibold text-center">
+      <View className="w-16 h-16 rounded-3xl bg-dark-elevated items-center justify-center mb-1 border border-dark-border">
+        <Text className="text-3xl">{icon}</Text>
+      </View>
+      <Text className="text-gray-200 text-xl font-bold text-center">
         {title}
       </Text>
       {subtitle && (
-        <Text className="text-gray-500 text-sm text-center">{subtitle}</Text>
+        <Text className="text-gray-500 text-sm text-center max-w-xs leading-5">
+          {subtitle}
+        </Text>
       )}
-      {action && <View className="mt-4">{action}</View>}
+      {action && <View className="mt-2">{action}</View>}
     </View>
   );
 }

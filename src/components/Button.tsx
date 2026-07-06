@@ -58,7 +58,7 @@ export function Button({
       accessibilityRole="button"
       accessibilityLabel={title}
       accessibilityState={{ disabled: isDisabled, busy: loading }}
-      className={`${variantBase[variant]} ${sizeStyles[size]} ${fullWidth ? "w-full" : ""} flex-row items-center justify-center gap-2 ${isDisabled ? "opacity-40" : "active:opacity-80 hover:opacity-90"} ${className}`.trim().replace(/\s+/g, " ")}
+      className={`${variantBase[variant]} ${sizeStyles[size]} ${fullWidth ? "w-full" : ""} flex-row items-center justify-center gap-2 pressable-scale ${isDisabled ? "opacity-40" : "hover:opacity-90"} ${className}`.trim().replace(/\s+/g, " ")}
     >
       {loading ? (
         <ActivityIndicator

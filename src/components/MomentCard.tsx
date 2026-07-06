@@ -151,10 +151,10 @@ export function MomentCard({ moment, testID }: MomentCardProps) {
           </View>
           <Pressable
             onPress={handleLike}
-            className="items-center active:opacity-60"
+            className="items-center pressable-scale"
           >
             <Text
-              className={`text-lg ${liked ? "text-brand-primary" : "text-gray-500"}`}
+              className={`text-lg transition-all duration-normal ${liked ? "text-brand-primary" : "text-gray-500"}`}
             >
               {liked ? "❤" : "♡"}
             </Text>

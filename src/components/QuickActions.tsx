@@ -52,7 +52,7 @@ export function QuickActions({ testID }: { testID?: string }) {
           <Pressable
             key={action.id}
             onPress={() => handlePress(action)}
-            className="flex-row items-center gap-3 p-3 rounded-xl bg-dark-elevated hover:bg-dark-muted active:opacity-70"
+            className="flex-row items-center gap-3 p-3 rounded-xl bg-dark-elevated hover:bg-dark-muted transition-all duration-normal pressable-scale"
             accessibilityRole="button"
             accessibilityLabel={action.label}
           >
