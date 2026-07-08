@@ -29,7 +29,7 @@
     },
     "web": {
       "bundler": "metro",
-      "output": "single",
+      "output": "static",
       "favicon": "./assets/favicon.png",
       "backgroundColor": "#0f0f11",
       "themeColor": "#ff3b30",
