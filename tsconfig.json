@@ -17,5 +17,5 @@
     ".expo/types/**/*.d.ts",
     "nativewind-env.d.ts"
   ],
-  "exclude": ["backend", "api", "node_modules"]
+  "exclude": ["backend", "api", "node_modules", "hemp", "cpx-labs"]
 }

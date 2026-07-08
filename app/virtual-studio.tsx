@@ -335,8 +335,6 @@ export default function VirtualStudio() {
           const isHovered = mesh.userData.furnitureId === hoveredFurnitureId;
           
           const pulse = 0.05 + Math.sin(time * 0.002 + i * 1.2) * 0.04;
-          const targetEmissive = isHovered ? 0.4 : pulse;
-          const currentEmissive = (mesh.material.emissive as ThreeAny).getHex() === 0x000000 ? pulse : pulse; // Fallback math, better to just lerp a scalar
           
           mesh.material.emissive = furnitureBaseColors[i].clone().multiplyScalar(isHovered ? 0.3 : pulse);
           
