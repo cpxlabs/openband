@@ -62,7 +62,7 @@
     "lint": "npx tsc --noEmit",
     "test": "npx vitest run",
     "test:legacy": "npx tsx --test tests/presets.test.ts tests/types.test.ts",
-    "build": "node scripts/build.js",
+    "build": "npx expo export --platform web",
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",

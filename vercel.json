@@ -1,9 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "expo",
   "buildCommand": "npm run lint && npm run test && npm run test:legacy && npm run build",
-  "outputDirectory": "dist",
   "cleanUrls": true,
-  "framework": null,
   "build": {
     "env": {
       "NODE_OPTIONS": "--max-old-space-size=4096"
@@ -13,8 +12,5 @@
     "api/index.ts": {
       "maxDuration": 30
     }
-  },
-  "rewrites": [
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
-  ]
+  }
 }
