@@ -177,7 +177,7 @@ export default function Library() {
             </Pressable>
             <Pressable
               onPress={() => router.push(`/studio/${item.id}`)}
-              className="px-3 py-2 rounded-lg bg-dark-muted active:opacity-70 mr-1"
+              className="px-3 py-2 active:opacity-70 mr-1"
             >
               <Text className="text-brand-accent text-sm font-semibold">Abrir →</Text>
             </Pressable>
