@@ -4,6 +4,11 @@
   "outputDirectory": "dist",
   "cleanUrls": true,
   "framework": null,
+  "build": {
+    "env": {
+      "NODE_OPTIONS": "--max-old-space-size=4096"
+    }
+  },
   "functions": {
     "api/index.ts": {
       "maxDuration": 30
