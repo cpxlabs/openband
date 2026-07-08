@@ -12,6 +12,7 @@ import {
 import { useRouter } from "expo-router";
 import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
 import {
+  Card,
   Badge,
   ProgressBar,
   PageHeader,
@@ -247,7 +248,7 @@ const FeedPostCard = memo(function FeedPostCard({
   onPlayed,
 }: FeedPostCardProps) {
   return (
-    <View className={`card-premium mx-4 tablet:mx-2 mb-3 ${isThisPlaying ? "border-brand-primary/40" : ""}`}>
+    <Card highlighted={isThisPlaying} className="mx-4 tablet:mx-2 mb-3">
       <View className="p-4">
         <View className="flex-row items-start gap-3">
           <Avatar name={item.author} size="md" />
@@ -261,12 +262,11 @@ const FeedPostCard = memo(function FeedPostCard({
                   {item.authorHandle}
                 </Text>
               </View>
-              <View className="bg-dark-muted/30 px-2 py-1 rounded-lg flex-row items-center gap-1">
-                <Text className="text-gray-400 text-[9px]">▶</Text>
-                <Text className="text-gray-400 text-[10px] font-semibold">
-                  {formatCount(item.plays)}
-                </Text>
-              </View>
+              <Badge
+                text={formatCount(item.plays)}
+                icon="▶"
+                variant="play"
+              />
             </View>
 
             <View className="flex-row items-center gap-2 mt-2">
@@ -283,68 +283,72 @@ const FeedPostCard = memo(function FeedPostCard({
             </View>
           </View>
         </View>
-      </View>
 
-      <Pressable
-        onPress={() => {
-          onPlay(item);
-          onPlayed(item.id);
-        }}
-        disabled={isThisLoading}
-        accessibilityRole="button"
-        accessibilityLabel={isThisLoading ? "Carregando áudio" : isThisPlaying ? "Pausar áudio" : "Ouvir áudio"}
-        accessibilityState={{ disabled: isThisLoading }}
-        className={`mx-4 mb-3 h-12 rounded-xl items-center justify-center flex-row gap-2 ${
-          isThisPlaying ? "bg-green-600" : "bg-brand-primary"
-        } shadow-sm ${isThisPlaying ? "shadow-green-600/20" : "shadow-brand-primary/20"}`}
-      >
-        <Text className="text-white text-base">
-          {isThisLoading ? "…" : isThisPlaying ? "⏸" : "▶"}
-        </Text>
-        <Text className="text-white font-bold text-sm">
-          {isThisLoading ? "Carregando" : isThisPlaying ? "Pausar" : "Ouvir"}
-        </Text>
-      </Pressable>
-
-      <View className="px-4 pb-4 flex-row items-center gap-4">
         <Pressable
-          onPress={() => onLike(item.id)}
-          className="flex-row items-center gap-1.5 active:opacity-60"
+          onPress={() => {
+            onPlay(item);
+            onPlayed(item.id);
+          }}
+          disabled={isThisLoading}
+          accessibilityRole="button"
+          accessibilityLabel={isThisLoading ? "Carregando áudio" : isThisPlaying ? "Pausar áudio" : "Ouvir áudio"}
+          accessibilityState={{ disabled: isThisLoading }}
+          className={`mt-3 h-10 rounded-xl items-center justify-center flex-row gap-2 ${
+            isThisPlaying ? "bg-green-600" : "btn-secondary"
+          }`}
         >
           <Text
-            className={`text-base ${item.userLiked ? "text-brand-primary" : "text-gray-500"}`}
+            className={`text-sm ${isThisPlaying ? "text-white" : "text-brand-primary"}`}
           >
-            {item.userLiked ? "❤" : "♡"}
+            {isThisLoading ? "…" : isThisPlaying ? "⏸" : "▶"}
           </Text>
           <Text
-            className={`text-xs font-semibold ${item.userLiked ? "text-brand-primary" : "text-gray-500"}`}
+            className={`font-bold text-xs ${isThisPlaying ? "text-white" : "text-brand-primary"}`}
           >
-            {formatCount(item.likes)}
+            {isThisLoading ? "Carregando" : isThisPlaying ? "Pausar" : "Ouvir"}
           </Text>
         </Pressable>
 
-        <Pressable
-          onPress={() => onRemix(item)}
-          className="flex-row items-center gap-1.5 px-3 py-1.5 rounded-full bg-dark-elevated border border-dark-border/60 active:opacity-70"
-        >
-          <Text className="text-gray-400 text-xs">🔄</Text>
-          <Text className="text-gray-400 text-[10px] font-semibold">
-            Remix
-          </Text>
-        </Pressable>
+        <View className="flex-row items-center gap-3 mt-3">
+          <Pressable
+            onPress={() => onLike(item.id)}
+            className="flex-row items-center gap-1 active:opacity-60"
+          >
+            <Text
+              className={`text-base ${item.userLiked ? "text-brand-primary" : "text-gray-500"}`}
+            >
+              {item.userLiked ? "❤" : "♡"}
+            </Text>
+            <Text
+              className={`text-xs font-semibold ${item.userLiked ? "text-brand-primary" : "text-gray-500"}`}
+            >
+              {formatCount(item.likes)}
+            </Text>
+          </Pressable>
 
-        <Pressable
-          onPress={() => onShare(item)}
-          className="flex-row items-center gap-1.5 px-3 py-1.5 rounded-full bg-dark-elevated border border-dark-border/60 active:opacity-70"
-        >
-          <Text className="text-gray-400 text-xs">↗</Text>
-          <Text className="text-gray-400 text-[10px] font-semibold">
-            Compartilhar
-          </Text>
-        </Pressable>
+          <Pressable
+            onPress={() => onRemix(item)}
+            className="flex-row items-center gap-1 px-2.5 py-1 rounded-full bg-dark-elevated border border-dark-border active:opacity-70"
+          >
+            <Text className="text-gray-400 text-xs">🔄</Text>
+            <Text className="text-gray-400 text-[10px] font-semibold">
+              Remix
+            </Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => onShare(item)}
+            className="flex-row items-center gap-1 px-2.5 py-1 rounded-full bg-dark-elevated border border-dark-border active:opacity-70"
+          >
+            <Text className="text-gray-400 text-xs">↗</Text>
+            <Text className="text-gray-400 text-[10px] font-semibold">
+              Compartilhar
+            </Text>
+          </Pressable>
+        </View>
       </View>
       {isThisPlaying && <LiveProgressBar audioRef={audioRef} />}
-    </View>
+    </Card>
   );
 });
 

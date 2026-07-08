@@ -232,62 +232,46 @@ export default function Moments() {
       >
         <Pressable
           onPress={() => setTab("moments")}
-          className={`flex-1 py-2.5 rounded-xl items-center border flex-row justify-center gap-2 ${
-            tab === "moments" ? "bg-brand-primary/15 border-brand-primary/50" : "bg-dark-elevated border-dark-border/50"
-          }`}
+          className={`flex-1 py-2 rounded-xl items-center border ${tab === "moments" ? "bg-brand-primary/20 border-brand-primary" : "bg-dark-elevated border-dark-border"}`}
         >
-          <Text
-            className={`text-xs ${tab === "moments" ? "text-brand-primary" : "text-gray-400"}`}
-          >
-            ♫
-          </Text>
           <Text
             className={`text-xs font-bold ${tab === "moments" ? "text-brand-primary" : "text-white"}`}
           >
-            Momentos
+            ♫ Momentos
           </Text>
         </Pressable>
         <Pressable
           onPress={() => setTab("packs")}
-          className={`flex-1 py-2.5 rounded-xl items-center border flex-row justify-center gap-2 ${
-            tab === "packs" ? "bg-brand-primary/15 border-brand-primary/50" : "bg-dark-elevated border-dark-border/50"
-          }`}
+          className={`flex-1 py-2 rounded-xl items-center border ${tab === "packs" ? "bg-brand-accent/20 border-brand-accent" : "bg-dark-elevated border-dark-border"}`}
         >
           <Text
-            className={`text-xs ${tab === "packs" ? "text-brand-primary" : "text-gray-400"}`}
+            className={`text-xs font-bold ${tab === "packs" ? "text-brand-accent" : "text-white"}`}
           >
-            🎁
-          </Text>
-          <Text
-            className={`text-xs font-bold ${tab === "packs" ? "text-brand-primary" : "text-white"}`}
-          >
-            Free Packs
+            🎁 Free Packs
           </Text>
         </Pressable>
       </View>
 
       {credits.length > 0 && (
         <View
-          className="px-4 tablet:px-6 mb-3"
+          className="px-4 tablet:px-6 mb-3 p-2.5 rounded-xl bg-brand-accent/10 border border-brand-accent/20"
           style={{
             maxWidth: LAYOUT_MAX_WIDTHS.moments,
             alignSelf: "center",
             width: "100%",
           }}
         >
-          <View className="p-3 rounded-xl bg-brand-primary/10 border border-brand-primary/20">
-            <Text className="text-brand-primary text-[10px] font-bold uppercase tracking-wider">
-              Créditos
+          <Text className="text-brand-accent text-[10px] font-bold uppercase tracking-wider">
+            Créditos
+          </Text>
+          {credits.map((c, i) => (
+            <Text key={i} className="text-gray-300 text-[10px] mt-0.5">
+              • {c.sample} por {c.artist}
             </Text>
-            {credits.map((c, i) => (
-              <Text key={i} className="text-gray-300 text-[10px] mt-0.5">
-                • {c.sample} por {c.artist}
-              </Text>
-            ))}
-            <Text className="text-gray-500 text-[8px] mt-1">
-              Lembre-se de creditar os artistas ao publicar!
-            </Text>
-          </View>
+          ))}
+          <Text className="text-gray-500 text-[8px] mt-1">
+            Lembre-se de creditar os artistas ao publicar!
+          </Text>
         </View>
       )}
 
@@ -311,7 +295,7 @@ export default function Moments() {
           <View
             className="px-4 tablet:px-6 gap-3 tablet:flex-row tablet:flex-wrap tablet:gap-4"
           >
-            <View className="card-premium p-4 mb-1 w-full">
+            <View className="card p-3 mb-1 w-full">
               <Text className="text-gray-400 text-xs leading-relaxed">
                 Samples gratuitos feitos por artistas da comunidade. Use nos
                 seus projetos e credite o artista!
@@ -320,7 +304,7 @@ export default function Moments() {
             {FREE_SAMPLE_PACKS.map((pack) => (
               <View
                 key={pack.id}
-                className="card-premium overflow-hidden w-full tablet:w-[49%]"
+                className="card overflow-hidden w-full tablet:w-[49%]"
               >
                 <View className="p-4">
                   <View className="flex-row items-start gap-3 mb-3">
@@ -350,7 +334,7 @@ export default function Moments() {
                     {pack.samples.map((s) => (
                       <View
                         key={s}
-                        className="bg-dark-elevated border border-dark-border/50 rounded-lg px-2 py-1"
+                        className="bg-dark-elevated border border-dark-border rounded-lg px-2 py-1"
                       >
                         <Text className="text-gray-300 text-[10px]">{s}</Text>
                       </View>

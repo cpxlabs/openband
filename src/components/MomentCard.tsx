@@ -129,20 +129,9 @@ export function MomentCard({ moment, testID }: MomentCardProps) {
   return (
     <View
       testID={testID}
-      className="mb-4 card-premium"
+      className="mb-4 bg-dark-surface rounded-2xl border border-dark-border overflow-hidden"
     >
-      {moment.imageUrl && (
-        <View className="h-48 bg-dark-elevated relative">
-          <Image
-            source={{ uri: moment.imageUrl }}
-            className="w-full h-full"
-            resizeMode="cover"
-          />
-          <View className="absolute inset-0 bg-gradient-to-b from-transparent to-dark-surface/80" />
-        </View>
-      )}
-
-      <View className="p-4">
+      <View className="p-4 pb-0">
         <View className="flex-row items-center gap-3 mb-3">
           <Avatar name={moment.artistName} size="md" />
           <View className="flex-1">
@@ -150,7 +139,7 @@ export function MomentCard({ moment, testID }: MomentCardProps) {
               <Text className="text-white font-bold text-sm">
                 {moment.artistName}
               </Text>
-              <View className="bg-brand-primary/15 px-1.5 py-0.5 rounded">
+              <View className="bg-brand-primary/20 px-1.5 py-0.5 rounded">
                 <Text className="text-brand-primary text-[8px] font-bold">
                   ARTISTA
                 </Text>
@@ -181,83 +170,90 @@ export function MomentCard({ moment, testID }: MomentCardProps) {
           {moment.caption}
         </Text>
 
-        <View className="rounded-xl bg-dark-elevated border border-dark-border/50 overflow-hidden">
-          <View className="p-3 gap-2">
-            <View className="flex-row items-center justify-between">
-              <View className="flex-row items-center gap-2 flex-1">
-                <View className="w-8 h-8 rounded-lg bg-brand-primary/15 items-center justify-center">
-                  <Text className="text-brand-primary text-sm">♫</Text>
-                </View>
-                <View className="flex-1">
-                  <Text className="text-white text-xs font-semibold">
-                    {moment.songTitle}
-                  </Text>
-                  <Text className="text-gray-500 text-[9px]">
-                    {moment.artistName} · {Math.floor(moment.songDuration / 60)}:
-                    {String(moment.songDuration % 60).padStart(2, "0")}
-                  </Text>
-                </View>
-              </View>
-              <Pressable
-                onPress={handlePlay}
-                className={`w-9 h-9 rounded-full items-center justify-center shadow-sm ${isPlaying ? "bg-green-600 shadow-green-600/20" : "bg-brand-primary shadow-brand-primary/20"}`}
-              >
-                <Text className="text-white text-sm">
-                  {isPlaying ? "⏸" : "▶"}
-                </Text>
-              </Pressable>
-            </View>
-
-            {playerActive && <ProgressBar progress={progressPercent} />}
-
-            <MiniMastering
-              onPresetChange={setMasterPreset}
-              activePreset={masterPreset}
-              eqValues={eqValues}
-              onEqChange={handleEqChange}
+        {moment.imageUrl && (
+          <View className="rounded-xl overflow-hidden mb-3 h-48 bg-dark-elevated">
+            <Image
+              source={{ uri: moment.imageUrl }}
+              className="w-full h-full"
+              resizeMode="cover"
             />
-            {playerActive && (
-              <MomentAudioPlayer
-                isPlaying={isPlaying}
-                onStatusChange={handleStatusChange}
-                songTitle={moment.songTitle}
-                songDuration={moment.songDuration}
-              />
-            )}
           </View>
-        </View>
+        )}
+      </View>
 
-        <View className="flex-row items-center gap-4 mt-3">
-          <Pressable
-            onPress={() => {}}
-            className="flex-row items-center gap-1.5 active:opacity-60"
-          >
-            <Text className="text-gray-500 text-xs">💬</Text>
-            <Text className="text-gray-500 text-[11px] font-medium">
-              {formatCount(moment.comments)}
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={handleLike}
-            className="flex-row items-center gap-1.5 active:opacity-60"
-          >
-            <Text
-              className={`text-xs ${liked ? "text-brand-primary" : "text-gray-500"}`}
+      <View className="mx-4 mb-3 rounded-xl bg-dark-elevated border border-dark-border overflow-hidden">
+        <View className="p-3 gap-2">
+          <View className="flex-row items-center justify-between">
+            <View className="flex-row items-center gap-2 flex-1">
+              <View className="w-8 h-8 rounded-lg bg-brand-accent/20 items-center justify-center">
+                <Text className="text-brand-accent text-sm">♫</Text>
+              </View>
+              <View className="flex-1">
+                <Text className="text-white text-xs font-semibold">
+                  {moment.songTitle}
+                </Text>
+                <Text className="text-gray-500 text-[9px]">
+                  {moment.artistName} · {Math.floor(moment.songDuration / 60)}:
+                  {String(moment.songDuration % 60).padStart(2, "0")}
+                </Text>
+              </View>
+            </View>
+            <Pressable
+              onPress={handlePlay}
+              className={`w-9 h-9 rounded-full items-center justify-center ${isPlaying ? "bg-green-600" : "bg-brand-primary"}`}
             >
-              {liked ? "❤" : "♡"}
-            </Text>
-            <Text
-              className={`text-[11px] font-medium ${liked ? "text-brand-primary" : "text-gray-500"}`}
-            >
-              Curtir
-            </Text>
-          </Pressable>
-          <View className="flex-row items-center gap-1.5">
-            <Text className="text-gray-500 text-xs">↗</Text>
-            <Text className="text-gray-500 text-[11px] font-medium">
-              Compartilhar
-            </Text>
+              <Text className="text-white text-sm">
+                {isPlaying ? "⏸" : "▶"}
+              </Text>
+            </Pressable>
           </View>
+
+          {playerActive && <ProgressBar progress={progressPercent} />}
+
+          <MiniMastering
+            onPresetChange={setMasterPreset}
+            activePreset={masterPreset}
+            eqValues={eqValues}
+            onEqChange={handleEqChange}
+          />
+          {playerActive && (
+            <MomentAudioPlayer
+              isPlaying={isPlaying}
+              onStatusChange={handleStatusChange}
+              songTitle={moment.songTitle}
+              songDuration={moment.songDuration}
+            />
+          )}
+        </View>
+      </View>
+
+      <View className="px-4 pb-3 flex-row items-center gap-4">
+        <View className="flex-row items-center gap-1">
+          <Text className="text-gray-500 text-xs">💬</Text>
+          <Text className="text-gray-500 text-[11px] font-medium">
+            {formatCount(moment.comments)}
+          </Text>
+        </View>
+        <Pressable
+          onPress={handleLike}
+          className="flex-row items-center gap-1 active:opacity-60"
+        >
+          <Text
+            className={`text-xs ${liked ? "text-brand-primary" : "text-gray-500"}`}
+          >
+            {liked ? "❤" : "♡"}
+          </Text>
+          <Text
+            className={`text-[11px] font-medium ${liked ? "text-brand-primary" : "text-gray-500"}`}
+          >
+            Curtir
+          </Text>
+        </Pressable>
+        <View className="flex-row items-center gap-1">
+          <Text className="text-gray-500 text-xs">↗</Text>
+          <Text className="text-gray-500 text-[11px] font-medium">
+            Compartilhar
+          </Text>
         </View>
       </View>
     </View>
