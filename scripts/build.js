@@ -4,7 +4,7 @@ const path = require('path');
 
 try {
   console.log('Starting Expo web export...');
-  execSync('npx expo export --platform web', { stdio: 'inherit' });
+  execSync('npx expo export --platform web --clear', { stdio: 'inherit' });
 
   console.log('Copying assets...');
   if (fs.existsSync('assets/sw.js')) {

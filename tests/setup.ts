@@ -1,5 +1,34 @@
 import "@testing-library/jest-dom";
-import { vi } from "vitest";
+import { vi, beforeAll } from "vitest";
+
+beforeAll(() => {
+  const originalError = console.error.bind(console);
+  const originalWarn = console.warn.bind(console);
+  console.error = (...args: unknown[]) => {
+    const msg = String(args[0]);
+    if (
+      msg.includes("Not implemented") ||
+      msg.includes("unique \"key\" prop") ||
+      msg.includes("props.pointerEvents is deprecated") ||
+      msg.includes('"shadow*" style props are deprecated')
+    ) return;
+    originalError(...args);
+  };
+  console.warn = (...args: unknown[]) => {
+    const msg = String(args[0]);
+    if (
+      msg.includes("Not implemented") ||
+      msg.includes("props.pointerEvents is deprecated") ||
+      msg.includes('"shadow*" style props are deprecated')
+    ) return;
+    originalWarn(...args);
+  };
+
+  window.HTMLMediaElement.prototype.pause = vi.fn();
+  window.HTMLMediaElement.prototype.play = vi.fn().mockResolvedValue(undefined);
+  window.HTMLMediaElement.prototype.load = vi.fn();
+  window.HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue(null);
+});
 
 (global as any).__DEV__ = true;
 

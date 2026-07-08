@@ -12,6 +12,14 @@ export default defineConfig({
         inline: ["react-native"],
       },
     },
+    onConsoleLog(log) {
+      if (
+        log.includes("Not implemented") ||
+        log.includes('unique "key" prop') ||
+        log.includes("props.pointerEvents is deprecated") ||
+        log.includes('"shadow*" style props are deprecated')
+      ) return false;
+    },
   },
   resolve: {
     alias: {

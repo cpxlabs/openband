@@ -343,8 +343,7 @@ export function VisualEQ({
         {/* Frequency response curve (filled area under curve) */}
         <View
           className="absolute left-0 right-0 top-0 bottom-0"
-          style={{ left: 0 }}
-          pointerEvents="none"
+          style={{ left: 0, pointerEvents: "none" }}
         >
           {curvePathPoints.map((pt, i) => {
             if (i === 0) return null;
@@ -415,10 +414,7 @@ export function VisualEQ({
                 height: 14,
                 backgroundColor: isActive ? "#fff" : band.gain >= 0 ? "#5ac8fa" : "#f97316",
                 borderColor: isActive ? "#5ac8fa" : "#fff",
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.3,
-                shadowRadius: 3,
+                boxShadow: "0px 2px 3px rgba(0,0,0,0.3)",
                 elevation: 4,
               }}
             />
@@ -436,8 +432,8 @@ export function VisualEQ({
               borderColor: "#5ac8fa",
               borderWidth: 1,
               borderRadius: 4,
+              pointerEvents: "none",
             }}
-            pointerEvents="none"
           >
             <Text className="text-[9px] font-bold" style={{ color: "#5ac8fa" }}>
               {dragValue.gain > 0 ? "+" : ""}{dragValue.gain.toFixed(1)} dB
