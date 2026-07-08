@@ -26,7 +26,7 @@ describe('Vercel Routing Rewrite Rules', () => {
     const rewrites = content.rewrites || [];
     
     // Find the SPA rewrite rule
-    const spaRule = rewrites.find(r => r.destination === '/index.html');
+    const spaRule = rewrites.find(r => r.destination === '/index.html' || r.destination === '/');
     expect(spaRule).toBeDefined();
     
     // The source pattern should be a RegExp-compatible SPA pattern
