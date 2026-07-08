@@ -312,12 +312,15 @@ src/
     useUniversalAudio.ts — expo-audio wrapper with AudioContext resume
 
 tests/
-  components.test.tsx — Vitest component rendering + interaction tests (147 tests)
-  components2.test.tsx — Vitest additional component tests (20 tests)
+  components.test.tsx — Vitest component rendering + interaction tests (153 tests)
+  components2.test.tsx — Vitest additional component tests (28 tests)
   components3.test.tsx — Vitest additional component tests (20 tests)
-  screens.test.tsx  — Vitest screen-level tests (27 tests)
-  lib.test.ts        — Vitest library function tests (73 tests)
-  lib2.test.ts       — Vitest additional library tests (51 tests)
+  screens.test.tsx  — Vitest screen-level tests (28 tests)
+  lib.test.ts        — Vitest library function tests (66 tests)
+  lib2.test.ts       — Vitest additional library tests (57 tests)
+  lib3.test.ts       — Vitest additional library tests (77 tests)
+  lib4.test.ts       — Vitest additional library tests (40 tests)
+  lib5.test.ts       — Vitest universalAudio + hardwareIO tests (20 tests)
   responsive.test.ts — Vitest breakpoint & dimension tests (16 tests)
   types.test.ts      — Legacy node:test type structure tests (12 tests)
   presets.test.ts    — Legacy node:test preset count + structure tests (12 tests)
