@@ -3,7 +3,6 @@ import { View, Text, Pressable, Image } from "react-native";
 import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
 import { Avatar } from "./Avatar";
 import { ProgressBar } from "./ProgressBar";
-import { MiniMastering } from "./MiniMastering";
 import { generatePreviewUrl } from "../lib/constants";
 
 export interface MomentData {
@@ -90,16 +89,8 @@ export function MomentCard({ moment, testID }: MomentCardProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [masterPreset, setMasterPreset] = useState(0);
   const [liked, setLiked] = useState(moment.userLiked);
   const [likeCount, setLikeCount] = useState(moment.likes);
-  const [eqValues, setEqValues] = useState<Record<string, number>>({
-    bass: 0,
-    lowMid: 0,
-    mid: 0,
-    highMid: 0,
-    treble: 0,
-  });
   const handlePlay = useCallback(() => {
     if (!playerActive) {
       setPlayerActive(true);
@@ -119,10 +110,6 @@ export function MomentCard({ moment, testID }: MomentCardProps) {
     setLiked(!liked);
     setLikeCount((prev) => (liked ? prev - 1 : prev + 1));
   }, [liked]);
-
-  const handleEqChange = useCallback((band: string, value: number) => {
-    setEqValues((prev) => ({ ...prev, [band]: value }));
-  }, []);
 
   const progressPercent = duration ? progress : 0;
 
@@ -181,50 +168,39 @@ export function MomentCard({ moment, testID }: MomentCardProps) {
         )}
       </View>
 
-      <View className="mx-4 mb-3 rounded-xl bg-dark-elevated border border-dark-border overflow-hidden">
-        <View className="p-3 gap-2">
-          <View className="flex-row items-center justify-between">
-            <View className="flex-row items-center gap-2 flex-1">
-              <View className="w-8 h-8 rounded-lg bg-brand-accent/20 items-center justify-center">
-                <Text className="text-brand-accent text-sm">♫</Text>
-              </View>
-              <View className="flex-1">
-                <Text className="text-white text-xs font-semibold">
-                  {moment.songTitle}
-                </Text>
-                <Text className="text-gray-500 text-[9px]">
-                  {moment.artistName} · {Math.floor(moment.songDuration / 60)}:
-                  {String(moment.songDuration % 60).padStart(2, "0")}
-                </Text>
-              </View>
-            </View>
-            <Pressable
-              onPress={handlePlay}
-              className={`w-9 h-9 rounded-full items-center justify-center ${isPlaying ? "bg-green-600" : "bg-brand-primary"}`}
-            >
-              <Text className="text-white text-sm">
-                {isPlaying ? "⏸" : "▶"}
-              </Text>
-            </Pressable>
+      <View className="px-4 mb-4 gap-2">
+        <View className="flex-row items-center gap-3">
+          <Pressable
+            onPress={handlePlay}
+            className={`w-10 h-10 rounded-full items-center justify-center ${isPlaying ? "bg-green-600" : "bg-brand-accent"}`}
+          >
+            <Text className="text-white text-base ml-0.5">
+              {isPlaying ? "⏸" : "▶"}
+            </Text>
+          </Pressable>
+          <View className="flex-1">
+            <Text className="text-white text-sm font-semibold">
+              {moment.songTitle}
+            </Text>
+            <Text className="text-gray-500 text-[10px] mt-0.5">
+              {Math.floor(moment.songDuration / 60)}:
+              {String(moment.songDuration % 60).padStart(2, "0")}
+            </Text>
           </View>
-
-          {playerActive && <ProgressBar progress={progressPercent} />}
-
-          <MiniMastering
-            onPresetChange={setMasterPreset}
-            activePreset={masterPreset}
-            eqValues={eqValues}
-            onEqChange={handleEqChange}
-          />
-          {playerActive && (
-            <MomentAudioPlayer
-              isPlaying={isPlaying}
-              onStatusChange={handleStatusChange}
-              songTitle={moment.songTitle}
-              songDuration={moment.songDuration}
-            />
-          )}
         </View>
+
+        <View className="mt-1">
+          <ProgressBar progress={progressPercent} />
+        </View>
+
+        {playerActive && (
+          <MomentAudioPlayer
+            isPlaying={isPlaying}
+            onStatusChange={handleStatusChange}
+            songTitle={moment.songTitle}
+            songDuration={moment.songDuration}
+          />
+        )}
       </View>
 
       <View className="px-4 pb-3 flex-row items-center gap-4">

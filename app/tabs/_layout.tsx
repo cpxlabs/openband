@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { Tabs, useRouter, useSegments, type Href } from "expo-router";
 import { Text, View, Pressable, type ViewStyle } from "react-native";
 import { useResponsive } from "../../src/lib/responsive";
-import { MiniPlayer, Sidebar } from "../../src/components";
+import { MiniPlayer, Sidebar, RightSidebar } from "../../src/components";
 
 function TabIcon({ label, focused }: { label: string; focused: boolean }) {
   const icons: Record<string, string> = {
@@ -35,6 +35,7 @@ export default function TabLayout() {
   const segments = useSegments();
   const { breakpoint, isDesktop, headerHeight, bottomNavHeight } = useResponsive();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [rightDrawerOpen, setRightDrawerOpen] = useState(false);
 
   const lastSegment = segments[segments.length - 1] || "index"
   // At /tabs → lastSegment is "tabs" (no child segment) → map to "index"
@@ -171,14 +172,24 @@ export default function TabLayout() {
         </Tabs>
         <MiniPlayer />
       </View>
+      {isDesktop && (
+        <RightSidebar isPersistent isOpen onClose={() => {}} />
+      )}
       {!isDesktop && (
-        <Sidebar
-          currentRoute={currentSegment}
-          onNavigate={handleNavigate}
-          isOpen={drawerOpen}
-          onClose={() => setDrawerOpen(false)}
-          isPersistent={false}
-        />
+        <>
+          <Sidebar
+            currentRoute={currentSegment}
+            onNavigate={handleNavigate}
+            isOpen={drawerOpen}
+            onClose={() => setDrawerOpen(false)}
+            isPersistent={false}
+          />
+          <RightSidebar
+            isPersistent={false}
+            isOpen={rightDrawerOpen}
+            onClose={() => setRightDrawerOpen(false)}
+          />
+        </>
       )}
     </View>
   );

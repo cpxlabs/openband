@@ -61,3 +61,4 @@ export { default as LightControls } from "./LightControls";
 export { Toast, showToast } from "./Toast";
 export { VuMeter } from "./VuMeter";
 export { TrackColorPicker } from "./TrackColorPicker";
+export { RightSidebar } from "./RightSidebar";

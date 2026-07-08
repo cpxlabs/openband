@@ -17,7 +17,6 @@ import {
   ProgressBar,
   PageHeader,
   Avatar,
-  QuickActions,
   setMiniPlayerState,
   QuickTools,
   NewProject,
@@ -293,17 +292,17 @@ const FeedPostCard = memo(function FeedPostCard({
           accessibilityRole="button"
           accessibilityLabel={isThisLoading ? "Carregando áudio" : isThisPlaying ? "Pausar áudio" : "Ouvir áudio"}
           accessibilityState={{ disabled: isThisLoading }}
-          className={`mt-3 h-11 rounded-xl items-center justify-center flex-row gap-2 pressable-scale ${
-            isThisPlaying ? "bg-green-600" : "btn-secondary"
+          className={`mt-4 h-12 rounded-2xl items-center justify-center flex-row gap-2 pressable-scale ${
+            isThisPlaying ? "bg-green-600" : "bg-brand-primary"
           }`}
         >
           <Text
-            className={`text-sm ${isThisPlaying ? "text-white" : "text-brand-primary"}`}
+            className={`text-sm text-white`}
           >
             {isThisLoading ? "…" : isThisPlaying ? "⏸" : "▶"}
           </Text>
           <Text
-            className={`font-bold text-xs ${isThisPlaying ? "text-white" : "text-brand-primary"}`}
+            className={`font-bold text-sm text-white`}
           >
             {isThisLoading ? "Carregando" : isThisPlaying ? "Pausar" : "Ouvir"}
           </Text>
@@ -659,10 +658,13 @@ export default function Feed() {
       </View>
 
       <View className="flex-1 flex-row" style={maxWidthStyle}>
-        <View style={resp.isDesktop ? { flex: 7 } : { flex: 1 }}>
+        <View style={{ flex: 1 }}>
           <FlatList
+            key={resp.isDesktop ? 'desktop' : 'mobile'}
+            numColumns={resp.isDesktop ? 2 : 1}
             data={filteredPosts}
             keyExtractor={(item) => item.id}
+            columnWrapperStyle={resp.isDesktop ? { gap: 16 } : undefined}
             contentContainerStyle={{
               paddingBottom: SCREEN_BOTTOM_PADDING,
               paddingHorizontal: resp.isDesktop ? 16 : 0,
@@ -709,12 +711,6 @@ export default function Feed() {
             renderItem={renderItem}
           />
         </View>
-
-        {resp.isDesktop && (
-          <View style={{ flex: 3, paddingLeft: 12 }}>
-            <QuickActions />
-          </View>
-        )}
       </View>
     </View>
   );
