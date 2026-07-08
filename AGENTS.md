@@ -227,9 +227,9 @@ npm run build
 **Goal:** Decide whether to continue or finish.
 
 - **If there are more tasks:** Go back to Phase 1 with the next task
-- **If the task is complete:** Only commit/push if explicitly asked by the user
+- **If the task is complete:** Commit and push all changes.
 
-### Commit conventions (when asked):
+### Commit conventions:
 
 ```
 type: short description (max 72 chars)
