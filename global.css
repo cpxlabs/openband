@@ -10,18 +10,20 @@
 @layer base {
   :root,
   [data-theme="dark"] {
-    --color-dark-bg: #0f0f11;
-    --color-dark-surface: #18181c;
-    --color-dark-elevated: #1e1e24;
-    --color-dark-border: #26262b;
-    --color-dark-muted: #2a2a30;
+    --color-dark-bg: #0a0a0d;
+    --color-dark-surface: #141418;
+    --color-dark-elevated: #1c1c22;
+    --color-dark-border: #2a2a32;
+    --color-dark-muted: #2e2e38;
     --color-light-bg: #ffffff;
     --color-light-surface: #f2f2f7;
     --color-light-elevated: #e5e5ea;
     --color-light-border: #d1d1d6;
     --color-light-muted: #c7c7cc;
     --color-brand-primary: #ff3b30;
+    --color-brand-primaryDark: #cc2f26;
     --color-brand-accent: #007aff;
+    --color-brand-accentDark: #0062cc;
     --color-brand-green: #34c759;
     --color-brand-red: #ff3b30;
     --color-brand-amber: #ff9f0a;
@@ -159,7 +161,7 @@
 
 @layer components {
   .btn-primary {
-    @apply bg-brand-primary rounded-xl px-5 py-3;
+    @apply bg-brand-primary rounded-xl px-5 py-3 shadow-sm shadow-brand-primary/20;
   }
   .btn-ghost {
     @apply bg-transparent rounded-xl px-5 py-3 border border-transparent;
@@ -174,7 +176,7 @@
     @apply w-full mx-auto;
   }
   .modal-overlay {
-    @apply absolute inset-0 bg-black/50;
+    @apply absolute inset-0 bg-black/60;
   }
   .modal-content {
     @apply bg-dark-surface rounded-3xl border border-dark-border;
@@ -187,15 +189,23 @@
   }
 
   .card {
-    @apply bg-dark-surface rounded-2xl border border-dark-border overflow-hidden;
+    @apply bg-dark-surface rounded-xl border border-dark-border/60 overflow-hidden;
   }
 
   .card-elevated {
-    @apply bg-dark-elevated rounded-2xl border border-dark-border shadow-sm;
+    @apply bg-dark-elevated rounded-xl border border-dark-border/60 shadow-sm;
+  }
+
+  .card-premium {
+    @apply bg-dark-surface rounded-2xl border border-dark-border/50 shadow-lg shadow-black/10;
   }
 
   .btn-secondary {
-    @apply bg-dark-muted border border-dark-border rounded-xl active:opacity-80;
+    @apply bg-dark-muted/50 border border-dark-border rounded-xl active:opacity-80;
+  }
+
+  .btn-red {
+    @apply bg-brand-primary rounded-xl px-5 py-3 flex-row items-center justify-center gap-2 shadow-sm shadow-brand-primary/20;
   }
 
   .input-field {
@@ -212,5 +222,33 @@
 
   .badge {
     @apply bg-dark-muted px-2.5 py-1 rounded-full flex-row items-center gap-1;
+  }
+
+  .pill-active {
+    @apply bg-brand-primary/20 border border-brand-primary/60;
+  }
+
+  .pill-inactive {
+    @apply bg-dark-elevated border border-dark-border/60;
+  }
+
+  .mixer-channel {
+    @apply bg-dark-surface rounded-xl border border-dark-border/50;
+  }
+
+  .btn-mute {
+    @apply w-7 h-7 rounded-lg items-center justify-center border border-dark-border/40 bg-dark-muted/30;
+  }
+
+  .btn-mute-active {
+    @apply bg-amber-500/30 border-amber-400/60;
+  }
+
+  .btn-solo {
+    @apply w-7 h-7 rounded-lg items-center justify-center border border-dark-border/40 bg-dark-muted/30;
+  }
+
+  .btn-solo-active {
+    @apply bg-green-500/30 border-green-400/60;
   }
 }
