@@ -3,6 +3,10 @@ const fs = require('fs');
 const path = require('path');
 
 try {
+  console.log('Cleaning output directories...');
+  if (fs.existsSync('dist')) fs.rmSync('dist', { recursive: true, force: true });
+  if (fs.existsSync('public')) fs.rmSync('public', { recursive: true, force: true });
+
   console.log('Starting Expo web export...');
   execSync('npx expo export --platform web --clear', { stdio: 'inherit' });
 
