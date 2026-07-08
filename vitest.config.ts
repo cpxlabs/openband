@@ -1,4 +1,5 @@
 import { defineConfig } from "vitest/config";
+import okReporter from "./tests/ok-reporter";
 
 export default defineConfig({
   test: {
@@ -12,6 +13,7 @@ export default defineConfig({
         inline: ["react-native"],
       },
     },
+    reporters: [okReporter()],
   },
   resolve: {
     alias: {

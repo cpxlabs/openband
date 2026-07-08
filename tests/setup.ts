@@ -73,3 +73,39 @@ vi.mock("expo-secure-store", () => ({
   setItemAsync: vi.fn(),
   deleteItemAsync: vi.fn(),
 }));
+
+if (typeof HTMLCanvasElement !== "undefined") {
+  HTMLCanvasElement.prototype.getContext = function () {
+    return {
+      fillRect: vi.fn(),
+      clearRect: vi.fn(),
+      getImageData: () => ({ data: [] }),
+      putImageData: vi.fn(),
+      createImageData: () => ({ data: [], width: 0, height: 0 }),
+      setTransform: vi.fn(),
+      drawImage: vi.fn(),
+      save: vi.fn(),
+      fillText: vi.fn(),
+      restore: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      closePath: vi.fn(),
+      stroke: vi.fn(),
+      translate: vi.fn(),
+      scale: vi.fn(),
+      rotate: vi.fn(),
+      arc: vi.fn(),
+      fill: vi.fn(),
+      measureText: () => ({ width: 0 }),
+      transform: vi.fn(),
+      rect: vi.fn(),
+      clip: vi.fn(),
+    };
+  } as any;
+}
+
+if (typeof HTMLMediaElement !== "undefined") {
+  HTMLMediaElement.prototype.pause = vi.fn();
+  HTMLMediaElement.prototype.play = vi.fn();
+}
