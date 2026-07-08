@@ -275,7 +275,9 @@ export function importProject(json: string): string | null {
     }
     return null;
   } catch (e) {
-    console.warn("[projectStore] importProject failed:", e);
+    if (process.env.NODE_ENV !== "test") {
+      console.warn("[projectStore] importProject failed:", e);
+    }
     return null;
   }
 }
