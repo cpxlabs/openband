@@ -18,7 +18,7 @@ Before starting any task:
 - [ ] Check `package.json` for available dependencies — **do not add new ones without approval**
 - [ ] Read the exact Expo SDK docs at https://docs.expo.dev/versions/v56.0.0/ before using any Expo API
 - [ ] Check `docs/supabase.md` when setting up or modifying Supabase integration
-- [ ] Check git log (`git log --oneline -10`) to understand recent context
+- [ ] Check git log (`git log --oneline -10`) to understand recent context. **KISS Principle**: If a feature used to work and is now broken, always check the git history (`git log -p`) to find the exact commit that broke it. Revert to the proven historical pattern rather than over-engineering a complex new solution (Keep It Simple, Stupid!).
 - [ ] Run code review via the `code-review` agent before every commit
 
 ---
