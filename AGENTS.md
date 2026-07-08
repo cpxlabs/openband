@@ -437,3 +437,7 @@ This project uses five specialized agents with strict domain boundaries to minim
 3. **Event-Driven Backend (Pub/Sub):** Media Processing Agent never called synchronously. Infrastructure Agent publishes events (e.g., `AssetUploaded`); Media Agent listens and triggers background work.
 4. **Command Pattern + CRDT Integration:** Every action (e.g., `MoveRegionCommand`) has an inverse for Undo. State Agent broadcasts inverse operations to collaborators via WebSockets.
 ```
+
+### F. 3D Studio Scenes
+**Focus:** Consistency and aesthetics in 3D environments.
+- All agents modifying or creating 3D scenes MUST adhere to the [3D Scene Guidelines](docs/3d-scene-guidelines.md).

@@ -127,9 +127,13 @@ export default function VirtualStudio() {
       camera.lookAt(0, 0, 0);
 
       // Renderer
-      const renderer = new THREE.WebGLRenderer({ antialias: false });
+      const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
       renderer.setSize(width, height);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.2;
       container.appendChild(renderer.domElement);
 
       // Lighting
@@ -137,6 +141,15 @@ export default function VirtualStudio() {
 
       const mainLight = new THREE.DirectionalLight(0xffffff, 2.0);
       mainLight.position.set(5, 10, 5);
+      mainLight.castShadow = true;
+      mainLight.shadow.mapSize.set(2048, 2048);
+      mainLight.shadow.camera.near = 0.5;
+      mainLight.shadow.camera.far = 25;
+      mainLight.shadow.camera.left = -10;
+      mainLight.shadow.camera.right = 10;
+      mainLight.shadow.camera.top = 10;
+      mainLight.shadow.camera.bottom = -10;
+      mainLight.shadow.bias = -0.0005;
       scene.add(mainLight);
 
       const fillLight = new THREE.PointLight(0x3b82f6, 1.0, 20);
@@ -149,9 +162,10 @@ export default function VirtualStudio() {
       // Floor
       const floor = new THREE.Mesh(
         new THREE.PlaneGeometry(GRID_SIZE, GRID_SIZE),
-        new THREE.MeshStandardMaterial({ color: FLOOR_COLOR, roughness: 0.9, metalness: 0.1 })
+        new THREE.MeshStandardMaterial({ color: FLOOR_COLOR, roughness: 0.8, metalness: 0.2 })
       );
       floor.rotation.x = -Math.PI / 2;
+      floor.receiveShadow = true;
       scene.add(floor);
 
       // Grid
@@ -167,11 +181,13 @@ export default function VirtualStudio() {
 
       const backWall = new THREE.Mesh(new THREE.PlaneGeometry(GRID_SIZE, 6), wallMat);
       backWall.position.set(0, 3, -GRID_SIZE / 2);
+      backWall.receiveShadow = true;
       scene.add(backWall);
 
       const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(GRID_SIZE, 6), wallMat);
       leftWall.position.set(-GRID_SIZE / 2, 3, 0);
       leftWall.rotation.y = Math.PI / 2;
+      leftWall.receiveShadow = true;
       scene.add(leftWall);
 
       // Furniture
@@ -186,19 +202,23 @@ export default function VirtualStudio() {
 
         const mesh = new THREE.Mesh(
           new THREE.BoxGeometry(f.w, f.h, f.d),
-          new THREE.MeshToonMaterial({ color: baseColor })
+          new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.3, metalness: 0.1 })
         );
         mesh.position.set(f.x, f.y + f.h / 2, f.z);
         mesh.userData = { furnitureId: f.id, route: f.route };
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
         furnitureGroup.add(mesh);
         furnitureMeshes.push(mesh);
 
         // Top highlight
         const topMesh = new THREE.Mesh(
           new THREE.BoxGeometry(f.w - 0.1, 0.05, f.d - 0.1),
-          new THREE.MeshToonMaterial({ color: baseColor.clone().multiplyScalar(1.3) })
+          new THREE.MeshStandardMaterial({ color: baseColor.clone().multiplyScalar(1.3), roughness: 0.2, metalness: 0.2 })
         );
         topMesh.position.set(f.x, f.y + f.h + 0.025, f.z);
+        topMesh.castShadow = true;
+        topMesh.receiveShadow = true;
         furnitureGroup.add(topMesh);
 
         // Sprite label (icon + name)
@@ -212,21 +232,29 @@ export default function VirtualStudio() {
       const avatarGroup = new THREE.Group();
       scene.add(avatarGroup);
 
-      const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.25, 0.6, 4, 8), new THREE.MeshToonMaterial({ color: 0xff3b30 }));
+      const body = new THREE.Mesh(
+        new THREE.CapsuleGeometry(0.25, 0.6, 4, 8), 
+        new THREE.MeshStandardMaterial({ color: 0xff3b30, roughness: 0.4 })
+      );
       body.position.y = 0.55;
+      body.castShadow = true;
       avatarGroup.add(body);
 
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), new THREE.MeshToonMaterial({ color: 0xfde68a }));
+      const head = new THREE.Mesh(
+        new THREE.SphereGeometry(0.2, 16, 16), 
+        new THREE.MeshStandardMaterial({ color: 0xfde68a, roughness: 0.3 })
+      );
       head.position.y = 1.1;
+      head.castShadow = true;
       avatarGroup.add(head);
 
       // Avatar name sprite
       const nameSprite = makeSprite(THREE, "You", 24, 1.6, 2, 0.4);
       avatarGroup.add(nameSprite);
 
-      // Raycaster for click detection
       const raycaster = new THREE.Raycaster();
-      const mouse = new THREE.Vector2();
+      const mouse = new THREE.Vector2(-1, -1);
+      let hoveredFurnitureId: string | null = null;
 
       const handleClick = (event: MouseEvent) => {
         const rect = renderer.domElement.getBoundingClientRect();
@@ -242,7 +270,25 @@ export default function VirtualStudio() {
           setSelectedFurniture(null);
         }
       };
+
+      const handlePointerMove = (event: MouseEvent) => {
+        const rect = renderer.domElement.getBoundingClientRect();
+        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(furnitureMeshes, false);
+        if (intersects.length > 0) {
+          const hit = intersects[0].object as { userData: { furnitureId: string } };
+          hoveredFurnitureId = hit.userData.furnitureId;
+          renderer.domElement.style.cursor = "pointer";
+        } else {
+          hoveredFurnitureId = null;
+          renderer.domElement.style.cursor = "default";
+        }
+      };
+      
       renderer.domElement.addEventListener("click", handleClick);
+      renderer.domElement.addEventListener("pointermove", handlePointerMove);
 
       // WASD movement
       const keys = new Set<string>();
@@ -283,10 +329,20 @@ export default function VirtualStudio() {
         body.position.y = 0.55 + bob;
         head.position.y = 1.1 + bob;
 
-        // Furniture glow pulse (own color, subtle)
+        // Furniture glow pulse (own color, subtle) and hover scale
         for (let i = 0; i < furnitureMeshes.length; i++) {
+          const mesh = furnitureMeshes[i];
+          const isHovered = mesh.userData.furnitureId === hoveredFurnitureId;
+          
           const pulse = 0.05 + Math.sin(time * 0.002 + i * 1.2) * 0.04;
-          furnitureMeshes[i].material.emissive = furnitureBaseColors[i].clone().multiplyScalar(pulse);
+          const targetEmissive = isHovered ? 0.4 : pulse;
+          const currentEmissive = (mesh.material.emissive as ThreeAny).getHex() === 0x000000 ? pulse : pulse; // Fallback math, better to just lerp a scalar
+          
+          mesh.material.emissive = furnitureBaseColors[i].clone().multiplyScalar(isHovered ? 0.3 : pulse);
+          
+          // Smooth scale for hover
+          const targetScale = isHovered ? 1.08 : 1.0;
+          mesh.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.15);
         }
 
         const lc = lightRef.current;
@@ -321,6 +377,7 @@ export default function VirtualStudio() {
         cancelled = true;
         cancelAnimationFrame(animationId);
         renderer.domElement.removeEventListener("click", handleClick);
+        renderer.domElement.removeEventListener("pointermove", handlePointerMove);
         window.removeEventListener("keydown", handleKeyDown);
         window.removeEventListener("keyup", handleKeyUp);
         window.removeEventListener("resize", handleResize);

@@ -280,7 +280,8 @@ openband/
     ├── supabase.md          # Complete Supabase setup guide
     ├── features-analysis.md # Feature comparison vs BandLab/Cubasis
     ├── features-implementation.md # Implementation plan
-    └── apk-build.md         # Android APK build guide
+    ├── apk-build.md         # Android APK build guide
+    └── 3d-scene-guidelines.md # Agent guidelines for 3D scenes
 ```
 
 ## Design System

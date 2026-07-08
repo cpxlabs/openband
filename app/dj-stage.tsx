@@ -59,9 +59,11 @@ export default function DJStudio() {
       const camera = new THREE.PerspectiveCamera(55, width / height, 0.1, 100);
       camera.position.set(...CAM_POS);
 
-      const renderer = new THREE.WebGLRenderer({ antialias: false });
+      const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
       renderer.setSize(width, height);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1.0;
       container.appendChild(renderer.domElement);
@@ -92,19 +94,6 @@ export default function DJStudio() {
       // Grid
       scene.add(new THREE.GridHelper(16, 16, ACCENT, 0x222233));
 
-      // Back wall
-      const wallMat = new THREE.MeshStandardMaterial({ color: 0x121218, roughness: 0.9 });
-      const backWall = new THREE.Mesh(new THREE.PlaneGeometry(16, 6), wallMat);
-      backWall.position.set(0, 3, -6);
-      scene.add(backWall);
-
-      // DJ Coffin Table
-      const tableMat = new THREE.MeshStandardMaterial({ color: 0x111114, roughness: 0.4, metalness: 0.8 });
-      const table = new THREE.Mesh(new THREE.BoxGeometry(6.2, 0.25, 2.4), tableMat);
-      table.position.set(0, 1.4, -2);
-      table.castShadow = true;
-      table.receiveShadow = true;
-      scene.add(table);
 
       // Table legs
       for (const [lx, lz] of [[-2.8, -0.8], [2.8, -0.8], [-2.8, 0.8], [2.8, 0.8]]) {

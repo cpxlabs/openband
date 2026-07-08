@@ -163,6 +163,7 @@ export default function VocalBooth() {
         const panel = new THREE.Mesh(curveGeo, panelMat);
         panel.position.set(x, PANEL_HEIGHT / 2 + 0.25, -ROOM_DEPTH / 2 + depthVal);
         panel.scale.set(PANEL_WIDTH * 0.85, 1, depth * 0.5);
+        panel.receiveShadow = true;
         foamGroup.add(panel);
 
         // Egg-crate texture bumps on panel surface
@@ -180,6 +181,7 @@ export default function VocalBooth() {
               0.6 + row * 0.9,
               -ROOM_DEPTH / 2 + depthVal + depth * 0.25
             );
+            bump.receiveShadow = true;
             foamGroup.add(bump);
           }
         }
@@ -237,6 +239,7 @@ export default function VocalBooth() {
       const shockMount = new THREE.Mesh(shockMountGeo, shockMountMat);
       shockMount.position.set(-0.18, 2.0, 0.3);
       shockMount.rotation.y = Math.PI / 4;
+      shockMount.castShadow = true;
       micGroup.add(shockMount);
 
       // Chrome mic body (condenser cylinder)
@@ -262,6 +265,7 @@ export default function VocalBooth() {
       });
       const micHead = new THREE.Mesh(micHeadGeo, micHeadMat);
       micHead.position.set(-0.22, 2.14, 0.34);
+      micHead.castShadow = true;
       micGroup.add(micHead);
 
       // Pop filter wireframe torus
@@ -311,6 +315,33 @@ export default function VocalBooth() {
       const housing = new THREE.Mesh(housingGeo, housingMat);
       housing.position.set(0, ROOM_HEIGHT - 0.12, 0);
       scene.add(housing);
+
+      // ── Dust Particles ───────────────────────────────────────
+      const particleCount = 200;
+      const particleGeo = new THREE.BufferGeometry();
+      const particlePos = new Float32Array(particleCount * 3);
+      const particleVels: {x: number, y: number, z: number}[] = [];
+      for (let i = 0; i < particleCount; i++) {
+        particlePos[i * 3] = (Math.random() - 0.5) * 3;
+        particlePos[i * 3 + 1] = Math.random() * ROOM_HEIGHT;
+        particlePos[i * 3 + 2] = (Math.random() - 0.5) * 3;
+        particleVels.push({
+          x: (Math.random() - 0.5) * 0.005,
+          y: -Math.random() * 0.01 - 0.005,
+          z: (Math.random() - 0.5) * 0.005,
+        });
+      }
+      particleGeo.setAttribute("position", new THREE.BufferAttribute(particlePos, 3));
+      const particleMat = new THREE.PointsMaterial({
+        color: SPOTLIGHT_COLOR,
+        size: 0.035,
+        transparent: true,
+        opacity: 0.5,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      });
+      const particles = new THREE.Points(particleGeo, particleMat);
+      scene.add(particles);
 
       // ── OrbitControls-like mouse drag rotation ──────────────
       let isDragging = false;
@@ -426,6 +457,22 @@ export default function VocalBooth() {
         stripMat.color.setHex(lc.color);
         stripMat.emissive.setHex(lc.color);
         dotMat.color.setHex(lc.color);
+
+        // Animate dust particles
+        const positions = particles.geometry.attributes.position.array as Float32Array;
+        for (let i = 0; i < particleCount; i++) {
+          positions[i * 3] += particleVels[i].x;
+          positions[i * 3 + 1] += particleVels[i].y;
+          positions[i * 3 + 2] += particleVels[i].z;
+          // Wrap around when they fall below floor
+          if (positions[i * 3 + 1] < 0) {
+            positions[i * 3 + 1] = ROOM_HEIGHT;
+            positions[i * 3] = (Math.random() - 0.5) * 3;
+            positions[i * 3 + 2] = (Math.random() - 0.5) * 3;
+          }
+        }
+        particles.geometry.attributes.position.needsUpdate = true;
+        particleMat.color.setHex(lc.color);
 
         renderer.render(scene, camera);
       }
