@@ -68,7 +68,7 @@ function createMockClient(): SupabaseClient<any, any, any, any, any> {
     from: (table: string) => {
       if (!dbStore[table]) dbStore[table] = [];
       return {
-        select: (columns?: string) => {
+        select: () => {
           let results = [...dbStore[table]];
           return {
             eq: (field: string, value: any) => {
@@ -78,7 +78,7 @@ function createMockClient(): SupabaseClient<any, any, any, any, any> {
             then: (resolve: any) => resolve({ data: results, error: null }),
           } as any;
         },
-        upsert: (record: any, options?: any) => {
+        upsert: async (record: any) => {
           const index = dbStore[table].findIndex((r) => r.id === record.id);
           if (index !== -1) {
             dbStore[table][index] = { ...dbStore[table][index], ...record };

@@ -16,7 +16,7 @@ describe("Audio Export Formats", () => {
       numberOfChannels: 2,
       sampleRate: 44100,
       length: 1024,
-      getChannelData: (ch: number) => new Float32Array(1024).fill(0.5),
+      getChannelData: (_: number) => new Float32Array(1024).fill(0.5),
     } as unknown as AudioBuffer;
   };
 

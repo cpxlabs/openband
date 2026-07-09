@@ -18,7 +18,7 @@ import {
   RecordingPresets,
 } from "expo-audio";
 import { renderTracksToUrl, disposeAudioContext } from "../../src/lib/midiSynth";
-import { audioSystem } from "../../src/lib/universalAudio";
+import { audioSystem, createTrackedBlob } from "../../src/lib/universalAudio";
 import { API_BASE_URL } from "../../src/lib/apiUrl";
 import { startClock, stopClock, onClockTick, disposeClockManager } from "../../src/lib/clockManager";
 import { assignTrackToBus } from "../../src/lib/busRouter";
@@ -231,6 +231,7 @@ export default function Studio() {
   })();
 
   const [isRecording, setIsRecording] = useState(false);
+  const [webRecordingStart, setWebRecordingStart] = useState<number | null>(null);
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
   const [bottomTab, setBottomTab] = useState<BottomTab>(initialBottomTab);
   const [showRecordOptions, setShowRecordOptions] = useState(false);
@@ -541,53 +542,86 @@ export default function Studio() {
       }
 
       if (isRecording) {
-        await audioRecorder.stop();
-        const uri = recorderState?.url || audioRecorder.uri || "";
+        let uri = "";
+        let finalDuration = 1;
+
+        if (isWeb) {
+          const blob = await audioSystem.stopRecording();
+          if (blob) {
+            uri = createTrackedBlob(blob);
+            finalDuration = (Date.now() - (webRecordingStart || Date.now())) / 1000;
+          }
+        } else {
+          await audioRecorder.stop();
+          uri = recorderState?.url || audioRecorder.uri || "";
+          finalDuration = (recorderState?.durationMillis ?? 0) / 1000;
+        }
+
         if (uri) {
-          const trackId = `rec-${Date.now()}`;
-          const newTrack: TrackDef = {
-            id: trackId,
-            name: `Recording ${tracks.length + 1}`,
-            color: TRACK_COLORS[tracks.length % TRACK_COLORS.length],
-            muted: false,
-            solo: false,
-            volume: 80,
-            pan: 0,
-            sends: {},
-            sidechainSource: null,
-            regions: [
-              {
-                id: `region-${Date.now()}`,
-                start: 0,
-                duration: Math.max(
-                  (recorderState?.durationMillis ?? 0) / 1000,
-                  1,
-                ),
-                url: uri,
-              },
-            ],
-            plugins: [],
-            automation: {},
-          };
-          setTracks([...tracks, newTrack]);
-          setSelectedTrackId(trackId);
+          const armedTrack = tracks.find((t) => t.isArmed);
+          if (armedTrack) {
+            const newRegion = {
+              id: `region-${Date.now()}`,
+              start: currentBeat / (initialBpm / 60) || 0,
+              duration: Math.max(finalDuration, 1),
+              url: uri,
+            };
+            setTracks(
+              tracks.map((t) =>
+                t.id === armedTrack.id
+                  ? { ...t, regions: [...t.regions, newRegion] }
+                  : t
+              )
+            );
+          } else {
+            const trackId = `rec-${Date.now()}`;
+            const newTrack: TrackDef = {
+              id: trackId,
+              name: `Recording ${tracks.length + 1}`,
+              color: TRACK_COLORS[tracks.length % TRACK_COLORS.length],
+              muted: false,
+              solo: false,
+              volume: 80,
+              pan: 0,
+              sends: {},
+              sidechainSource: null,
+              regions: [
+                {
+                  id: `region-${Date.now()}`,
+                  start: currentBeat / (initialBpm / 60) || 0,
+                  duration: Math.max(finalDuration, 1),
+                  url: uri,
+                },
+              ],
+              plugins: [],
+              automation: {},
+            };
+            setTracks([...tracks, newTrack]);
+            setSelectedTrackId(trackId);
+          }
         }
         setIsRecording(false);
       } else {
-        const bitRateMap: Record<string, number> = {
-          low: 64000,
-          medium: 128000,
-          high: 192000,
-          lossless: 1411000,
-        };
-        await audioRecorder.prepareToRecordAsync({
-          sampleRate: recordSettings.sampleRate,
-          numberOfChannels: recordSettings.mono ? 1 : 2,
-          bitRate: bitRateMap[recordSettings.quality] || 128000,
-          extension: recordSettings.quality === "lossless" ? ".wav" : ".m4a",
-        });
-        audioRecorder.record();
-        setIsRecording(true);
+        if (isWeb) {
+          await audioSystem.startRecording();
+          setWebRecordingStart(Date.now());
+          setIsRecording(true);
+        } else {
+          const bitRateMap: Record<string, number> = {
+            low: 64000,
+            medium: 128000,
+            high: 192000,
+            lossless: 1411000,
+          };
+          await audioRecorder.prepareToRecordAsync({
+            sampleRate: recordSettings.sampleRate,
+            numberOfChannels: recordSettings.mono ? 1 : 2,
+            bitRate: bitRateMap[recordSettings.quality] || 128000,
+            extension: recordSettings.quality === "lossless" ? ".wav" : ".m4a",
+          });
+          audioRecorder.record();
+          setIsRecording(true);
+        }
       }
     } catch (e) {
       console.warn("Recording failed:", e);
@@ -1745,6 +1779,24 @@ export default function Studio() {
                         className={`text-xs font-bold ${track.solo ? "text-green-400" : "text-gray-400"}`}
                       >
                         S
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() =>
+                        setTracks((prev) =>
+                          prev.map((t) =>
+                            t.id === track.id
+                              ? { ...t, isArmed: !t.isArmed }
+                              : { ...t, isArmed: false }, // Only one track armed at a time
+                          ),
+                        )
+                      }
+                      className={`w-7 h-7 rounded items-center justify-center border ${track.isArmed ? "bg-red-500/20 border-red-500/50" : "bg-dark-muted/30 border-dark-border/40"}`}
+                    >
+                      <Text
+                        className={`text-xs font-bold ${track.isArmed ? "text-red-500" : "text-gray-400"}`}
+                      >
+                        R
                       </Text>
                     </Pressable>
                     <Pressable

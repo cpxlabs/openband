@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { saveProjectToCloud, fetchCloudProjects } from "../src/lib/cloudSync";
 import { supabase } from "../src/lib/supabase";
 import type { ProjectData } from "../src/lib/projectStore";
@@ -20,8 +20,8 @@ describe("Cloud Sync", () => {
     trackAmpChains: {},
     mixSnapshots: [],
     activeMixId: undefined,
-    metronome: { enabled: false, bpm: 120, volume: 1 },
-    recordSettings: { inputId: "default", monitor: true, latency: 0 },
+    metronome: { enabled: false, bpm: 120, volume: 80, timeSig: [4, 4], accentInterval: 4, countIn: false, countInBars: 1 },
+    recordSettings: { armed: false, sampleRate: 44100, mono: false, quality: "high", inputSource: "default", preRoll: 0 },
     lastSaved: Date.now(),
   };
 

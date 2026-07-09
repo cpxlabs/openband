@@ -88,6 +88,10 @@ class UniversalAudioSystem {
   private static instance: UniversalAudioSystem;
   private isInitialized = false;
   private _audioCtx: AudioContext | null = null;
+  private recordingStream: MediaStream | null = null;
+  private recordingWorkletNode: AudioWorkletNode | null = null;
+  private mediaStreamSource: MediaStreamAudioSourceNode | null = null;
+  private recordedChunks: Float32Array[] = [];
 
   static getInstance(): UniversalAudioSystem {
     if (!UniversalAudioSystem.instance) {
@@ -112,6 +116,59 @@ class UniversalAudioSystem {
     }
 
     this.isInitialized = true;
+  }
+
+  async startRecording(onChunk?: (chunk: Float32Array) => void): Promise<void> {
+    if (Platform.OS !== "web" || typeof window === "undefined") return;
+    const ctx = await this.ensureContext();
+    if (!ctx) return;
+
+    try {
+      await ctx.audioWorklet.addModule("/worklets/RecordingWorklet.js");
+    } catch (e) {
+      console.warn("Worklet already added or failed:", e);
+    }
+
+    this.recordedChunks = [];
+    this.recordingStream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+    });
+    this.mediaStreamSource = ctx.createMediaStreamSource(this.recordingStream);
+    this.recordingWorkletNode = new AudioWorkletNode(ctx, "recording-worklet");
+
+    this.recordingWorkletNode.port.onmessage = (e) => {
+      const chunk = e.data;
+      this.recordedChunks.push(new Float32Array(chunk));
+      if (onChunk) onChunk(chunk);
+    };
+
+    // Note: Do not connect worklet to destination to avoid feedback loop while recording
+    this.mediaStreamSource.connect(this.recordingWorkletNode);
+  }
+
+  async stopRecording(): Promise<Blob | null> {
+    if (!this.recordingStream || !this.recordingWorkletNode) return null;
+
+    this.recordingWorkletNode.disconnect();
+    this.mediaStreamSource?.disconnect();
+    this.recordingStream.getTracks().forEach((t) => t.stop());
+
+    this.recordingStream = null;
+    this.recordingWorkletNode = null;
+    this.mediaStreamSource = null;
+
+    if (this.recordedChunks.length === 0) return null;
+
+    const totalLength = this.recordedChunks.reduce((acc, chunk) => acc + chunk.length, 0);
+    const combined = new Float32Array(totalLength);
+    let offset = 0;
+    for (const chunk of this.recordedChunks) {
+      combined.set(chunk, offset);
+      offset += chunk.length;
+    }
+
+    const sampleRate = this._audioCtx?.sampleRate || 44100;
+    return this.float32ToWavBlob(combined, combined, sampleRate, 16);
   }
 
   async ensureContext(): Promise<AudioContext | null> {

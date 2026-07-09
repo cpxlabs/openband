@@ -49,6 +49,7 @@ export interface TrackDef {
   solo: boolean;
   volume: number;
   pan: number;
+  isArmed?: boolean;
   sends: Record<string, number>;
   regions: TrackRegion[];
   midiNotes?: MIDINote[];

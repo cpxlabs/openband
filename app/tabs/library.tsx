@@ -115,8 +115,7 @@ export default function Library() {
       } else {
         Alert.alert("Erro", "Arquivo de projeto inválido.")
       }
-    } catch (e) {
-      console.warn("Import failed:", e)
+    } catch {
       Alert.alert("Erro", "Falha ao importar projeto.")
     }
   }, [router])
