@@ -457,6 +457,7 @@ export default function Studio() {
   }, [metronome.bpm, projectTimeSig]);
 
   const togglePlay = useCallback(async () => {
+    if (isWeb) webAudio.unlock();
     const playing = isWeb ? webAudio.isPlaying : player.playing;
     if (playing) {
       if (isWeb) webAudio.pause(); else player.pause();
