@@ -76,10 +76,8 @@ export default function Library() {
   const handleTabChange = useCallback(async (tab: FilterTab) => {
     setFilterTab(tab)
     if (tab === "cloud") {
-      setIsLoadingCloud(true)
-      const { data, error } = await fetchCloudProjects()
+      const { data } = await fetchCloudProjects()
       if (data) setCloudProjects(data)
-      setIsLoadingCloud(false)
     }
   }, [])
 
