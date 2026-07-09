@@ -16,6 +16,7 @@ self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+  if (request.method !== "GET") return;
 
   const isStatic =
     url.pathname.startsWith("/_expo/") ||
