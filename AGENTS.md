@@ -41,7 +41,10 @@ Before starting any task:
    4. Run `npm run build` to verify build
    ```
 
-**Do NOT** skip straight to code. If uncertain about the approach, use the Task tool to explore first. Always define changes first by creating/updating files under `openspec/changes/` (proposal, design, tasks) and wait for the user's explicit approval before implementing any source code edits.
+**Do NOT** skip straight to code. If uncertain about the approach, use the Task tool to explore first. Always define changes first by creating exactly three separate files under `openspec/changes/<change-name>/` and waiting for the user's explicit approval before implementing any source code edits:
+- `proposal.md`: Outlines the context, problem description, and high-level objectives.
+- `design.md`: Details the API signatures, visual layouts, flowcharts, state variables, and component mappings.
+- `tasks.md`: Provides a detailed, step-by-step checklist of edits and verification steps.
 
 ---
 

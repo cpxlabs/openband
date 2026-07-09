@@ -1,72 +1,71 @@
-# OpenSpec Design: Unified Audio Transport System
+# OpenSpec Design: Unified Audio Transport & Studio Shell Integration
 
-This document outlines the detailed design, state flow, and component wiring for the unified play, stop, rewind, and fast-forward transport functions.
-
----
-
-## 1. State Flow Diagram
-
-```mermaid
-graph TD
-    A[User Action] --> B{Action Type}
-    B -- Play/Pause --> C[togglePlay]
-    B -- Stop --> D[stopPlayback]
-    B -- Seek Back/Fwd --> E[seekRelative]
-
-    C --> F{Is Playing?}
-    F -- Yes --> G[Pause Active Player]
-    F -- No --> H[Render Tracks & Play Active Player]
-
-    D --> I[Pause Active Player]
-    I --> J[Seek Active Player to 0]
-    J --> K[Stop Clock & Reset Beat]
-
-    E --> L[Calculate Target Time]
-    L --> M[Seek Active Player to Target Time]
-```
+This document outlines the detailed design, state flow, and component layout for the transport controls and responsive shell integration in the DAW Studio.
 
 ---
 
-## 2. API Contract & Implementation Detail
+## 1. Component Layout (Desktop vs Mobile)
 
-### 2.1. Helpers Signature in `app/studio/[id].tsx`
-
-```typescript
-const seekRelative = (seconds: number): void => {
-  if (isWeb) {
-    webAudio.seekTo(Math.max(0, webAudio.currentTime + seconds));
-  } else if (player) {
-    player.seekTo(Math.max(0, (status.currentTime || 0) + seconds));
-  }
-};
-
-const stopPlayback = (): void => {
-  if (isWeb) {
-    webAudio.pause();
-    webAudio.seekTo(0);
-  } else if (player) {
-    player.pause();
-    player.seekTo(0);
-  }
-  stopClock();
-  setCurrentBeat(0);
-};
-```
-
----
-
-## 3. UI Component Mapping
-
+### Desktop Layout (`isDesktop` = true)
 ```text
-+-------------------------------------------------------+
-|  ⏮ [seekRelative(-5)]                                 |
-|  ▶/⏸ [togglePlay()]                                   |
-|  ⏹ [stopPlayback()]                                   |
-|  ⏭ [seekRelative(5)]                                  |
-|  Time: {formatTime(currentTime)} / {formatTime(duration)} |
-+-------------------------------------------------------+
++---------+--------------------------------------------------------+
+|         | Studio Header: Transport, Metronome, Mixes, Synth, etc.|
+|         +--------------------------------------------------------+
+| Sidebar |                                                        |
+|  Menu   | DAW Tracks & Timeline Grid                             |
+|         |                                                        |
+|         +--------------------------------------------------------+
+|         | Bottom Tab Content (Mixer, FX, Chords, etc.)           |
++---------+--------------------------------------------------------+
 ```
-- **Rewind Control**: Wraps the `⏮` icon. Triggers `seekRelative(-5)` on press.
-- **Play/Pause Control**: Triggers `togglePlay()`. Text state toggles between `▶` and `⏸`.
-- **Stop Control**: Wraps the `⏹` icon. Triggers `stopPlayback()` on press.
-- **Fast-Forward Control**: Wraps the `⏭` icon. Triggers `seekRelative(5)` on press.
+
+### Mobile Layout (`isDesktop` = false)
+```text
++------------------------------------------------------------------+
+| ☰  ⏮  ▶/⏸  ⏹  ⏭   00:00 / 02:40                                   |
++------------------------------------------------------------------+
+| DAW Tracks & Timeline Grid                                       |
+|                                                                  |
+|                                                                  |
++------------------------------------------------------------------+
+| Bottom Tab Selection List & Content                              |
++------------------------------------------------------------------+
+```
+
+---
+
+## 2. Layout Integration Implementation
+
+### 2.1. State Variable
+- `const [drawerOpen, setDrawerOpen] = useState(false);`
+
+### 2.2. Desktop Sidebar Wrapper
+```typescript
+return (
+  <View className="flex-1 bg-dark-bg flex-row select-none">
+    {resp.isDesktop && (
+      <Sidebar
+        currentRoute="studio"
+        onNavigate={handleNavigate}
+        isOpen
+        onClose={() => {}}
+        isPersistent
+      />
+    )}
+    <View className="flex-1">
+      {/* Studio Header & Body */}
+    </View>
+  </View>
+);
+```
+
+### 2.3. Mobile Drawer Overlay
+When `drawerOpen` is `true`, render the exact side-sliding drawer menu container as a sibling to the main studio content, absolute positioned with `z-50`.
+Inside the drawer, mapping the navigation items to `handleNavigate`:
+```typescript
+const handleNavigate = useCallback((route: string) => {
+  const target = route === "index" ? "/tabs/feed" : `/tabs/${route}`;
+  router.push(target as Href);
+  setDrawerOpen(false);
+}, [router]);
+```
