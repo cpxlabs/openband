@@ -1,6 +1,6 @@
-# Agent Workflow: Loop
+# Agent Workflow: OpenSpec SDD Loop
 
-> This project uses a structured **Plan → Act → Check → Repeat** loop. Every change goes through all three phases before moving on.
+> This project uses the **OpenSpec Specification-Driven Development (SDD)** loop as its default development harness. Every change goes through three phases: **Propose** (define specs and tasks in `openspec/changes/`), **Apply** (implement exactly what is specified in `tasks.md`), and **Archive** (record and move completed specs to `openspec/archive/`).
 
 **ALWAYS commit and push after completing changes.** Do not wait to be asked.
 
