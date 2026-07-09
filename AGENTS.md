@@ -59,6 +59,7 @@ Before starting any task:
 - **No comments in code.** The code should be self-documenting.
 - **Tailwind v3 syntax.** Use `@tailwind base/components/utilities` directives, NOT `@import "tailwindcss/..."` (that's v4).
 - **Don't modify config files** (`tailwind.config.js`, `metro.config.js`, `babel.config.js`, `tsconfig.json`) unless the task explicitly requires it. (Adding `@bridge` alias to tsconfig.json is allowed for desktop architecture changes.)
+- **Keep changes documentation updated:** Always consult and update `docs/ui-overhaul-v2-changes.md` when modifying visual layouts, themes, stylesheets, or core components to ensure all UI overhaul features remain fully documented.
 - **No dead code.** Don't leave unused imports, variables, or files.
 - **Root cause, not suppression.** For bugs, fix the underlying issue. Don't add try/catch wrappers that silence errors.
 - **Test output format:** Every test must follow the node:test pattern — `▶ SuiteName` for describe blocks, `  ✔ test description (Xms)` for passing tests, and `✔ SuiteName (Xms)` at suite end. See legacy tests (`tests/presets.test.ts`, `tests/types.test.ts`) for reference.
