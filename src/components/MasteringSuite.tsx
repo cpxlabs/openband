@@ -16,6 +16,7 @@ import { LufsMeter } from "./LufsMeter";
 import { PluginEditor } from "./PluginEditor";
 import { PageHeader } from "./PageHeader";
 import { Button } from "./Button";
+import { ProgressBar } from "./ProgressBar";
 import {
   MasteringInput,
   MasteringSession,
@@ -528,6 +529,15 @@ export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
                 ))}
               </View>
             </View>
+
+            {exporting && exportFormat === "mp3" && (
+              <View className="mb-5">
+                <ProgressBar progress={exportProgress} className="mb-2" />
+                <Text className="text-gray-400 text-xs text-center">
+                  {exportProgress}%
+                </Text>
+              </View>
+            )}
 
             <Pressable
               onPress={handleExport}
