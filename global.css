@@ -62,25 +62,25 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: var(--color-dark-border);
+    background: rgb(var(--color-dark-border));
     border-radius: 4px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: var(--color-dark-muted);
+    background: rgb(var(--color-dark-muted));
   }
   * {
     scrollbar-width: thin;
-    scrollbar-color: var(--color-dark-border) transparent;
+    scrollbar-color: rgb(var(--color-dark-border)) transparent;
   }
 
   [data-theme="light"] ::-webkit-scrollbar-thumb {
-    background: var(--color-light-border);
+    background: rgb(var(--color-light-border));
   }
   [data-theme="light"] ::-webkit-scrollbar-thumb:hover {
-    background: var(--color-light-muted);
+    background: rgb(var(--color-light-muted));
   }
   [data-theme="light"] * {
-    scrollbar-color: var(--color-light-border) transparent;
+    scrollbar-color: rgb(var(--color-light-border)) transparent;
   }
 
   [data-theme="light"] .text-white {
