@@ -69,5 +69,9 @@
     "desktop": "npm run build && cd electron && npm start",
     "desktop:dev": "concurrently \"expo start --web\" \"sleep 5 && cd electron && npm start\""
   },
-  "private": true
+  "private": true,
+  "overrides": {
+    "uuid": "^11.1.1",
+    "glob": "^11.1.0"
+  }
 }
