@@ -64,3 +64,23 @@ This document summarizes the changes introduced in the `feat/ui-overhaul-v2` bra
 ## 5. Build Configuration
 ### [package.json](file:///c:/Users/alans/Desktop/ag/package.json)
 - **Cache-Buster**: Added the `--clear` flag to `expo export --platform web` in the `build` script to clear Metro's cache on Vercel deployments.
+
+---
+
+## 6. UI Cards Component Extraction & Responsivity
+### [src/components/FeedPostCard.tsx](file:///c:/Users/alans/Desktop/ag/src/components/FeedPostCard.tsx) [NEW]
+- **Component Extraction**: Moved the inline `FeedPostCard` component logic out of `app/tabs/index.tsx` into its own dedicated file.
+
+### [src/components/ProjectCard.tsx](file:///c:/Users/alans/Desktop/ag/src/components/ProjectCard.tsx) [NEW]
+- **Component Extraction**: Moved the inline project card rendering logic out of `app/tabs/library.tsx` into a reusable component.
+
+### [src/components/SamplePackCard.tsx](file:///c:/Users/alans/Desktop/ag/src/components/SamplePackCard.tsx) [NEW]
+- **Component Extraction**: Moved the pack card rendering logic out of `app/tabs/moments.tsx` into a reusable component.
+
+### [app/tabs/index.tsx](file:///c:/Users/alans/Desktop/ag/app/tabs/index.tsx) (Feed) & [app/tabs/library.tsx](file:///c:/Users/alans/Desktop/ag/app/tabs/library.tsx) (Library)
+- **Responsive Grid**: Updated `FlatList` components to use `numColumns={resp.numColumns}` and `key={resp.numColumns}` from the `useResponsive` hook to automatically adapt from a single column on mobile to a multi-column grid on wider screens.
+- **Column Spacing**: Applied `columnWrapperStyle={{ gap: 12 }}` for consistent spacing in multi-column layouts.
+
+### [app/tabs/moments.tsx](file:///c:/Users/alans/Desktop/ag/app/tabs/moments.tsx) (Moments)
+- **Dynamic Widths**: Refactored the sample pack flex container to apply width percentages dynamically based on breakpoints (e.g., full width on mobile, 31% on desktop).
+
