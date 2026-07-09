@@ -28,6 +28,7 @@ export { MiniMastering } from "./MiniMastering";
 export { Tuner } from "./Tuner";
 export { PedalRack } from "./PedalRack";
 export { Sidebar } from "./Sidebar";
+export { RightSidebar } from "./RightSidebar";
 export { PianoRoll } from "./PianoRoll";
 export { Looper } from "./Looper";
 export { VisualEQ } from "./VisualEQ";

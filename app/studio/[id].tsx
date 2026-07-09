@@ -693,41 +693,6 @@ export default function Studio() {
     [tracks, setTracks],
   );
 
-  const setTrackSend = useCallback(
-    (trackId: string, busId: string, value: number) => {
-      setTracks(
-        tracks.map((t) =>
-          t.id === trackId
-            ? { ...t, sends: { ...t.sends, [busId]: value } }
-            : t,
-        ),
-      );
-    },
-    [tracks, setTracks],
-  );
-
-  const setTrackSidechain = useCallback(
-    (trackId: string, sourceId: string | null) => {
-      setTracks(
-        tracks.map((t) =>
-          t.id === trackId ? { ...t, sidechainSource: sourceId } : t,
-        ),
-      );
-    },
-    [tracks, setTracks],
-  );
-
-  const setTrackOutput = useCallback(
-    (trackId: string, outputId: string | null) => {
-      setTracks(
-        tracks.map((t) =>
-          t.id === trackId ? { ...t, outputId } : t,
-        ),
-      );
-    },
-    [tracks, setTracks],
-  );
-
   const trackVolume = (trackId: string) =>
     tracks.find((t) => t.id === trackId)?.volume ?? 70;
 
@@ -1349,7 +1314,7 @@ export default function Studio() {
   return (
     <View className="flex-1 bg-dark-bg select-none">
       <View
-        className={`${resp.isMobile ? "h-12 px-2" : "h-14 px-4"} bg-dark-surface border-b border-dark-border flex-row items-center justify-between`}
+        className={`${resp.isMobile ? "h-12 px-2" : "h-14 px-4"} bg-dark-surface/95 border-b border-dark-border/50 flex-row items-center justify-between`}
       >
         <View className="flex-row items-center gap-2">
           <Pressable
@@ -1581,14 +1546,14 @@ export default function Studio() {
           )}
           <Pressable
             onPress={handleManualSave}
-            className="bg-brand-primary px-5 py-2 rounded-xl active:opacity-80"
+            className="bg-brand-primary px-5 py-2 rounded-xl active:opacity-80 shadow-sm shadow-brand-primary/20"
           >
             <Text className="text-white font-bold text-sm">Salvar</Text>
           </Pressable>
         </View>
       </View>
 
-      <View className="h-10 bg-dark-surface/50 border-b border-dark-border flex-row items-center px-4">
+      <View className="h-10 bg-dark-surface/40 border-b border-dark-border/50 flex-row items-center px-4">
         <View style={{ width: resp.tracksSidebarWidth }} className="pr-2">
           <Text className="text-gray-500 text-[10px] font-bold tracking-wider">
             TRACKS
@@ -1618,11 +1583,11 @@ export default function Studio() {
       <View className="flex-1 flex-row">
         <View
           style={{ width: resp.tracksSidebarWidth }}
-          className="bg-dark-bg/80 border-r border-dark-border"
+          className="bg-dark-bg/60 border-r border-dark-border/50"
         >
           {tracks.map((track) => {
             const gv = getGroupVolume(groups, track.id);
-            const trackH = resp.isMobile ? 80 : resp.isDesktop ? 104 : 80;
+            const trackH = resp.isMobile ? 84 : resp.isDesktop ? 108 : 84;
             return (
               <View key={track.id} className="relative">
                 <Pressable
@@ -1631,9 +1596,9 @@ export default function Studio() {
                       track.id === selectedTrackId ? null : track.id,
                     )
                   }
-                  className={`p-2 border-b border-dark-border justify-between bg-dark-surface/30 ${
+                  className={`p-2 border-b border-dark-border/40 justify-between bg-dark-surface/20 ${
                     selectedTrackId === track.id
-                      ? "border-l-2 border-brand-accent bg-dark-elevated/50"
+                      ? "border-l-[3px] border-brand-primary bg-dark-elevated/40"
                       : ""
                   }`}
                   style={{ height: trackH }}
@@ -1675,20 +1640,20 @@ export default function Studio() {
                     />
                     <Pressable
                       onPress={() => toggleMute(track.id)}
-                      className={`w-7 h-7 rounded items-center justify-center border ${track.muted ? "bg-amber-500 border-amber-400" : "bg-dark-muted/40 border-dark-border"}`}
+                      className={`btn-mute ${track.muted ? "btn-mute-active" : ""}`}
                     >
                       <Text
-                        className={`text-xs font-bold ${track.muted ? "text-white" : "text-gray-400"}`}
+                        className={`text-xs font-bold ${track.muted ? "text-amber-400" : "text-gray-400"}`}
                       >
                         M
                       </Text>
                     </Pressable>
                     <Pressable
                       onPress={() => toggleSolo(track.id)}
-                      className={`w-7 h-7 rounded items-center justify-center border ${track.solo ? "bg-green-500 border-green-400" : "bg-dark-muted/40 border-dark-border"}`}
+                      className={`btn-solo ${track.solo ? "btn-solo-active" : ""}`}
                     >
                       <Text
-                        className={`text-xs font-bold ${track.solo ? "text-white" : "text-gray-400"}`}
+                        className={`text-xs font-bold ${track.solo ? "text-green-400" : "text-gray-400"}`}
                       >
                         S
                       </Text>
@@ -1700,7 +1665,7 @@ export default function Studio() {
                           [track.id]: !prev[track.id],
                         }))
                       }
-                      className={`w-7 h-7 rounded items-center justify-center border ${showAutomation[track.id] ? "bg-brand-accent/20 border-brand-accent" : "bg-dark-muted/40 border-dark-border"}`}
+                      className={`w-7 h-7 rounded-lg items-center justify-center border ${showAutomation[track.id] ? "bg-brand-accent/20 border-brand-accent/50" : "bg-dark-muted/30 border-dark-border/40"}`}
                     >
                       <Text
                         className={`text-xs font-bold ${showAutomation[track.id] ? "text-brand-accent" : "text-gray-400"}`}
@@ -1715,7 +1680,7 @@ export default function Studio() {
                         [track.id]: !prev[track.id],
                       }))
                     }
-                    className={`w-7 h-7 rounded items-center justify-center border ${showPanAutomation[track.id] ? "bg-brand-accent/20 border-brand-accent" : "bg-dark-muted/40 border-dark-border"}`}
+                    className={`w-7 h-7 rounded-lg items-center justify-center border ${showPanAutomation[track.id] ? "bg-brand-accent/20 border-brand-accent/50" : "bg-dark-muted/30 border-dark-border/40"}`}
                   >
                     <Text
                       className={`text-xs font-bold ${showPanAutomation[track.id] ? "text-brand-accent" : "text-gray-400"}`}
@@ -1742,42 +1707,34 @@ export default function Studio() {
             </View>
             );
           })}
-          <View className="p-1.5 gap-1 border-t border-dark-border bg-dark-surface/20">
+          <View className="p-1.5 gap-1.5 border-t border-dark-border/40 bg-dark-surface/20">
             <Pressable
               onPress={handleAddTrack}
-              className="h-8 rounded-lg bg-dark-muted items-center justify-center flex-row gap-1 active:opacity-70"
+              className="h-8 rounded-lg bg-dark-muted/30 items-center justify-center flex-row gap-1.5 active:opacity-70 border border-dark-border/30"
             >
               <Text className="text-gray-300 text-xs font-bold">+</Text>
-              <Text className="text-gray-300 text-[10px] font-semibold">
-                Track
-              </Text>
+              <Text className="text-gray-300 text-[10px] font-semibold">Track</Text>
             </Pressable>
             <Pressable
               onPress={handleImportAudio}
-              className="h-8 rounded-lg bg-dark-muted items-center justify-center flex-row gap-1 active:opacity-70"
+              className="h-8 rounded-lg bg-dark-muted/30 items-center justify-center flex-row gap-1.5 active:opacity-70 border border-dark-border/30"
             >
               <Text className="text-gray-300 text-xs">📁</Text>
-              <Text className="text-gray-300 text-[10px] font-semibold">
-                Audio
-              </Text>
+              <Text className="text-gray-300 text-[10px] font-semibold">Audio</Text>
             </Pressable>
             <Pressable
               onPress={handleAddMidiTrack}
-              className="h-8 rounded-lg bg-dark-muted items-center justify-center flex-row gap-1 active:opacity-70"
+              className="h-8 rounded-lg bg-dark-muted/30 items-center justify-center flex-row gap-1.5 active:opacity-70 border border-dark-border/30"
             >
               <Text className="text-gray-300 text-xs">🎹</Text>
-              <Text className="text-gray-300 text-[10px] font-semibold">
-                MIDI
-              </Text>
+              <Text className="text-gray-300 text-[10px] font-semibold">MIDI</Text>
             </Pressable>
             <Pressable
               onPress={handleMidiImport}
-              className="h-8 rounded-lg bg-dark-muted items-center justify-center flex-row gap-1 active:opacity-70"
+              className="h-8 rounded-lg bg-dark-muted/30 items-center justify-center flex-row gap-1.5 active:opacity-70 border border-dark-border/30"
             >
               <Text className="text-gray-300 text-xs">📂</Text>
-              <Text className="text-gray-300 text-[10px] font-semibold">
-                Import
-              </Text>
+              <Text className="text-gray-300 text-[10px] font-semibold">Import</Text>
             </Pressable>
           </View>
         </View>
@@ -1786,12 +1743,12 @@ export default function Studio() {
           <View style={{ width: 1200 }}>
             <View
               className="relative"
-              style={{ height: tracks.length * (resp.isDesktop ? 104 : 80) }}
+              style={{ height: tracks.length * (resp.isMobile ? 84 : resp.isDesktop ? 108 : 84) }}
             >
               {tracks.map((track, trackIndex) => {
                 const showAuto = showAutomation[track.id];
                 const showPanAuto = showPanAutomation[track.id];
-                const trackH = resp.isDesktop ? 104 : 80;
+                const trackH = resp.isMobile ? 84 : resp.isDesktop ? 108 : 84;
                 const laneCount = (showAuto ? 1 : 0) + (showPanAuto ? 1 : 0);
                 return (
                   <View
@@ -1814,9 +1771,9 @@ export default function Studio() {
                             width: region.duration * 2.4,
                             position: "absolute",
                           }}
-                          className={`h-14 rounded-lg border border-white/10 overflow-hidden shadow-sm ${
+                          className={`h-14 rounded-xl border border-white/10 overflow-hidden shadow-md ${
                             track.color
-                          } ${isAudible(track) ? "opacity-90" : "opacity-25"}`}
+                          } ${isAudible(track) ? "opacity-95" : "opacity-25"}`}
                         >
                           <WaveformCanvas
                             regionId={region.id}
@@ -1895,8 +1852,8 @@ export default function Studio() {
           <SampleBrowser visible onAddSample={handleAddSample} />
         </View>
       )}
-      <View className="bg-dark-surface border-t border-dark-border">
-        <View className="flex-row border-b border-dark-border/50">
+      <View className="bg-dark-surface border-t border-dark-border/60">
+        <View className="flex-row border-b border-dark-border/40">
           {bottomTabs.map((tab) => (
             <Pressable
               key={tab.key}
@@ -1904,7 +1861,7 @@ export default function Studio() {
               className={`flex-1 py-2.5 flex-row items-center justify-center gap-1.5 ${
                 bottomTab === tab.key
                   ? "bg-dark-surface border-b-2 border-brand-primary"
-                  : "opacity-60"
+                  : "opacity-50"
               }`}
             >
               <Text
@@ -1965,11 +1922,7 @@ export default function Studio() {
                 }}
                 className="ml-auto px-2 py-1 rounded-md bg-dark-muted/40 border border-dark-border active:opacity-70"
               >
-                <Text
-                  className={`${resp.isMobile ? "text-[9px]" : "text-[10px]"} text-gray-400`}
-                >
-                  +Send
-                </Text>
+                <Text className="text-[10px] text-gray-400">+Send</Text>
               </Pressable>
             </View>
             <ScrollView
@@ -1984,7 +1937,7 @@ export default function Studio() {
                     <View
                       key={track.id}
                       style={{ width: resp.channelWidth }}
-                      className="bg-dark-surface rounded-xl border border-dark-border p-2.5 items-center gap-1.5"
+                      className="mixer-channel p-2.5 items-center gap-1.5"
                     >
                       <Text className="text-[10px] text-gray-400 font-medium truncate w-full text-center">
                         {track.name}
@@ -1992,20 +1945,20 @@ export default function Studio() {
                       <View className="flex-row gap-1">
                         <Pressable
                           onPress={() => toggleMute(track.id)}
-                          className={`w-7 h-5 rounded items-center justify-center ${track.muted ? "bg-red-500/30 border border-red-400" : "bg-dark-muted/40"}`}
+                          className={`btn-mute ${track.muted ? "btn-mute-active" : ""}`}
                         >
                           <Text
-                            className={`text-[9px] font-bold ${track.muted ? "text-red-400" : "text-gray-500"}`}
+                            className={`text-[9px] font-bold ${track.muted ? "text-amber-400" : "text-gray-500"}`}
                           >
                             M
                           </Text>
                         </Pressable>
                         <Pressable
                           onPress={() => toggleSolo(track.id)}
-                          className={`w-7 h-5 rounded items-center justify-center ${track.solo ? "bg-amber-500/30 border border-amber-400" : "bg-dark-muted/40"}`}
+                          className={`btn-solo ${track.solo ? "btn-solo-active" : ""}`}
                         >
                           <Text
-                            className={`text-[9px] font-bold ${track.solo ? "text-amber-400" : "text-gray-500"}`}
+                            className={`text-[9px] font-bold ${track.solo ? "text-green-400" : "text-gray-500"}`}
                           >
                             S
                           </Text>
@@ -2030,7 +1983,7 @@ export default function Studio() {
                         >
                           <View
                             style={{ height: `${effVol}%` }}
-                            className={`w-full rounded-full ${isAudible(track) ? "bg-brand-accent" : "bg-gray-600"}`}
+                            className={`w-full rounded-full ${isAudible(track) ? "bg-brand-primary" : "bg-gray-600"}`}
                           />
                         </Pressable>
                       </View>
@@ -2042,7 +1995,7 @@ export default function Studio() {
                               Math.max(0, trackVolume(track.id) - 5),
                             )
                           }
-                          className="w-5 h-5 rounded bg-dark-muted/40 items-center justify-center active:opacity-70"
+                          className="w-5 h-5 rounded bg-dark-muted/30 items-center justify-center active:opacity-70"
                         >
                           <Text className="text-gray-400 text-[11px]">−</Text>
                         </Pressable>
@@ -2056,7 +2009,7 @@ export default function Studio() {
                               Math.min(100, trackVolume(track.id) + 5),
                             )
                           }
-                          className="w-5 h-5 rounded bg-dark-muted/40 items-center justify-center active:opacity-70"
+                          className="w-5 h-5 rounded bg-dark-muted/30 items-center justify-center active:opacity-70"
                         >
                           <Text className="text-gray-400 text-[11px]">+</Text>
                         </Pressable>
@@ -2103,146 +2056,9 @@ export default function Studio() {
                           <Text className="text-gray-500 text-[9px]">▶</Text>
                         </Pressable>
                       </View>
-                      <View className="w-full flex-row items-center gap-1">
-                        <Text className="text-[8px] text-gray-600 w-5">
-                          SC:
-                        </Text>
-                        <Pressable
-                          onPress={() => {
-                            const others = tracks.filter(
-                              (t) => t.id !== track.id,
-                            );
-                            if (others.length === 0) {
-                              setTrackSidechain(track.id, null);
-                              return;
-                            }
-                            const currentIdx = others.findIndex(
-                              (t) => t.id === track.sidechainSource,
-                            );
-                            const next =
-                              others[(currentIdx + 1) % others.length];
-                            setTrackSidechain(track.id, next?.id || null);
-                          }}
-                          className="flex-1 h-4 rounded bg-dark-muted/30 items-center justify-center active:opacity-70"
-                        >
-                          <Text className="text-[8px] text-gray-400">
-                            {track.sidechainSource
-                              ? tracks.find(
-                                  (t) => t.id === track.sidechainSource,
-                                )?.name || "..."
-                              : "OFF"}
-                          </Text>
-                        </Pressable>
-                      </View>
-                      <View className="w-full flex-row items-center gap-1 mb-1">
-                        <Text className="text-[8px] text-gray-600 w-5">
-                          Bus:
-                        </Text>
-                        <Pressable
-                          onPress={() => {
-                            const allBuses = [{ id: "master", name: "Master" }, ...buses];
-                            const currentIdx = allBuses.findIndex(
-                              (b) =>
-                                (b.id === "master" && !track.outputId) ||
-                                b.id === track.outputId,
-                            );
-                            const next = allBuses[(currentIdx + 1) % allBuses.length];
-                            setTrackOutput(track.id, next.id === "master" ? null : next.id);
-                          }}
-                          className="flex-1 h-4 rounded bg-dark-muted/30 items-center justify-center active:opacity-70"
-                        >
-                          <Text className="text-[8px] text-gray-400">
-                            {track.outputId
-                              ? buses.find((b) => b.id === track.outputId)?.name || "Bus"
-                              : "Master"}
-                          </Text>
-                        </Pressable>
-                      </View>
-                      {sendBuses.map((bus) => (
-                        <View
-                          key={bus.id}
-                          className="w-full flex-row items-center gap-1"
-                        >
-                          <Text className="text-[8px] text-gray-600 w-5 truncate text-right">
-                            {bus.name.replace("Send ", "S")}
-                          </Text>
-                          <View className="flex-1 h-0.5 bg-dark-bg rounded-full overflow-hidden">
-                            <View
-                              className="h-full bg-purple-500/70 rounded-full"
-                              style={{ width: `${track.sends[bus.id] ?? 0}%` }}
-                            />
-                          </View>
-                          <Pressable
-                            onPress={() =>
-                              setTrackSend(
-                                track.id,
-                                bus.id,
-                                Math.min(100, (track.sends[bus.id] ?? 0) + 5),
-                              )
-                            }
-                            className="w-4 h-4 rounded bg-dark-muted/30 items-center justify-center active:opacity-70"
-                          >
-                            <Text className="text-gray-500 text-[8px]">+</Text>
-                          </Pressable>
-                        </View>
-                      ))}
                     </View>
                   );
                 })}
-                {buses.length > 0 && (
-                  <View className="w-28 bg-dark-surface/60 rounded-xl border border-dashed border-dark-border p-2.5 items-center gap-1.5">
-                    <Text className="text-[10px] text-gray-500 font-medium">
-                      Buses
-                    </Text>
-                    {buses.map((bus) => (
-                      <View
-                        key={bus.id}
-                        className="w-full flex-row items-center gap-1"
-                      >
-                        <Text className="text-[9px] text-gray-400 flex-1 truncate">
-                          {bus.name}
-                        </Text>
-                        <Pressable
-                          onPress={() =>
-                            setBuses((prev) =>
-                              prev.filter((b) => b.id !== bus.id),
-                            )
-                          }
-                          className="w-4 h-4 rounded bg-red-500/20 items-center justify-center active:opacity-70"
-                        >
-                          <Text className="text-red-400 text-[8px]">×</Text>
-                        </Pressable>
-                      </View>
-                    ))}
-                  </View>
-                )}
-                {sendBuses.length > 0 && (
-                  <View className="w-28 bg-dark-surface/60 rounded-xl border border-dashed border-dark-border p-2.5 items-center gap-1.5">
-                    <Text className="text-[10px] text-gray-500 font-medium">
-                      Send Buses
-                    </Text>
-                    {sendBuses.map((bus) => (
-                      <View
-                        key={bus.id}
-                        className="w-full flex-row items-center gap-1"
-                      >
-                        <Text className="text-[9px] text-gray-400 flex-1 truncate">
-                          {bus.name}
-                        </Text>
-                        <Pressable
-                          onPress={() =>
-                            setSendBuses((prev) =>
-                              prev.filter((b) => b.id !== bus.id),
-                            )
-                          }
-                          className="w-4 h-4 rounded bg-red-500/20 items-center justify-center active:opacity-70"
-                        >
-                          <Text className="text-red-400 text-[8px]">×</Text>
-                        </Pressable>
-                      </View>
-                    ))}
-                  </View>
-                )}
               </View>
             </ScrollView>
           </View>
