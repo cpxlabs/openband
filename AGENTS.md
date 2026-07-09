@@ -52,6 +52,7 @@ Before starting any task:
 ### Constraints
 
 - **No new dependencies** unless explicitly approved. Check `package.json` first.
+- **Never modify build scripts** in `package.json` unless the user explicitly requests it.
 - **Desktop bridge rule:** Never use `require('fs')`, `ipcRenderer`, or Tauri APIs in `src/` frontend code. All native desktop I/O goes through `OpenBandNative` from `@bridge`.
 - **Follow existing patterns.** If the project uses `View` + `className`, do that. Don't introduce `StyleSheet.create`.
 - **Use the design system.** Import from `src/components/` whenever possible. Don't inline styles that exist as components.
