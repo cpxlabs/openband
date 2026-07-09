@@ -1212,7 +1212,7 @@ describe("PianoRoll", () => {
       <PianoRoll
         notes={notes}
         onChange={() => {}}
-        snap="beat"
+
         numBars={4}
         bpm={120}
         visible={false}
@@ -1227,7 +1227,7 @@ describe("PianoRoll", () => {
       <PianoRoll
         notes={notes}
         onChange={() => {}}
-        snap="beat"
+
         numBars={4}
         bpm={120}
         visible={true}
@@ -1242,7 +1242,7 @@ describe("PianoRoll", () => {
       <PianoRoll
         notes={notes}
         onChange={() => {}}
-        snap="beat"
+
         numBars={4}
         bpm={120}
         visible={true}
@@ -1257,7 +1257,7 @@ describe("PianoRoll", () => {
       <PianoRoll
         notes={notes}
         onChange={() => {}}
-        snap="beat"
+
         numBars={4}
         bpm={120}
         visible={true}

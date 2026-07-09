@@ -4,6 +4,36 @@ import type { Mood } from "./projectTemplates";
 import { MOODS } from "./projectTemplates";
 import { audioBufferToWavBlob } from "./audio";
 import { getSharedAudioContext, createTrackedBlob } from "./universalAudio";
+import Soundfont from "soundfont-player";
+
+const sfCache: Record<string, Soundfont.Instrument> = {};
+
+export function getTrackSfName(trackName: string): string {
+  const l = trackName.toLowerCase();
+  if (l.includes('bateria') || l.includes('drums') || l.includes('kick')) return 'synth_drum';
+  if (l.includes('percussão') || l.includes('percussion')) return 'melodic_tom';
+  if (l.includes('baixo') || l.includes('bass')) return 'electric_bass_finger';
+  if (l.includes('808')) return 'synth_bass_1';
+  if (l.includes('guitarra') || l.includes('violão') || l.includes('guitar')) return 'electric_guitar_clean';
+  if (l.includes('piano') || l.includes('keys')) return 'acoustic_grand_piano';
+  if (l.includes('sax')) return 'alto_sax';
+  if (l.includes('organ')) return 'rock_organ';
+  if (l.includes('synth') || l.includes('lead')) return 'lead_1_square';
+  if (l.includes('pad')) return 'pad_1_new_age';
+  return 'acoustic_grand_piano';
+}
+
+export async function preloadSoundfont(trackName: string) {
+  const ctx = getSharedAudioContext();
+  if (!ctx) return;
+  const sfName = getTrackSfName(trackName);
+  if (sfCache[sfName]) return;
+  try {
+    sfCache[sfName] = await Soundfont.instrument(ctx as any, sfName as any);
+  } catch (e) {
+    console.warn("Failed to load soundfont", sfName, e);
+  }
+}
 
 function getAudioContext(): AudioContext | null {
   if (Platform.OS !== "web") return null;
@@ -365,9 +395,25 @@ export function playNote(
   waveform: WaveformType = "sawtooth",
   filterCutoff: number = 8000,
   filterResonance: number = 0,
+  trackName?: string
 ): string {
   const ctx = getAudioContext();
   if (!ctx) return "";
+  
+  const id = `${note}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  
+  if (trackName) {
+    const sfName = getTrackSfName(trackName);
+    const sfInst = sfCache[sfName];
+    if (sfInst) {
+      const node = sfInst.play(note, ctx.currentTime, { gain: velocity / 127 });
+      activeVoices.set(id, { sfNode: node } as any);
+      return id;
+    } else {
+      preloadSoundfont(trackName); // Load it for next time
+    }
+  }
+
   const freq = NOTE_FREQS[note] || 440;
   const vol = Math.max(0.01, velocity / 127) * 0.3;
 
@@ -391,7 +437,6 @@ export function playNote(
   oscillator.start(ctx.currentTime);
   oscillator.stop(ctx.currentTime + 2);
 
-  const id = `${note}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
   activeVoices.set(id, {
     oscillator,
     gainNode,
@@ -410,6 +455,11 @@ export function playNote(
 export function stopNote(id: string): void {
   const voice = activeVoices.get(id);
   if (voice) {
+    if ((voice as any).sfNode) {
+      ((voice as any).sfNode as any).stop(getAudioContext()?.currentTime || 0);
+      activeVoices.delete(id);
+      return;
+    }
     try {
       const ctx = getAudioContext();
       if (!ctx) {
@@ -449,6 +499,7 @@ export function playMidiNotes(
   bpm: number,
   startBeat: number = 0,
   waveform: WaveformType = "sawtooth",
+  trackName?: string
 ): string[] {
   const ids: string[] = [];
   const ctx = getAudioContext();
@@ -456,6 +507,40 @@ export function playMidiNotes(
   const now = ctx.currentTime;
   const safeBpm = Math.max(1, bpm);
   const beatDuration = 60 / safeBpm;
+
+  let sfInst: Soundfont.Instrument | undefined;
+  if (trackName) {
+    const sfName = getTrackSfName(trackName);
+    sfInst = sfCache[sfName];
+    if (!sfInst) {
+      preloadSoundfont(trackName); // load it for next playback
+    }
+  }
+
+  if (sfInst) {
+    const events = notes
+      .filter(n => n.start >= startBeat)
+      .map(note => ({
+        time: now + (note.start - startBeat) * beatDuration,
+        note: note.pitch,
+        duration: note.duration * beatDuration,
+        gain: note.velocity / 127
+      }));
+    // sfInst.schedule doesn't return a cancellable node easily in this API, 
+    // but we can just use play for individual events so we can stop them.
+    for (const event of events) {
+      if (event.time < now) continue;
+      const node = sfInst.play(event.note, event.time, { duration: event.duration, gain: event.gain as any });
+      const id = `midi-${event.note}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      ids.push(id);
+      activeVoices.set(id, { sfNode: node } as any);
+      // Clean up after duration
+      setTimeout(() => {
+        activeVoices.delete(id);
+      }, (event.time - now + event.duration + 0.1) * 1000);
+    }
+    return ids;
+  }
 
   for (const note of notes) {
     const startTime = now + (note.start - startBeat) * beatDuration;
@@ -488,6 +573,13 @@ export function playMidiNotes(
 
     const id = `midi-${note.pitch}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     ids.push(id);
+    activeVoices.set(id, {
+      oscillator,
+      gainNode,
+      filterNode,
+      startTime: ctx.currentTime,
+      note: note.pitch,
+    });
 
     oscillator.onended = () => {
       activeVoices.delete(id);
@@ -629,6 +721,12 @@ export async function renderTracksToUrl(
 
   const moodPreset = mood ? MOODS.find((m) => m.id === mood) : undefined;
 
+  for (const track of tracks) {
+    if (track.midiNotes && track.midiNotes.length > 0) {
+      await preloadSoundfont(track.name);
+    }
+  }
+
   if (typeof OfflineAudioContext !== "undefined") {
     try {
       const ctx = new OfflineAudioContext(2, numSamples, sampleRate);
@@ -674,17 +772,35 @@ export async function renderTracksToUrl(
           track.name.toLowerCase().includes('percussion')
 
         const waveform = getTrackWaveform(track.name)
+        const sfName = getTrackSfName(track.name);
+        const sfInst = sfCache[sfName];
 
         for (const note of track.midiNotes) {
           const noteStart = note.start * beatDuration;
           const noteDur = note.duration * beatDuration;
+          const vol = Math.max(0.01, note.velocity / 127) * 0.5;
 
-          if (isDrumTrack) {
+          if (sfInst && sfInst.buffers && sfInst.buffers[note.pitch]) {
+            const buffer = sfInst.buffers[note.pitch];
+            const source = ctx.createBufferSource();
+            source.buffer = buffer;
+            
+            const noteGain = ctx.createGain();
+            noteGain.gain.setValueAtTime(vol, noteStart);
+            // simple release envelope
+            noteGain.gain.setValueAtTime(vol, noteStart + noteDur);
+            noteGain.gain.linearRampToValueAtTime(0, noteStart + noteDur + 0.1);
+            
+            source.connect(noteGain);
+            noteGain.connect(panNode);
+            
+            source.start(noteStart);
+            source.stop(noteStart + noteDur + 0.1);
+          } else if (isDrumTrack) {
             const drumNode = createDrumSound(ctx, note.pitch, noteStart, note.velocity)
             drumNode.connect(panNode)
           } else {
             const freq = NOTE_FREQS[note.pitch] || 440;
-            const vol = Math.max(0.01, note.velocity / 127) * 0.3;
 
             const osc = ctx.createOscillator();
             osc.type = waveform;

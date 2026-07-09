@@ -2854,7 +2854,6 @@ export default function Studio() {
       <PianoRoll
         notes={currentMidiNotes}
         onChange={handlePianoRollChange}
-        snap="beat"
         numBars={8}
         bpm={metronome.bpm}
         keySignature={projectKey?.replace(/m$/, "") || "C"}
