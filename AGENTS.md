@@ -41,7 +41,7 @@ Before starting any task:
    4. Run `npm run build` to verify build
    ```
 
-**Do NOT** skip straight to code. If uncertain about the approach, use the Task tool to explore first.
+**Do NOT** skip straight to code. If uncertain about the approach, use the Task tool to explore first. Always define changes first by creating/updating files under `openspec/changes/` (proposal, design, tasks) and wait for the user's explicit approval before implementing any source code edits.
 
 ---
 
