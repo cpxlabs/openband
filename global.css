@@ -2,7 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* NativeWind dark mode configuration: class-based toggling */
 :root {
   --css-interop-darkMode: class dark;
 }
@@ -10,44 +9,44 @@
 @layer base {
   :root,
   [data-theme="dark"] {
-    --color-dark-bg: #0a0a0d;
-    --color-dark-surface: #141418;
-    --color-dark-elevated: #1c1c22;
-    --color-dark-border: #2a2a32;
-    --color-dark-muted: #2e2e38;
-    --color-light-bg: #ffffff;
-    --color-light-surface: #f2f2f7;
-    --color-light-elevated: #e5e5ea;
-    --color-light-border: #d1d1d6;
-    --color-light-muted: #c7c7cc;
-    --color-brand-primary: #ff3b30;
-    --color-brand-primaryDark: #cc2f26;
-    --color-brand-accent: #007aff;
-    --color-brand-accentDark: #0062cc;
-    --color-brand-green: #34c759;
-    --color-brand-red: #ff3b30;
-    --color-brand-amber: #ff9f0a;
-    --color-brand-rose: #ff2d55;
-    --color-brand-blue: #007aff;
-    --color-brand-purple: #af52de;
-    --color-brand-yellow: #ffcc00;
+    --color-dark-bg: 10 10 13;
+    --color-dark-surface: 20 20 24;
+    --color-dark-elevated: 28 28 34;
+    --color-dark-border: 42 42 50;
+    --color-dark-muted: 46 46 56;
+    --color-light-bg: 255 255 255;
+    --color-light-surface: 242 242 247;
+    --color-light-elevated: 229 229 234;
+    --color-light-border: 209 209 214;
+    --color-light-muted: 199 199 204;
+    --color-brand-primary: 255 59 48;
+    --color-brand-primaryDark: 204 47 38;
+    --color-brand-accent: 0 122 255;
+    --color-brand-accentDark: 0 98 204;
+    --color-brand-green: 52 199 89;
+    --color-brand-red: 255 59 48;
+    --color-brand-amber: 255 159 10;
+    --color-brand-rose: 255 45 85;
+    --color-brand-blue: 0 122 255;
+    --color-brand-purple: 175 82 222;
+    --color-brand-yellow: 255 204 0;
   }
 
   [data-theme="light"] {
-    --color-dark-bg: #ffffff;
-    --color-dark-surface: #f2f2f7;
-    --color-dark-elevated: #e5e5ea;
-    --color-dark-border: #d1d1d6;
-    --color-dark-muted: #c7c7cc;
-    --color-brand-primary: #dc2626;
-    --color-brand-accent: #2563eb;
-    --color-brand-green: #15803d;
-    --color-brand-red: #b91c1c;
-    --color-brand-amber: #92400e;
-    --color-brand-rose: #be123c;
-    --color-brand-blue: #1d4ed8;
-    --color-brand-purple: #7c3aed;
-    --color-brand-yellow: #ca8a04;
+    --color-dark-bg: 255 255 255;
+    --color-dark-surface: 242 242 247;
+    --color-dark-elevated: 229 229 234;
+    --color-dark-border: 209 209 214;
+    --color-dark-muted: 199 199 204;
+    --color-brand-primary: 220 38 38;
+    --color-brand-accent: 37 99 235;
+    --color-brand-green: 21 128 61;
+    --color-brand-red: 185 28 28;
+    --color-brand-amber: 146 64 14;
+    --color-brand-rose: 190 18 60;
+    --color-brand-blue: 29 78 216;
+    --color-brand-purple: 124 58 237;
+    --color-brand-yellow: 202 138 4;
   }
 
   body {
@@ -55,107 +54,107 @@
   }
 
   [data-theme="light"] .text-white {
-    color: var(--color-dark-bg);
+    color: rgb(var(--color-dark-bg));
   }
   [data-theme="light"] .text-black {
-    color: var(--color-dark-bg);
+    color: rgb(var(--color-dark-bg));
   }
   [data-theme="light"] .text-gray-150 {
-    color: var(--color-light-border);
+    color: rgb(var(--color-light-border));
   }
   [data-theme="light"] .text-gray-250 {
-    color: var(--color-light-muted);
+    color: rgb(var(--color-light-muted));
   }
   [data-theme="light"] .text-gray-350 {
-    color: var(--color-light-elevated);
+    color: rgb(var(--color-light-elevated));
   }
   [data-theme="light"] .text-gray-400 {
-    color: var(--color-light-surface);
+    color: rgb(var(--color-light-surface));
   }
   [data-theme="light"] .text-gray-500 {
-    color: var(--color-dark-muted);
+    color: rgb(var(--color-dark-muted));
   }
   [data-theme="light"] .text-gray-600 {
-    color: var(--color-dark-border);
+    color: rgb(var(--color-dark-border));
   }
   [data-theme="light"] .text-gray-700 {
-    color: var(--color-dark-surface);
+    color: rgb(var(--color-dark-surface));
   }
   [data-theme="light"] .text-brand-primary {
-    color: var(--color-brand-primary);
+    color: rgb(var(--color-brand-primary));
   }
   [data-theme="light"] .text-brand-accent {
-    color: var(--color-brand-accent);
+    color: rgb(var(--color-brand-accent));
   }
   [data-theme="light"] .text-brand-green {
-    color: var(--color-brand-green);
+    color: rgb(var(--color-brand-green));
   }
   [data-theme="light"] .text-green-400 {
-    color: var(--color-brand-green);
+    color: rgb(var(--color-brand-green));
   }
   [data-theme="light"] .text-green-500 {
-    color: var(--color-brand-green);
+    color: rgb(var(--color-brand-green));
   }
   [data-theme="light"] .text-red-400 {
-    color: var(--color-brand-red);
+    color: rgb(var(--color-brand-red));
   }
   [data-theme="light"] .text-amber-500 {
-    color: var(--color-brand-amber);
+    color: rgb(var(--color-brand-amber));
   }
   [data-theme="light"] .text-rose-400 {
-    color: var(--color-brand-rose);
+    color: rgb(var(--color-brand-rose));
   }
 
   [data-theme="light"] .bg-green-500 {
-    background-color: var(--color-brand-green);
+    background-color: rgb(var(--color-brand-green));
   }
   [data-theme="light"] .bg-green-600 {
-    background-color: var(--color-brand-green);
+    background-color: rgb(var(--color-brand-green));
   }
   [data-theme="light"] .bg-red-500 {
-    background-color: var(--color-brand-red);
+    background-color: rgb(var(--color-brand-red));
   }
   [data-theme="light"] .bg-red-600 {
-    background-color: var(--color-brand-red);
+    background-color: rgb(var(--color-brand-red));
   }
   [data-theme="light"] .bg-amber-500 {
-    background-color: var(--color-brand-amber);
+    background-color: rgb(var(--color-brand-amber));
   }
   [data-theme="light"] .bg-blue-500 {
-    background-color: var(--color-brand-blue);
+    background-color: rgb(var(--color-brand-blue));
   }
   [data-theme="light"] .bg-purple-600 {
-    background-color: var(--color-brand-purple);
+    background-color: rgb(var(--color-brand-purple));
   }
   [data-theme="light"] .bg-dark-muted {
-    background-color: var(--color-light-elevated);
+    background-color: rgb(var(--color-light-elevated));
   }
 
   [data-theme="light"] .border-dark-border {
-    border-color: var(--color-light-border);
+    border-color: rgb(var(--color-light-border));
   }
   [data-theme="light"] .border-brand-primary {
-    border-color: var(--color-brand-primary);
+    border-color: rgb(var(--color-brand-primary));
   }
   [data-theme="light"] .border-brand-accent {
-    border-color: var(--color-brand-accent);
+    border-color: rgb(var(--color-brand-accent));
   }
   [data-theme="light"] .border-red-500 {
-    border-color: var(--color-brand-red);
+    border-color: rgb(var(--color-brand-red));
   }
   [data-theme="light"] .border-green-400 {
-    border-color: var(--color-brand-green);
+    border-color: rgb(var(--color-brand-green));
   }
   [data-theme="light"] .border-green-500 {
-    border-color: var(--color-brand-green);
+    border-color: rgb(var(--color-brand-green));
   }
   [data-theme="light"] .border-amber-400 {
-    border-color: var(--color-brand-amber);
+    border-color: rgb(var(--color-brand-amber));
   }
 
   [data-theme="light"] body {
-    background-color: var(--color-light-bg);
-    color: var(--color-dark-bg);
+    background-color: rgb(var(--color-light-bg));
+    color: rgb(var(--color-dark-bg));
   }
 }
 
