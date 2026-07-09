@@ -68,6 +68,11 @@ This document summarizes the changes introduced in the `feat/ui-overhaul-v2` bra
 ---
 
 ## 6. UI Cards Component Extraction & Responsivity
+> **OpenSpec Reference**: This refactoring was driven by the Specification-Driven Development loop. You can find the original specifications in the archive: 
+> - [proposal.md](file:///c:/Users/alans/Desktop/ag/openspec/archive/ui-cards-responsivity/proposal.md)
+> - [design.md](file:///c:/Users/alans/Desktop/ag/openspec/archive/ui-cards-responsivity/design.md)
+> - [tasks.md](file:///c:/Users/alans/Desktop/ag/openspec/archive/ui-cards-responsivity/tasks.md)
+
 ### [src/components/FeedPostCard.tsx](file:///c:/Users/alans/Desktop/ag/src/components/FeedPostCard.tsx) [NEW]
 - **Component Extraction**: Moved the inline `FeedPostCard` component logic out of `app/tabs/index.tsx` into its own dedicated file.
 
