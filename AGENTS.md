@@ -245,6 +245,11 @@ type: short description (max 72 chars)
 
 Types: `fix`, `feat`, `chore`, `refactor`, `docs`
 
+### Vercel Deploy
+
+- **Normal deploy**: `git push` — auto-deploys on push to `master`
+- **Clean deploy (no build cache)**: `npx vercel deploy --prod --force` — skips Vercel's cached build to avoid stale output
+
 ---
 
 ## Session Recovery (Bad Session / Abort Flow)
