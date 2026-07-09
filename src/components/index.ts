@@ -47,6 +47,7 @@ export { ChordTrack } from "./ChordTrack";
 export { Sampler } from "./Sampler";
 export { Synth, SYNTH_PRESETS } from "./Synth";
 export { OutputSelector } from "./OutputSelector";
+export { LiveWaveformCanvas } from "./LiveWaveformCanvas";
 export { MasteringSuite } from "./MasteringSuite";
 export { MasteringChain } from "./MasteringChain";
 export { MasteringVersionManager } from "./MasteringVersionManager";

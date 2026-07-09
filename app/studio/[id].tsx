@@ -55,6 +55,7 @@ import {
   VuMeter,
   TrackColorPicker,
   Sidebar,
+  LiveWaveformCanvas,
 } from "../../src/components";
 import { registerCommand, initKeyBindings, disposeKeyBindings } from "../../src/lib/commandRegistry";
 import { chordsToMIDINotes } from "../../src/lib/harmonicAssistant";
@@ -232,6 +233,7 @@ export default function Studio() {
 
   const [isRecording, setIsRecording] = useState(false);
   const [webRecordingStart, setWebRecordingStart] = useState<number | null>(null);
+  const liveRecordingDataRef = useRef<Float32Array[]>([]);
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
   const [bottomTab, setBottomTab] = useState<BottomTab>(initialBottomTab);
   const [showRecordOptions, setShowRecordOptions] = useState(false);
@@ -603,7 +605,10 @@ export default function Studio() {
         setIsRecording(false);
       } else {
         if (isWeb) {
-          await audioSystem.startRecording();
+          liveRecordingDataRef.current = [];
+          await audioSystem.startRecording((chunk) => {
+            liveRecordingDataRef.current.push(chunk);
+          });
           setWebRecordingStart(Date.now());
           setIsRecording(true);
         } else {
@@ -1927,6 +1932,19 @@ export default function Studio() {
                           />
                         </View>
                       ))}
+                      {isRecording && track.isArmed && (
+                        <View
+                          style={{
+                            left: currentBeat * 2.4, // rough sync with beat width, but usually recording starts at current position
+                            width: (Date.now() - (webRecordingStart || Date.now())) / 1000 * (initialBpm / 60) * 2.4,
+                            minWidth: 100, // so we can see it growing
+                            position: "absolute",
+                          }}
+                          className={`h-14 rounded-xl border border-red-500/50 overflow-hidden shadow-md bg-red-500/20`}
+                        >
+                          <LiveWaveformCanvas dataRef={liveRecordingDataRef} height={56} />
+                        </View>
+                      )}
                     </View>
                     {showAuto && (
                       <View className="h-[26px] bg-dark-bg/20 border-b border-dark-border/20">
