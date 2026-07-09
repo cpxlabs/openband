@@ -4,15 +4,17 @@ import { useRouter } from "expo-router"
 import { EmptyState, PageHeader, Button, NewProject, ProjectCard } from "../../src/components"
 import type { GenreTemplate, Mood } from "../../src/lib/projectTemplates"
 import { useResponsive, LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive"
-import { listProjectIndex, importProject, loadProject, getFavoriteProjects, isProjectFavorite, toggleProjectFavorite } from "../../src/lib/projectStore"
+import { listProjectIndex, importProject, loadProject, getFavoriteProjects, isProjectFavorite, toggleProjectFavorite, saveProject } from "../../src/lib/projectStore"
 import { SCREEN_BOTTOM_PADDING } from "../../src/lib/constants"
 import { OpenBandNative } from "../../src/bridge"
+import { fetchCloudProjects } from "../../src/lib/cloudSync"
 
-type FilterTab = "all" | "favorites" | "collabs" | "trash"
+type FilterTab = "all" | "favorites" | "cloud" | "collabs" | "trash"
 
 const FILTER_TABS: { id: FilterTab; label: string; icon: string }[] = [
   { id: "all", label: "Todos", icon: "♫" },
   { id: "favorites", label: "Favoritos", icon: "★" },
+  { id: "cloud", label: "Nuvem", icon: "☁️" },
   { id: "collabs", label: "Colaborações", icon: "👥" },
   { id: "trash", label: "Lixeira", icon: "🗑" },
 ]
@@ -23,6 +25,8 @@ export default function Library() {
   const [showNewProject, setShowNewProject] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [filterTab, setFilterTab] = useState<FilterTab>("all")
+  const [cloudProjects, setCloudProjects] = useState<any[]>([])
+  const [isLoadingCloud, setIsLoadingCloud] = useState(false)
 
   const projectIndex = useMemo(() => listProjectIndex(), [refreshKey])
 
@@ -49,6 +53,17 @@ export default function Library() {
   }, [])
 
   const filtered = useMemo(() => {
+    if (filterTab === "cloud") {
+      return cloudProjects.map(p => ({
+        id: p.id,
+        title: p.title,
+        lastSaved: p.lastSaved,
+        genre: p.genre,
+        key: p.key,
+        bpm: p.bpm,
+        metadata: p,
+      }))
+    }
     if (filterTab === "favorites") {
       const favorites = getFavoriteProjects();
       return projects.filter(p => favorites.includes(p.id));
@@ -57,7 +72,17 @@ export default function Library() {
       return projects.filter(p => p.metadata?.parentProjectId);
     }
     return projects
-  }, [projects, filterTab])
+  }, [projects, filterTab, cloudProjects])
+
+  const handleTabChange = useCallback(async (tab: FilterTab) => {
+    setFilterTab(tab)
+    if (tab === "cloud") {
+      setIsLoadingCloud(true)
+      const { data, error } = await fetchCloudProjects()
+      if (data) setCloudProjects(data)
+      setIsLoadingCloud(false)
+    }
+  }, [])
 
   const handleCreate = useCallback((config: {
     name: string; genre: GenreTemplate; key: string; bpm: number; mood?: Mood; numBars?: number; timeSignature?: string
@@ -125,27 +150,22 @@ export default function Library() {
         </View>
       </View>
 
-      <View className={`${px} mb-3`}>
-        <View className="flex-row gap-2">
-          {FILTER_TABS.map(tab => (
+      <View className="mb-4">
+        <FlatList
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          data={FILTER_TABS}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ paddingHorizontal: resp.isMobile ? 16 : 24 }}
+          renderItem={({ item }) => (
             <Pressable
-              key={tab.id}
-              onPress={() => setFilterTab(tab.id)}
-              className={`px-3.5 py-1.5 rounded-full border flex-row items-center gap-1.5 ${
-                filterTab === tab.id
-                  ? "bg-brand-primary/15 border-brand-primary/50"
-                  : "bg-dark-elevated border-dark-border/50"
-              }`}
+              onPress={() => handleTabChange(item.id)}
+              className={`flex-row items-center gap-1.5 px-4 py-2 rounded-full mr-2 ${filterTab === item.id ? "bg-brand-primary" : "bg-dark-surface"}`}
             >
-              <Text className={`text-xs ${filterTab === tab.id ? "text-brand-primary" : "text-gray-400"}`}>
-                {tab.icon}
-              </Text>
-              <Text className={`text-xs font-semibold ${filterTab === tab.id ? "text-brand-primary" : "text-gray-400"}`}>
-                {tab.label}
-              </Text>
+              <Text className="text-white font-semibold text-xs">{item.icon} {item.label}</Text>
             </Pressable>
-          ))}
-        </View>
+          )}
+        />
       </View>
 
       <FlatList
@@ -165,8 +185,13 @@ export default function Library() {
             <ProjectCard
               project={item}
               isFavorite={isFavorite}
-              onToggleFavorite={handleToggleFavorite}
-              onOpen={(id) => router.push(`/studio/${id}`)}
+              onToggleFavorite={() => handleToggleFavorite(item.id)}
+              onOpen={(id) => {
+                if (filterTab === "cloud") {
+                  saveProject(id, item.metadata)
+                }
+                router.push(`/studio/${id}`)
+              }}
               onRefresh={() => setRefreshKey(k => k + 1)}
             />
           )

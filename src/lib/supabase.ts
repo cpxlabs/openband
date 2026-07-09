@@ -35,6 +35,10 @@ function createMockClient(): SupabaseClient<any, any, any, any, any> {
     "dev@openband.app": { email: "dev@openband.app", name: "Dev" },
   };
 
+  const dbStore: Record<string, any[]> = {
+    projects: [],
+  };
+
   function notify(event: string, session: Session | null) {
     listeners.forEach((cb) => cb(event, session));
   }
@@ -61,8 +65,29 @@ function createMockClient(): SupabaseClient<any, any, any, any, any> {
   }
 
   return {
-    from: () => {
-      throw new Error("Mock client does not support database queries");
+    from: (table: string) => {
+      if (!dbStore[table]) dbStore[table] = [];
+      return {
+        select: (columns?: string) => {
+          let results = [...dbStore[table]];
+          return {
+            eq: (field: string, value: any) => {
+              results = results.filter((row) => row[field] === value);
+              return { data: results, error: null };
+            },
+            then: (resolve: any) => resolve({ data: results, error: null }),
+          } as any;
+        },
+        upsert: (record: any, options?: any) => {
+          const index = dbStore[table].findIndex((r) => r.id === record.id);
+          if (index !== -1) {
+            dbStore[table][index] = { ...dbStore[table][index], ...record };
+          } else {
+            dbStore[table].push(record);
+          }
+          return { data: null, error: null } as any;
+        },
+      };
     },
     auth: {
       getSession: async () => ({ data: { session: mockSession }, error: null }),

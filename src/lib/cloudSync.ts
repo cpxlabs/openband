@@ -197,3 +197,57 @@ export function useCloudSync(projectId: string): CloudSyncState {
 
   return state;
 }
+
+export async function saveProjectToCloud(project: ProjectData): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !sessionData?.session) {
+      return { success: false, error: "Usuário não autenticado." };
+    }
+
+    const { error } = await supabase.from("projects").upsert({
+      id: project.id,
+      user_id: sessionData.session.user.id,
+      title: project.title,
+      state_json: project,
+      updated_at: new Date().toISOString(),
+    });
+
+    if (error) {
+      console.error("Cloud save error:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    console.error("Cloud save unexpected error:", err);
+    return { success: false, error: err.message || "Erro desconhecido" };
+  }
+}
+
+export async function fetchCloudProjects(): Promise<{ data: ProjectData[] | null; error?: string }> {
+  try {
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !sessionData?.session) {
+      return { data: null, error: "Usuário não autenticado." };
+    }
+
+    const { data, error } = await supabase
+      .from("projects")
+      .select("*")
+      .eq("user_id", sessionData.session.user.id);
+
+    if (error) {
+      console.error("Fetch cloud projects error:", error);
+      return { data: null, error: error.message };
+    }
+
+    if (!data) return { data: [] };
+
+    const projects: ProjectData[] = data.map((row: any) => row.state_json as ProjectData);
+    return { data: projects };
+  } catch (err: any) {
+    console.error("Fetch cloud projects unexpected error:", err);
+    return { data: null, error: err.message || "Erro desconhecido" };
+  }
+}

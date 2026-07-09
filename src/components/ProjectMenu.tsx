@@ -2,6 +2,7 @@ import { useState, useCallback } from "react"
 import { View, Text, Pressable, Alert, Platform } from "react-native"
 import { exportProject, loadProject, saveProject } from "../lib/projectStore"
 import { OpenBandNative } from "../bridge"
+import { saveProjectToCloud } from "../lib/cloudSync"
 
 export function ProjectMenu({ projectId, projectTitle, onRefresh }: {
   projectId: string
@@ -63,6 +64,21 @@ export function ProjectMenu({ projectId, projectTitle, onRefresh }: {
     setOpen(false)
   }, [projectId, projectTitle])
 
+  const handleSaveToCloud = useCallback(async () => {
+    setOpen(false)
+    const project = loadProject(projectId)
+    if (!project) {
+      Alert.alert("Erro", "Projeto não encontrado.")
+      return
+    }
+    const { success, error } = await saveProjectToCloud(project)
+    if (success) {
+      Alert.alert("Sucesso", "Projeto salvo na nuvem com sucesso!")
+    } else {
+      Alert.alert("Erro", error || "Falha ao salvar projeto na nuvem.")
+    }
+  }, [projectId])
+
   const handleMoveToTrash = useCallback(() => {
     Alert.alert(
       "Mover para Lixeira",
@@ -93,6 +109,7 @@ export function ProjectMenu({ projectId, projectTitle, onRefresh }: {
           <View className="absolute right-0 top-10 z-20 bg-dark-surface border border-dark-border rounded-xl py-1 w-48 shadow-lg">
             <MenuOption icon="📋" label="Duplicar Projeto" onPress={handleDuplicate} />
             <MenuOption icon="✏️" label="Renomear" onPress={handleRename} />
+            <MenuOption icon="☁️" label="Salvar na Nuvem" onPress={handleSaveToCloud} />
             <MenuOption icon="⬇️" label="Baixar Áudio (.wav)" onPress={handleDownload} />
             <View className="h-px bg-dark-border mx-3" />
             <MenuOption icon="🗑️" label="Mover para Lixeira" onPress={handleMoveToTrash} destructive />
