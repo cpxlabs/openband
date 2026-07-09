@@ -33,6 +33,7 @@ To maintain premium desktop/mobile responsivity while securing client-side routi
   ```
 - **Custom Desktop Layout**: Persistent side navigation (`Sidebar` component) displays on the left for wide screens.
 - **Custom Mobile Layout**: A hamburger menu trigger button renders in the header, opening a custom side-sliding drawer menu overlay containing navigation options.
+- **Unified Logged-In Layout**: All logged-in screens across the application (including tabs, DAW Studio `app/studio/[id].tsx`, Extractor `app/extractor.tsx`, and Mastering `app/mastering/index.tsx`) must implement the identical responsive navigation shell (desktop left-side `Sidebar`, mobile top-header hamburger menu opening the drawer overlay) to ensure navigation continuity.
 
 ---
 

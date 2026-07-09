@@ -54,6 +54,7 @@ import {
   OutputSelector,
   VuMeter,
   TrackColorPicker,
+  Sidebar,
 } from "../../src/components";
 import { registerCommand, initKeyBindings, disposeKeyBindings } from "../../src/lib/commandRegistry";
 import { chordsToMIDINotes } from "../../src/lib/harmonicAssistant";
@@ -215,6 +216,12 @@ export default function Studio() {
   }, []);
 
   const resp = useResponsive();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const handleNavigate = useCallback((route: string) => {
+    const target = route === "index" ? "/tabs/feed" : `/tabs/${route}`;
+    router.push(target as Parameters<typeof router.push>[0]);
+    setDrawerOpen(false);
+  }, [router]);
 
   const initialBottomTab = (() => {
     if (rawTab === "fx" || rawTab === "mastering" || rawTab === "groups" || rawTab === "buses" || rawTab === "mixes" || rawTab === "chords") {
@@ -500,6 +507,26 @@ export default function Studio() {
       }
     }
   }, [player, webAudio, isWeb, tracks, initialBpm, projectMood, buses, pitchCorrected, playbackRate]);
+
+  const seekRelative = useCallback((seconds: number) => {
+    if (isWeb) {
+      webAudio.seekTo(Math.max(0, webAudio.currentTime + seconds));
+    } else if (player) {
+      player.seekTo(Math.max(0, (status.currentTime || 0) + seconds));
+    }
+  }, [isWeb, webAudio, player, status.currentTime]);
+
+  const stopPlayback = useCallback(() => {
+    if (isWeb) {
+      webAudio.pause();
+      webAudio.seekTo(0);
+    } else if (player) {
+      player.pause();
+      player.seekTo(0);
+    }
+    stopClock();
+    setCurrentBeat(0);
+  }, [isWeb, webAudio, player]);
 
   // Stop playback when studio unmounts
   useEffect(() => () => {
@@ -1312,13 +1339,72 @@ export default function Studio() {
   ];
 
   return (
-    <View className="flex-1 bg-dark-bg select-none">
+    <View className="flex-1 bg-dark-bg select-none flex-row">
+      {resp.isDesktop && (
+        <Sidebar
+          currentRoute="studio"
+          onNavigate={handleNavigate}
+          isOpen
+          onClose={() => {}}
+          isPersistent
+        />
+      )}
+      {drawerOpen && (
+        <View className="absolute inset-0 z-50 flex-row">
+          <Pressable
+            className="flex-1 bg-black/60"
+            onPress={() => setDrawerOpen(false)}
+          />
+          <View className="w-64 bg-[#0d0d11] border-l border-dark-border/40 h-full">
+            <View className="flex-row items-center justify-between px-4 py-4 border-b border-dark-border/40">
+              <Text className="text-white font-bold text-base">
+                Open<Text className="text-brand-primary">Band</Text>
+              </Text>
+              <Pressable
+                onPress={() => setDrawerOpen(false)}
+                className="w-7 h-7 rounded-full bg-dark-muted/30 items-center justify-center active:opacity-70"
+              >
+                <Text className="text-gray-400 text-sm">✕</Text>
+              </Pressable>
+            </View>
+            <ScrollView className="flex-1 px-2 pt-2">
+              {[
+                { key: "index", label: "Feed", icon: "♫" },
+                { key: "moments", label: "Momentos", icon: "♡" },
+                { key: "library", label: "Biblioteca", icon: "☰" },
+                { key: "account", label: "Conta", icon: "●" },
+                { key: "settings", label: "Ajustes", icon: "⚙" },
+              ].map((item) => (
+                <Pressable
+                  key={item.key}
+                  onPress={() => handleNavigate(item.key)}
+                  className="flex-row items-center gap-3 px-3 py-3 rounded-xl mb-0.5 border border-transparent"
+                >
+                  <View className="w-8 h-8 rounded-lg bg-dark-muted/20 items-center justify-center">
+                    <Text className="text-base text-gray-400">{item.icon}</Text>
+                  </View>
+                  <Text className="flex-1 text-sm font-semibold text-gray-300">{item.label}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      )}
+      <View className="flex-1">
       <View
         className={`${resp.isMobile ? "h-12 px-2" : "h-14 px-4"} bg-dark-surface/95 border-b border-dark-border/50 flex-row items-center justify-between`}
       >
         <View className="flex-row items-center gap-2">
+          {!resp.isDesktop && (
+            <Pressable
+              onPress={() => setDrawerOpen(true)}
+              className="w-8 h-8 rounded-lg bg-dark-muted/30 items-center justify-center active:opacity-70 mr-1"
+            >
+              <Text className="text-gray-300 text-base">☰</Text>
+            </Pressable>
+          )}
           <Pressable
-            onPress={() => player && (player.currentTime = Math.max(0, player.currentTime - 5))}
+            onPress={() => seekRelative(-5)}
             className="w-8 h-8 rounded-lg bg-dark-muted items-center justify-center active:opacity-70"
           >
             <Text className="text-gray-300 text-xs">⏮</Text>
@@ -1338,15 +1424,13 @@ export default function Studio() {
             />
           </Pressable>
           <Pressable
-            onPress={() => player && (player.currentTime = Math.max(0, player.currentTime + 5))}
+            onPress={() => seekRelative(5)}
             className="w-8 h-8 rounded-lg bg-dark-muted items-center justify-center active:opacity-70"
           >
             <Text className="text-gray-300 text-xs">⏭</Text>
           </Pressable>
           <Pressable
-            onPress={() => {
-              if (player) player.currentTime = 0;
-            }}
+            onPress={stopPlayback}
             className="w-8 h-8 rounded-lg bg-dark-muted items-center justify-center active:opacity-70"
           >
             <Text className="text-gray-300 text-xs">⏹</Text>
@@ -1356,11 +1440,11 @@ export default function Studio() {
         {/* Time display */}
         <View className="flex-row items-center gap-2">
           <Text className="text-gray-400 text-xs font-mono">
-            {formatTime(player?.currentTime ?? 0)}
+            {formatTime(currentTime)}
           </Text>
           <Text className="text-gray-600 text-xs">/</Text>
           <Text className="text-gray-500 text-xs font-mono">
-            {formatTime(progressPct > 0 ? (player?.currentTime ?? 0) / progressPct : 0)}
+            {formatTime(duration)}
           </Text>
         </View>
 
@@ -2723,6 +2807,7 @@ export default function Studio() {
         visible={showOutputSelector}
         onClose={() => setShowOutputSelector(false)}
       />
+      </View>
     </View>
   );
 }

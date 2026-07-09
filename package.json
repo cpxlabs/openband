@@ -59,6 +59,7 @@
     "lint": "npx tsc --noEmit",
     "test": "npx vitest run",
     "test:legacy": "npx tsx --test tests/presets.test.ts tests/types.test.ts",
+    "test:ui": "npx vitest --ui",
     "test:ui:screenshot": "node scripts/screenshot-vitest-ui.mjs",
     "build": "expo export --platform web && node scripts/post-export.js",
     "start": "expo start",
