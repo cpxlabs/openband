@@ -21,7 +21,7 @@ describe("Cloud Sync", () => {
     mixSnapshots: [],
     activeMixId: undefined,
     metronome: { enabled: false, bpm: 120, volume: 80, timeSig: [4, 4], accentInterval: 4, countIn: false, countInBars: 1 },
-    recordSettings: { armed: false, sampleRate: 44100, mono: false, quality: "high", inputSource: "default", preRoll: 0 },
+    recordSettings: { armed: false, sampleRate: 44100, mono: false, quality: "high", inputSource: "mic", preRoll: 0 },
     lastSaved: Date.now(),
   };
 

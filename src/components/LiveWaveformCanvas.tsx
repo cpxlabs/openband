@@ -29,7 +29,6 @@ export const LiveWaveformCanvas = ({
       
       ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
       
-      const totalChunks = chunks.length;
       // We want to draw from left to right as chunks arrive.
       // E.g. each chunk is ~4096 samples (0.09s at 44.1kHz).
       // Let's draw ~10 chunks per inch (or just fit them in).

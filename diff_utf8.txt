@@ -1,0 +1,150 @@
+﻿diff --git a/app/studio/[id].tsx b/app/studio/[id].tsx
+index e242399..0b60a91 100644
+--- a/app/studio/[id].tsx
++++ b/app/studio/[id].tsx
+@@ -55,6 +55,7 @@ import {
+   VuMeter,
+   TrackColorPicker,
+   Sidebar,
++  LiveWaveformCanvas,
+ } from "../../src/components";
+ import { registerCommand, initKeyBindings, disposeKeyBindings } from "../../src/lib/commandRegistry";
+ import { chordsToMIDINotes } from "../../src/lib/harmonicAssistant";
+@@ -232,6 +233,7 @@ export default function Studio() {
+ 
+   const [isRecording, setIsRecording] = useState(false);
+   const [webRecordingStart, setWebRecordingStart] = useState<number | null>(null);
++  const liveRecordingDataRef = useRef<Float32Array[]>([]);
+   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
+   const [bottomTab, setBottomTab] = useState<BottomTab>(initialBottomTab);
+   const [showRecordOptions, setShowRecordOptions] = useState(false);
+@@ -603,7 +605,10 @@ export default function Studio() {
+         setIsRecording(false);
+       } else {
+         if (isWeb) {
+-          await audioSystem.startRecording();
++          liveRecordingDataRef.current = [];
++          await audioSystem.startRecording((chunk) => {
++            liveRecordingDataRef.current.push(chunk);
++          });
+           setWebRecordingStart(Date.now());
+           setIsRecording(true);
+         } else {
+@@ -1927,6 +1932,19 @@ export default function Studio() {
+                           />
+                         </View>
+                       ))}
++                      {isRecording && track.isArmed && (
++                        <View
++                          style={{
++                            left: currentBeat * 2.4, // rough sync with beat width, but usually recording starts at current position
++                            width: (Date.now() - (webRecordingStart || Date.now())) / 1000 * (initialBpm / 60) * 2.4,
++                            minWidth: 100, // so we can see it growing
++                            position: "absolute",
++                          }}
++                          className={`h-14 rounded-xl border border-red-500/50 overflow-hidden shadow-md bg-red-500/20`}
++                        >
++                          <LiveWaveformCanvas dataRef={liveRecordingDataRef} height={56} />
++                        </View>
++                      )}
+                     </View>
+                     {showAuto && (
+                       <View className="h-[26px] bg-dark-bg/20 border-b border-dark-border/20">
+diff --git a/diff.txt b/diff.txt
+index d95510c..e69de29 100644
+Binary files a/diff.txt and b/diff.txt differ
+diff --git a/src/components/LiveWaveformCanvas.tsx b/src/components/LiveWaveformCanvas.tsx
+new file mode 100644
+index 0000000..49d7b4c
+--- /dev/null
++++ b/src/components/LiveWaveformCanvas.tsx
+@@ -0,0 +1,77 @@
++import React, { useEffect, useRef } from "react";
++import { View, Platform } from "react-native";
++
++export const LiveWaveformCanvas = ({
++  dataRef,
++  height = 56,
++}: {
++  dataRef: React.MutableRefObject<Float32Array[]>;
++  height?: number;
++}) => {
++  const canvasRef = useRef<HTMLCanvasElement>(null);
++
++  useEffect(() => {
++    if (Platform.OS !== "web" || !canvasRef.current) return;
++    const canvas = canvasRef.current;
++    const ctx = canvas.getContext("2d");
++    if (!ctx) return;
++
++    let animId: number;
++
++    const render = () => {
++      animId = requestAnimationFrame(render);
++      const width = canvas.width;
++      const h = canvas.height;
++      ctx.clearRect(0, 0, width, h);
++
++      const chunks = dataRef.current;
++      if (!chunks || chunks.length === 0) return;
++      
++      ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
++      
++      const totalChunks = chunks.length;
++      // We want to draw from left to right as chunks arrive.
++      // E.g. each chunk is ~4096 samples (0.09s at 44.1kHz).
++      // Let's draw ~10 chunks per inch (or just fit them in).
++      const MAX_CHUNKS_DISPLAY = 200; // ~18 seconds of audio
++      const displayChunks = chunks.slice(-MAX_CHUNKS_DISPLAY);
++      
++      const chunkWidth = width / MAX_CHUNKS_DISPLAY;
++
++      for (let i = 0; i < displayChunks.length; i++) {
++        const chunk = displayChunks[i];
++        let max = 0;
++        for (let j = 0; j < chunk.length; j++) {
++           const abs = Math.abs(chunk[j]);
++           if (abs > max) max = abs;
++        }
++        
++        const rectHeight = Math.max(2, max * h);
++        const x = i * chunkWidth;
++        const y = (h - rectHeight) / 2;
++        
++        ctx.fillRect(x, y, chunkWidth - 1, rectHeight);
++      }
++    };
++
++    render();
++    return () => cancelAnimationFrame(animId);
++  }, [dataRef]);
++
++  if (Platform.OS !== "web") {
++    return <View style={{ flex: 1, height }} className="bg-red-500/20" />;
++  }
++
++  return (
++    <canvas
++      ref={canvasRef}
++      style={{
++        width: "100%",
++        height: `${height}px`,
++        display: "block",
++      }}
++      width={1000} // High res buffer
++      height={height * 2}
++    />
++  );
++};
+diff --git a/src/components/index.ts b/src/components/index.ts
+index 8e1660c..0babf4a 100644
+--- a/src/components/index.ts
++++ b/src/components/index.ts
+@@ -47,6 +47,7 @@ export { ChordTrack } from "./ChordTrack";
+ export { Sampler } from "./Sampler";
+ export { Synth, SYNTH_PRESETS } from "./Synth";
+ export { OutputSelector } from "./OutputSelector";
++export { LiveWaveformCanvas } from "./LiveWaveformCanvas";
+ export { MasteringSuite } from "./MasteringSuite";
+ export { MasteringChain } from "./MasteringChain";
+ export { MasteringVersionManager } from "./MasteringVersionManager";
