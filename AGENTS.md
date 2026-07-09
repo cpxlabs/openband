@@ -247,6 +247,34 @@ Types: `fix`, `feat`, `chore`, `refactor`, `docs`
 
 ---
 
+## Session Recovery (Bad Session / Abort Flow)
+
+**Goal:** When a session goes bad, discard all changes and return to a clean known-good state.
+
+1. **Identify the safe commit** — Usually `master` or a specific known-good commit hash
+2. **Abort in-progress operations** — `git merge --abort` or `git cherry-pick --abort`
+3. **Discard all uncommitted changes**:
+   ```
+   git reset --hard HEAD       # discard staged + unstaged changes
+   git clean -fd               # remove untracked files
+   ```
+4. **Stash any work you want to keep** before resetting
+5. **Checkout to safe branch/commit**:
+   ```
+   git checkout master
+   git pull --ff-only origin master
+   ```
+6. **Delete bad feature branches** (local + remote):
+   ```
+   git branch -D <branch-name>
+   git push origin --delete <branch-name>
+   ```
+7. **Verify clean state**: `git status` should show nothing to commit, working tree clean
+
+> **Important:** Never abort a merge without first checking what staged changes would be lost. Use `git diff --cached` to review staged content before running `git merge --abort`.
+
+---
+
 ## Project Architecture Quick Reference
 
 ```
