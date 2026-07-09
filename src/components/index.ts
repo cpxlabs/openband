@@ -55,6 +55,7 @@ export { ProjectMenu } from "./ProjectMenu";
 export { PluginUI } from "./PluginUI";
 export { BranchManager } from "./BranchManager";
 export { Patchbay } from "./Patchbay";
+export { RightSidebar } from "./RightSidebar";
 export { CommitModal, VersionHistory } from "./CommitModal";
 export { CommandPalette } from "./CommandPalette";
 export { default as LightControls } from "./LightControls";

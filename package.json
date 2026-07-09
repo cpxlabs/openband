@@ -58,7 +58,7 @@
     "lint": "npx tsc --noEmit",
     "test": "npx vitest run",
     "test:legacy": "npx tsx --test tests/presets.test.ts tests/types.test.ts",
-    "build": "expo export --platform web && node -e \"const fs=require('fs'); fs.copyFileSync('assets/sw.js', 'dist/sw.js'); fs.copyFileSync('assets/manifest.json', 'dist/manifest.json'); fs.mkdirSync('dist/assets', {recursive:true}); ['icon-192.png', 'icon-512.png', 'favicon.png'].forEach(f => fs.copyFileSync('assets/'+f, 'dist/assets/'+f));\"",
+    "build": "expo export --platform web --clear && node -e \"const fs=require('fs'); fs.copyFileSync('assets/sw.js', 'dist/sw.js'); fs.copyFileSync('assets/manifest.json', 'dist/manifest.json'); fs.mkdirSync('dist/assets', {recursive:true}); ['icon-192.png', 'icon-512.png', 'favicon.png'].forEach(f => fs.copyFileSync('assets/'+f, 'dist/assets/'+f));\"",
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",

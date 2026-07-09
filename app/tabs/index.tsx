@@ -12,7 +12,6 @@ import {
 import { useRouter } from "expo-router";
 import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
 import {
-  Card,
   Badge,
   ProgressBar,
   PageHeader,
@@ -248,9 +247,9 @@ const FeedPostCard = memo(function FeedPostCard({
   onPlayed,
 }: FeedPostCardProps) {
   return (
-    <Card highlighted={isThisPlaying} className="mx-4 tablet:mx-2 mb-3">
-      <View className="p-4">
-        <View className="flex-row items-start gap-3">
+    <View className={`card-premium mx-4 tablet:mx-2 mb-3 ${isThisPlaying ? "border-brand-primary/40" : ""}`}>
+      <View className="p-4 pb-0">
+        <View className="flex-row items-start gap-3 mb-3">
           <Avatar name={item.author} size="md" />
           <View className="flex-1">
             <View className="flex-row items-start justify-between">
@@ -262,23 +261,20 @@ const FeedPostCard = memo(function FeedPostCard({
                   {item.authorHandle}
                 </Text>
               </View>
-              <Badge
-                text={formatCount(item.plays)}
-                icon="▶"
-                variant="play"
-              />
+              <View className="bg-dark-muted/30 px-2 py-1 rounded-lg flex-row items-center gap-1">
+                <Text className="text-gray-400 text-[9px]">▶</Text>
+                <Text className="text-gray-400 text-[10px] font-semibold">
+                  {formatCount(item.plays)}
+                </Text>
+              </View>
             </View>
 
             <View className="flex-row items-center gap-2 mt-2">
-              <Badge
-                text={item.genre.toUpperCase()}
-                variant="default"
-              />
+              <Badge text={item.genre.toUpperCase()} variant="default" />
               <Badge text={item.key} variant="default" />
               <Badge text={`${item.bpm} BPM`} variant="default" />
               <Text className="text-gray-600 text-[10px]">
-                {Math.floor(item.duration / 60)}:
-                {String(item.duration % 60).padStart(2, "0")}
+                {Math.floor(item.duration / 60)}:{String(item.duration % 60).padStart(2, "0")}
               </Text>
             </View>
           </View>
@@ -293,62 +289,50 @@ const FeedPostCard = memo(function FeedPostCard({
           accessibilityRole="button"
           accessibilityLabel={isThisLoading ? "Carregando áudio" : isThisPlaying ? "Pausar áudio" : "Ouvir áudio"}
           accessibilityState={{ disabled: isThisLoading }}
-          className={`mt-3 h-10 rounded-xl items-center justify-center flex-row gap-2 ${
-            isThisPlaying ? "bg-green-600" : "btn-secondary"
-          }`}
+          className={`h-11 rounded-xl items-center justify-center flex-row gap-2 ${
+            isThisPlaying ? "bg-green-600" : "bg-brand-primary"
+          } shadow-sm ${isThisPlaying ? "shadow-green-600/20" : "shadow-brand-primary/20"}`}
         >
-          <Text
-            className={`text-sm ${isThisPlaying ? "text-white" : "text-brand-primary"}`}
-          >
+          <Text className="text-white text-sm">
             {isThisLoading ? "…" : isThisPlaying ? "⏸" : "▶"}
           </Text>
-          <Text
-            className={`font-bold text-xs ${isThisPlaying ? "text-white" : "text-brand-primary"}`}
-          >
+          <Text className="text-white font-bold text-sm">
             {isThisLoading ? "Carregando" : isThisPlaying ? "Pausar" : "Ouvir"}
           </Text>
         </Pressable>
+      </View>
 
-        <View className="flex-row items-center gap-3 mt-3">
-          <Pressable
-            onPress={() => onLike(item.id)}
-            className="flex-row items-center gap-1 active:opacity-60"
-          >
-            <Text
-              className={`text-base ${item.userLiked ? "text-brand-primary" : "text-gray-500"}`}
-            >
-              {item.userLiked ? "❤" : "♡"}
-            </Text>
-            <Text
-              className={`text-xs font-semibold ${item.userLiked ? "text-brand-primary" : "text-gray-500"}`}
-            >
-              {formatCount(item.likes)}
-            </Text>
-          </Pressable>
+      <View className="px-4 py-3 flex-row items-center gap-4">
+        <Pressable
+          onPress={() => onLike(item.id)}
+          className="flex-row items-center gap-1.5 active:opacity-60"
+        >
+          <Text className={`text-base ${item.userLiked ? "text-brand-primary" : "text-gray-500"}`}>
+            {item.userLiked ? "❤" : "♡"}
+          </Text>
+          <Text className={`text-xs font-semibold ${item.userLiked ? "text-brand-primary" : "text-gray-500"}`}>
+            {formatCount(item.likes)}
+          </Text>
+        </Pressable>
 
-          <Pressable
-            onPress={() => onRemix(item)}
-            className="flex-row items-center gap-1 px-2.5 py-1 rounded-full bg-dark-elevated border border-dark-border active:opacity-70"
-          >
-            <Text className="text-gray-400 text-xs">🔄</Text>
-            <Text className="text-gray-400 text-[10px] font-semibold">
-              Remix
-            </Text>
-          </Pressable>
+        <Pressable
+          onPress={() => onRemix(item)}
+          className="flex-row items-center gap-1.5 px-3 py-1.5 rounded-full bg-dark-elevated border border-dark-border/60 active:opacity-70"
+        >
+          <Text className="text-gray-400 text-xs">🔄</Text>
+          <Text className="text-gray-400 text-[10px] font-semibold">Remix</Text>
+        </Pressable>
 
-          <Pressable
-            onPress={() => onShare(item)}
-            className="flex-row items-center gap-1 px-2.5 py-1 rounded-full bg-dark-elevated border border-dark-border active:opacity-70"
-          >
-            <Text className="text-gray-400 text-xs">↗</Text>
-            <Text className="text-gray-400 text-[10px] font-semibold">
-              Compartilhar
-            </Text>
-          </Pressable>
-        </View>
+        <Pressable
+          onPress={() => onShare(item)}
+          className="flex-row items-center gap-1.5 px-3 py-1.5 rounded-full bg-dark-elevated border border-dark-border/60 active:opacity-70"
+        >
+          <Text className="text-gray-400 text-xs">↗</Text>
+          <Text className="text-gray-400 text-[10px] font-semibold">Compartilhar</Text>
+        </Pressable>
       </View>
       {isThisPlaying && <LiveProgressBar audioRef={audioRef} />}
-    </Card>
+    </View>
   );
 });
 
