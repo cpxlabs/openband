@@ -53,6 +53,36 @@
     @apply bg-dark-bg text-white;
   }
 
+  /* Custom Scrollbars */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-dark-border);
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-dark-muted);
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-dark-border) transparent;
+  }
+
+  [data-theme="light"] ::-webkit-scrollbar-thumb {
+    background: var(--color-light-border);
+  }
+  [data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-light-muted);
+  }
+  [data-theme="light"] * {
+    scrollbar-color: var(--color-light-border) transparent;
+  }
+
   [data-theme="light"] .text-white {
     color: rgb(var(--color-dark-bg));
   }
