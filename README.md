@@ -351,19 +351,26 @@ player.volume = 0.5; // 0.0 – 1.0
 - Accepted formats: MP3, WAV, FLAC, M4A, OGG, AAC, WMA
 - Response: `{ stems: { bass, drums, vocals, other }, taskId }`
 
+### Test Dashboard (Vitest UI)
+
+You can run and monitor the test suite in real-time using Vitest's visual dashboard:
+
+![Vitest UI Test Dashboard](docs/vitest-ui-dashboard.png)
+
 ## Scripts
 
 ```bash
-npm start                 # Start Expo dev server
-npm run web               # Start web-only dev server
-npm run build             # Production web export (output: dist/)
-npm run desktop           # Build + launch Electron desktop app
-npm run desktop:dev       # Hot-reload dev (Expo + Electron concurrently)
-npx tsc --noEmit          # TypeScript check
-npx vitest run            # Run all component + lib tests (single run)
-npx vitest --ui           # Open interactive test dashboard in browser (real-time)
-npx vitest                # Run test suite in real-time watch mode
-cd backend && npm run dev # Backend dev server (port 3001)
+npm start                  # Start Expo dev server
+npm run web                # Start web-only dev server
+npm run build              # Production web export (output: dist/)
+npm run desktop            # Build + launch Electron desktop app
+npm run desktop:dev        # Hot-reload dev (Expo + Electron concurrently)
+npm run test:ui:screenshot # Run Vitest UI, take a dashboard screenshot, and exit
+npx tsc --noEmit           # TypeScript check
+npx vitest run             # Run all component + lib tests (single run)
+npx vitest --ui            # Open interactive test dashboard in browser (real-time)
+npx vitest                 # Run test suite in real-time watch mode
+cd backend && npm run dev  # Backend dev server (port 3001)
 
 # Electron packaging (run from electron/ directory)
 cd electron && npm run build:electron  # Package for current platform
