@@ -1,31 +1,40 @@
 import { useWindowDimensions, Platform } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export type Breakpoint = "mobile" | "tablet" | "desktop";
 
 export const LAYOUT_MAX_WIDTHS = {
-  feed: undefined,
-  feedWide: undefined,
-  library: undefined,
-  moments: undefined,
-  extractor: undefined,
-  mastering: undefined,
-  account: undefined,
-  settings: undefined,
-  login: undefined,
+  feed: 1024,
+  feedWide: 1440,
+  library: 1200,
+  moments: 1200,
+  extractor: 1024,
+  mastering: 1024,
+  account: 800,
+  settings: 800,
+  login: 600,
 };
 
 export function useResponsive() {
   const { width, height } = useWindowDimensions();
+  // Safe area insets (web returns 0 natively or we can just read it safely)
+  const insets = useSafeAreaInsets();
+  
   const breakpoint: Breakpoint =
-    width < 480 ? "mobile" : width < 1280 ? "tablet" : "desktop";
+    width < 768 ? "mobile" : width < 1024 ? "tablet" : "desktop";
   const isLandscape = width > height;
   const isWeb = Platform.OS === "web";
 
   const isPortrait = height > width;
   const headerHeight = breakpoint === "mobile" ? 48 : 56;
   const bottomNavHeight = breakpoint === "mobile" ? 56 : breakpoint === "tablet" ? 64 : 0;
+  
+  // Dynamic columns
   const numColumns =
-    breakpoint === "mobile" ? 1 : breakpoint === "tablet" ? 2 : 3;
+    width < 600 ? 1 :
+    width < 900 ? 2 :
+    width < 1200 ? 3 :
+    width < 1600 ? 4 : 5;
 
   return {
     width,
@@ -40,6 +49,8 @@ export function useResponsive() {
     headerHeight,
     bottomNavHeight,
     numColumns,
+    safeTop: insets.top,
+    safeBottom: insets.bottom,
     sidebarWidth: breakpoint === "desktop" ? 64 : 0,
     contentPadding:
       breakpoint === "mobile" ? 16 : breakpoint === "tablet" ? 24 : 24,

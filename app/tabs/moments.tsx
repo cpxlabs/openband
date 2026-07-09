@@ -223,7 +223,7 @@ export default function Moments() {
   );
 
   return (
-    <View className="flex-1 bg-dark-bg">
+    <View className="flex-1 bg-dark-bg" style={{ paddingTop: resp.safeTop }}>
       <View
         className="pt-4 tablet:pt-12 px-4 tablet:px-6 flex-row items-center justify-between mb-2"
       >
@@ -325,7 +325,7 @@ export default function Moments() {
                 key={pack.id}
                 pack={pack}
                 onUsePack={handleUsePack}
-                widthStyle={{ width: resp.isDesktop ? "31%" : resp.isTablet ? "48%" : "100%" }}
+                widthStyle={{ width: resp.numColumns === 1 ? "100%" : `${(100 / resp.numColumns) - 2}%` }}
               />
             ))}
           </View>

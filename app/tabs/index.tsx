@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   FlatList,
   View,
@@ -390,10 +390,10 @@ export default function Feed() {
     );
   }, [playingId, loadingId, playing, webAudio.audioRef, handlePlay, handleLike, handleRemix, handleShare, handlePlayed]);
 
-  const maxWidthStyle: Record<string, string | number | undefined> = { maxWidth: LAYOUT_MAX_WIDTHS.feedWide, alignSelf: "center" as const };
+  const maxWidthStyle: Record<string, string | number | undefined> = { width: "100%", maxWidth: LAYOUT_MAX_WIDTHS.feedWide, alignSelf: "center" as const };
 
   return (
-    <View className="flex-1 bg-dark-bg">
+    <View className="flex-1 bg-dark-bg" style={{ paddingTop: resp.safeTop }}>
       <QuickTools
         visible={showQuickTools}
         onClose={() => setShowQuickTools(false)}

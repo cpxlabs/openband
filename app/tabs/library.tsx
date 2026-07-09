@@ -99,7 +99,7 @@ export default function Library() {
   const px = resp.isMobile ? "px-4" : "px-6"
 
   return (
-    <View className="flex-1 bg-dark-bg">
+    <View className="flex-1 bg-dark-bg" style={{ paddingTop: resp.safeTop }}>
       <View className={`pt-4 tablet:pt-12 ${px}`}>
         <PageHeader title="Biblioteca" subtitle="Seus projetos musicais" />
       </View>
