@@ -35,7 +35,13 @@
       "themeColor": "#ff3b30",
       "description": "OpenBand - Open-source music production platform"
     },
-    "plugins": ["expo-audio", "expo-asset", "expo-router"],
+    "plugins": [
+      "expo-audio",
+      "expo-asset",
+      "expo-router",
+      "expo-secure-store",
+      "expo-status-bar"
+    ],
     "cli": {
       "appVersionSource": "remote"
     },
