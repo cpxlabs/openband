@@ -24,7 +24,7 @@ export default function MasteringScreen() {
   }, [router]);
 
   return (
-    <View className="flex-1 bg-dark-bg flex-row">
+    <View className="flex-1 bg-dark-bg flex-row" style={{ paddingTop: resp.safeTop }}>
       {resp.isDesktop && (
         <Sidebar
           currentRoute=""
