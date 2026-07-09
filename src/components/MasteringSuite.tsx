@@ -22,7 +22,7 @@ import {
   buildMasteringChain,
   createVersion,
 } from "../lib/masteringSuite";
-import { audioBufferToWavBlob, audioBufferToMp3Blob } from "../lib/audio";
+import { audioBufferToWavBlob, audioBufferToMp3BlobAsync } from "../lib/audio";
 import { OpenBandNative } from "../bridge";
 import { DEMO_AUDIO_URL, SCREEN_BOTTOM_PADDING } from "../lib/constants";
 import { takeMasteringInput } from "../lib/masteringBridge";
@@ -106,6 +106,7 @@ export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
     44100 | 48000 | 96000
   >(44100);
   const [exporting, setExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState(0);
   const [seekBarWidth, setSeekBarWidth] = useState(0);
 
   const audioSource = useMemo(() => {
@@ -260,6 +261,7 @@ export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
       return;
     }
     setExporting(true);
+    setExportProgress(0);
     try {
       const sr = exportFormat === "mp3" ? 44100 : exportSampleRate;
       const bd = exportFormat === "mp3" ? 16 : exportBitDepth;
@@ -269,7 +271,7 @@ export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
 
       const rendered = await fetchAndRenderAudio(sourceUrl, sr, duration);
       const blob = exportFormat === "mp3"
-        ? audioBufferToMp3Blob(rendered, 192) // default 192kbps
+        ? await audioBufferToMp3BlobAsync(rendered, 192, setExportProgress) // default 192kbps
         : audioBufferToWavBlob(rendered, bd);
 
       const filename = session.inputFile
@@ -536,7 +538,7 @@ export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
                 className={`text-sm font-bold ${session.inputFile && !exporting ? "text-white" : "text-gray-500"}`}
               >
                 {exporting
-                  ? "Renderizando..."
+                  ? exportFormat === "mp3" && exportProgress > 0 ? `Codificando MP3 (${exportProgress}%)...` : "Renderizando..."
                   : session.inputFile
                     ? "Renderizar & Exportar"
                     : "Faça upload primeiro"}

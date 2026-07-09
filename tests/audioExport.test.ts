@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { audioBufferToWavBlob, audioBufferToMp3Blob } from "../src/lib/audio";
+import { audioBufferToWavBlob, audioBufferToMp3BlobAsync } from "../src/lib/audio";
 
 vi.mock("lamejs", () => {
   return {
@@ -27,9 +27,9 @@ describe("Audio Export Formats", () => {
     expect(blob.type).toBe("audio/wav");
   });
 
-  it("audioBufferToMp3Blob generates an MP3 blob via lamejs", () => {
+  it("audioBufferToMp3BlobAsync generates valid MP3 blob from buffer", async () => {
     const buffer = createMockAudioBuffer();
-    const blob = audioBufferToMp3Blob(buffer, 192);
+    const blob = await audioBufferToMp3BlobAsync(buffer, 192);
     expect(blob).toBeInstanceOf(Blob);
     expect(blob.type).toBe("audio/mpeg");
     // Size is the mocked array buffer length: Int8Array([1, 2, 3]) + Int8Array([4, 5])

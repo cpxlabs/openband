@@ -113,7 +113,7 @@ export function audioBufferToWavBlob(buffer: AudioBuffer, bitDepth: number = 16)
   return new Blob([view], { type: "audio/wav" });
 }
 
-export function audioBufferToMp3Blob(buffer: AudioBuffer, kbps: number = 192): Blob {
+export async function audioBufferToMp3BlobAsync(buffer: AudioBuffer, kbps: number = 192, onProgress?: (pct: number) => void): Promise<Blob> {
   const numChannels = buffer.numberOfChannels;
   const sampleRate = buffer.sampleRate;
   const encoder = new Mp3Encoder(numChannels, sampleRate, kbps);
@@ -139,6 +139,11 @@ export function audioBufferToMp3Blob(buffer: AudioBuffer, kbps: number = 192): B
     const mp3buf = encoder.encodeBuffer(leftInt16, numChannels > 1 ? rightInt16 : undefined);
     if (mp3buf.length > 0) {
       mp3Data.push(new Uint8Array(mp3buf));
+    }
+
+    if (i > 0 && i % (sampleBlockSize * 100) === 0) {
+      if (onProgress) onProgress(Math.round((i / left.length) * 100));
+      await new Promise(resolve => setTimeout(resolve, 0));
     }
   }
 
