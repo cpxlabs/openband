@@ -144,6 +144,21 @@ export function useWebAudioPlayer(options?: { trackTime?: boolean }) {
     }
   }, []);
 
+  const unlock = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    try {
+      const promise = audio.play();
+      if (promise !== undefined) {
+        promise.catch(() => {}).then(() => {
+          audio.pause();
+        });
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, []);
+
   return useMemo(() => ({
     isPlaying,
     currentTime,
@@ -155,6 +170,7 @@ export function useWebAudioPlayer(options?: { trackTime?: boolean }) {
     seekTo,
     setVolume,
     setPlaybackRate,
+    unlock,
     audioRef,
-  }), [isPlaying, currentTime, duration, isLoaded, replace, play, pause, seekTo, setVolume, setPlaybackRate]);
+  }), [isPlaying, currentTime, duration, isLoaded, replace, play, pause, seekTo, setVolume, setPlaybackRate, unlock]);
 }

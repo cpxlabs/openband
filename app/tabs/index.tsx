@@ -252,6 +252,7 @@ export default function Feed() {
 
   const handlePlay = useCallback(
     async (post: FeedPost) => {
+      if (isWeb) webAudioRef.current.unlock();
       if (loadingIdRef.current) return;
       if (playingIdRef.current === post.id && playingRef.current) {
         if (isWeb) webAudioRef.current.pause(); else expoPlayerRef.current.pause();
