@@ -7,10 +7,11 @@
 - [x] Verify Auth flow.
 
 ## Milestone 2: Audio Recording
-- [ ] Create `RecordingWorklet.ts` for low-latency capture.
-- [ ] Add an "Arm for Recording" button to `TrackDef` and UI.
-- [ ] Implement live-drawing waveform component.
-- [ ] Save recorded buffers to the project state.
+- [x] Create `RecordingWorklet.ts` for low-latency capture.
+- [x] Integrate `navigator.mediaDevices` inside `universalAudio.ts`.
+- [x] Add "Arm" button to Track Header in `app/studio/[id].tsx`.
+- [x] Implement Live Waveform visualizer.
+- [x] Convert captured buffers to `.wav` and add to project regions.tate.
 
 ## Milestone 3: Advanced MIDI
 - [ ] Rewrite `PianoRoll.tsx` to support Drag-to-Resize notes and Velocity.
