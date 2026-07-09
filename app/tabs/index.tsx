@@ -27,6 +27,7 @@ import type { GenreTemplate, Mood } from "../../src/lib/projectTemplates";
 import { useResponsive } from "../../src/lib/responsive";
 import { listProjectIndex } from "../../src/lib/projectStore";
 import { useWebAudioPlayer } from "../../src/hooks/useWebAudioPlayer";
+import { useTranslation } from "react-i18next";
 
 const MOCK_POSTS: FeedPost[] = [
   {
@@ -182,6 +183,7 @@ type SortMode = "recent" | "popular" | "genre";
 
 export default function Feed() {
   const router = useRouter();
+  const { t } = useTranslation();
   const resp = useResponsive();
   const webAudio = useWebAudioPlayer({ trackTime: false });
   const expoPlayer = useAudioPlayer(null);
@@ -407,16 +409,16 @@ export default function Feed() {
       <View style={maxWidthStyle}>
         <View className="pt-4 tablet:pt-12 px-4 tablet:px-6 flex-row items-start justify-between">
           <View className="flex-1">
-            <PageHeader title="Feed" subtitle="Descubra novos sons e crie os seus" />
+            <PageHeader title={t("feed.title", "Feed")} subtitle={t("feed.subtitle", "Descubra novos sons e crie os seus")} />
           </View>
           <Pressable
             onPress={handleNewProject}
             className="bg-brand-primary rounded-full px-5 py-2.5 flex-row items-center gap-2 active:opacity-80 hover:bg-brand-primaryDark"
             accessibilityRole="button"
-            accessibilityLabel="Novo Projeto"
+            accessibilityLabel={t("feed.newProject", "Novo Projeto")}
           >
             <Text className="text-white font-bold text-base">+</Text>
-            <Text className="text-white font-bold text-sm">Novo Projeto</Text>
+            <Text className="text-white font-bold text-sm">{t("feed.newProject", "Novo Projeto")}</Text>
           </Pressable>
         </View>
 
@@ -463,10 +465,10 @@ export default function Feed() {
                   className={`text-[10px] font-semibold ${sortMode === mode ? "text-brand-accent" : "text-gray-400"}`}
                 >
                   {mode === "recent"
-                    ? "Recentes"
+                    ? t("feed.recent", "Recentes")
                     : mode === "popular"
-                      ? "Populares"
-                      : "Gênero"}
+                      ? t("feed.popular", "Populares")
+                      : t("feed.genre", "Gênero")}
                 </Text>
               </Pressable>
             ))}
@@ -478,7 +480,7 @@ export default function Feed() {
             <View className="flex-row items-center gap-2.5">
               <View className="w-2.5 h-2.5 rounded-full bg-green-500" />
               <Text className="text-green-400 text-xs font-medium flex-1">
-                Tocando: {currentPostRef.current.title}
+                {t("feed.playing", "Tocando: ")}{currentPostRef.current.title}
               </Text>
             </View>
           </View>
@@ -501,7 +503,7 @@ export default function Feed() {
               <View className="py-16 items-center">
                 <Text className="text-4xl mb-3 opacity-50">🎵</Text>
                 <Text className="text-gray-500 text-sm">
-                  Nenhum track encontrado
+                  {t("feed.noTracks", "Nenhum track encontrado")}
                 </Text>
               </View>
             }
@@ -510,10 +512,10 @@ export default function Feed() {
                 <View className="mx-4 mb-4 mt-2 p-5 rounded-2xl bg-brand-primary/10 border border-brand-primary/30">
                   <Text className="text-2xl mb-2">🎸</Text>
                   <Text className="text-white font-bold text-lg mb-1">
-                    Bem-vindo ao OpenBand!
+                    {t("feed.welcomeTitle", "Bem-vindo ao OpenBand!")}
                   </Text>
                   <Text className="text-gray-300 text-sm mb-3 leading-5">
-                    Crie seu primeiro projeto musical e comece a produzir música agora.
+                    {t("feed.welcomeText", "Crie seu primeiro projeto musical e comece a produzir música agora.")}
                   </Text>
                   <View className="flex-row gap-2">
                     <Pressable
@@ -521,7 +523,7 @@ export default function Feed() {
                       className="flex-1 bg-brand-primary rounded-xl py-3 items-center"
                     >
                       <Text className="text-white font-bold text-sm">
-                        + Novo Projeto
+                        + {t("feed.newProject", "Novo Projeto")}
                       </Text>
                     </Pressable>
                     <Pressable
@@ -529,7 +531,7 @@ export default function Feed() {
                       className="flex-1 bg-dark-elevated border border-dark-border rounded-xl py-3 items-center"
                     >
                       <Text className="text-white font-bold text-sm">
-                        Ver Biblioteca
+                        {t("feed.viewLibrary", "Ver Biblioteca")}
                       </Text>
                     </Pressable>
                   </View>

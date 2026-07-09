@@ -1,0 +1,40 @@
+{
+  "settings": {
+    "title": "Configurações",
+    "language": "Idioma"
+  },
+  "feed": {
+    "title": "Feed",
+    "subtitle": "Descubra novos sons e crie os seus",
+    "newProject": "Novo Projeto",
+    "all": "Todos",
+    "recent": "Recentes",
+    "popular": "Populares",
+    "genre": "Gênero",
+    "playing": "Tocando: ",
+    "noTracks": "Nenhum track encontrado",
+    "welcomeTitle": "Bem-vindo ao OpenBand!",
+    "welcomeText": "Crie seu primeiro projeto musical e comece a produzir música agora.",
+    "viewLibrary": "Ver Biblioteca"
+  },
+  "library": {
+    "title": "Biblioteca",
+    "subtitle": "Seus projetos musicais",
+    "newProject": "Novo Projeto",
+    "importProject": "Importar Projeto",
+    "extractStems": "Separar Stems",
+    "filterAll": "Todos",
+    "filterFavorites": "Favoritos",
+    "filterCloud": "Nuvem",
+    "filterCollabs": "Colaborações",
+    "filterTrash": "Lixeira",
+    "emptyTitle": "Nenhum projeto ainda",
+    "emptySubtitle": "Crie seu primeiro projeto acima",
+    "importError": "Falha ao importar projeto.",
+    "invalidFile": "Arquivo de projeto inválido."
+  },
+  "account": {
+    "title": "Conta",
+    "subtitle": "Gerencie seu perfil"
+  }
+}

@@ -10,8 +10,10 @@ import {
   Divider,
 } from "../../src/components";
 import { LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive";
+import { useTranslation } from "react-i18next";
 
 export default function Account() {
+  const { t } = useTranslation();
   const { user, signOut } = useAuth();
   const currentName =
     (user?.user_metadata?.name as string) ?? user?.email?.split("@")[0] ?? "";
@@ -32,21 +34,21 @@ export default function Account() {
         data: { name: name.trim() },
       });
       if (error) {
-        Alert.alert("Erro", error.message);
+        Alert.alert(t("account.error", "Erro"), error.message);
       }
     } catch (e) {
       console.warn("Update user failed:", e);
-      Alert.alert("Erro", "Não foi possível salvar.");
+      Alert.alert(t("account.error", "Erro"), t("account.saveError", "Não foi possível salvar."));
     } finally {
       setSaving(false);
     }
   };
 
   const handleSignOut = () => {
-    Alert.alert("Sair", "Tem certeza que deseja sair?", [
-      { text: "Cancelar", style: "cancel" },
+    Alert.alert(t("account.signOut", "Sair"), t("account.signOutConfirm", "Tem certeza que deseja sair?"), [
+      { text: t("account.cancel", "Cancelar"), style: "cancel" },
       {
-        text: "Sair",
+        text: t("account.signOut", "Sair"),
         style: "destructive",
         onPress: async () => {
           setSigningOut(true);
@@ -68,7 +70,7 @@ export default function Account() {
       style={{ maxWidth: LAYOUT_MAX_WIDTHS.account, alignSelf: "center", width: "100%" }}
     >
       <View className="pt-4 tablet:pt-12 px-4 tablet:px-6">
-        <PageHeader title="Conta" subtitle="Suas informações de perfil" />
+        <PageHeader title={t("account.title", "Conta")} subtitle={t("account.subtitle", "Suas informações de perfil")} />
       </View>
 
       <View className="px-4 tablet:px-6 gap-6">
@@ -78,34 +80,34 @@ export default function Account() {
           <Text className="text-gray-500 text-sm mt-1">{user?.email}</Text>
         </View>
 
-        <Divider label="Editar perfil" />
+        <Divider label={t("account.editProfile", "Editar perfil")} />
 
         <TextInput
-          label="Nome de exibição"
-          placeholder="Seu nome"
+          label={t("account.displayName", "Nome de exibição")}
+          placeholder={t("account.namePlaceholder", "Seu nome")}
           onChangeText={setName}
           value={name}
           autoCapitalize="words"
         />
         <Button
-          title="Salvar"
+          title={t("account.save", "Salvar")}
           onPress={handleSaveName}
           loading={saving}
           disabled={!name.trim() || name.trim() === currentName}
         />
 
-        <Divider label="Sessão" />
+        <Divider label={t("account.session", "Sessão")} />
 
         <View className="card-elevated p-4 flex-row justify-between items-center">
-          <Text className="text-gray-400 text-sm">Status</Text>
+          <Text className="text-gray-400 text-sm">{t("account.status", "Status")}</Text>
           <View className="flex-row items-center gap-1.5">
             <View className="w-2 h-2 rounded-full bg-brand-green" />
-            <Text className="text-brand-green text-sm font-medium">Conectado</Text>
+            <Text className="text-brand-green text-sm font-medium">{t("account.connected", "Conectado")}</Text>
           </View>
         </View>
 
         <Button
-          title="Sair"
+          title={t("account.signOut", "Sair")}
           onPress={handleSignOut}
           variant="ghost"
           loading={signingOut}

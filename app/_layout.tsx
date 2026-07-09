@@ -1,5 +1,6 @@
 import { Stack, useRouter, useSegments } from "expo-router";
 import Head from "expo-router/head";
+import "../src/lib/i18n";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";

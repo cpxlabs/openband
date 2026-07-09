@@ -2,6 +2,8 @@ import { View, Text, ScrollView, Pressable } from "react-native";
 import { PageHeader, Avatar, Divider } from "../../src/components";
 import { useTheme } from "../../src/context/ThemeContext";
 import { LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive";
+import { useTranslation } from "react-i18next";
+import { changeLanguage } from "../../src/lib/i18n";
 
 const MOCK_PROFILE = {
   name: "João Produtor",
@@ -13,6 +15,7 @@ const MOCK_PROFILE = {
 
 export default function Settings() {
   const { theme, setTheme } = useTheme();
+  const { t, i18n } = useTranslation();
   const profile = MOCK_PROFILE;
 
 
@@ -23,7 +26,7 @@ export default function Settings() {
       style={{ maxWidth: LAYOUT_MAX_WIDTHS.settings, alignSelf: "center", width: "100%" }}
     >
       <View className="pt-4 tablet:pt-12 px-4 tablet:px-6">
-        <PageHeader title="Configurações" subtitle="Personalize sua experiência" />
+        <PageHeader title={t("settings.title", "Configurações")} subtitle="Personalize sua experiência" />
       </View>
 
       <View className="px-4 tablet:px-6 gap-6">
@@ -49,6 +52,30 @@ export default function Settings() {
               <Text className="text-white text-sm font-medium">{profile.memberSince}</Text>
             </View>
           </View>
+        </View>
+
+        <Divider label={t("settings.language", "Idioma")} />
+
+        <View className="flex-row gap-2">
+          {['en', 'pt', 'es'].map((lng) => {
+            const isSelected = i18n.language === lng;
+            const labels: any = { en: "English", pt: "Português", es: "Español" };
+            return (
+              <Pressable
+                key={lng}
+                onPress={() => changeLanguage(lng)}
+                className={`flex-1 card-elevated p-3 items-center border-2 ${
+                  isSelected
+                    ? "border-brand-primary bg-brand-primary/10"
+                    : "border-dark-border"
+                }`}
+              >
+                <Text className={`text-sm font-semibold ${isSelected ? "text-brand-primary" : "text-white"}`}>
+                  {labels[lng]}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
 
         <Divider label="Aparência" />

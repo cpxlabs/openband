@@ -8,6 +8,7 @@ import { listProjectIndex, importProject, loadProject, getFavoriteProjects, isPr
 import { SCREEN_BOTTOM_PADDING } from "../../src/lib/constants"
 import { OpenBandNative } from "../../src/bridge"
 import { fetchCloudProjects } from "../../src/lib/cloudSync"
+import { useTranslation } from "react-i18next"
 
 type FilterTab = "all" | "favorites" | "cloud" | "collabs" | "trash"
 
@@ -21,6 +22,7 @@ const FILTER_TABS: { id: FilterTab; label: string; icon: string }[] = [
 
 export default function Library() {
   const router = useRouter()
+  const { t } = useTranslation()
   const resp = useResponsive()
   const [showNewProject, setShowNewProject] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
@@ -110,19 +112,19 @@ export default function Library() {
         setRefreshKey(k => k + 1)
         router.push(`/studio/${id}`)
       } else {
-        Alert.alert("Erro", "Arquivo de projeto inválido.")
+        Alert.alert("Erro", t("library.invalidFile", "Arquivo de projeto inválido."))
       }
     } catch {
-      Alert.alert("Erro", "Falha ao importar projeto.")
+      Alert.alert("Erro", t("library.importError", "Falha ao importar projeto."))
     }
-  }, [router])
+  }, [router, t])
 
   const px = resp.isMobile ? "px-4" : "px-6"
 
   return (
     <View className="flex-1 bg-dark-bg" style={{ paddingTop: resp.safeTop }}>
       <View className={`pt-4 tablet:pt-12 ${px}`}>
-        <PageHeader title="Biblioteca" subtitle="Seus projetos musicais" />
+        <PageHeader title={t("library.title", "Biblioteca")} subtitle={t("library.subtitle", "Seus projetos musicais")} />
       </View>
 
       <View className={`${px} mb-4 gap-3`}>
@@ -130,18 +132,18 @@ export default function Library() {
           onPress={() => setShowNewProject(true)}
           className="btn-red shadow-sm shadow-brand-primary/20"
           accessibilityRole="button"
-          accessibilityLabel="Novo Projeto"
+          accessibilityLabel={t("library.newProject", "Novo Projeto")}
         >
           <Text className="text-white font-bold text-base">+</Text>
-          <Text className="text-white font-bold text-sm">Novo Projeto</Text>
+          <Text className="text-white font-bold text-sm">{t("library.newProject", "Novo Projeto")}</Text>
         </Pressable>
 
         <View className="flex-row gap-3">
           <View className="flex-1">
-            <Button title="Importar Projeto" variant="secondary" icon="📂" onPress={handleImportProject} />
+            <Button title={t("library.importProject", "Importar Projeto")} variant="secondary" icon="📂" onPress={handleImportProject} />
           </View>
           <View className="flex-1">
-            <Button title="Separar Stems" variant="secondary" icon="🔊" onPress={() => router.push("/extractor")} />
+            <Button title={t("library.extractStems", "Separar Stems")} variant="secondary" icon="🔊" onPress={() => router.push("/extractor")} />
           </View>
         </View>
       </View>
@@ -153,14 +155,23 @@ export default function Library() {
           data={FILTER_TABS}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingHorizontal: resp.isMobile ? 16 : 24 }}
-          renderItem={({ item }) => (
-            <Pressable
-              onPress={() => handleTabChange(item.id)}
-              className={`flex-row items-center gap-1.5 px-4 py-2 rounded-full mr-2 ${filterTab === item.id ? "bg-brand-primary" : "bg-dark-surface"}`}
-            >
-              <Text className="text-white font-semibold text-xs">{item.icon} {item.label}</Text>
-            </Pressable>
-          )}
+          renderItem={({ item }) => {
+            let label = item.label;
+            if (item.id === "all") label = t("library.filterAll", "Todos");
+            if (item.id === "favorites") label = t("library.filterFavorites", "Favoritos");
+            if (item.id === "cloud") label = t("library.filterCloud", "Nuvem");
+            if (item.id === "collabs") label = t("library.filterCollabs", "Colaborações");
+            if (item.id === "trash") label = t("library.filterTrash", "Lixeira");
+
+            return (
+              <Pressable
+                onPress={() => handleTabChange(item.id)}
+                className={`flex-row items-center gap-1.5 px-4 py-2 rounded-full mr-2 ${filterTab === item.id ? "bg-brand-primary" : "bg-dark-surface"}`}
+              >
+                <Text className="text-white font-semibold text-xs">{item.icon} {label}</Text>
+              </Pressable>
+            )
+          }}
         />
       </View>
 
@@ -173,7 +184,7 @@ export default function Library() {
         contentContainerStyle={{ paddingBottom: SCREEN_BOTTOM_PADDING, paddingHorizontal: resp.isMobile ? 16 : 24 }}
         style={{ maxWidth: LAYOUT_MAX_WIDTHS.library, alignSelf: "center", width: "100%" }}
         ListEmptyComponent={
-          <EmptyState icon="🎧" title="Nenhum projeto ainda" subtitle="Crie seu primeiro projeto acima" />
+          <EmptyState icon="🎧" title={t("library.emptyTitle", "Nenhum projeto ainda")} subtitle={t("library.emptySubtitle", "Crie seu primeiro projeto acima")} />
         }
         renderItem={({ item }) => {
           const isFavorite = isProjectFavorite(item.id)
