@@ -84,10 +84,10 @@ export const FeedPostCard = memo(function FeedPostCard({
           <View className="flex-1">
             <View className="flex-row items-start justify-between">
               <View className="flex-1 mr-2">
-                <Text className="text-white font-bold text-base leading-tight">
+                <Text className="text-white font-bold text-base leading-tight" numberOfLines={1} ellipsizeMode="tail">
                   {item.title}
                 </Text>
-                <Text className="text-gray-400 text-xs mt-0.5">
+                <Text className="text-gray-400 text-xs mt-0.5" numberOfLines={1} ellipsizeMode="tail">
                   {item.authorHandle}
                 </Text>
               </View>

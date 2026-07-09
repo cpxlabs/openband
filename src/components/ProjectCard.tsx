@@ -42,7 +42,7 @@ export function ProjectCard({
             <Text className="text-xl">♫</Text>
           </View>
           <View className="flex-1 ml-3.5 mr-2">
-            <Text className="text-white font-semibold text-base">{project.title}</Text>
+            <Text className="text-white font-semibold text-base" numberOfLines={1} ellipsizeMode="tail">{project.title}</Text>
             <View className="flex-row items-center gap-2 mt-1.5 flex-wrap">
               <Text className="text-gray-500 text-xs">
                 {new Date(project.lastSaved).toLocaleDateString()}

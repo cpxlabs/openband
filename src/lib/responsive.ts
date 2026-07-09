@@ -31,10 +31,9 @@ export function useResponsive() {
   
   // Dynamic columns
   const numColumns =
-    width < 600 ? 1 :
-    width < 900 ? 2 :
-    width < 1200 ? 3 :
-    width < 1600 ? 4 : 5;
+    width < 800 ? 1 :
+    width < 1300 ? 2 :
+    width < 1800 ? 3 : 4;
 
   return {
     width,
