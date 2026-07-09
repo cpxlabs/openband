@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo } from "react"
 import { View, Text, FlatList, Pressable, Alert } from "react-native"
 import { useRouter } from "expo-router"
-import { EmptyState, PageHeader, Button, NewProject, Badge, ProjectMenu } from "../../src/components"
+import { EmptyState, PageHeader, Button, NewProject, ProjectCard } from "../../src/components"
 import type { GenreTemplate, Mood } from "../../src/lib/projectTemplates"
 import { useResponsive, LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive"
 import { listProjectIndex, importProject, loadProject, getFavoriteProjects, isProjectFavorite, toggleProjectFavorite } from "../../src/lib/projectStore"
@@ -149,7 +149,9 @@ export default function Library() {
       </View>
 
       <FlatList
-        key={refreshKey}
+        key={resp.numColumns}
+        numColumns={resp.numColumns}
+        columnWrapperStyle={resp.numColumns > 1 ? { gap: 12 } : undefined}
         data={filtered}
         keyExtractor={item => item.id}
         contentContainerStyle={{ paddingBottom: SCREEN_BOTTOM_PADDING, paddingHorizontal: resp.isMobile ? 16 : 24 }}
@@ -160,54 +162,13 @@ export default function Library() {
         renderItem={({ item }) => {
           const isFavorite = isProjectFavorite(item.id)
           return (
-          <View className="card-premium mb-2.5">
-            <View className="p-4 flex-row items-center">
-              <Pressable
-                onPress={() => router.push(`/studio/${item.id}`)}
-                className="flex-1 flex-row items-center active:opacity-80"
-              >
-                <View className="w-12 h-12 rounded-xl bg-brand-primary/15 items-center justify-center">
-                  <Text className="text-xl">♫</Text>
-                </View>
-                <View className="flex-1 ml-3.5 mr-2">
-                  <Text className="text-white font-semibold text-base">{item.title}</Text>
-                  <View className="flex-row items-center gap-2 mt-1.5 flex-wrap">
-                    <Text className="text-gray-500 text-xs">
-                      {new Date(item.lastSaved).toLocaleDateString()}
-                    </Text>
-                    {item.bpm && (
-                      <Badge text={`${item.bpm} BPM`} variant="default" />
-                    )}
-                    {item.key && (
-                      <Badge text={item.key} variant="default" />
-                    )}
-                    {item.genre && (
-                      <Badge text={item.genre.toUpperCase()} variant="default" />
-                    )}
-                  </View>
-                </View>
-              </Pressable>
-              <Pressable
-                onPress={() => handleToggleFavorite(item.id)}
-                className="px-2 py-2 active:opacity-60"
-              >
-                <Text className={`text-lg ${isFavorite ? "text-brand-primary" : "text-gray-500"}`}>
-                  {isFavorite ? "★" : "☆"}
-                </Text>
-              </Pressable>
-              <Pressable
-                onPress={() => router.push(`/studio/${item.id}`)}
-                className="px-3.5 py-2 rounded-lg bg-brand-primary/10 border border-brand-primary/30 active:opacity-70 ml-1"
-              >
-                <Text className="text-brand-primary text-sm font-semibold">Abrir →</Text>
-              </Pressable>
-              <ProjectMenu
-                projectId={item.id}
-                projectTitle={item.title}
-                onRefresh={() => setRefreshKey(k => k + 1)}
-              />
-            </View>
-          </View>
+            <ProjectCard
+              project={item}
+              isFavorite={isFavorite}
+              onToggleFavorite={handleToggleFavorite}
+              onOpen={(id) => router.push(`/studio/${id}`)}
+              onRefresh={() => setRefreshKey(k => k + 1)}
+            />
           )
         }}
       />

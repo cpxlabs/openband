@@ -420,6 +420,7 @@ export default function Extractor() {
           isOpen
           onClose={() => {}}
           isPersistent
+          testID="sidebar"
         />
       )}
       {drawerOpen && (
@@ -455,6 +456,7 @@ export default function Extractor() {
         {!resp.isDesktop && (
           <View className="bg-dark-surface/95 border-b border-dark-border/50 flex-row items-center px-3 h-12">
             <Pressable
+              testID="hamburger-button"
               onPress={() => setDrawerOpen(true)}
               className="w-9 h-9 rounded-lg bg-dark-muted/30 items-center justify-center active:opacity-70"
             >

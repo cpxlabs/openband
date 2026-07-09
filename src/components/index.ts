@@ -40,6 +40,9 @@ export {
   getOneKnobChain,
   type OneKnobEffectChain,
 } from "./OneKnob";
+export { FeedPostCard } from "./FeedPostCard";
+export { SamplePackCard } from "./SamplePackCard";
+export { ProjectCard } from "./ProjectCard";
 export { ChordTrack } from "./ChordTrack";
 export { Sampler } from "./Sampler";
 export { Synth, SYNTH_PRESETS } from "./Synth";

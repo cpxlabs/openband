@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
-import { PageHeader, Button, Badge, NewProject } from "../../src/components";
+import { PageHeader, NewProject, SamplePackCard } from "../../src/components";
 import { MomentCard } from "../../src/components";
 import type { MomentData } from "../../src/components/MomentCard";
 import { GENRES } from "../../src/lib/projectTemplates";
@@ -164,8 +164,11 @@ const PACK_GENRE_MAP: Record<string, string> = {
   Melódico: "lofi",
 };
 
+import { useResponsive } from "../../src/lib/responsive";
+
 export default function Moments() {
   const router = useRouter();
+  const resp = useResponsive();
   const [tab, setTab] = useState<"moments" | "packs">("moments");
   const [credits, setCredits] = useState<{ artist: string; sample: string }[]>(
     [],
@@ -318,53 +321,12 @@ export default function Moments() {
               </Text>
             </View>
             {FREE_SAMPLE_PACKS.map((pack) => (
-              <View
+              <SamplePackCard
                 key={pack.id}
-                className="card-premium overflow-hidden w-full tablet:w-[49%]"
-              >
-                <View className="p-4">
-                  <View className="flex-row items-start gap-3 mb-3">
-                    <View
-                      className={`w-12 h-12 rounded-2xl ${pack.color} items-center justify-center shadow-lg`}
-                    >
-                      <Text className="text-2xl">{pack.icon}</Text>
-                    </View>
-                    <View className="flex-1">
-                      <Text className="text-white font-bold text-base">
-                        {pack.artist}
-                      </Text>
-                      <Text className="text-gray-500 text-xs">
-                        {pack.handle}
-                      </Text>
-                      <View className="flex-row items-center gap-1.5 mt-1">
-                        <Badge text={pack.instrument} variant="default" />
-                        <Badge
-                          text={`${pack.samples.length} samples`}
-                          variant="default"
-                        />
-                      </View>
-                    </View>
-                  </View>
-
-                  <View className="flex-row flex-wrap gap-1.5 mb-3">
-                    {pack.samples.map((s) => (
-                      <View
-                        key={s}
-                        className="bg-dark-elevated border border-dark-border/50 rounded-lg px-2 py-1"
-                      >
-                        <Text className="text-gray-300 text-[10px]">{s}</Text>
-                      </View>
-                    ))}
-                  </View>
-
-                  <Button
-                    title={`Usar ${pack.samples[0]} no Estúdio`}
-                    variant="secondary"
-                    icon="+"
-                    onPress={() => handleUsePack(pack, pack.samples[0])}
-                  />
-                </View>
-              </View>
+                pack={pack}
+                onUsePack={handleUsePack}
+                widthStyle={{ width: resp.isDesktop ? "31%" : resp.isTablet ? "48%" : "100%" }}
+              />
             ))}
           </View>
         )}

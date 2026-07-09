@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useMemo, useEffect, memo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   FlatList,
   View,
@@ -11,16 +11,14 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
-import {
-  Badge,
-  ProgressBar,
   PageHeader,
-  Avatar,
   QuickActions,
   setMiniPlayerState,
   QuickTools,
   NewProject,
+  FeedPostCard,
 } from "../../src/components";
+import type { FeedPost } from "../../src/components/FeedPostCard";
 import { generatePreviewUrl, SCREEN_BOTTOM_PADDING } from "../../src/lib/constants";
 import { LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive";
 import { GENRES } from "../../src/lib/projectTemplates";
@@ -28,21 +26,6 @@ import type { GenreTemplate, Mood } from "../../src/lib/projectTemplates";
 import { useResponsive } from "../../src/lib/responsive";
 import { listProjectIndex } from "../../src/lib/projectStore";
 import { useWebAudioPlayer } from "../../src/hooks/useWebAudioPlayer";
-
-interface FeedPost {
-  id: string;
-  title: string;
-  author: string;
-  authorHandle: string;
-  genre: string;
-  key: string;
-  bpm: number;
-  plays: number;
-  likes: number;
-  userLiked: boolean;
-  duration: number;
-  color: string;
-}
 
 const MOCK_POSTS: FeedPost[] = [
   {
@@ -194,147 +177,7 @@ const GENRE_FILTERS = [
 
 type SortMode = "recent" | "popular" | "genre";
 
-function formatCount(n: number) {
-  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
-  return String(n);
-}
 
-interface FeedPostCardProps {
-  item: FeedPost;
-  isPlaying: boolean;
-  isLoading: boolean;
-  audioRef: React.RefObject<HTMLAudioElement | null>;
-  onPlay: (post: FeedPost) => void;
-  onLike: (postId: string) => void;
-  onRemix: (post: FeedPost) => void;
-  onShare: (post: FeedPost) => void;
-  onPlayed: (postId: string) => void;
-}
-
-const LiveProgressBar = memo(function LiveProgressBar({
-  audioRef,
-}: {
-  audioRef: React.RefObject<HTMLAudioElement | null>;
-}) {
-  const [progress, setProgress] = useState(0);
-
-  useEffect(() => {
-    if (Platform.OS !== "web") return;
-    let rafId: number;
-    const tick = () => {
-      const audio = audioRef.current;
-      if (audio && audio.duration) {
-        setProgress((audio.currentTime / audio.duration) * 100);
-      }
-      rafId = requestAnimationFrame(tick);
-    };
-    rafId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafId);
-  }, [audioRef]);
-
-  return <ProgressBar progress={progress} />;
-});
-
-const FeedPostCard = memo(function FeedPostCard({
-  item,
-  isPlaying: isThisPlaying,
-  isLoading: isThisLoading,
-  audioRef,
-  onPlay,
-  onLike,
-  onRemix,
-  onShare,
-  onPlayed,
-}: FeedPostCardProps) {
-  return (
-    <View className={`card-premium mx-4 tablet:mx-2 mb-3 ${isThisPlaying ? "border-brand-primary/40" : ""}`}>
-      <View className="p-4 pb-0">
-        <View className="flex-row items-start gap-3 mb-3">
-          <Avatar name={item.author} size="md" />
-          <View className="flex-1">
-            <View className="flex-row items-start justify-between">
-              <View className="flex-1 mr-2">
-                <Text className="text-white font-bold text-base leading-tight">
-                  {item.title}
-                </Text>
-                <Text className="text-gray-400 text-xs mt-0.5">
-                  {item.authorHandle}
-                </Text>
-              </View>
-              <View className="bg-dark-muted/30 px-2 py-1 rounded-lg flex-row items-center gap-1">
-                <Text className="text-gray-400 text-[9px]">▶</Text>
-                <Text className="text-gray-400 text-[10px] font-semibold">
-                  {formatCount(item.plays)}
-                </Text>
-              </View>
-            </View>
-
-            <View className="flex-row items-center gap-2 mt-2">
-              <Badge text={item.genre.toUpperCase()} variant="default" />
-              <Badge text={item.key} variant="default" />
-              <Badge text={`${item.bpm} BPM`} variant="default" />
-              <Text className="text-gray-600 text-[10px]">
-                {Math.floor(item.duration / 60)}:{String(item.duration % 60).padStart(2, "0")}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        <Pressable
-          onPress={() => {
-            onPlay(item);
-            onPlayed(item.id);
-          }}
-          disabled={isThisLoading}
-          accessibilityRole="button"
-          accessibilityLabel={isThisLoading ? "Carregando áudio" : isThisPlaying ? "Pausar áudio" : "Ouvir áudio"}
-          accessibilityState={{ disabled: isThisLoading }}
-          className={`h-11 rounded-xl items-center justify-center flex-row gap-2 ${
-            isThisPlaying ? "bg-green-600" : "bg-brand-primary"
-          } shadow-sm ${isThisPlaying ? "shadow-green-600/20" : "shadow-brand-primary/20"}`}
-        >
-          <Text className="text-white text-sm">
-            {isThisLoading ? "…" : isThisPlaying ? "⏸" : "▶"}
-          </Text>
-          <Text className="text-white font-bold text-sm">
-            {isThisLoading ? "Carregando" : isThisPlaying ? "Pausar" : "Ouvir"}
-          </Text>
-        </Pressable>
-      </View>
-
-      <View className="px-4 py-3 flex-row items-center gap-4">
-        <Pressable
-          onPress={() => onLike(item.id)}
-          className="flex-row items-center gap-1.5 active:opacity-60"
-        >
-          <Text className={`text-base ${item.userLiked ? "text-brand-primary" : "text-gray-500"}`}>
-            {item.userLiked ? "❤" : "♡"}
-          </Text>
-          <Text className={`text-xs font-semibold ${item.userLiked ? "text-brand-primary" : "text-gray-500"}`}>
-            {formatCount(item.likes)}
-          </Text>
-        </Pressable>
-
-        <Pressable
-          onPress={() => onRemix(item)}
-          className="flex-row items-center gap-1.5 px-3 py-1.5 rounded-full bg-dark-elevated border border-dark-border/60 active:opacity-70"
-        >
-          <Text className="text-gray-400 text-xs">🔄</Text>
-          <Text className="text-gray-400 text-[10px] font-semibold">Remix</Text>
-        </Pressable>
-
-        <Pressable
-          onPress={() => onShare(item)}
-          className="flex-row items-center gap-1.5 px-3 py-1.5 rounded-full bg-dark-elevated border border-dark-border/60 active:opacity-70"
-        >
-          <Text className="text-gray-400 text-xs">↗</Text>
-          <Text className="text-gray-400 text-[10px] font-semibold">Compartilhar</Text>
-        </Pressable>
-      </View>
-      {isThisPlaying && <LiveProgressBar audioRef={audioRef} />}
-    </View>
-  );
-});
 
 export default function Feed() {
   const router = useRouter();
@@ -644,6 +487,9 @@ export default function Feed() {
       <View className="flex-1 flex-row" style={maxWidthStyle}>
         <View style={resp.isDesktop ? { flex: 7 } : { flex: 1 }}>
           <FlatList
+            key={resp.numColumns}
+            numColumns={resp.numColumns}
+            columnWrapperStyle={resp.numColumns > 1 ? { gap: 12 } : undefined}
             data={filteredPosts}
             keyExtractor={(item) => item.id}
             contentContainerStyle={{
