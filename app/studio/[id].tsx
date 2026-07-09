@@ -1463,7 +1463,12 @@ export default function Studio() {
           </Pressable>
         </View>
 
-        <View className="flex-row items-center gap-3">
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          className="mx-2 flex-1 min-w-[200px]"
+          contentContainerStyle={{ alignItems: "center", gap: 12, paddingHorizontal: 4 }}
+        >
           <Metronome
             settings={metronome}
             onChange={setMetronome}
@@ -1547,7 +1552,7 @@ export default function Studio() {
               📂
             </Text>
           </Pressable>
-        </View>
+        </ScrollView>
 
         <View className="flex-row items-center gap-2">
           <TimeDisplay seconds={currentTime} />

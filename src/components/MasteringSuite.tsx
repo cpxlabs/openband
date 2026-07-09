@@ -22,10 +22,10 @@ import {
   buildMasteringChain,
   createVersion,
 } from "../lib/masteringSuite";
+import { audioBufferToWavBlob, audioBufferToMp3Blob } from "../lib/audio";
 import { OpenBandNative } from "../bridge";
 import { DEMO_AUDIO_URL, SCREEN_BOTTOM_PADDING } from "../lib/constants";
 import { takeMasteringInput } from "../lib/masteringBridge";
-import { audioBufferToWavBlob } from "../lib/audio";
 import { useResponsive, LAYOUT_MAX_WIDTHS } from "../lib/responsive";
 
 interface MasteringSuiteProps {
@@ -268,7 +268,9 @@ export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
       const duration = session.inputFile?.duration ?? 30;
 
       const rendered = await fetchAndRenderAudio(sourceUrl, sr, duration);
-      const blob = audioBufferToWavBlob(rendered, bd);
+      const blob = exportFormat === "mp3"
+        ? audioBufferToMp3Blob(rendered, 192) // default 192kbps
+        : audioBufferToWavBlob(rendered, bd);
 
       const filename = session.inputFile
         ? session.inputFile.filename.replace(/\.[^/.]+$/, "") + "_master"

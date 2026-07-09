@@ -1,3 +1,5 @@
+import { Mp3Encoder } from "lamejs";
+
 const MAX_CACHE_SIZE = 100;
 const cache = new Map<string, number[]>();
 
@@ -108,5 +110,42 @@ export function audioBufferToWavBlob(buffer: AudioBuffer, bitDepth: number = 16)
     }
   }
 
-  return new Blob([arrayBuffer], { type: "audio/wav" });
+  return new Blob([view], { type: "audio/wav" });
+}
+
+export function audioBufferToMp3Blob(buffer: AudioBuffer, kbps: number = 192): Blob {
+  const numChannels = buffer.numberOfChannels;
+  const sampleRate = buffer.sampleRate;
+  const encoder = new Mp3Encoder(numChannels, sampleRate, kbps);
+  
+  const left = buffer.getChannelData(0);
+  const right = numChannels > 1 ? buffer.getChannelData(1) : left;
+
+  const sampleBlockSize = 1152; 
+  const mp3Data: Uint8Array[] = [];
+
+  for (let i = 0; i < left.length; i += sampleBlockSize) {
+    const leftChunk = left.subarray(i, i + sampleBlockSize);
+    const rightChunk = right.subarray(i, i + sampleBlockSize);
+
+    const leftInt16 = new Int16Array(leftChunk.length);
+    const rightInt16 = new Int16Array(rightChunk.length);
+
+    for (let j = 0; j < leftChunk.length; j++) {
+      leftInt16[j] = Math.max(-32768, Math.min(32767, Math.round(leftChunk[j] * 32767)));
+      rightInt16[j] = Math.max(-32768, Math.min(32767, Math.round(rightChunk[j] * 32767)));
+    }
+
+    const mp3buf = encoder.encodeBuffer(leftInt16, numChannels > 1 ? rightInt16 : undefined);
+    if (mp3buf.length > 0) {
+      mp3Data.push(new Uint8Array(mp3buf));
+    }
+  }
+
+  const flush = encoder.flush();
+  if (flush.length > 0) {
+    mp3Data.push(new Uint8Array(flush));
+  }
+
+  return new Blob(mp3Data as unknown as BlobPart[], { type: "audio/mpeg" });
 }
