@@ -18,7 +18,7 @@ Built with **Expo Router**, **TypeScript**, **NativeWind v4 (Tailwind CSS v3)**,
 | Desktop          | [Electron 35](https://www.electronjs.org/) with swappable bridge (`src/bridge/`)                       |
 | 3D / WebGL       | [Three.js](https://threejs.org/) — Virtual Studio (Habbo-style)                                        |
 | Backend          | FastAPI + Redis + Celery (Docker microservices, optional)                                              |
-| Testing          | [Vitest](https://vitest.dev/) (480 tests) + [Playwright](https://playwright.dev/) (E2E) + legacy `node:test` (24 tests) |
+| Testing          | [Vitest](https://vitest.dev/) (505 tests with interactive dashboard) + [Playwright](https://playwright.dev/) (E2E) + legacy `node:test` (24 tests) |
 
 ## Getting Started
 
@@ -360,7 +360,9 @@ npm run build             # Production web export (output: dist/)
 npm run desktop           # Build + launch Electron desktop app
 npm run desktop:dev       # Hot-reload dev (Expo + Electron concurrently)
 npx tsc --noEmit          # TypeScript check
-npx vitest run            # Run 283 component + lib tests
+npx vitest run            # Run all component + lib tests (single run)
+npx vitest --ui           # Open interactive test dashboard in browser (real-time)
+npx vitest                # Run test suite in real-time watch mode
 cd backend && npm run dev # Backend dev server (port 3001)
 
 # Electron packaging (run from electron/ directory)
