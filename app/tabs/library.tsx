@@ -26,7 +26,6 @@ export default function Library() {
   const [refreshKey, setRefreshKey] = useState(0)
   const [filterTab, setFilterTab] = useState<FilterTab>("all")
   const [cloudProjects, setCloudProjects] = useState<any[]>([])
-  const [isLoadingCloud, setIsLoadingCloud] = useState(false)
 
   const projectIndex = useMemo(() => listProjectIndex(), [refreshKey])
 
