@@ -8,7 +8,7 @@ import { OpenBandNative } from "../bridge";
  */
 const blobUrlRegistry = new Map<string, number>();
 const MAX_ENTRIES = 100;
-const MAX_AGE_MS = 5 * 60 * 1000; // 5 minutes
+const MAX_AGE_MS = 15 * 60 * 1000; // 15 minutes
 
 /**
  * Create a blob URL with automatic leak tracking.
@@ -28,6 +28,16 @@ export function createTrackedBlob(blob: Blob): string {
 export function revokeTrackedBlob(url: string): void {
   blobUrlRegistry.delete(url);
   try { URL.revokeObjectURL(url); } catch { /* already revoked */ }
+}
+
+/**
+ * Mark a blob URL as recently used so it won't be cleaned up.
+ * Safe to call for URLs that are already registered or not.
+ */
+export function markBlobActive(url: string): void {
+  if (blobUrlRegistry.has(url)) {
+    blobUrlRegistry.set(url, Date.now());
+  }
 }
 
 /** Clean up old blob URLs to prevent memory leaks. */

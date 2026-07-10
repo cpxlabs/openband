@@ -5,6 +5,7 @@ export { Badge } from "./Badge";
 export { Avatar } from "./Avatar";
 export { Divider } from "./Divider";
 export { Loading } from "./Loading";
+export { LoadingModal } from "./LoadingModal";
 export { EmptyState } from "./EmptyState";
 export { ProgressBar } from "./ProgressBar";
 export { PageHeader } from "./PageHeader";

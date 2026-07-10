@@ -23,7 +23,9 @@ import {
   buildMasteringChain,
   createVersion,
 } from "../lib/masteringSuite";
+import { applyMasteringChain } from "../lib/mastering";
 import { audioBufferToWavBlob, audioBufferToMp3BlobAsync } from "../lib/audio";
+import { audioSystem } from "../lib/universalAudio";
 import { OpenBandNative } from "../bridge";
 import { DEMO_AUDIO_URL, SCREEN_BOTTOM_PADDING } from "../lib/constants";
 import { takeMasteringInput } from "../lib/masteringBridge";
@@ -43,21 +45,18 @@ async function fetchAndRenderAudio(
     throw new Error("AudioContext unavailable on native");
   const response = await fetch(url);
   const raw = await response.arrayBuffer();
-  const audioCtx = new AudioContext();
-  try {
-    const decoded = await audioCtx.decodeAudioData(raw);
-    const renderLen = Math.ceil(
-      sampleRate * Math.min(duration, decoded.duration),
-    );
-    const offlineCtx = new OfflineAudioContext(2, renderLen, sampleRate);
-    const source = offlineCtx.createBufferSource();
-    source.buffer = decoded;
-    source.connect(offlineCtx.destination);
-    source.start(0);
-    return offlineCtx.startRendering();
-  } finally {
-    audioCtx.close();
-  }
+  const audioCtx = await audioSystem.ensureContext();
+  if (!audioCtx) throw new Error("AudioContext unavailable");
+  const decoded = await audioCtx.decodeAudioData(raw);
+  const renderLen = Math.ceil(
+    sampleRate * Math.min(duration, decoded.duration),
+  );
+  const offlineCtx = new OfflineAudioContext(2, renderLen, sampleRate);
+  const source = offlineCtx.createBufferSource();
+  source.buffer = decoded;
+  source.connect(offlineCtx.destination);
+  source.start(0);
+  return offlineCtx.startRendering();
 }
 
 export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
@@ -271,9 +270,10 @@ export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
       const duration = session.inputFile?.duration ?? 30;
 
       const rendered = await fetchAndRenderAudio(sourceUrl, sr, duration);
+      const processed = await applyMasteringChain(rendered, plugins, sr);
       const blob = exportFormat === "mp3"
-        ? await audioBufferToMp3BlobAsync(rendered, 192, setExportProgress) // default 192kbps
-        : audioBufferToWavBlob(rendered, bd);
+        ? await audioBufferToMp3BlobAsync(processed, 192, setExportProgress) // default 192kbps
+        : audioBufferToWavBlob(processed, bd);
 
       const filename = session.inputFile
         ? session.inputFile.filename.replace(/\.[^/.]+$/, "") + "_master"

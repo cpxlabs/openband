@@ -26,6 +26,7 @@ import { GENRES } from "../../src/lib/projectTemplates";
 import type { GenreTemplate, Mood } from "../../src/lib/projectTemplates";
 import { useResponsive } from "../../src/lib/responsive";
 import { listProjectIndex } from "../../src/lib/projectStore";
+import { audioSystem } from "../../src/lib/universalAudio";
 import { useWebAudioPlayer } from "../../src/hooks/useWebAudioPlayer";
 import { useTranslation } from "react-i18next";
 
@@ -265,6 +266,7 @@ export default function Feed() {
       try {
         const url = await generatePreviewUrl(post.id, post.duration);
         if (isWeb) {
+          await audioSystem.ensureContext();
           await webAudioRef.current.replace(url);
           await webAudioRef.current.play();
         } else {

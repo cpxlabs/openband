@@ -18,7 +18,7 @@ import {
   RecordingPresets,
 } from "expo-audio";
 import { renderTracksToUrl, disposeAudioContext } from "../../src/lib/midiSynth";
-import { audioSystem, createTrackedBlob } from "../../src/lib/universalAudio";
+import { audioSystem, createTrackedBlob, markBlobActive } from "../../src/lib/universalAudio";
 import { API_BASE_URL } from "../../src/lib/apiUrl";
 import { startClock, stopClock, onClockTick, disposeClockManager } from "../../src/lib/clockManager";
 import { assignTrackToBus } from "../../src/lib/busRouter";
@@ -52,6 +52,7 @@ import {
   BranchManager,
   CommitModal,
   OutputSelector,
+  LoadingModal,
   VuMeter,
   TrackColorPicker,
   Sidebar,
@@ -257,6 +258,7 @@ export default function Studio() {
     { id: string; degree: number; quality: import("../../src/lib/harmony").ChordQuality; beats: number }[]
   >([]);
   const [showPianoRoll, setShowPianoRoll] = useState(rawTool === "piano");
+  const [autoplayBlocked, setAutoplayBlocked] = useState(false);
   const [editingMidiTrackId, setEditingMidiTrackId] = useState<string | null>(
     null,
   );
@@ -464,7 +466,13 @@ export default function Studio() {
       return;
     }
 
-    await audioSystem.ensureContext();
+    try {
+      await audioSystem.ensureContext();
+    } catch {
+      setAutoplayBlocked(true);
+      return;
+    }
+    setAutoplayBlocked(false);
 
     if (currentUrlRef.current) URL.revokeObjectURL(currentUrlRef.current);
     let url = await renderTracksToUrl(tracks, initialBpm, projectMood, buses);
@@ -506,8 +514,10 @@ export default function Studio() {
           await player.replace(url);
           await player.play();
         }
+        markBlobActive(url);
       } catch (e) {
         console.warn("Playback failed:", e);
+        setAutoplayBlocked(true);
       }
     }
   }, [player, webAudio, isWeb, tracks, initialBpm, projectMood, buses, pitchCorrected, playbackRate]);
@@ -686,21 +696,22 @@ export default function Studio() {
             if (isWeb) {
               await webAudio.replace(url);
               webAudio.seekTo(0);
-              await webAudio.play();
-            } else {
-              await player.replace(url);
-              player.currentTime = 0;
-              await player.play();
-            }
-          } catch (e) {
-            console.warn("Auto-play after mute/solo failed:", e);
+            await webAudio.play();
+          } else {
+            await player.replace(url);
+            player.currentTime = 0;
+            await player.play();
           }
+          markBlobActive(url);
+        } catch (e) {
+          console.warn("Auto-play after mute/solo failed:", e);
         }
-      } catch (e) {
-        console.warn("rerenderAfterMuteSolo render failed:", e);
       }
-    },
-    [player, webAudio, isWeb, initialBpm, projectMood, buses, pitchCorrected, playbackRate],
+    } catch (e) {
+      console.warn("rerenderAfterMuteSolo render failed:", e);
+    }
+  },
+  [player, webAudio, isWeb, initialBpm, projectMood, buses, pitchCorrected, playbackRate],
   );
 
   const toggleMute = useCallback(
@@ -2881,6 +2892,13 @@ export default function Studio() {
       <OutputSelector
         visible={showOutputSelector}
         onClose={() => setShowOutputSelector(false)}
+      />
+      <LoadingModal
+        visible={autoplayBlocked}
+        title="Reprodução bloqueada"
+        message="Toque em Play novamente para ativar o áudio"
+        onCancel={() => setAutoplayBlocked(false)}
+        cancelLabel="Fechar"
       />
       </View>
     </View>
