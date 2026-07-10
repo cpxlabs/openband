@@ -3,6 +3,22 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { PromptSampler, MasteringSuite, MasteringUpload } from "../src/components";
 import type { MasteringInput } from "../src/lib/masteringSuite";
 
+vi.mock("expo-audio", () => ({
+  useAudioPlayer: vi.fn(() => ({
+    play: vi.fn(),
+    pause: vi.fn(),
+    replace: vi.fn(),
+    seekTo: vi.fn(),
+    volume: 1,
+  })),
+  useAudioPlayerStatus: vi.fn(() => ({
+    playing: false,
+    currentTime: 0,
+    duration: 100,
+    isLoaded: true,
+  })),
+}));
+
 vi.mock("../src/bridge", () => ({
   OpenBandNative: {
     showOpenDialog: vi.fn(),
@@ -45,6 +61,93 @@ vi.mock("../src/lib/masteringSuite", () => ({
 
 vi.mock("../src/lib/masteringBridge", () => ({
   takeMasteringInput: () => null,
+}));
+
+vi.mock("../src/lib/mastering", () => ({
+  applyMasteringChain: vi.fn((b: any) => Promise.resolve(b)),
+}));
+
+vi.mock("../src/lib/universalAudio", () => ({
+  audioSystem: {
+    initialize: vi.fn().mockResolvedValue(undefined),
+    renderMixdown: vi.fn().mockResolvedValue(new Blob()),
+    exportToFile: vi.fn().mockResolvedValue(undefined),
+    ensureContext: vi.fn(),
+    close: vi.fn(),
+  },
+}));
+
+vi.mock("../src/lib/videoExport", () => ({
+  exportVideo: vi.fn().mockResolvedValue({ blob: new Blob() }),
+  downloadVideoFile: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("../src/lib/hardwareIO", () => ({
+  enumerateAudioDevices: vi.fn().mockResolvedValue({ inputs: [], outputs: [] }),
+  getHardwareChannels: vi.fn().mockReturnValue([]),
+  createPatchRoute: vi.fn((source: any, trackId: any) => ({
+    id: "route-" + Math.random().toString(36).slice(2),
+    source,
+    targetTrackId: trackId,
+    targetChannel: 0,
+    gain: 1,
+    enabled: true,
+  })),
+  removePatchRoute: vi.fn(),
+  getPatchbayState: vi.fn().mockReturnValue({ routes: [] }),
+}));
+
+vi.mock("../src/lib/commandRegistry", () => ({
+  registerCommand: vi.fn(),
+  searchCommands: vi.fn(() => []),
+  executeCommand: vi.fn(),
+  getAllCommands: vi.fn(() => []),
+  disposeCommandRegistry: vi.fn(),
+}));
+
+vi.mock("../src/lib/harmonicAssistant", () => ({
+  chordsToMIDINotes: vi.fn(() => []),
+}));
+
+vi.mock("../src/lib/harmony", () => ({
+  getScaleNotes: vi.fn(() => []),
+  suggestChordProgressions: vi.fn(() => []),
+}));
+
+vi.mock("../src/lib/projectBranching", () => ({
+  takeMasteringInput: vi.fn(() => null),
+}));
+
+vi.mock("../src/lib/stateAssetSeparation", () => ({
+  OpenBandManifest: class {},
+}));
+
+vi.mock("../src/lib/supabaseRemote", () => ({
+  pushProject: vi.fn().mockResolvedValue(undefined),
+  pullProject: vi.fn().mockResolvedValue(null),
+  syncProject: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("../src/lib/wasmPluginHost", () => ({
+  loadWasmPlugin: vi.fn().mockResolvedValue({}),
+}));
+
+vi.mock("../src/lib/audio", () => ({
+  audioBufferToWavBlob: vi.fn(() => new Blob()),
+  audioBufferToMp3BlobAsync: vi.fn(() => Promise.resolve(new Blob())),
+}));
+
+vi.mock("lamejs", () => ({
+  Mp3Encoder: function (this: any) {
+    this.encodeBuffer = vi.fn().mockReturnValue(new Int8Array([1, 2, 3]));
+    this.flush = vi.fn().mockReturnValue(new Int8Array([4, 5]));
+  },
+}));
+
+vi.mock("react-native-safe-area-context", () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+  SafeAreaProvider: ({ children }: any) => children,
+  SafeAreaView: ({ children }: any) => children,
 }));
 
 beforeEach(() => {
