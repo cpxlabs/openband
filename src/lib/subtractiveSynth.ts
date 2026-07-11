@@ -68,7 +68,7 @@ interface ActiveVoice {
 }
 
 const voices: Map<string, ActiveVoice> = new Map();
-const MAX_VOICES = 16;
+export const MAX_VOICES = 16;
 
 function getAudioContext(): AudioContext | null {
   if (Platform.OS !== "web") return null;
@@ -324,5 +324,143 @@ export const SUBTRACTIVE_PRESETS: Record<string, Partial<SubtractiveSynthConfig>
     ampEnvelope: { attack: 0.005, decay: 0.2, sustain: 0.8, release: 0.15 },
     filterEnvelope: { attack: 0.005, decay: 0.3, sustain: 0.4, release: 0.1 },
     lfo: { rate: 5, depth: 20, target: "pitch" },
+  },
+  "Warm Pad": {
+    osc1: { type: "triangle", detune: 0, octave: 0, level: 0.5 },
+    osc2: { type: "sine", detune: 4, octave: 0, level: 0.5 },
+    filter: { type: "lowpass", frequency: 2200, resonance: 0.7, envelope: 20 },
+    ampEnvelope: { attack: 0.8, decay: 0.6, sustain: 0.7, release: 1.4 },
+    filterEnvelope: { attack: 0.5, decay: 0.6, sustain: 0.4, release: 0.8 },
+    lfo: { rate: 0.6, depth: 300, target: "filter" },
+  },
+  "Bright Bell": {
+    osc1: { type: "sine", detune: 0, octave: 1, level: 0.6 },
+    osc2: { type: "triangle", detune: 7, octave: 1, level: 0.4 },
+    filter: { type: "bandpass", frequency: 6000, resonance: 5, envelope: 60 },
+    ampEnvelope: { attack: 0.001, decay: 0.4, sustain: 0.0, release: 0.3 },
+    filterEnvelope: { attack: 0.001, decay: 0.3, sustain: 0.5, release: 0.2 },
+  },
+  "Sub Bass": {
+    osc1: { type: "sine", detune: 0, octave: -1, level: 0.9 },
+    osc2: { type: "sine", detune: 0, octave: -2, level: 0.6 },
+    filter: { type: "lowpass", frequency: 300, resonance: 1, envelope: 10 },
+    ampEnvelope: { attack: 0.002, decay: 0.2, sustain: 0.9, release: 0.1 },
+    filterEnvelope: { attack: 0.002, decay: 0.2, sustain: 0.8, release: 0.1 },
+  },
+  "Acid Bass": {
+    osc1: { type: "sawtooth", detune: 0, octave: -1, level: 0.8 },
+    osc2: { type: "square", detune: 0, octave: -1, level: 0.3 },
+    filter: { type: "lowpass", frequency: 700, resonance: 12, envelope: 80 },
+    ampEnvelope: { attack: 0.002, decay: 0.25, sustain: 0.3, release: 0.1 },
+    filterEnvelope: { attack: 0.002, decay: 0.25, sustain: 0.2, release: 0.1 },
+    lfo: { rate: 2, depth: 600, target: "filter" },
+  },
+  "Super Saw": {
+    osc1: { type: "sawtooth", detune: -8, octave: 0, level: 0.6 },
+    osc2: { type: "sawtooth", detune: 8, octave: 0, level: 0.6 },
+    filter: { type: "lowpass", frequency: 3500, resonance: 2, envelope: 40 },
+    ampEnvelope: { attack: 0.01, decay: 0.3, sustain: 0.7, release: 0.3 },
+    filterEnvelope: { attack: 0.01, decay: 0.4, sustain: 0.5, release: 0.2 },
+  },
+  "Strings": {
+    osc1: { type: "sawtooth", detune: -3, octave: 0, level: 0.5 },
+    osc2: { type: "sawtooth", detune: 3, octave: 0, level: 0.5 },
+    filter: { type: "lowpass", frequency: 2600, resonance: 0.6, envelope: 30 },
+    ampEnvelope: { attack: 0.4, decay: 0.5, sustain: 0.8, release: 0.9 },
+    filterEnvelope: { attack: 0.3, decay: 0.5, sustain: 0.6, release: 0.5 },
+  },
+  "Brass": {
+    osc1: { type: "sawtooth", detune: 0, octave: 0, level: 0.7 },
+    osc2: { type: "square", detune: 0, octave: 0, level: 0.3 },
+    filter: { type: "lowpass", frequency: 1800, resonance: 3, envelope: 70 },
+    ampEnvelope: { attack: 0.06, decay: 0.2, sustain: 0.8, release: 0.2 },
+    filterEnvelope: { attack: 0.06, decay: 0.3, sustain: 0.6, release: 0.2 },
+  },
+  "Organ": {
+    osc1: { type: "sine", detune: 0, octave: 0, level: 0.7 },
+    osc2: { type: "square", detune: 0, octave: 0, level: 0.2 },
+    filter: { type: "lowpass", frequency: 5000, resonance: 0.5, envelope: 0 },
+    ampEnvelope: { attack: 0.01, decay: 0.1, sustain: 1.0, release: 0.1 },
+    filterEnvelope: { attack: 0.01, decay: 0.1, sustain: 1.0, release: 0.1 },
+  },
+  "Glass": {
+    osc1: { type: "triangle", detune: 0, octave: 1, level: 0.6 },
+    osc2: { type: "sine", detune: 5, octave: 2, level: 0.3 },
+    filter: { type: "highpass", frequency: 1500, resonance: 2, envelope: 40 },
+    ampEnvelope: { attack: 0.001, decay: 0.5, sustain: 0.1, release: 0.4 },
+    filterEnvelope: { attack: 0.001, decay: 0.4, sustain: 0.2, release: 0.3 },
+  },
+  "Piano-ish": {
+    osc1: { type: "triangle", detune: 0, octave: 0, level: 0.7 },
+    osc2: { type: "sine", detune: 0, octave: 1, level: 0.3 },
+    filter: { type: "lowpass", frequency: 4000, resonance: 0.8, envelope: 50 },
+    ampEnvelope: { attack: 0.002, decay: 0.8, sustain: 0.3, release: 0.4 },
+    filterEnvelope: { attack: 0.002, decay: 0.8, sustain: 0.3, release: 0.3 },
+  },
+  "FM-ish": {
+    osc1: { type: "sine", detune: 0, octave: 0, level: 0.8 },
+    osc2: { type: "sine", detune: 0, octave: 2, level: 0.2 },
+    filter: { type: "lowpass", frequency: 6000, resonance: 1, envelope: 20 },
+    ampEnvelope: { attack: 0.001, decay: 0.3, sustain: 0.4, release: 0.2 },
+    filterEnvelope: { attack: 0.001, decay: 0.3, sustain: 0.4, release: 0.2 },
+  },
+  "Detuned Lead": {
+    osc1: { type: "sawtooth", detune: -12, octave: 0, level: 0.6 },
+    osc2: { type: "sawtooth", detune: 12, octave: 0, level: 0.6 },
+    filter: { type: "lowpass", frequency: 3200, resonance: 4, envelope: 45 },
+    ampEnvelope: { attack: 0.005, decay: 0.2, sustain: 0.7, release: 0.2 },
+    filterEnvelope: { attack: 0.005, decay: 0.3, sustain: 0.5, release: 0.15 },
+  },
+  "Hard Sync": {
+    osc1: { type: "sawtooth", detune: 0, octave: 0, level: 0.7 },
+    osc2: { type: "square", detune: 25, octave: 1, level: 0.4 },
+    filter: { type: "lowpass", frequency: 3000, resonance: 5, envelope: 55 },
+    ampEnvelope: { attack: 0.003, decay: 0.25, sustain: 0.6, release: 0.2 },
+    filterEnvelope: { attack: 0.003, decay: 0.3, sustain: 0.5, release: 0.15 },
+  },
+  "Vocal Pad": {
+    osc1: { type: "sawtooth", detune: -4, octave: 0, level: 0.5 },
+    osc2: { type: "triangle", detune: 4, octave: 0, level: 0.5 },
+    filter: { type: "lowpass", frequency: 2000, resonance: 1.5, envelope: 35 },
+    ampEnvelope: { attack: 0.3, decay: 0.4, sustain: 0.7, release: 1.0 },
+    filterEnvelope: { attack: 0.2, decay: 0.4, sustain: 0.5, release: 0.6 },
+    lfo: { rate: 5, depth: 10, target: "pitch" },
+  },
+  "Pluck Pad": {
+    osc1: { type: "triangle", detune: 0, octave: 0, level: 0.6 },
+    osc2: { type: "square", detune: -6, octave: 0, level: 0.3 },
+    filter: { type: "lowpass", frequency: 4000, resonance: 2, envelope: 60 },
+    ampEnvelope: { attack: 0.002, decay: 0.4, sustain: 0.2, release: 0.5 },
+    filterEnvelope: { attack: 0.002, decay: 0.4, sustain: 0.3, release: 0.3 },
+  },
+  "Deep House Bass": {
+    osc1: { type: "sawtooth", detune: 0, octave: -1, level: 0.8 },
+    osc2: { type: "square", detune: 3, octave: -1, level: 0.3 },
+    filter: { type: "lowpass", frequency: 900, resonance: 3, envelope: 40 },
+    ampEnvelope: { attack: 0.003, decay: 0.2, sustain: 0.6, release: 0.1 },
+    filterEnvelope: { attack: 0.003, decay: 0.2, sustain: 0.5, release: 0.1 },
+  },
+  "Cinematic Pad": {
+    osc1: { type: "sawtooth", detune: -5, octave: 0, level: 0.5 },
+    osc2: { type: "sine", detune: 5, octave: 1, level: 0.5 },
+    filter: { type: "lowpass", frequency: 2400, resonance: 0.8, envelope: 45 },
+    ampEnvelope: { attack: 1.0, decay: 0.8, sustain: 0.8, release: 1.6 },
+    filterEnvelope: { attack: 0.6, decay: 0.8, sustain: 0.5, release: 1.0 },
+    lfo: { rate: 0.3, depth: 400, target: "filter" },
+  },
+  "Chiptune": {
+    osc1: { type: "square", detune: 0, octave: 0, level: 0.7 },
+    osc2: { type: "square", detune: 0, octave: 0, level: 0.3 },
+    filter: { type: "lowpass", frequency: 7000, resonance: 1, envelope: 10 },
+    ampEnvelope: { attack: 0.001, decay: 0.1, sustain: 0.8, release: 0.05 },
+    filterEnvelope: { attack: 0.001, decay: 0.1, sustain: 0.8, release: 0.05 },
+  },
+  "Reese Bass": {
+    osc1: { type: "sawtooth", detune: -15, octave: -1, level: 0.7 },
+    osc2: { type: "sawtooth", detune: 15, octave: -1, level: 0.7 },
+    filter: { type: "lowpass", frequency: 800, resonance: 6, envelope: 50 },
+    ampEnvelope: { attack: 0.004, decay: 0.3, sustain: 0.7, release: 0.15 },
+    filterEnvelope: { attack: 0.004, decay: 0.3, sustain: 0.5, release: 0.1 },
+    lfo: { rate: 1, depth: 200, target: "filter" },
   },
 };

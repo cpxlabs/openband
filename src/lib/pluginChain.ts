@@ -81,6 +81,10 @@ const VALID_FILTER_TYPES: BiquadFilterType[] = [
   "highshelf", "peaking", "notch", "allpass",
 ];
 
+export function buildPluginGraph(plugins: Plugin[]): Plugin[] {
+  return plugins.filter((p) => p.enabled !== false);
+}
+
 export async function applyPluginChain(
   buffer: AudioBuffer,
   plugins: Plugin[],

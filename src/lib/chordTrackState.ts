@@ -55,7 +55,53 @@ export const PROGRESSION_PRESETS: { name: string; key: string; chords: { root: n
   { name: "Minor i-iv-v", key: "Am", chords: [{ root: 9, quality: "minor", beats: 4 }, { root: 2, quality: "minor", beats: 4 }, { root: 4, quality: "minor", beats: 8 }] },
   { name: "Pop vi-IV-I-V", key: "C", chords: [{ root: 9, quality: "minor", beats: 4 }, { root: 5, quality: "major", beats: 4 }, { root: 0, quality: "major", beats: 4 }, { root: 7, quality: "major", beats: 4 }] },
   { name: "Rock I-bVII-IV", key: "E", chords: [{ root: 4, quality: "major", beats: 4 }, { root: 3, quality: "major", beats: 4 }, { root: 0, quality: "major", beats: 8 }] },
+  { name: "Minor i-V", key: "Am", chords: [{ root: 9, quality: "minor", beats: 4 }, { root: 4, quality: "major", beats: 4 }, { root: 9, quality: "minor", beats: 4 }] },
+  { name: "Minor i-V-i", key: "Am", chords: [{ root: 9, quality: "minor", beats: 4 }, { root: 4, quality: "major", beats: 4 }, { root: 9, quality: "minor", beats: 8 }] },
+  { name: "Aeolian i-VII-VI-V", key: "Am", chords: [{ root: 9, quality: "minor", beats: 4 }, { root: 7, quality: "major", beats: 4 }, { root: 5, quality: "major", beats: 4 }, { root: 4, quality: "major", beats: 4 }] },
 ];
+
+export const CHORD_VOCABULARY: string[] = (() => {
+  const vocab = new Set<string>();
+  for (const preset of PROGRESSION_PRESETS) {
+    for (const chord of preset.chords) {
+      vocab.add(symbolFromChord(chord.root, chord.quality));
+    }
+  }
+  return Array.from(vocab);
+})();
+
+type TransitionMatrix = Record<string, Record<string, number>>;
+
+export function buildChordTransitionMatrix(): TransitionMatrix {
+  const matrix: TransitionMatrix = {};
+  const chordSymbol = (root: number, quality: ChordQuality) =>
+    symbolFromChord(root, quality);
+  for (const preset of PROGRESSION_PRESETS) {
+    const chords = preset.chords;
+    for (let i = 0; i < chords.length - 1; i++) {
+      const from = chordSymbol(chords[i].root, chords[i].quality);
+      const to = chordSymbol(chords[i + 1].root, chords[i + 1].quality);
+      if (!matrix[from]) matrix[from] = {};
+      matrix[from][to] = (matrix[from][to] ?? 0) + 1;
+    }
+  }
+  return matrix;
+}
+
+export function suggestNextChordSymbol(currentChordSymbol: string): string {
+  const matrix = buildChordTransitionMatrix();
+  const row = matrix[currentChordSymbol];
+  if (!row) return "C";
+  let best = "";
+  let bestCount = -1;
+  for (const [next, count] of Object.entries(row)) {
+    if (count > bestCount) {
+      bestCount = count;
+      best = next;
+    }
+  }
+  return best || "C";
+}
 
 export function buildVoicing(root: number, quality: ChordQuality, inversion: number = 0): number[] {
   const intervals = CHORD_INTERVALS[quality] ?? [0, 4, 7];
@@ -89,7 +135,22 @@ export function chordsToMIDI(chords: ChordRegion[], bpm: number, velocity: numbe
 }
 
 export function suggestNextChord(current: ChordRegion): { root: number; quality: ChordQuality } {
-  if (current.quality.includes("min")) return { root: (current.root + 7) % 12, quality: "major" };
-  if (current.quality === "dom7") return { root: (current.root + 5) % 12, quality: "maj7" };
+  if (!CHORD_VOCABULARY.includes(current.symbol)) {
+    if (current.quality === "minor") {
+      return { root: (current.root + 7) % 12, quality: "major" };
+    }
+    if (current.quality === "dom7") {
+      return { root: (current.root + 5) % 12, quality: "maj7" };
+    }
+    return { root: (current.root + 7) % 12, quality: "major" };
+  }
+  const nextSymbol = suggestNextChordSymbol(current.symbol);
+  for (const preset of PROGRESSION_PRESETS) {
+    for (const chord of preset.chords) {
+      if (symbolFromChord(chord.root, chord.quality) === nextSymbol) {
+        return { root: chord.root, quality: chord.quality };
+      }
+    }
+  }
   return { root: (current.root + 7) % 12, quality: "major" };
 }

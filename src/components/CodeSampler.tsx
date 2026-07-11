@@ -7,27 +7,11 @@ import {
   TextInput,
   ScrollView,
 } from "react-native";
+import { TOKEN_MAP, parsePattern, type TokenKey } from "../lib/codeSampler";
+
+export { parsePattern };
 
 type StepUnit = "1/4" | "1/8" | "1/16";
-
-const TOKEN_MAP: Record<
-  string,
-  { label: string; icon: string; color: string; dur: number }
-> = {
-  KICK: { label: "Kick", icon: "🥁", color: "bg-red-500", dur: 2 },
-  SNARE: { label: "Snare", icon: "💥", color: "bg-blue-500", dur: 1.5 },
-  HH: { label: "HiHat", icon: "🔔", color: "bg-purple-500", dur: 0.4 },
-  OH: { label: "OHat", icon: "🔕", color: "bg-purple-500", dur: 1 },
-  CLAP: { label: "Clap", icon: "👏", color: "bg-yellow-500", dur: 1 },
-  RIM: { label: "Rim", icon: "🔘", color: "bg-gray-500", dur: 0.6 },
-  TOM: { label: "Tom", icon: "🪘", color: "bg-orange-500", dur: 1.5 },
-  CRASH: { label: "Crash", icon: "🎯", color: "bg-cyan-500", dur: 2.5 },
-  RIDE: { label: "Ride", icon: "🔔", color: "bg-indigo-500", dur: 2 },
-  BASS: { label: "Bass", icon: "🎸", color: "bg-green-500", dur: 4 },
-  REST: { label: "Rest", icon: "—", color: "bg-dark-muted", dur: 0 },
-};
-
-type TokenKey = keyof typeof TOKEN_MAP;
 
 const PRESET_PATTERNS: { name: string; code: string }[] = [
   {
@@ -52,14 +36,6 @@ const PRESET_PATTERNS: { name: string; code: string }[] = [
     code: "BASS REST BASS REST BASS REST BASS REST BASS REST BASS REST BASS REST BASS REST",
   },
 ];
-
-function parsePattern(code: string): TokenKey[] {
-  return code
-    .trim()
-    .toUpperCase()
-    .split(/\s+/)
-    .filter((t) => t === "REST" || TOKEN_MAP[t as TokenKey]) as TokenKey[];
-}
 
 interface CodeSamplerProps {
   visible: boolean;
@@ -86,7 +62,7 @@ export function CodeSampler({
   const [useBpm, setUseBpm] = useState(true);
 
   const tokens = useMemo(() => {
-    const parsed = parsePattern(code);
+    const { tokens: parsed } = parsePattern(code);
     return parsed.filter((t) => t === "REST" || TOKEN_MAP[t as TokenKey]);
   }, [code]);
   const effectiveBpm = Math.max(1, useBpm ? bpm : patternBpm);

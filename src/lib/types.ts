@@ -1632,12 +1632,37 @@ export const PLUGIN_SPECS: Record<PluginType, PluginTypeSpec> = {
   },
 };
 
+export function clampParam(spec: PluginParamSpec, value: number): number {
+  let v = value;
+  if (Number.isNaN(v)) v = spec.default;
+  v = Math.min(spec.max, Math.max(spec.min, v));
+  if (spec.step > 0) {
+    v = Math.round((v - spec.min) / spec.step) * spec.step + spec.min;
+    v = Math.min(spec.max, Math.max(spec.min, v));
+  }
+  return v;
+}
+
 export function getDefaultParams(type: PluginType): Record<string, number> {
   const spec = PLUGIN_SPECS[type];
   if (!spec) return {};
   const params: Record<string, number> = {};
   for (const p of spec.params) {
-    params[p.id] = p.default;
+    params[p.id] = clampParam(p, p.default);
+  }
+  return params;
+}
+
+export function applyPluginPreset(
+  type: PluginType,
+  values: Record<string, number>,
+): Record<string, number> {
+  const spec = PLUGIN_SPECS[type];
+  if (!spec) return {};
+  const params: Record<string, number> = {};
+  for (const p of spec.params) {
+    const raw = values[p.id];
+    params[p.id] = raw !== undefined ? clampParam(p, raw) : clampParam(p, p.default);
   }
   return params;
 }
