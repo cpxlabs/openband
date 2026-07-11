@@ -4,6 +4,18 @@
 
 **ALWAYS commit and push after completing changes.** Do not wait to be asked.
 
+### Subagent-First Rule (Context Preservation)
+
+The main agent acts as the **architect/orchestrator** and MUST preserve its own context window. **ALWAYS delegate to subagents** — never do heavy work inline in the main context. This applies to:
+
+- **Reading/exploring** — Use the `explore` (or `general`) subagent to read files, search the codebase, and gather context. Do not read large files directly in the main context.
+- **Writing/updating code** — Delegate implementation edits to a `general` subagent with a detailed task description.
+- **Code review** — Always run the `code-review` subagent before every commit (never review inline).
+- **Verification** — Delegate running tests, `tsc`, and builds to a subagent; have it return only the pass/fail summary and relevant errors.
+- **Commit & push** — Delegate the git staging/commit/push steps to a subagent.
+
+The main agent should only: plan, decide, dispatch subagents (in parallel when independent), and integrate their concise summaries. Keep raw file contents, test logs, and diffs inside subagents — return only what the architect needs to make the next decision.
+
 ### Required Workflow Order
 
 Every change must follow this sequence — never skip or reorder:
