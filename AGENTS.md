@@ -4,6 +4,18 @@
 
 **ALWAYS commit and push after completing changes.** Do not wait to be asked.
 
+### Required Workflow Order
+
+Every change must follow this sequence — never skip or reorder:
+
+1. **Spec** — Write `proposal.md`, `design.md`, `tasks.md` under `openspec/changes/<name>/`
+2. **Commit & push** — Commit the spec files before writing any code
+3. **Implement, test & code review** — Implement source changes per `tasks.md`, write/update tests, run full verification, pass `code-review` subagent
+4. **Update specs & docs** — Update spec files and any docs to reflect what was actually built
+5. **Commit & push** — Final commit with all implementation + test + spec updates
+
+Do NOT combine spec commits with implementation commits. Each phase must be independently reviewable.
+
 ---
 
 ## Pre-flight
