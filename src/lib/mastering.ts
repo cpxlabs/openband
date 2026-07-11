@@ -44,7 +44,6 @@ export const MASTERING_CHAIN_PRESETS: MasteringChainPreset[] = [
     plugins: [
       { name: "EQ Eight", type: "eq", color: "#5ac8fa" },
       { name: "Multiband Comp", type: "multibandCompressor", color: "#bf5af2" },
-      { name: "Limiter", type: "limiter", color: "#ff6482" },
       { name: "True Peak Limiter", type: "truePeakLimiter", color: "#ff375f" },
     ],
   },
@@ -64,7 +63,6 @@ export const MASTERING_CHAIN_PRESETS: MasteringChainPreset[] = [
       { name: "EQ Eight", type: "eq", color: "#5ac8fa" },
       { name: "Multiband Comp", type: "multibandCompressor", color: "#bf5af2" },
       { name: "Stereo Imager", type: "stereoImager", color: "#00d4aa" },
-      { name: "Limiter", type: "limiter", color: "#ff6482" },
       { name: "True Peak Limiter", type: "truePeakLimiter", color: "#ff375f" },
     ],
   },
@@ -94,7 +92,6 @@ export const MASTERING_CHAIN_PRESETS: MasteringChainPreset[] = [
     plugins: [
       { name: "Tape Saturator", type: "tapeSaturator", color: "#ff453a" },
       { name: "EQ Eight", type: "eq", color: "#5ac8fa" },
-      { name: "Limiter", type: "limiter", color: "#ff6482" },
       { name: "True Peak Limiter", type: "truePeakLimiter", color: "#ff375f" },
     ],
   },
@@ -110,6 +107,22 @@ export const MASTERING_CHAIN_PRESETS: MasteringChainPreset[] = [
     ],
   },
 ];
+
+export function validateMasteringChain(
+  chain: Plugin[] | MasteringChainPreset,
+): { valid: boolean; error?: string } {
+  const types = Array.isArray(chain)
+    ? chain.map((p) => p.type)
+    : chain.plugins.map((p) => p.type);
+  const last = types[types.length - 1];
+  const secondLast = types[types.length - 2];
+  const isLimiter = (t: string | undefined) =>
+    t === "limiter" || t === "truePeakLimiter";
+  if (isLimiter(last) && isLimiter(secondLast)) {
+    return { valid: false, error: "Chain ends with duplicate limiter nodes" };
+  }
+  return { valid: true };
+}
 
 export function buildMasteringChain(preset: MasteringChainPreset): Plugin[] {
   return preset.plugins.map((p, i) => ({

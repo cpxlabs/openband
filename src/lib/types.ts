@@ -125,6 +125,7 @@ export interface PluginParamSpec {
 export interface PluginTypeSpec {
   params: PluginParamSpec[];
   presets: { name: string; values: Record<string, number> }[];
+  latencySamples?: number;
 }
 
 export interface Plugin {
@@ -134,6 +135,10 @@ export interface Plugin {
   enabled: boolean;
   params: Record<string, number>;
   color?: string;
+  latencySamples?: number;
+  stateA?: Record<string, number>;
+  stateB?: Record<string, number>;
+  activeSlot?: "A" | "B";
 }
 
 export interface MixSnapshot {
@@ -1631,6 +1636,35 @@ export const PLUGIN_SPECS: Record<PluginType, PluginTypeSpec> = {
     ],
   },
 };
+
+const PLUGIN_LATENCY: Partial<Record<PluginType, number>> = {
+  reverb: 1200,
+  delay: 1024,
+  multibandCompressor: 512,
+  truePeakLimiter: 256,
+  limiter: 128,
+  tapeSaturator: 256,
+  stereoImager: 128,
+  deesser: 128,
+  modulation: 256,
+  noiseGate: 64,
+  autoPitch: 512,
+  eq: 0,
+  filter: 0,
+  utility: 0,
+  distortion: 0,
+  bassMono: 0,
+  stereoWidener: 0,
+  clipper: 0,
+};
+
+(Object.keys(PLUGIN_SPECS) as PluginType[]).forEach((type) => {
+  const spec = PLUGIN_SPECS[type];
+  spec.latencySamples = PLUGIN_LATENCY[type] ?? 0;
+  if (!spec.presets.some((p) => p.name === "Default")) {
+    spec.presets.push({ name: "Default", values: getDefaultParams(type) });
+  }
+});
 
 export function clampParam(spec: PluginParamSpec, value: number): number {
   let v = value;

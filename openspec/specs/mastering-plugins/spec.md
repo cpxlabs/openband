@@ -9,12 +9,12 @@ The 10 mastering chains, their preset params, and the offline-render DSP live in
 ## Requirements
 
 ### Requirement: Master Chain Architecture
-The system MUST provide a `masterChain: PluginDef[]` applied to the summed output of all tracks after faders and pans.
+The system MUST provide a `masterChain: Plugin[]` applied to the summed output of all tracks after faders and pans.
 
 #### Scenario: Apply mastering preset
-- **Given** a mixed project with silence on master chain
-- **When** user selects "Mastering → Radio Ready"
-- **Then** `masterChain` is populated with `[MBComp → VisualEQ → TPLimiter → Imager]`
+- **Given** a mixed project with an empty master chain
+- **When** user selects "Mastering → Master Rápido"
+- **Then** `masterChain` is populated via `buildMasteringChain(preset)`
 - **And** LUFS meter begins reporting post-master loudness
 
 #### Scenario: Empty master chain passes through
@@ -23,7 +23,7 @@ The system MUST provide a `masterChain: PluginDef[]` applied to the summed outpu
 - **Then** signal passes unprocessed to output
 
 ### Requirement: Mastering Preset Chains (10)
-The system MUST ship 10 named mastering chains (e.g. `Radio Ready`, `Vinyl`, `Podcast`, `EDM`, `LoFi`, `Acoustic`, `HipHop`, `Cinematic`, `Audiobook`, `Flat`) each mapping to an ordered `PluginDef[]` with preset params.
+The system MUST ship 10 named mastering chains (`MASTERING_CHAIN_PRESETS`) each mapping to an ordered `Plugin[]` with preset params: `Master Rápido`, `Master Completo`, `Rádio / Podcast`, `Loudness Maximizer`, `Acústico Natural`, `EDM Club`, `Vintage Warm`, `Modern Clean`, `Lo-Fi Vibe`, `Broadcast Ready`.
 
 #### Scenario: List presets
 - **Given** the mastering suite is initialized
@@ -78,12 +78,29 @@ The system MUST allow saving up to 4 mix/master snapshots and instant A/B/X swit
 The system MUST include a true-peak aware limiter as the final node in the default mastering chain to prevent inter-sample clipping on bounce.
 
 #### Scenario: Bounce safety
-- **Given** a master chain ending in TPLimiter at `−1.0 dBTP`
+- **Given** a master chain ending in `truePeakLimiter` at `−1.0 dBTP`
 - **When** project is bounced to WAV
 - **Then** no sample exceeds `−1.0 dBFS` true-peak
 
+### Requirement: Chain Validation (no duplicate terminal limiter)
+The system MUST reject any mastering chain whose final node ordering contains more than one limiter-type node (`type === 'limiter' || type === 'truePeakLimiter'`) terminating the chain. The system MUST provide `validateMasteringChain(chain: Plugin[]): { valid: boolean; error?: string }` returning `valid: false` with a descriptive `error` when the chain ends with a trailing `limiter` followed by `truePeakLimiter` (or any pairing of two terminal limiters).
+
+> NOTE: Current `MASTERING_CHAIN_PRESETS` #4 (`Loudness Maximizer`), #6 (`EDM Club`), and #9 (`Lo-Fi Vibe`) DO end with `limiter` → `truePeakLimiter`. The spec rejects such chains, so these three presets MUST be updated to end with a single `truePeakLimiter` only (drop the trailing `limiter` node). This is an implementation target, not current behavior.
+
+#### Scenario: Reject double terminal limiter
+- **Given** a chain `[EQ, Limiter, TruePeakLimiter]`
+- **When** `validateMasteringChain` is invoked
+- **Then** `{ valid: false, error }` is returned
+
+#### Scenario: Accept single terminal limiter
+- **Given** a chain `[EQ, Compressor, TruePeakLimiter]`
+- **When** `validateMasteringChain` is invoked
+- **Then** `{ valid: true }` is returned
+
 ## Test Requirements (Vitest)
-- [ ] All 10 mastering presets produce a valid `PluginDef[]`
+- [ ] All 10 mastering presets produce a valid `Plugin[]` via `buildMasteringChain`
+- [ ] `validateMasteringChain` rejects chains with >1 terminal limiter (`limiter`+`truePeakLimiter`)
+- [ ] The 3 affected presets (`Loudness Maximizer`, `EDM Club`, `Lo-Fi Vibe`) now end with a single `truePeakLimiter`
 - [ ] LUFS meter returns `−70` floor on silence
 - [ ] LUFS on −14 dBFS tone within ±0.5 LUFS
 - [ ] MixManager stores/recalls 4 snapshots identically (deep equal)

@@ -1,6 +1,7 @@
-import type { Plugin } from "./types";
+import type { Plugin, PluginType } from "./types";
 import { applyMasteringChain } from "./mastering";
 import { pitchShift } from "./timeStretch";
+import { PLUGIN_SPECS, clampParam } from "./types";
 
 export type ScaleType = "major" | "minor" | "chromatic" | "pentatonicMajor" | "pentatonicMinor";
 
@@ -379,4 +380,70 @@ async function applyAutoPitch(
   srcDry.start(0);
   srcWet.start(0);
   return ctx2.startRendering();
+}
+
+export function serializePlugin(plugin: Plugin): string {
+  return JSON.stringify({
+    id: plugin.id,
+    type: plugin.type,
+    name: plugin.name,
+    enabled: plugin.enabled,
+    params: plugin.params,
+    color: plugin.color,
+  });
+}
+
+export function deserializePlugin(json: string): Plugin {
+  const parsed = JSON.parse(json) as Partial<Plugin>;
+  const type = (parsed.type ?? "eq") as PluginType;
+  const spec = PLUGIN_SPECS[type];
+  const rawParams = parsed.params ?? {};
+  const params: Record<string, number> = {};
+  if (spec) {
+    for (const p of spec.params) {
+      const raw = rawParams[p.id];
+      params[p.id] = raw !== undefined ? clampParam(p, raw) : clampParam(p, p.default);
+    }
+    for (const key of Object.keys(rawParams)) {
+      if (params[key] === undefined) params[key] = rawParams[key];
+    }
+  } else {
+    Object.assign(params, rawParams);
+  }
+  return {
+    id: parsed.id ?? "",
+    name: parsed.name ?? "",
+    type,
+    enabled: parsed.enabled ?? true,
+    params,
+    color: parsed.color,
+    latencySamples: parsed.latencySamples,
+    stateA: parsed.stateA,
+    stateB: parsed.stateB,
+    activeSlot: parsed.activeSlot,
+  };
+}
+
+export function applyPluginSlot(plugin: Plugin): Plugin {
+  if (plugin.activeSlot === "B" && plugin.stateB) {
+    return { ...plugin, params: { ...plugin.stateB } };
+  }
+  if (plugin.activeSlot === "A" && plugin.stateA) {
+    return { ...plugin, params: { ...plugin.stateA } };
+  }
+  return plugin;
+}
+
+export function storePluginSlot(plugin: Plugin, slot: "A" | "B"): Plugin {
+  if (slot === "A") {
+    return { ...plugin, stateA: { ...plugin.params }, activeSlot: "A" };
+  }
+  return { ...plugin, stateB: { ...plugin.params }, activeSlot: "B" };
+}
+
+export function getChainLatency(plugins: Plugin[]): number {
+  return plugins.reduce((sum, p) => {
+    if (p.enabled === false) return sum;
+    return sum + (p.latencySamples ?? PLUGIN_SPECS[p.type]?.latencySamples ?? 0);
+  }, 0);
 }
