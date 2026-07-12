@@ -110,6 +110,38 @@ function TimeDisplay({ seconds }: { seconds: number }) {
   );
 }
 
+async function applyPitchShift(
+  sourceUrl: string,
+  totalSemitones: number,
+): Promise<string> {
+  const sharedCtx = await audioSystem.ensureContext();
+  if (!sharedCtx) return sourceUrl;
+  try {
+    const resp = await fetch(sourceUrl);
+    const arrayBuf = await resp.arrayBuffer();
+    const audioBuf = await sharedCtx.decodeAudioData(arrayBuf);
+    const shifted = await pitchShift(audioBuf, totalSemitones);
+    const offline = new OfflineAudioContext(
+      shifted.numberOfChannels,
+      shifted.length,
+      shifted.sampleRate,
+    );
+    const source = offline.createBufferSource();
+    source.buffer = shifted;
+    source.connect(offline.destination);
+    source.start();
+    const rendered = await offline.startRendering();
+    const blob = await audioBufferToWavBlob(rendered);
+    const pitchUrl = createTrackedBlob(blob);
+    markBlobActive(pitchUrl);
+    revokeTrackedBlob(sourceUrl);
+    return pitchUrl;
+  } catch (e) {
+    console.warn("Pitch shift failed, using original:", e);
+    return sourceUrl;
+  }
+}
+
 const GROUP_COLORS = [
   "#ff6482",
   "#5ac8fa",
@@ -257,7 +289,7 @@ export default function Studio() {
     return () => {
       disposeAudioContext();
       disposeClockManager();
-      if (currentUrlRef.current) URL.revokeObjectURL(currentUrlRef.current);
+      if (currentUrlRef.current) revokeTrackedBlob(currentUrlRef.current);
     };
   }, []);
 
@@ -555,21 +587,22 @@ export default function Studio() {
 
   useEffect(() => {
     const unsub = onClockTick((_time, audioTime) => {
+      const timeSource = isWeb ? (webAudio?.currentTime ?? audioTime) : audioTime;
       const beatsPerMeasure = projectTimeSig.split("/").map(Number)[0];
-      const beat = ((audioTime * metronome.bpm) / 60) % (beatsPerMeasure * 4);
+      const beat = ((timeSource * metronome.bpm) / 60) % (beatsPerMeasure * 4);
       recordFrame();
-      recordCpuLoad(Math.min(100, Math.max(0, (audioTime % 1) * 100)));
+      recordCpuLoad(Math.min(100, Math.max(0, (timeSource % 1) * 100)));
       setCurrentBeat(beat);
       if (isConnected) {
         sendCursorRef.current(
-          audioTime / Math.max(1, durationRef.current),
+          timeSource / Math.max(1, durationRef.current),
           selectedTrackIdRef.current,
-          audioTime,
+          timeSource,
         );
       }
     });
     return unsub;
-  }, [metronome.bpm, projectTimeSig, isConnected]);
+  }, [metronome.bpm, projectTimeSig, isConnected, isWeb, webAudio]);
 
   const togglePlay = useCallback(async () => {
     if (isWeb) webAudio.unlock();
@@ -587,35 +620,12 @@ export default function Studio() {
     }
     setAutoplayBlocked(false);
 
-    if (currentUrlRef.current) URL.revokeObjectURL(currentUrlRef.current);
+    if (currentUrlRef.current) revokeTrackedBlob(currentUrlRef.current);
     let url = await renderTracksToUrl(tracks, initialBpm, projectMood, buses);
-    if (url && pitchCorrected && playbackRate !== 1) {
-      const sharedCtx = await audioSystem.ensureContext();
-      if (sharedCtx) {
-        try {
-          const resp = await fetch(url);
-          const arrayBuf = await resp.arrayBuffer();
-          const audioBuf = await sharedCtx.decodeAudioData(arrayBuf);
-          const shifted = await pitchShift(audioBuf, -Math.log2(playbackRate) * 12);
-          const offline = new OfflineAudioContext(
-            shifted.numberOfChannels,
-            shifted.length,
-            shifted.sampleRate,
-          );
-          const source = offline.createBufferSource();
-          source.buffer = shifted;
-          source.connect(offline.destination);
-          source.start();
-          const rendered = await offline.startRendering();
-          const blob = await audioBufferToWavBlob(rendered);
-          const pitchUrl = URL.createObjectURL(blob);
-          const originalUrl = url;
-          url = pitchUrl;
-          URL.revokeObjectURL(originalUrl);
-        } catch (e) {
-          console.warn("Pitch correction failed, using original:", e);
-        }
-      }
+    const totalSemitones =
+      pitchShiftSemitones + (pitchCorrected ? -Math.log2(playbackRate) * 12 : 0);
+    if (url && totalSemitones !== 0) {
+      url = await applyPitchShift(url, totalSemitones);
     }
     if (url) {
       try {
@@ -633,7 +643,7 @@ export default function Studio() {
         setAutoplayBlocked(true);
       }
     }
-  }, [player, webAudio, isWeb, tracks, initialBpm, projectMood, buses, pitchCorrected, playbackRate]);
+  }, [player, webAudio, isWeb, tracks, initialBpm, projectMood, buses, pitchCorrected, playbackRate, pitchShiftSemitones]);
 
   const seekRelative = useCallback((seconds: number) => {
     if (isWeb) {
@@ -793,35 +803,12 @@ export default function Studio() {
     async (updatedTracks: TrackDef[]) => {
       try {
         await audioSystem.ensureContext();
-        if (currentUrlRef.current) URL.revokeObjectURL(currentUrlRef.current);
+        if (currentUrlRef.current) revokeTrackedBlob(currentUrlRef.current);
         let url = await renderTracksToUrl(updatedTracks, initialBpm, projectMood, buses);
-        if (url && pitchCorrected && playbackRate !== 1) {
-          const sharedCtx = await audioSystem.ensureContext();
-          if (sharedCtx) {
-            try {
-              const resp = await fetch(url);
-              const arrayBuf = await resp.arrayBuffer();
-              const audioBuf = await sharedCtx.decodeAudioData(arrayBuf);
-              const shifted = await pitchShift(audioBuf, -Math.log2(playbackRate) * 12);
-              const offline = new OfflineAudioContext(
-                shifted.numberOfChannels,
-                shifted.length,
-                shifted.sampleRate,
-              );
-              const source = offline.createBufferSource();
-              source.buffer = shifted;
-              source.connect(offline.destination);
-              source.start();
-              const rendered = await offline.startRendering();
-              const blob = await audioBufferToWavBlob(rendered);
-              const pitchUrl = URL.createObjectURL(blob);
-              const originalUrl = url;
-              url = pitchUrl;
-              URL.revokeObjectURL(originalUrl);
-            } catch (e) {
-              console.warn("Pitch correction failed in rerender:", e);
-            }
-          }
+        const totalSemitones =
+          pitchShiftSemitones + (pitchCorrected ? -Math.log2(playbackRate) * 12 : 0);
+        if (url && totalSemitones !== 0) {
+          url = await applyPitchShift(url, totalSemitones);
         }
         if (url) {
           try {
@@ -844,7 +831,7 @@ export default function Studio() {
       console.warn("rerenderAfterMuteSolo render failed:", e);
     }
   },
-  [player, webAudio, isWeb, initialBpm, projectMood, buses, pitchCorrected, playbackRate],
+  [player, webAudio, isWeb, initialBpm, projectMood, buses, pitchCorrected, playbackRate, pitchShiftSemitones],
   );
 
   const toggleMute = useCallback(

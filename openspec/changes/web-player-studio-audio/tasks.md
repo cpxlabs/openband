@@ -7,3 +7,10 @@
 - [ ] Add Vitest test: `renderMixdown` with a mock `url` region produces a non-silent buffer (assert RMS > 0).
 - [ ] Add Vitest test: blob registry size does not grow across 10 renders.
 - [ ] Manual E2E (Playwright): load demo project, hear MIDI + audio, pitch slider audible, playhead aligned at $t=30s$.
+
+## Recording capture → region → playback (verified)
+- [x] `app/studio/[id].tsx` — After recording completes, the captured audio URL is stored as a `TrackRegion { id, start, duration, url }` in the armed track (or a new track when none is armed), via `useHistory.setState` (undo/redo).
+- [x] `src/lib/universalAudio.ts` — `renderMixdownWeb` handles `region.url` via `fetch`+decode; recording temp files use `createTrackedBlob` so they participate in blob lifecycle.
+- [x] `src/lib/projectStore.ts` — Persists `track.regions` (including recording regions) via `saveProject`.
+
+> Verified by the `web-studio-recording` change: hardened `getUserMedia` permission guard (throws `MIC_PERMISSION_DENIED`), `MediaRecorder` fallback on worklet `addModule` failure, empty-buffer (`null`) guard, `createTrackedBlob` registration, `markBlobActive` on the take, transport render refresh via `rerenderAfterMuteSolo`, and `revokeTrackedBlob` on undo/delete. Tests: `tests/lib9.test.ts` (real recording round-trip) and `tests/studio.test.tsx` (web recording smoke: start/stop creates a tracked region; permission-denied creates no region).

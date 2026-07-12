@@ -705,6 +705,7 @@ export async function renderTracksToUrl(
   const beatDuration = 60 / safeBpm;
 
   let totalBeats = 0;
+  let regionMaxEnd = 0;
   for (const track of tracks) {
     if (track.midiNotes) {
       for (const note of track.midiNotes) {
@@ -712,9 +713,14 @@ export async function renderTracksToUrl(
         if (end > totalBeats) totalBeats = end;
       }
     }
+    for (const region of track.regions || []) {
+      const end = region.start + region.duration;
+      if (end > regionMaxEnd) regionMaxEnd = end;
+    }
   }
-  if (totalBeats === 0) return null;
-  const duration = totalBeats * beatDuration + 2;
+  const hasRegions = tracks.some((t) => (t.regions || []).some((r) => r.url));
+  if (totalBeats === 0 && !hasRegions) return null;
+  const duration = Math.max(totalBeats * beatDuration, regionMaxEnd) + 2;
   const sampleRate = 44100;
   const numSamples = Math.ceil(sampleRate * duration);
   const anySolo = tracks.some((t) => t.solo);
@@ -747,9 +753,28 @@ export async function renderTracksToUrl(
         }
       }
 
+      const decodedRegions = new Map<string, { buffer: AudioBuffer; start: number; duration: number }[]>();
       for (const track of tracks) {
         if (track.muted || (anySolo && !track.solo)) continue;
-        if (!track.midiNotes || track.midiNotes.length === 0) continue;
+        const trackRegionsRaw = track.regions || [];
+        const decoded: { buffer: AudioBuffer; start: number; duration: number }[] = [];
+        for (const region of trackRegionsRaw) {
+          if (!region.url) continue;
+          try {
+            const r = await fetch(region.url, { credentials: "omit" });
+            const ab = await r.arrayBuffer();
+            const decodeCtx = getSharedAudioContext() || ctx;
+            const buffer = await decodeCtx.decodeAudioData(ab);
+            decoded.push({ buffer, start: region.start, duration: region.duration });
+          } catch (e) {
+            console.warn("Failed to decode region for track", track.name, e);
+          }
+        }
+        if (decoded.length) decodedRegions.set(track.id, decoded);
+      }
+
+      for (const track of tracks) {
+        if (track.muted || (anySolo && !track.solo)) continue;
 
         const trackGain = ctx.createGain();
         trackGain.gain.value = track.volume ?? 1;
@@ -775,7 +800,7 @@ export async function renderTracksToUrl(
         const sfName = getTrackSfName(track.name);
         const sfInst = sfCache[sfName];
 
-        for (const note of track.midiNotes) {
+        if (track.midiNotes) for (const note of track.midiNotes) {
           const noteStart = note.start * beatDuration;
           const noteDur = note.duration * beatDuration;
           const vol = Math.max(0.01, note.velocity / 127) * 0.5;
@@ -817,6 +842,16 @@ export async function renderTracksToUrl(
 
             osc.start(noteStart);
             osc.stop(noteStart + noteDur + 0.05);
+          }
+        }
+
+        const trackRegions = decodedRegions.get(track.id);
+        if (trackRegions) {
+          for (const r of trackRegions) {
+            const source = ctx.createBufferSource();
+            source.buffer = r.buffer;
+            source.connect(panNode);
+            source.start(r.start, 0, Math.min(r.duration, Math.max(0, duration - r.start)));
           }
         }
       }
