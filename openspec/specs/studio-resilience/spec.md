@@ -9,7 +9,7 @@ OpenBand's studio protects long editing sessions against browser crashes, audio 
 - Latency: `measureInputLatency(ctx)` (`latencyMonitor.ts:136`) returns `(outputLatency + baseLatency) * 1000` ms. `startDirectMonitor` (`:67`) wires mic → gain → destination for zero-plugin monitoring. `createLatencyCompensationNode` (`:144`) / `applyLatencyCompensationToTrack` (`:155`) insert a `DelayNode` (clamped to 100ms) to align tracks.
 
 ## Known Gaps / TODO
-- **Telemetry endpoint not mounted:** `sendTelemetryReport` (`audioTelemetry.ts:203`) POSTs to `${serverUrl}/api/telemetry`, but `backend/src/app.ts` does NOT mount an `/api/telemetry` route. Remote reports currently 404. `sendTelemetryReport` catches the failure and returns `false`, so the client never throws — but the metric is silently dropped. **TODO:** add and mount an `/api/telemetry` Express route (following `backend/src/routes/*`) before relying on server-side aggregation.
+- **Telemetry endpoint (RESOLVED):** `backend/src/routes/telemetry.ts` now defines `POST /telemetry`, mounted at `/api/telemetry` in `backend/src/app.ts`. It validates the `{ metrics, userAgent, platform, projectId? }` payload, persists to the Supabase `telemetry` table with a structured-log fallback, and responds `200 { ok: true }` (`400` on invalid payload) — failing soft so a missing table never throws. The studio transport loop (`app/studio/[id].tsx`) calls `startTelemetry`/`stopTelemetry` on play/stop and reports via `sendTelemetryReport`, accumulating per-frame stats through `recordFrame`/`recordCpuLoad` in the `onClockTick` subscription.
 
 ## Requirements
 
@@ -52,7 +52,7 @@ The system MUST maintain a fixed-size ring buffer of `AudioMetrics` (default 60 
 - **Then** it returns averaged `underruns`/`droppedFrames`/`cpuLoad` and a `peakCpu` of the max
 
 ### Requirement: Threshold Reporting & Remote Report
-When telemetry is running, `collectMetrics` MUST invoke the registered `reportCallback` whenever `underruns > underrunThreshold` OR `cpuLoad > cpuThreshold`, then reset per-interval counters. `sendTelemetryReport(metrics, serverUrl?)` MUST POST the metrics to `${serverUrl}/api/telemetry` and resolve `false` (never throw) on network failure. NOTE: the server route is a known gap (see Known Gaps).
+When telemetry is running, `collectMetrics` MUST invoke the registered `reportCallback` whenever `underruns > underrunThreshold` OR `cpuLoad > cpuThreshold`, then reset per-interval counters. `sendTelemetryReport(metrics, serverUrl?)` MUST POST the metrics to `${serverUrl}/api/telemetry` and resolve `false` (never throw) on network failure. The server route is now mounted (`backend/src/routes/telemetry.ts` at `/api/telemetry`).
 
 #### Scenario: Report fired above threshold
 - **Given** `underrunThreshold = 5` and a callback registered

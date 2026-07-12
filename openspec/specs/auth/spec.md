@@ -54,7 +54,7 @@ The system MUST issue a signed magic-link token and verify it in-app (no email d
 - **Then** a session/JWT is returned
 
 ### Requirement: Tier Gating (Backend-Enforced)
-The backend MUST gate features by tier via `requireFeature` / `requireTier` (read from `x-user-tier`), returning `403` when the tier lacks the feature. The frontend `AuthContext` does NOT yet expose tier to the UI.
+The backend MUST gate features by tier via `requireFeature` / `requireTier` (read from `x-user-tier`), returning `403` when the tier lacks the feature.
 
 #### Scenario: Free tier blocked from video export
 - **Given** request header `x-user-tier: FREE`
@@ -66,8 +66,27 @@ The backend MUST gate features by tier via `requireFeature` / `requireTier` (rea
 - **When** a `canExportVideo`-gated route is hit
 - **Then** the request proceeds (not `403`)
 
+### Requirement: Tier Surfacing (UI)
+The frontend `AuthContext` MUST expose the active `tier` (defaulting to `FREE`) and `tierLimits`, fetch them from `GET /api/user/tier` on session load and after a visitor-to-account conversion (fail-closed to FREE on error), render the tier in the account/settings screens, and MUST gate the remix/publish action when `canCreateRemixes` / `canPublishToFeed` is false with an upgrade prompt.
+
+#### Scenario: Default tier is FREE
+- **Given** no tier data is available yet
+- **When** `AuthProvider` mounts
+- **Then** `tier` is `FREE` and `tierLimits.canCreateRemixes` is `false`
+
+#### Scenario: Visitor sees upgrade prompt on remix
+- **Given** the active `tier` is `FREE`
+- **When** the remix action is triggered
+- **Then** an upgrade `Alert` is shown and navigation is blocked
+
+#### Scenario: Higher tier can remix
+- **Given** a successful `/api/user/tier` fetch returns `TIER1_LIVE`
+- **When** the remix action is triggered
+- **Then** navigation proceeds (not blocked by the gate)
+
 ## Test Requirements (Vitest)
 - [ ] `getTierLimits("FREE")` disables `canExportVideo` while `TIER1_LIVE` enables it
 - [ ] `checkTierAccess` returns the boolean limit for a feature
 - [ ] visitor session round-trips through `localStorage`
 - [ ] `convertVisitorToAccount` clears the visitor session on success
+- [ ] `AuthProvider` defaults to `FREE` tier with `canCreateRemixes: false` and updates `tierLimits` after a successful `/api/user/tier` fetch

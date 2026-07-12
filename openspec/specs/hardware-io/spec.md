@@ -49,6 +49,19 @@ The system MUST allow creating, reading, updating, and removing patch routes tha
 - **When** `removePatchRoute(id)` is called
 - **Then** the route is no longer present in `patchState.routes`
 
+### Requirement: Patchbay Mounted in Studio
+The studio MUST mount the `Patchbay` component (toggled from the transport toolbar) feeding it the project's track ids, so hardware input channels can be routed to tracks via the existing `hardwareIO` CRUD (`enumerateAudioDevices`, `getHardwareChannels`, `createPatchRoute`, `removePatchRoute`, `getPatchbayState`).
+
+#### Scenario: Toolbar toggle
+- **Given** the studio screen is open with tracks loaded
+- **When** the user presses the patchbay toolbar button
+- **Then** the `Patchbay` overlay becomes visible with the project's `trackIds` passed as drop targets
+
+#### Scenario: Route creation
+- **Given** the patchbay is visible and a hardware input channel is dragged to a track
+- **When** the drop completes
+- **Then** `createPatchRoute` is invoked and `onRouteCreated` fires, persisting the route in `patchState`
+
 ### Requirement: Output Device Selection
 The system MUST provide `setAudioOutputDevice(deviceId)` (web `setSinkId`) and `getCurrentOutputDevice()`, returning failure/empty on native.
 
@@ -68,3 +81,4 @@ The system MUST provide `setAudioOutputDevice(deviceId)` (web `setSinkId`) and `
 - [ ] `getRoutesFromDevice` filters by source device id
 - [ ] `enumerateAudioDevices` returns empty on native (no-op)
 - [ ] `setAudioOutputDevice` returns false on native
+- [ ] mounting `Patchbay` with `visible` renders the matrix, a created route is reflected, and `onRouteCreated`/`onRouteRemoved` fire

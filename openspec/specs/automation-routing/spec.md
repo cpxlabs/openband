@@ -60,6 +60,24 @@ The system MUST expose `getModSources` (11 sources: lfo1/2, env1/2, macro1-4, ve
 - **Then** the result equals `0.5` (`(1*0.5+0.5)*0.5`)
 - **And** the result is within `[-1, 1]`
 
+### Requirement: Modulation Wired into Plugin Params
+The `PluginEditor` (and `OneKnob`) MUST let a user assign any `ModSource` to a parameter whose `ModTarget` is supported: each `ParamRow` exposes a "MOD" affordance that opens a source picker (the 11 `getModSources()`), and selecting a source calls `addModRoute(source, target, 0.5)`. The editor MUST show an active-route indicator when routes target the param. When playback is active (`playing` + a transport `contextTime`), the displayed parameter value MUST be derived through `applyModulation(target, baseValue, min, max, context)` so assigned modulators move the value; `onParamChange` still writes the user's base value.
+
+#### Scenario: Assign a source to a param
+- **Given** a `PluginEditor` open on a plugin exposing a `gain` param (target `amp.gain`)
+- **When** the "MOD" affordance is opened and `macro1` is selected
+- **Then** `getModulationState().routes` contains a route `{ source: "macro1", target: "amp.gain" }`
+
+#### Scenario: Playback-time value derivation
+- **Given** `macro1` set to `1` and a route `macro1 → volume` (`amount 0.5`)
+- **When** the editor renders with `playing=true` and a base value of `0` in range `[-24, 24]` at `contextTime: 0`
+- **Then** `computeModulation("volume", { time: 0 })` equals `0.5` and the displayed value equals `24` (`0 + 0.5 * (24 - (-24))`)
+
+#### Scenario: Follow-up — audio-path hookup (not yet wired)
+- **Given** modulation routes are stored in the `modulationMatrix` module singleton
+- **When** the audio engine processes a track/plugin chain
+- **Then** (FUTURE) `applyPluginChain` applies `applyModulation(target, baseValue, min, max, context)` per routed param using the live transport clock — this hookup is tracked as a follow-up and is not yet connected to the offline `pluginChain` render.
+
 ## Test Requirements (Vitest)
 - [ ] `interpolateAutomationValue` returns midpoint for linear points at t=0.5
 - [ ] `interpolateAutomationValue` returns `value0 * (value1/value0)^frac` for exponential points
@@ -68,3 +86,5 @@ The system MUST expose `getModSources` (11 sources: lfo1/2, env1/2, macro1-4, ve
 - [ ] `wouldCreateCycle` returns `valid:true` for an acyclic addition and `valid:false` for a back-edge
 - [ ] `getModSources` and `getModTargets` each return 11 entries
 - [ ] `computeModulation` returns the expected scaled contribution for a macro route, clamped to `[-1, 1]`
+- [ ] `applyModulation` offsets a base param value by the modulation amount within `[min, max]`
+- [ ] `PluginEditor` exposes a "MOD" affordance per supported param and assigns a route on source selection
