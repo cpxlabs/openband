@@ -1,4 +1,10 @@
 import type { TrackDef, BusDef } from "./types";
+import {
+  applyOperation,
+  createOperation,
+  mergeOperations,
+  type CrdtOperation,
+} from "./crdt";
 
 export interface Branch {
   id: string;
@@ -15,19 +21,11 @@ export interface BranchState {
   tracks: TrackDef[];
   buses: BusDef[];
   masterPlugins: unknown[];
-  crdtOperations: CrdtOp[];
+  crdtOperations: CrdtOperation[];
   metadata: Record<string, unknown>;
 }
 
-export interface CrdtOp {
-  id: string;
-  lamport: number;
-  author: string;
-  type: "add" | "remove" | "update";
-  path: string;
-  value?: unknown;
-  timestamp: number;
-}
+export type BranchOpInput = Omit<CrdtOperation, "id" | "timestamp" | "clientId">;
 
 export interface BranchDiff {
   branchId: string;
@@ -70,19 +68,6 @@ let projectState: ProjectState = {
   activeBranchId: "main",
   mainBranchId: "main",
 };
-
-let lamportCounter = 0;
-let opIdCounter = 0;
-
-function generateOpId(): string {
-  opIdCounter++;
-  return `op-${opIdCounter}-${Date.now()}`;
-}
-
-function nextLamport(): number {
-  lamportCounter++;
-  return lamportCounter;
-}
 
 export function initBranching(mainState: BranchState): void {
   projectState.branches.clear();
@@ -150,49 +135,20 @@ export function getBranchTree(): Map<string, Branch[]> {
 
 export function applyOperationToBranch(
   branchId: string,
-  op: Omit<CrdtOp, "id" | "lamport" | "timestamp">,
-): CrdtOp | null {
+  op: BranchOpInput,
+): CrdtOperation | null {
   const branch = projectState.branches.get(branchId);
   if (!branch) return null;
 
-  const fullOp: CrdtOp = {
-    ...op,
-    id: generateOpId(),
-    lamport: nextLamport(),
-    timestamp: Date.now(),
-  };
+  const fullOp = createOperation(op.userId, op.type, op.path, op.value);
 
-  branch.state.crdtOperations.push(fullOp);
-  applyOpToState(branch.state, fullOp);
+  const nextState = applyOperation(
+    branch.state as unknown as Record<string, unknown>,
+    fullOp,
+  ) as unknown as BranchState;
+  nextState.crdtOperations.push(fullOp);
+  branch.state = nextState;
   return fullOp;
-}
-
-function applyOpToState(state: BranchState, op: CrdtOp): void {
-  const pathParts = op.path.split("/").filter(Boolean);
-
-  if (pathParts[0] === "tracks") {
-    const trackId = pathParts[1];
-    if (op.type === "add" && op.value) {
-      state.tracks = [...state.tracks, op.value as TrackDef];
-    } else if (op.type === "remove") {
-      state.tracks = state.tracks.filter((t) => t.id !== trackId);
-    } else if (op.type === "update" && pathParts[2] && op.value !== undefined) {
-      state.tracks = state.tracks.map((t) =>
-        t.id === trackId ? { ...t, [pathParts[2]]: op.value } : t,
-      );
-    }
-  } else if (pathParts[0] === "buses") {
-    const busId = pathParts[1];
-    if (op.type === "add" && op.value) {
-      state.buses = [...state.buses, op.value as BusDef];
-    } else if (op.type === "remove") {
-      state.buses = state.buses.filter((b) => b.id !== busId);
-    } else if (op.type === "update" && pathParts[2] && op.value !== undefined) {
-      state.buses = state.buses.map((b) =>
-        b.id === busId ? { ...b, [pathParts[2]]: op.value } : b,
-      );
-    }
-  }
 }
 
 export function diffBranches(
@@ -325,7 +281,10 @@ export function mergeBranch(
   }
 
   main.state = JSON.parse(JSON.stringify(branch.state));
-  main.state.crdtOperations = [...main.state.crdtOperations, ...branch.state.crdtOperations];
+  main.state.crdtOperations = mergeOperations(
+    main.state.crdtOperations,
+    branch.state.crdtOperations,
+  );
   branch.merged = true;
   branch.mergeTimestamp = new Date().toISOString();
 
@@ -351,6 +310,4 @@ export function getMainState(): BranchState | null {
 export function disposeBranching(): void {
   projectState.branches.clear();
   projectState.activeBranchId = "main";
-  lamportCounter = 0;
-  opIdCounter = 0;
 }

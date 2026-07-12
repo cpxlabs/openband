@@ -1,4 +1,4 @@
-import { useCallback, useState, useMemo } from "react";
+import { useCallback, useState, useMemo, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -108,6 +108,8 @@ export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
   const [exporting, setExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
   const [seekBarWidth, setSeekBarWidth] = useState(0);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const meterSourceRef = useRef<HTMLAudioElement | null>(null);
 
   const audioSource = useMemo(() => {
     if (
@@ -121,6 +123,62 @@ export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
 
   const player = useAudioPlayer(audioSource);
   const playerStatus = useAudioPlayerStatus(player);
+
+  useEffect(() => {
+    if (Platform.OS !== "web" || typeof document === "undefined") return;
+    let cancelled = false;
+    (async () => {
+      const ctx = await audioSystem.ensureContext();
+      if (!ctx || cancelled) return;
+      const el = document.createElement("audio");
+      el.src = audioSource;
+      el.crossOrigin = "anonymous";
+      el.muted = true;
+      try {
+        const sourceNode = ctx.createMediaElementSource(el);
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 2048;
+        const sink = ctx.createGain();
+        sink.gain.value = 0;
+        sourceNode.connect(analyser);
+        analyser.connect(sink);
+        sink.connect(ctx.destination);
+        analyserRef.current = analyser;
+        meterSourceRef.current = el;
+      } catch {
+        analyserRef.current = null;
+      }
+    })();
+    return () => {
+      cancelled = true;
+      try {
+        meterSourceRef.current?.pause();
+      } catch {
+        /* ignore */
+      }
+      analyserRef.current = null;
+      meterSourceRef.current = null;
+    };
+  }, [audioSource]);
+
+  useEffect(() => {
+    const el = meterSourceRef.current;
+    if (!el) return;
+    if (playerStatus.playing) {
+      try {
+        if (playerStatus.currentTime) el.currentTime = playerStatus.currentTime;
+        el.play().catch(() => {});
+      } catch {
+        /* ignore */
+      }
+    } else {
+      try {
+        el.pause();
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [playerStatus.playing, playerStatus.currentTime]);
 
   const togglePlay = useCallback(() => {
     if (playerStatus.playing) {
@@ -397,7 +455,10 @@ export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
         </View>
 
         <View className="mt-4">
-          <LufsMeter isPlaying={playerStatus.playing && !session.bypassed} />
+          <LufsMeter
+            isPlaying={playerStatus.playing && !session.bypassed}
+            analyser={analyserRef.current}
+          />
         </View>
 
         <View className="mt-4">

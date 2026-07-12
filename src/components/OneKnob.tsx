@@ -5,6 +5,10 @@ import {
   Pressable,
   type GestureResponderEvent,
 } from "react-native";
+import {
+  computeModulation,
+  type ModTarget,
+} from "../lib/modulationMatrix";
 
 interface OneKnobProps {
   label: string;
@@ -15,6 +19,8 @@ interface OneKnobProps {
   step?: number;
   unit?: string;
   testID?: string;
+  modTarget?: ModTarget;
+  modContext?: { time: number; velocity?: number; noteNumber?: number };
 }
 
 export function OneKnob({
@@ -26,6 +32,8 @@ export function OneKnob({
   step = 1,
   unit = "%",
   testID,
+  modTarget,
+  modContext,
 }: OneKnobProps) {
   const [dragging, setDragging] = useState(false);
   const startY = useRef(0);
@@ -43,9 +51,15 @@ export function OneKnob({
       const dy = startY.current - e.nativeEvent.pageY;
       const delta = Math.round(dy / 3) * step;
       const stepped = min + Math.round((value - min + delta) / step) * step;
-      onChange(Math.max(min, Math.min(max, stepped)));
+      const clamped = Math.max(min, Math.min(max, stepped));
+      if (modTarget && modContext) {
+        const offset = computeModulation(modTarget, modContext) * (max - min);
+        onChange(Math.max(min, Math.min(max, clamped + offset)));
+      } else {
+        onChange(clamped);
+      }
     },
-    [dragging, value, min, max, step, onChange],
+    [dragging, value, min, max, step, onChange, modTarget, modContext],
   );
 
   const handleRelease = useCallback(() => {

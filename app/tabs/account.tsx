@@ -8,13 +8,14 @@ import {
   Button,
   TextInput,
   Divider,
+  Badge,
 } from "../../src/components";
 import { LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive";
 import { useTranslation } from "react-i18next";
 
 export default function Account() {
   const { t } = useTranslation();
-  const { user, signOut } = useAuth();
+  const { user, signOut, tier, tierLimits } = useAuth();
   const currentName =
     (user?.user_metadata?.name as string) ?? user?.email?.split("@")[0] ?? "";
   const [name, setName] = useState(currentName);
@@ -103,6 +104,30 @@ export default function Account() {
           <View className="flex-row items-center gap-1.5">
             <View className="w-2 h-2 rounded-full bg-brand-green" />
             <Text className="text-brand-green text-sm font-medium">{t("account.connected", "Conectado")}</Text>
+          </View>
+        </View>
+
+        <Divider label={t("account.plan", "Plano")} />
+
+        <View className="card-elevated p-4 gap-3">
+          <View className="flex-row justify-between items-center">
+            <Text className="text-gray-400 text-sm">{t("account.planTier", "Plano atual")}</Text>
+            <Badge text={tier} variant="active" />
+          </View>
+          <View className="h-px bg-dark-border" />
+          <View className="flex-row justify-between items-center">
+            <Text className="text-gray-400 text-sm">{t("account.maxProjects", "Projetos")}</Text>
+            <Text className="text-white text-sm font-medium">{tierLimits.maxProjects === Infinity ? "∞" : tierLimits.maxProjects}</Text>
+          </View>
+          <View className="h-px bg-dark-border" />
+          <View className="flex-row justify-between items-center">
+            <Text className="text-gray-400 text-sm">{t("account.maxTracks", "Trilhas")}</Text>
+            <Text className="text-white text-sm font-medium">{tierLimits.maxTracks === Infinity ? "∞" : tierLimits.maxTracks}</Text>
+          </View>
+          <View className="h-px bg-dark-border" />
+          <View className="flex-row justify-between items-center">
+            <Text className="text-gray-400 text-sm">{t("account.exportVideo", "Exportar vídeo")}</Text>
+            <Text className="text-white text-sm font-medium">{tierLimits.canExportVideo ? t("account.yes", "Sim") : t("account.no", "Não")}</Text>
           </View>
         </View>
 

@@ -344,3 +344,21 @@ export function disposeModulationMatrix(): void {
   stopModulationEngine();
   modulationState = { ...DEFAULT_MOD_STATE };
 }
+
+export function applyModulation(
+  target: ModTarget,
+  baseValue: number,
+  min: number,
+  max: number,
+  context: {
+    time: number;
+    noteOnTime?: number;
+    gate?: boolean;
+    velocity?: number;
+    noteNumber?: number;
+  },
+): number {
+  const range = max - min;
+  const offset = computeModulation(target, context) * range;
+  return Math.max(min, Math.min(max, baseValue + offset));
+}

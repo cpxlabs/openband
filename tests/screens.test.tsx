@@ -101,7 +101,7 @@ beforeEach(() => {
   mockThemeFn.mockReturnValue({
     theme: "dark", setTheme: mockSetTheme, toggleTheme: vi.fn(),
   });
-  mockAuthFn.mockReturnValue({ session: null, user: null, loading: false, isVisitor: false, visitorId: null, signOut: mockSignOut, signInAsVisitor: vi.fn(), convertVisitorToAccount: vi.fn() });
+  mockAuthFn.mockReturnValue({ session: null, user: null, loading: false, isVisitor: false, visitorId: null, tier: "FREE", tierLimits: { canCreateRemixes: false, canPublishToFeed: false, canExportVideo: false, maxProjects: 3, maxTracks: 24, maxStems: 4 }, signOut: mockSignOut, signInAsVisitor: vi.fn(), convertVisitorToAccount: vi.fn() });
 });
 
 describe("Extractor Screen", () => {

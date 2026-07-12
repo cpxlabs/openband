@@ -11,12 +11,38 @@ import { supabase } from "../lib/supabase";
 
 const VISITOR_STORAGE_KEY = "openband_visitor_session";
 
+export type PlanTier = "FREE" | "TIER1_LIVE" | "TIER2_STUDIO";
+
+export interface TierLimits {
+  maxTracks: number;
+  maxProjects: number;
+  maxStemExports: number;
+  canUseTriton: boolean;
+  canUseJuno: boolean;
+  canExportVideo: boolean;
+  canPublishToFeed: boolean;
+  canCreateRemixes: boolean;
+}
+
+const FREE_TIER_LIMITS: TierLimits = {
+  maxTracks: 4,
+  maxProjects: 3,
+  maxStemExports: 2,
+  canUseTriton: false,
+  canUseJuno: true,
+  canExportVideo: false,
+  canPublishToFeed: false,
+  canCreateRemixes: false,
+};
+
 interface AuthContextType {
   session: Session | null;
   user: User | null;
   loading: boolean;
   isVisitor: boolean;
   visitorId: string | null;
+  tier: PlanTier;
+  tierLimits: TierLimits;
   signOut: () => Promise<void>;
   signInAsVisitor: () => Promise<void>;
   convertVisitorToAccount: (email: string, password: string, name?: string) => Promise<{ error?: string }>;
@@ -101,6 +127,8 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   isVisitor: false,
   visitorId: null,
+  tier: "FREE",
+  tierLimits: FREE_TIER_LIMITS,
   signOut: async () => {},
   signInAsVisitor: async () => {},
   convertVisitorToAccount: async () => ({}),
@@ -112,6 +140,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isVisitor, setIsVisitor] = useState(false);
   const [visitorId, setVisitorId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [tier, setTier] = useState<PlanTier>("FREE");
+  const [tierLimits, setTierLimits] = useState<TierLimits>(FREE_TIER_LIMITS);
+
+  const fetchTier = useCallback(async () => {
+    try {
+      const res = await fetch("/api/user/tier");
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data?.tier) {
+        setTier(data.tier as PlanTier);
+        if (data.limits) setTierLimits(data.limits as TierLimits);
+      }
+    } catch (e) {
+      console.warn("Tier fetch failed, defaulting to FREE:", e);
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -125,6 +169,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsVisitor(true);
         setVisitorId(stored.id);
         setLoading(false);
+        fetchTier();
       }
       return;
     }
@@ -144,6 +189,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
+        if (!cancelled) fetchTier();
       });
 
     const {
@@ -153,13 +199,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      fetchTier();
     });
 
     return () => {
       cancelled = true;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [fetchTier]);
 
   const signOut = useCallback(async () => {
     if (isVisitor) {
@@ -245,6 +292,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         setSession(newSession);
         setUser(newUser);
+        fetchTier();
 
         return {};
       } catch (e) {
@@ -256,7 +304,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ session, user, loading, isVisitor, visitorId, signOut, signInAsVisitor, convertVisitorToAccount }}
+      value={{ session, user, loading, isVisitor, visitorId, tier, tierLimits, signOut, signInAsVisitor, convertVisitorToAccount }}
     >
       {children}
     </AuthContext.Provider>

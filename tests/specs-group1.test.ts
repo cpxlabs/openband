@@ -107,16 +107,16 @@ describe("project-branching: diff and selective merge", () => {
     branching.initBranching(baseState() as any);
     const branch = branching.createBranch("feature")!;
     branching.applyOperationToBranch(branch.id, {
-      type: "add",
-      path: "tracks/t2",
+      userId: "local",
+      type: "track.add",
+      path: "tracks",
       value: { id: "t2", name: "Drums", type: "audio", volume: 80 },
-      author: "local",
     });
     branching.applyOperationToBranch(branch.id, {
-      type: "update",
-      path: "tracks/t1/volume",
-      value: 60,
-      author: "local",
+      userId: "local",
+      type: "track.update",
+      path: "tracks",
+      value: { id: "t1", volume: 60 },
     });
     const diff = branching.diffBranches(branch.id)!;
     expect(diff).not.toBeNull();
@@ -130,16 +130,16 @@ describe("project-branching: diff and selective merge", () => {
     branching.initBranching(baseState() as any);
     const branch = branching.createBranch("feature")!;
     branching.applyOperationToBranch(branch.id, {
-      type: "add",
-      path: "tracks/t2",
+      userId: "local",
+      type: "track.add",
+      path: "tracks",
       value: { id: "t2", name: "Drums", type: "audio", volume: 80 },
-      author: "local",
     });
     branching.applyOperationToBranch(branch.id, {
-      type: "update",
-      path: "tracks/t1/volume",
-      value: 60,
-      author: "local",
+      userId: "local",
+      type: "track.update",
+      path: "tracks",
+      value: { id: "t1", volume: 60 },
     });
     const merged = branching.mergeBranch(branch.id)!;
     expect(merged.tracks.find((t: any) => t.id === "t2")).toBeDefined();
@@ -151,22 +151,22 @@ describe("project-branching: diff and selective merge", () => {
     branching.initBranching(baseState() as any);
     const branch = branching.createBranch("feature")!;
     branching.applyOperationToBranch(branch.id, {
-      type: "add",
-      path: "tracks/t2",
+      userId: "local",
+      type: "track.add",
+      path: "tracks",
       value: { id: "t2", name: "Drums", type: "audio", volume: 80 },
-      author: "local",
     });
     branching.applyOperationToBranch(branch.id, {
-      type: "add",
-      path: "tracks/t3",
+      userId: "local",
+      type: "track.add",
+      path: "tracks",
       value: { id: "t3", name: "Bass", type: "audio", volume: 70 },
-      author: "local",
     });
     branching.applyOperationToBranch(branch.id, {
-      type: "update",
-      path: "tracks/t1/volume",
-      value: 60,
-      author: "local",
+      userId: "local",
+      type: "track.update",
+      path: "tracks",
+      value: { id: "t1", volume: 60 },
     });
     const merged = branching.mergeBranch(branch.id, ["track:t2"])!;
     expect(merged.tracks.find((t: any) => t.id === "t2")).toBeDefined();
@@ -180,10 +180,10 @@ describe("project-branching: diff and selective merge", () => {
     const branch = branching.createBranch("feature")!;
     expect(branching.deleteBranch("main")).toBe(false);
     branching.applyOperationToBranch(branch.id, {
-      type: "add",
-      path: "tracks/t2",
+      userId: "local",
+      type: "track.add",
+      path: "tracks",
       value: { id: "t2", name: "Drums", type: "audio", volume: 80 },
-      author: "local",
     });
     branching.mergeBranch(branch.id, ["track:t2"]);
     expect(branching.deleteBranch(branch.id)).toBe(false);

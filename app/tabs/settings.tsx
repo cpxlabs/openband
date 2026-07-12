@@ -1,6 +1,7 @@
 import { View, Text, ScrollView, Pressable } from "react-native";
-import { PageHeader, Avatar, Divider } from "../../src/components";
+import { PageHeader, Avatar, Divider, Badge } from "../../src/components";
 import { useTheme } from "../../src/context/ThemeContext";
+import { useAuth } from "../../src/context/AuthContext";
 import { LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive";
 import { useTranslation } from "react-i18next";
 import { changeLanguage } from "../../src/lib/i18n";
@@ -16,6 +17,7 @@ const MOCK_PROFILE = {
 export default function Settings() {
   const { theme, setTheme } = useTheme();
   const { t, i18n } = useTranslation();
+  const { tier, tierLimits } = useAuth();
   const profile = MOCK_PROFILE;
 
 
@@ -130,6 +132,30 @@ export default function Settings() {
           <View className="p-4 flex-row justify-between items-center">
             <Text className="text-gray-400 text-sm">Engine</Text>
             <Text className="text-white text-sm font-medium">React Native 0.85</Text>
+          </View>
+        </View>
+
+        <Divider label="Plano" />
+
+        <View className="card-elevated">
+          <View className="p-4 flex-row justify-between items-center">
+            <Text className="text-gray-400 text-sm">Plano atual</Text>
+            <Badge text={tier} variant="active" />
+          </View>
+          <View className="h-px bg-dark-border" />
+          <View className="p-4 flex-row justify-between items-center">
+            <Text className="text-gray-400 text-sm">Publicar no feed</Text>
+            <Text className="text-white text-sm font-medium">{tierLimits.canPublishToFeed ? "Sim" : "Não"}</Text>
+          </View>
+          <View className="h-px bg-dark-border" />
+          <View className="p-4 flex-row justify-between items-center">
+            <Text className="text-gray-400 text-sm">Criar remixes</Text>
+            <Text className="text-white text-sm font-medium">{tierLimits.canCreateRemixes ? "Sim" : "Não"}</Text>
+          </View>
+          <View className="h-px bg-dark-border" />
+          <View className="p-4 flex-row justify-between items-center">
+            <Text className="text-gray-400 text-sm">Exportar vídeo</Text>
+            <Text className="text-white text-sm font-medium">{tierLimits.canExportVideo ? "Sim" : "Não"}</Text>
           </View>
         </View>
       </View>

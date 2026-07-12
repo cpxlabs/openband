@@ -21,6 +21,26 @@ interface PresenceOptions {
 const PRESENCE_STORE = new Map<string, Map<string, PresenceCursor>>();
 const DEFAULT_SERVER_URL = API_BASE_URL;
 
+export function shouldSendCursor(
+  lastSent: number,
+  now: number,
+  throttleMs: number,
+): boolean {
+  return now - lastSent >= throttleMs;
+}
+
+export function mergeRemoteCursor(
+  cursors: Map<string, PresenceCursor>,
+  incoming: Omit<PresenceCursor, "lastSeen">,
+  localUserId: string,
+  now: number = Date.now(),
+): Map<string, PresenceCursor> {
+  if (incoming.userId === localUserId) return cursors;
+  const next = new Map(cursors);
+  next.set(incoming.userId, { ...incoming, lastSeen: now });
+  return next;
+}
+
 function presenceCacheKey(projectId: string): string {
   return `presence:${projectId}`;
 }
@@ -47,9 +67,18 @@ function saveCursorsToCache(projectId: string, cursors: Map<string, PresenceCurs
   }
 }
 
-function getEventSourceUrl(base: string, projectId: string): string {
+function getEventSourceUrl(
+  base: string,
+  projectId: string,
+  userId: string,
+  userName?: string,
+): string {
   const baseUrl = base.replace(/\/+$/, "");
-  return `${baseUrl}/api/presence/${encodeURIComponent(projectId)}/subscribe`;
+  const params = new URLSearchParams({
+    userId,
+    userName: userName ?? userId,
+  });
+  return `${baseUrl}/api/presence/${encodeURIComponent(projectId)}/subscribe?${params.toString()}`;
 }
 
 function getCursorUrl(base: string, projectId: string): string {
@@ -110,7 +139,7 @@ export function usePresence({
   const connect = useCallback(() => {
     if (!projectId) return;
 
-    const url = getEventSourceUrl(serverUrl, projectId);
+    const url = getEventSourceUrl(serverUrl, projectId, userId, userName);
     let es: EventSource;
 
     try {
@@ -124,7 +153,7 @@ export function usePresence({
       es.onmessage = (event: MessageEvent) => {
         try {
           const data = JSON.parse(event.data) as Omit<PresenceCursor, "lastSeen">;
-          if (data.userId !== userId) {
+          if (data.userId !== userId && typeof data.cursorX === "number") {
             updateCursor(data);
           }
         } catch (e) {
@@ -203,7 +232,7 @@ export function usePresence({
       if (!projectId) return;
 
       const now = Date.now();
-      if (now - lastSentRef.current < throttleMs) return;
+      if (!shouldSendCursor(lastSentRef.current, now, throttleMs)) return;
       lastSentRef.current = now;
 
       const url = getCursorUrl(serverUrl, projectId);

@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { View, Text, Pressable } from "react-native";
+import { measureLUFS } from "../lib/lufs";
 
 interface LufsMeterProps {
   isPlaying: boolean;
   testID?: string;
+  analyser?: AnalyserNode | null;
 }
 
 const LUFS_TARGETS = [
@@ -31,7 +33,7 @@ function simulateLoudness(
   return lerp(base, target, speed);
 }
 
-export function LufsMeter({ isPlaying, testID }: LufsMeterProps) {
+export function LufsMeter({ isPlaying, testID, analyser }: LufsMeterProps) {
   const [targetIdx, setTargetIdx] = useState(0);
   const target = LUFS_TARGETS[targetIdx];
   const targetRef = useRef(target);
@@ -74,6 +76,38 @@ export function LufsMeter({ isPlaying, testID }: LufsMeterProps) {
 
     let time = 0;
     const tick = setInterval(() => {
+      if (analyser) {
+        const size = analyser.fftSize || 2048;
+        const buf = new Float32Array(size);
+        let channels: Float32Array[] = [];
+        try {
+          analyser.getFloatTimeDomainData(buf as Float32Array<ArrayBuffer>);
+          channels = [buf];
+        } catch {
+          channels = [];
+        }
+        if (channels.length > 0) {
+          const result = measureLUFS(channels, analyser.context.sampleRate);
+          integratedRef.current = result.integrated;
+          shortTermRef.current = result.shortTerm;
+          truePeakRef.current = Number.isFinite(result.truePeak)
+            ? result.truePeak
+            : -70;
+          lraRef.current = result.lra;
+          setIntegrated(integratedRef.current);
+          setShortTerm(shortTermRef.current);
+          setTruePeak(truePeakRef.current);
+          setLra(lraRef.current);
+          setHistory((prev) => {
+            const next = [...prev, shortTermRef.current];
+            return next.length > 30 ? next.slice(-30) : next;
+          });
+          const h = integratedRef.current;
+          setAvgLoudness((prev) => lerp(prev, h, 0.25));
+          return;
+        }
+      }
+
       time += 0.2;
       const drift = Math.sin(time * 0.3) * 1.5 + Math.sin(time * 0.7) * 0.5;
       const transient = Math.random() < 0.05 ? Math.random() * 3 : 0;
@@ -115,7 +149,7 @@ export function LufsMeter({ isPlaying, testID }: LufsMeterProps) {
     }, 200);
 
     return () => clearInterval(tick);
-  }, [isPlaying, targetIdx]);
+  }, [isPlaying, targetIdx, analyser]);
 
   const shortPct = ((shortTerm - MIN_LUFS) / RANGE) * 100;
   const integratedPct = ((avgLoudness - MIN_LUFS) / RANGE) * 100;

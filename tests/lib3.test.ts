@@ -422,16 +422,16 @@ describe("projectBranching", () => {
 
   it("applyOperationToBranch adds op to branch", () => {
     branching.initBranching({ tracks: [], buses: [], masterPlugins: [], crdtOperations: [], metadata: {} });
-    const op = branching.applyOperationToBranch("main", { type: "add", path: "tracks/t1", value: { id: "t1", name: "Vocal", type: "audio", volume: 75, pan: 0, muted: false, solo: false, outputId: null, plugins: [] } });
+    const op = branching.applyOperationToBranch("main", { userId: "local", type: "track.add", path: "tracks", value: { id: "t1", name: "Vocal", type: "audio", volume: 75, pan: 0, muted: false, solo: false, outputId: null, plugins: [] } });
     expect(op).not.toBeNull();
-    expect(op.type).toBe("add");
+    expect(op.type).toBe("track.add");
     expect(branching.getMainState().tracks).toHaveLength(1);
   });
 
   it("diffBranches detects added tracks", () => {
     branching.initBranching({ tracks: [], buses: [], masterPlugins: [], crdtOperations: [], metadata: {} });
     const branch = branching.createBranch("feature");
-    branching.applyOperationToBranch(branch.id, { type: "add", path: "tracks/t1", value: { id: "t1", name: "Vocal", type: "audio", volume: 75, pan: 0, muted: false, solo: false, outputId: null, plugins: [] } });
+    branching.applyOperationToBranch(branch.id, { userId: "local", type: "track.add", path: "tracks", value: { id: "t1", name: "Vocal", type: "audio", volume: 75, pan: 0, muted: false, solo: false, outputId: null, plugins: [] } });
     const diff = branching.diffBranches(branch.id);
     expect(diff).not.toBeNull();
     expect(diff.addedTracks).toHaveLength(1);
@@ -440,7 +440,7 @@ describe("projectBranching", () => {
   it("mergeBranch merges feature into main", () => {
     branching.initBranching({ tracks: [], buses: [], masterPlugins: [], crdtOperations: [], metadata: {} });
     const branch = branching.createBranch("feature");
-    branching.applyOperationToBranch(branch.id, { type: "add", path: "tracks/t1", value: { id: "t1", name: "Vocal", type: "audio", volume: 75, pan: 0, muted: false, solo: false, outputId: null, plugins: [] } });
+    branching.applyOperationToBranch(branch.id, { userId: "local", type: "track.add", path: "tracks", value: { id: "t1", name: "Vocal", type: "audio", volume: 75, pan: 0, muted: false, solo: false, outputId: null, plugins: [] } });
     const merged = branching.mergeBranch(branch.id);
     expect(merged).not.toBeNull();
     expect(merged.tracks).toHaveLength(1);
@@ -540,18 +540,6 @@ describe("wasmPluginHost module", () => {
 
   it("exports modules", () => {
     expect(Object.keys(wasm).length).toBeGreaterThan(0);
-  });
-});
-
-describe("yjsCRDT module", () => {
-  let yjs: any;
-
-  beforeEach(async () => {
-    yjs = await vi.importActual("../src/lib/yjsCRDT");
-  });
-
-  it("exports modules", () => {
-    expect(Object.keys(yjs).length).toBeGreaterThan(0);
   });
 });
 

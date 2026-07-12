@@ -2,7 +2,7 @@ export interface CrdtOperation {
   id: string;
   userId: string;
   timestamp: number;
-  type: "track.add" | "track.remove" | "track.update" | "note.add" | "note.remove" | "note.update" | "mix.update" | "chord.update";
+  type: "track.add" | "track.remove" | "track.update" | "bus.add" | "bus.remove" | "bus.update" | "note.add" | "note.remove" | "note.update" | "mix.update" | "chord.update";
   path: string;
   value: unknown;
   clientId: string;
@@ -95,6 +95,7 @@ export function applyOperation(
 
   switch (op.type) {
     case "track.add":
+    case "bus.add":
     case "note.add":
     case "chord.update":
       if (Array.isArray(current[lastKey])) {
@@ -104,6 +105,7 @@ export function applyOperation(
       }
       break;
     case "track.remove":
+    case "bus.remove":
     case "note.remove":
       if (Array.isArray(current[lastKey])) {
         const arr = current[lastKey] as { id: string }[];
@@ -113,6 +115,7 @@ export function applyOperation(
       }
       break;
     case "track.update":
+    case "bus.update":
     case "note.update":
     case "mix.update":
       if (Array.isArray(current[lastKey])) {

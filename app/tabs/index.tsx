@@ -10,6 +10,7 @@ import {
   Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useAuth } from "../../src/context/AuthContext";
 import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
 import {
   PageHeader,
@@ -187,6 +188,7 @@ export default function Feed() {
   const { t } = useTranslation();
   const resp = useResponsive();
   const webAudio = useWebAudioPlayer({ trackTime: false });
+  const { tierLimits } = useAuth();
   const expoPlayer = useAudioPlayer(null);
   const expoStatus = useAudioPlayerStatus(expoPlayer);
   const isWeb = Platform.OS === "web";
@@ -315,12 +317,19 @@ export default function Feed() {
 
   const handleRemix = useCallback(
     (post: FeedPost) => {
+      if (!tierLimits.canCreateRemixes) {
+        Alert.alert(
+          t("feed.upgradeRequired", "Plano necessário"),
+          t("feed.remixUpgrade", "Remix requer o plano Live ou Studio. Faça upgrade para continuar."),
+        );
+        return;
+      }
       const projectId = `remix-${post.id}-${Date.now()}`;
       router.push(
         `/studio/${projectId}?title=${encodeURIComponent(`Remix: ${post.title}`)}&genre=${post.genre}&key=${post.key}&bpm=${post.bpm}`,
       );
     },
-    [router],
+    [router, tierLimits.canCreateRemixes, t],
   );
 
   const handleNewProject = useCallback(() => {

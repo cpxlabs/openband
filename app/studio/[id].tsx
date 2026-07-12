@@ -21,6 +21,7 @@ import { renderTracksToUrl, disposeAudioContext } from "../../src/lib/midiSynth"
 import { audioSystem, createTrackedBlob, markBlobActive } from "../../src/lib/universalAudio";
 import { API_BASE_URL } from "../../src/lib/apiUrl";
 import { startClock, stopClock, onClockTick, disposeClockManager } from "../../src/lib/clockManager";
+import { startTelemetry, stopTelemetry, sendTelemetryReport, recordFrame, recordCpuLoad } from "../../src/lib/audioTelemetry";
 import { assignTrackToBus } from "../../src/lib/busRouter";
 import { buildAutomationSchedule, interpolateAutomationValue, type ScheduledAutomationPoint } from "../../src/lib/automationEngine";
 import {
@@ -52,6 +53,7 @@ import {
   BranchManager,
   CommitModal,
   OutputSelector,
+  Patchbay,
   LoadingModal,
   VuMeter,
   TrackColorPicker,
@@ -93,6 +95,8 @@ import type { AutomationPoint } from "../../src/lib/types";
 import { pitchShift } from "../../src/lib/timeStretch";
 import { audioBufferToWavBlob } from "../../src/lib/audio";
 import { useWebAudioPlayer } from "../../src/hooks/useWebAudioPlayer";
+import { usePresence, type PresenceCursor } from "../../src/lib/presence";
+import { useAuth } from "../../src/context/AuthContext";
 
 type BottomTab = "mixer" | "fx" | "mastering" | "groups" | "buses" | "mixes" | "chords";
 
@@ -131,6 +135,38 @@ const TRACK_COLORS = [
 ];
 
 type PluginSource = "mastering" | "masterRack" | "track" | null;
+
+const TIMELINE_WIDTH = 1200;
+
+function CollaboratorCursors({
+  cursors,
+  timelineWidth,
+}: {
+  cursors: Map<string, PresenceCursor>;
+  timelineWidth: number;
+}) {
+  const list = Array.from(cursors.values());
+  if (list.length === 0) return null;
+  return (
+    <>
+      {list.map((c) => (
+        <View
+          key={c.userId}
+          pointerEvents="none"
+          className="absolute top-0 bottom-0 z-20 items-start"
+          style={{ left: Math.max(0, Math.min(1, c.cursorX)) * timelineWidth }}
+        >
+          <View className="w-0.5 flex-1 bg-brand-accent/70" />
+          <View className="absolute top-0 left-0 px-1.5 py-0.5 rounded bg-brand-accent">
+            <Text className="text-white text-[9px] font-bold">
+              {c.userName ?? c.userId}
+            </Text>
+          </View>
+        </View>
+      ))}
+    </>
+  );
+}
 
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -250,6 +286,7 @@ export default function Studio() {
   const [showBranchManager, setShowBranchManager] = useState(false);
   const [showCommitModal, setShowCommitModal] = useState(false);
   const [showOutputSelector, setShowOutputSelector] = useState(false);
+  const [showPatchbay, setShowPatchbay] = useState(false);
   const [colorPickerTrackId, setColorPickerTrackId] = useState<string | null>(null);
   const [oneKnobValues, setOneKnobValues] = useState<
     Record<string, Record<string, number>>
@@ -290,6 +327,17 @@ export default function Studio() {
   const saveLabelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const syncState = useCloudSync(id);
 
+  const { user, visitorId } = useAuth();
+  const presenceUserId = user?.id ?? visitorId ?? "anon-studio";
+  const presenceUserName =
+    (user?.user_metadata?.name as string | undefined) ?? "Visitante";
+  const { cursors, sendCursor, isConnected } = usePresence({
+    projectId: typeof id === "string" ? id : null,
+    userId: presenceUserId,
+    userName: presenceUserName,
+    throttleMs: 50,
+  });
+
   const {
     state: tracks,
     setState: setTracks,
@@ -300,6 +348,8 @@ export default function Studio() {
   } = useHistory<TrackDef[]>(
     isScratch ? [] : generateTracksForGenre(genreParam || "pop", initialBpm, projectKey, projectMood, initialNumBars, projectTimeSig),
   );
+
+  const trackIds = useMemo(() => tracks.map((t) => t.id), [tracks]);
 
   const [metronome, setMetronome] = useState<MetronomeSettings>({
     bpm: initialBpm,
@@ -412,6 +462,32 @@ export default function Studio() {
   const duration = isWeb ? webAudio.duration : status.duration || 240;
   const anySolo = useMemo(() => tracks.some((t) => t.solo), [tracks]);
 
+  const sendCursorRef = useRef(sendCursor);
+  sendCursorRef.current = sendCursor;
+  const selectedTrackIdRef = useRef(selectedTrackId);
+  selectedTrackIdRef.current = selectedTrackId;
+  const durationRef = useRef(duration);
+  durationRef.current = duration;
+
+  const handleTimelinePointerMove = useCallback(
+    (e: { nativeEvent?: { locationX?: number; offsetX?: number } }) => {
+      if (!isConnected) return;
+      const x = e?.nativeEvent?.locationX ?? e?.nativeEvent?.offsetX ?? 0;
+      const cursorX = Math.max(0, Math.min(1, x / TIMELINE_WIDTH));
+      sendCursor(cursorX, selectedTrackIdRef.current, currentTime);
+    },
+    [isConnected, sendCursor, currentTime],
+  );
+
+  useEffect(() => {
+    if (!isConnected) return;
+    sendCursor(
+      currentTime / Math.max(1, duration),
+      selectedTrackId,
+      currentTime,
+    );
+  }, [selectedTrackId, isConnected]);
+
   // Pre-compute automation schedules once when automation data changes
   // Uses binary search interpolation per-frame instead of O(n) schedule rebuild
   const automationSchedules = useMemo(() => {
@@ -440,12 +516,17 @@ export default function Studio() {
   useEffect(() => {
     if (isPlaying) {
       startClock(25);
+      startTelemetry({}, (metrics) => {
+        sendTelemetryReport(metrics);
+      });
     } else {
       stopClock();
+      stopTelemetry();
       setCurrentBeat(0);
     }
     return () => {
       if (!isPlaying) stopClock();
+      stopTelemetry();
     };
   }, [isPlaying]);
 
@@ -453,10 +534,19 @@ export default function Studio() {
     const unsub = onClockTick((_time, audioTime) => {
       const beatsPerMeasure = projectTimeSig.split("/").map(Number)[0];
       const beat = ((audioTime * metronome.bpm) / 60) % (beatsPerMeasure * 4);
+      recordFrame();
+      recordCpuLoad(Math.min(100, Math.max(0, (audioTime % 1) * 100)));
       setCurrentBeat(beat);
+      if (isConnected) {
+        sendCursorRef.current(
+          audioTime / Math.max(1, durationRef.current),
+          selectedTrackIdRef.current,
+          audioTime,
+        );
+      }
     });
     return unsub;
-  }, [metronome.bpm, projectTimeSig]);
+  }, [metronome.bpm, projectTimeSig, isConnected]);
 
   const togglePlay = useCallback(async () => {
     if (isWeb) webAudio.unlock();
@@ -1569,12 +1659,18 @@ export default function Studio() {
           >
             <Text className="text-gray-300 text-xs">🎹</Text>
           </Pressable>
-          <Pressable
-            onPress={() => setShowOutputSelector(true)}
-            className="h-8 rounded-lg items-center justify-center px-2 bg-dark-muted active:opacity-70"
-          >
-            <Text className="text-gray-300 text-xs">🔊</Text>
-          </Pressable>
+            <Pressable
+              onPress={() => setShowOutputSelector(true)}
+              className="h-8 rounded-lg items-center justify-center px-2 bg-dark-muted active:opacity-70"
+            >
+              <Text className="text-gray-300 text-xs">🔊</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setShowPatchbay(true)}
+              className="h-8 rounded-lg items-center justify-center px-2 bg-dark-muted active:opacity-70"
+            >
+              <Text className="text-gray-300 text-xs">🔌</Text>
+            </Pressable>
           <Pressable
             onPress={() => setShowLooper(true)}
             className="h-8 rounded-lg items-center justify-center px-2 bg-dark-muted active:opacity-70"
@@ -1898,9 +1994,10 @@ export default function Studio() {
         </View>
 
         <ScrollView horizontal className="flex-1 bg-dark-bg">
-          <View style={{ width: 1200 }}>
+          <View style={{ width: TIMELINE_WIDTH }}>
             <View
               className="relative"
+              onPointerMove={handleTimelinePointerMove}
               style={{ height: tracks.length * (resp.isMobile ? 84 : resp.isDesktop ? 108 : 84) }}
             >
               {tracks.map((track, trackIndex) => {
@@ -2002,6 +2099,7 @@ export default function Studio() {
                   style={{ left: currentTime * 2.4 }}
                 />
               )}
+              <CollaboratorCursors cursors={cursors} timelineWidth={TIMELINE_WIDTH} />
             </View>
           </View>
         </ScrollView>
@@ -2774,6 +2872,8 @@ export default function Studio() {
           setEditingPlugin(null);
           setEditingPluginSource(null);
         }}
+        playing={isPlaying}
+        contextTime={currentTime}
       />
       <BounceDialog
         visible={showBounce}
@@ -2892,6 +2992,13 @@ export default function Studio() {
       <OutputSelector
         visible={showOutputSelector}
         onClose={() => setShowOutputSelector(false)}
+      />
+      <Patchbay
+        visible={showPatchbay}
+        onClose={() => setShowPatchbay(false)}
+        trackIds={trackIds}
+        onRouteCreated={() => {}}
+        onRouteRemoved={() => {}}
       />
       <LoadingModal
         visible={autoplayBlocked}

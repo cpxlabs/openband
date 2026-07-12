@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, useEffect, useRef } from "react";
+import { useMemo, useState, useCallback, useEffect, useRef, createContext, useContext } from "react";
 import { View, Text, Pressable, ScrollView } from "react-native";
 import type { Plugin } from "../lib/types";
 import { PLUGIN_SPECS, PLUGIN_ICONS, EQ_BAND_LABELS } from "../lib/types";
@@ -11,6 +11,38 @@ import {
   isLearning,
   type MidiLearnState,
 } from "../lib/midiLearn";
+import {
+  getModSources,
+  getModulationState,
+  addModRoute,
+  removeModRoute,
+  applyModulation,
+  type ModSource,
+  type ModTarget,
+} from "../lib/modulationMatrix";
+
+interface ModulationContextValue {
+  contextTime: number;
+  playing: boolean;
+  velocity?: number;
+  noteNumber?: number;
+}
+
+const ModulationContext = createContext<ModulationContextValue>({
+  contextTime: 0,
+  playing: false,
+});
+
+function paramToTarget(paramId: string): ModTarget | null {
+  if (paramId === "volume") return "volume";
+  if (paramId === "gain") return "amp.gain";
+  if (paramId.includes("cutoff")) return "filter.cutoff";
+  if (paramId.includes("resonance")) return "filter.resonance";
+  if (paramId.includes("detune")) return "osc1.detune";
+  if (paramId === "pan") return "pan.position";
+  if (paramId === "width") return "pan.position";
+  return null;
+}
 
 interface PluginEditorProps {
   plugin: Plugin | null;
@@ -20,6 +52,10 @@ interface PluginEditorProps {
   bpm?: number;
   testID?: string;
   trackId?: string;
+  contextTime?: number;
+  playing?: boolean;
+  velocity?: number;
+  noteNumber?: number;
 }
 
 function ParamRow({
@@ -42,10 +78,42 @@ function ParamRow({
   onLearn?: () => void;
   isLearning?: boolean;
 }) {
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [routesTick, setRoutesTick] = useState(0);
+  const mod = useContext(ModulationContext);
+  const modTarget = paramToTarget(param.id);
   const range = param.max - param.min;
-  const pct = range === 0 ? 0 : ((value - param.min) / range) * 100;
+
+  const activeRoutes = modTarget
+    ? getModulationState().routes.filter(
+        (r) => r.target === modTarget && r.enabled,
+      )
+    : [];
+
+  const displayed =
+    modTarget && mod.playing
+      ? applyModulation(modTarget, value, param.min, param.max, {
+          time: mod.contextTime,
+          velocity: mod.velocity,
+          noteNumber: mod.noteNumber,
+        })
+      : value;
+  const pct = range === 0 ? 0 : ((displayed - param.min) / range) * 100;
   const displayVal =
-    param.step >= 1 ? String(Math.round(value)) : String(value);
+    param.step >= 1 ? String(Math.round(displayed)) : String(displayed);
+
+  const handleAddRoute = (source: ModSource) => {
+    if (!modTarget) return;
+    addModRoute(source, modTarget, 0.5, false);
+    setRoutesTick((t) => t + 1);
+    setPickerOpen(false);
+  };
+
+  const handleRemoveRoutes = () => {
+    for (const r of activeRoutes) removeModRoute(r.id);
+    setRoutesTick((t) => t + 1);
+    setPickerOpen(false);
+  };
 
   return (
     <View className="mb-3">
@@ -61,11 +129,59 @@ function ParamRow({
             <View className="w-2 h-2 rounded-full bg-brand-accent animate-pulse" />
           )}
         </Pressable>
-        <Text className="text-white font-mono text-[11px]">
-          {displayVal}
-          {param.unit ? ` ${param.unit}` : ""}
-        </Text>
+        <View className="flex-row items-center gap-1.5">
+          {modTarget && (
+            <Pressable
+              onPress={() => setPickerOpen((o) => !o)}
+              className={`px-1.5 py-0.5 rounded-md border items-center ${
+                activeRoutes.length > 0
+                  ? "border-brand-accent bg-brand-accent/20"
+                  : "border-dark-border bg-dark-surface"
+              }`}
+              testID={`mod-${param.id}`}
+            >
+              <Text
+                className={`text-[9px] font-bold ${
+                  activeRoutes.length > 0 ? "text-brand-accent" : "text-gray-500"
+                }`}
+              >
+                {activeRoutes.length > 0 ? "MOD●" : "MOD"}
+              </Text>
+            </Pressable>
+          )}
+          <Text className="text-white font-mono text-[11px]">
+            {displayVal}
+            {param.unit ? ` ${param.unit}` : ""}
+          </Text>
+        </View>
       </View>
+      {pickerOpen && modTarget && (
+        <View key={routesTick} className="mb-2 p-2 rounded-lg bg-dark-surface border border-dark-border">
+          <Text className="text-[9px] text-gray-500 mb-1">
+            Mod source → {modTarget}
+          </Text>
+          <View className="flex-row flex-wrap gap-1">
+            {getModSources().map((src) => (
+              <Pressable
+                key={src}
+                onPress={() => handleAddRoute(src)}
+                className="px-2 py-1 rounded-md bg-dark-elevated border border-dark-border active:opacity-70"
+              >
+                <Text className="text-[9px] text-gray-300 font-mono">{src}</Text>
+              </Pressable>
+            ))}
+            {activeRoutes.length > 0 && (
+              <Pressable
+                onPress={handleRemoveRoutes}
+                className="px-2 py-1 rounded-md bg-red-500/20 border border-red-500/50 active:opacity-70"
+                testID={`mod-clear-${param.id}`}
+              >
+                <Text className="text-[9px] text-red-400 font-bold">clear</Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
+      )}
       <View className="flex-row items-center gap-2">
         <Pressable
           onPress={() => onChange(Math.max(param.min, value - param.step))}
@@ -1772,6 +1888,10 @@ export function PluginEditor({
   bpm,
   testID,
   trackId,
+  contextTime = 0,
+  playing = false,
+  velocity,
+  noteNumber,
 }: PluginEditorProps) {
   const [midiLearnState, setMidiLearnState] = useState<MidiLearnState>(() => ({
     mappings: loadMappings(),
@@ -1871,101 +1991,105 @@ export function PluginEditor({
   const EditorComponent = EDITOR_MAP[plugin.type] || null;
 
   return (
-    <View
-      testID={testID}
-      className="absolute inset-0 z-50 bg-black/70 justify-end"
+    <ModulationContext.Provider
+      value={{ contextTime, playing, velocity, noteNumber }}
     >
-      <View className="bg-dark-elevated border-t border-dark-border rounded-t-3xl max-h-[85%]">
-        <View className="flex-row items-center justify-between px-5 py-3 border-b border-dark-border">
-          <View className="flex-row items-center gap-3">
-            <Pressable
-              onPress={() => onToggle(plugin.id)}
-              className={`w-10 h-10 rounded-xl items-center justify-center border ${
-                plugin.enabled
-                  ? "bg-dark-surface border-dark-border"
-                  : "bg-dark-surface/50 border-dark-border/30"
-              }`}
-            >
-              <Text
-                className={`text-base ${plugin.enabled ? "text-white" : "text-gray-600"}`}
-              >
-                {PLUGIN_ICONS[plugin.type] || "≡"}
-              </Text>
-            </Pressable>
-            <View>
-              <Text className="text-white text-base font-bold">
-                {plugin.name}
-              </Text>
-              <Text className="text-gray-500 text-[10px] uppercase tracking-wider">
-                {plugin.type}
-              </Text>
-            </View>
-          </View>
-          <View className="flex-row items-center gap-2">
-            <Pressable
-              onPress={toggleLearnMode}
-              className={`px-3 py-1.5 rounded-lg border items-center ${
-                midiLearnState.learningMode
-                  ? "bg-brand-accent/20 border-brand-accent"
-                  : "bg-dark-surface border-dark-border"
-              }`}
-            >
-              <Text
-                className={`text-xs font-bold ${
-                  midiLearnState.learningMode
-                    ? "text-brand-accent"
-                    : "text-gray-400"
+      <View
+        testID={testID}
+        className="absolute inset-0 z-50 bg-black/70 justify-end"
+      >
+        <View className="bg-dark-elevated border-t border-dark-border rounded-t-3xl max-h-[85%]">
+          <View className="flex-row items-center justify-between px-5 py-3 border-b border-dark-border">
+            <View className="flex-row items-center gap-3">
+              <Pressable
+                onPress={() => onToggle(plugin.id)}
+                className={`w-10 h-10 rounded-xl items-center justify-center border ${
+                  plugin.enabled
+                    ? "bg-dark-surface border-dark-border"
+                    : "bg-dark-surface/50 border-dark-border/30"
                 }`}
               >
-                MIDI Learn
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={onClose}
-              className="w-8 h-8 rounded-full bg-dark-surface items-center justify-center active:opacity-70"
-            >
-              <Text className="text-gray-400 text-lg">✕</Text>
-            </Pressable>
-          </View>
-        </View>
-
-        <ScrollView className="px-5 py-4" style={{ maxHeight: 500 }}>
-          {EditorComponent ? (
-            <EditorComponent
-              plugin={plugin}
-              onParamChange={handleParamChange}
-              onParamLearn={handleParamLearn}
-              midiLearnState={midiLearnState}
-              bpm={bpm}
-            />
-          ) : spec ? (
-            <View className="py-4">
-              {spec.params.map((p) => (
-                <ParamRow
-                  key={p.id}
-                  param={p}
-                  value={plugin.params[p.id] ?? p.default}
-                  onChange={(v) => handleParamChange(p.id, v)}
-                  onLearn={
-                    midiLearnState.learningMode
-                      ? () => handleParamLearn(plugin.id, p.id)
-                      : undefined
-                  }
-                  isLearning={
-                    midiLearnState.learningMode &&
-                    isLearning(
-                      midiLearnState,
-                      plugin.id,
-                      p.id,
-                      trackId ?? "",
-                    )
-                  }
-                />
-              ))}
+                <Text
+                  className={`text-base ${plugin.enabled ? "text-white" : "text-gray-600"}`}
+                >
+                  {PLUGIN_ICONS[plugin.type] || "≡"}
+                </Text>
+              </Pressable>
+              <View>
+                <Text className="text-white text-base font-bold">
+                  {plugin.name}
+                </Text>
+                <Text className="text-gray-500 text-[10px] uppercase tracking-wider">
+                  {plugin.type}
+                </Text>
+              </View>
             </View>
-          ) : null}
-        </ScrollView>
+            <View className="flex-row items-center gap-2">
+              <Pressable
+                onPress={toggleLearnMode}
+                className={`px-3 py-1.5 rounded-lg border items-center ${
+                  midiLearnState.learningMode
+                    ? "bg-brand-accent/20 border-brand-accent"
+                    : "bg-dark-surface border-dark-border"
+                }`}
+              >
+                <Text
+                  className={`text-xs font-bold ${
+                    midiLearnState.learningMode
+                      ? "text-brand-accent"
+                      : "text-gray-400"
+                  }`}
+                >
+                  MIDI Learn
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={onClose}
+                className="w-8 h-8 rounded-full bg-dark-surface items-center justify-center active:opacity-70"
+              >
+                <Text className="text-gray-400 text-lg">✕</Text>
+              </Pressable>
+            </View>
+          </View>
+
+          <ScrollView className="px-5 py-4" style={{ maxHeight: 500 }}>
+            {EditorComponent ? (
+              <EditorComponent
+                plugin={plugin}
+                onParamChange={handleParamChange}
+                onParamLearn={handleParamLearn}
+                midiLearnState={midiLearnState}
+                bpm={bpm}
+              />
+            ) : spec ? (
+              <View className="py-4">
+                {spec.params.map((p) => (
+                  <ParamRow
+                    key={p.id}
+                    param={p}
+                    value={plugin.params[p.id] ?? p.default}
+                    onChange={(v) => handleParamChange(p.id, v)}
+                    onLearn={
+                      midiLearnState.learningMode
+                        ? () => handleParamLearn(plugin.id, p.id)
+                        : undefined
+                    }
+                    isLearning={
+                      midiLearnState.learningMode &&
+                      isLearning(
+                        midiLearnState,
+                        plugin.id,
+                        p.id,
+                        trackId ?? "",
+                      )
+                    }
+                  />
+                ))}
+              </View>
+            ) : null}
+          </ScrollView>
+        </View>
       </View>
-    </View>
+    </ModulationContext.Provider>
   );
 }
