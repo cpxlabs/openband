@@ -83,12 +83,13 @@ function makeSoftClipCurve(size: number, ceiling: number, thresholdDb: number): 
   return curve;
 }
 
-function makeDistortionCurve(size: number, drive: number): Float32Array {
+function makeTanhCurve(size: number, drive: number): Float32Array {
   const curve = new Float32Array(size);
-  const k = Math.max(1, drive * 10);
+  const k = Math.max(0.1, 1 + drive * 0.6);
+  const norm = Math.tanh(k);
   for (let i = 0; i < size; i++) {
     const x = (i / (size - 1)) * 2 - 1;
-    curve[i] = ((3 + k) * x * 20 * Math.PI / 180) / (Math.PI + k * Math.abs(x));
+    curve[i] = Math.tanh(k * x) / norm;
   }
   return curve;
 }
@@ -215,7 +216,7 @@ async function applySinglePlugin(
       const tone = (resolveParam(p, "tone") ?? 50) as number;
       const mix = (resolveParam(p, "mix") ?? 70) as number;
       const ws = ctx.createWaveShaper();
-      ws.curve = makeDistortionCurve(4096, drive) as Float32Array<ArrayBuffer>;
+      ws.curve = makeTanhCurve(4096, drive) as Float32Array<ArrayBuffer>;
       const inputGain = ctx.createGain();
       inputGain.gain.value = 1 + drive * 0.5;
       const outputGain = ctx.createGain();
@@ -283,13 +284,17 @@ async function applySinglePlugin(
     case "filter": {
       const filter = ctx.createBiquadFilter();
       const modeVal = resolveParam(p, "mode", "type") ?? 0;
+      const FILTER_MODES: BiquadFilterType[] = [
+        "lowpass", "highpass", "bandpass", "lowshelf", "highshelf", "notch",
+      ];
       let filterType: BiquadFilterType = "lowpass";
       if (typeof modeVal === "string") {
         filterType = VALID_FILTER_TYPES.includes(modeVal as BiquadFilterType)
           ? (modeVal as BiquadFilterType)
           : "lowpass";
       } else {
-        filterType = modeVal >= 1 ? "highpass" : "lowpass";
+        const idx = Math.round(modeVal);
+        filterType = FILTER_MODES[idx] ?? "lowpass";
       }
       filter.type = filterType;
       const freq = (resolveParam(p, "freq", "frequency") ?? 1000) as number;
@@ -305,24 +310,38 @@ async function applySinglePlugin(
       const rate = (p.rate ?? 2) as number;
       const depth = (p.depth ?? 50) as number;
       const mix = (resolveParam(p, "mix") ?? 40) as number;
-      const osc = ctx.createOscillator();
-      osc.frequency.value = rate;
-      const modGain = ctx.createGain();
-      modGain.gain.value = depth / 100;
-      const mainGain = ctx.createGain();
-      mainGain.gain.value = 0.5;
-      osc.connect(modGain);
-      modGain.connect(mainGain.gain);
+      const baseDelay = 0.02;
+      const modDepth = (depth / 100) * 0.01;
+      const splitter = ctx.createChannelSplitter(numCh);
+      const merger = ctx.createChannelMerger(numCh);
+      const oscL = ctx.createOscillator();
+      oscL.frequency.value = rate;
+      const oscR = ctx.createOscillator();
+      oscR.frequency.value = rate * 1.05;
+      const delays: { delay: DelayNode; mod: GainNode }[] = [];
+      for (let c = 0; c < numCh; c++) {
+        const delay = ctx.createDelay(1);
+        delay.delayTime.value = baseDelay;
+        const mod = ctx.createGain();
+        mod.gain.value = modDepth;
+        const osc = c % 2 === 0 ? oscL : oscR;
+        osc.connect(mod);
+        mod.connect(delay.delayTime);
+        splitter.connect(delay, c, 0);
+        delay.connect(merger, 0, c);
+        delays.push({ delay, mod });
+      }
       const wetGain = ctx.createGain();
       wetGain.gain.value = mix / 100;
       const dryGain = ctx.createGain();
       dryGain.gain.value = 1 - mix / 100;
+      source.connect(splitter);
       source.connect(dryGain);
       dryGain.connect(ctx.destination);
-      source.connect(mainGain);
-      mainGain.connect(wetGain);
+      merger.connect(wetGain);
       wetGain.connect(ctx.destination);
-      osc.start(0);
+      oscL.start(0);
+      oscR.start(0);
       break;
     }
     case "utility": {
@@ -334,7 +353,8 @@ async function applySinglePlugin(
         const ws = ctx.createWaveShaper();
         const invCurve = new Float32Array(4096);
         for (let i = 0; i < 4096; i++) {
-          invCurve[i] = (i / 2047.5) - 1;
+          const x = (i / 4095) * 2 - 1;
+          invCurve[i] = -x;
         }
         ws.curve = invCurve;
         source.connect(ws);
@@ -470,10 +490,12 @@ async function applySinglePlugin(
       const sideHpR = ctx.createBiquadFilter();
       sideHpR.type = "highpass";
       sideHpR.frequency.value = crossover;
+      const stereoize = (p.stereoize ?? 30) as number;
+      const stereoizeFactor = 1 + (stereoize / 100) * 0.5;
       const sideL = ctx.createGain();
-      sideL.gain.value = widthScale * Math.pow(10, sideGainDb / 20);
+      sideL.gain.value = widthScale * Math.pow(10, sideGainDb / 20) * stereoizeFactor;
       const sideR = ctx.createGain();
-      sideR.gain.value = widthScale * Math.pow(10, sideGainDb / 20);
+      sideR.gain.value = widthScale * Math.pow(10, sideGainDb / 20) * stereoizeFactor;
       const midG = ctx.createGain();
       midG.gain.value = Math.pow(10, midGainDb / 20);
       const outL = ctx.createGain();

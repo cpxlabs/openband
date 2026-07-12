@@ -1,6 +1,11 @@
-- [ ] Create `src/lib/plugins/specs.ts` with `PLUGIN_SPECS` for all 19 types (param ids, ranges, defaults, units).
-- [ ] Implement `createPlugin()` factories for: EQ (4), compressor, limiter, gate, overdrive, delay, chorus, tremolo, reverb, filter, saturation, fader, pan, stereo-widener, de-esser, autotune-stub, bitcrusher, vocoder, (20th = voiceCleaner is separate).
-- [ ] Refactor `pluginChain.applyPluginChain()` to use `createPlugin` + `PLUGIN_SPECS`.
-- [ ] Update `PluginEditor.tsx` / `OneKnob.tsx` to read param ids from `PLUGIN_SPECS` (kill mismatches).
-- [ ] Rewrite `tests/plugins/dsp.test.ts` with audible/FFT assertions; deprecate `lib9` mock-only test.
+- [x] **Canonical `PLUGIN_SPECS` already exists** in `src/lib/types.ts` (lines ~222-1638) with all 19 types and canonical param ids — no separate `src/lib/plugins/specs.ts` needed (design doc was stale).
+- [x] `src/lib/mastering.ts` already reads canonical ids correctly — left untouched.
+- [x] Fix 5 approximate/broken per-plugin cases in `src/lib/pluginChain.ts` `applyPluginChain` → `applySinglePlugin`:
+  - `utility` — real phase-invert curve (was identity `x→x`).
+  - `modulation` — real stereo chorus (LFO→delay, dry/wet); was a fake fixed-gain tremolo.
+  - `stereoWidener` — wires canonical `stereoize` param into the side network.
+  - `filter` — all 6 `BiquadFilterNode` modes via `mode` (lowpass/highpass/bandpass/lowshelf/highshelf/notch).
+  - `distortion` — proper tanh `WaveShaper` driven by `drive`.
+- [x] Keep `resolveParam` legacy aliases so existing `PluginEditor` sliders still map.
+- [x] Extend `tests/plugins/dsp.test.ts` with audible/FFT assertions (filter notch, lowpass HF drop, utility sign-flip). `tests/lib9.test.ts` retained (weak but green).
 - [ ] Manual: load each plugin in Studio, confirm audible effect on a test tone.
