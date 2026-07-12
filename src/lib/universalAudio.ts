@@ -102,6 +102,8 @@ class UniversalAudioSystem {
   private recordingWorkletNode: AudioWorkletNode | null = null;
   private mediaStreamSource: MediaStreamAudioSourceNode | null = null;
   private recordedChunks: Float32Array[] = [];
+  private mediaRecorder: MediaRecorder | null = null;
+  private mediaRecorderBlob: Promise<Blob> | null = null;
 
   static getInstance(): UniversalAudioSystem {
     if (!UniversalAudioSystem.instance) {
@@ -133,52 +135,139 @@ class UniversalAudioSystem {
     const ctx = await this.ensureContext();
     if (!ctx) return;
 
+    let workletLoaded = false;
     try {
       await ctx.audioWorklet.addModule("/worklets/RecordingWorklet.js");
+      workletLoaded = true;
     } catch (e) {
-      console.warn("Worklet already added or failed:", e);
+      console.warn("RecordingWorklet addModule failed, using MediaRecorder fallback:", e);
     }
 
     this.recordedChunks = [];
-    this.recordingStream = await navigator.mediaDevices.getUserMedia({
-      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
-    });
-    this.mediaStreamSource = ctx.createMediaStreamSource(this.recordingStream);
-    this.recordingWorkletNode = new AudioWorkletNode(ctx, "recording-worklet");
 
-    this.recordingWorkletNode.port.onmessage = (e) => {
-      const chunk = e.data;
-      this.recordedChunks.push(new Float32Array(chunk));
-      if (onChunk) onChunk(chunk);
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+      });
+    } catch (e) {
+      this.cleanupRecording();
+      throw new Error("MIC_PERMISSION_DENIED");
+    }
+    this.recordingStream = stream;
+
+    if (workletLoaded) {
+      this.mediaStreamSource = ctx.createMediaStreamSource(stream);
+      this.recordingWorkletNode = new AudioWorkletNode(ctx, "recording-worklet");
+      this.recordingWorkletNode.port.onmessage = (e) => {
+        const chunk = new Float32Array(e.data);
+        this.recordedChunks.push(chunk);
+        if (onChunk) onChunk(chunk);
+      };
+      // Note: Do not connect worklet to destination to avoid feedback loop while recording
+      this.mediaStreamSource.connect(this.recordingWorkletNode);
+    } else {
+      this.startMediaRecorderFallback(stream, onChunk);
+    }
+  }
+
+  private startMediaRecorderFallback(stream: MediaStream, onChunk?: (chunk: Float32Array) => void): void {
+    const recorder = new MediaRecorder(stream);
+    const pieces: BlobPart[] = [];
+    recorder.ondataavailable = (ev) => {
+      if (ev.data && ev.data.size > 0) {
+        pieces.push(ev.data);
+        if (onChunk && ev.data.arrayBuffer) {
+          ev.data.arrayBuffer().then((ab) => onChunk(new Float32Array(ab))).catch(() => {});
+        }
+      }
     };
-
-    // Note: Do not connect worklet to destination to avoid feedback loop while recording
-    this.mediaStreamSource.connect(this.recordingWorkletNode);
+    const blobPromise = new Promise<Blob>((resolve) => {
+      recorder.onstop = () => {
+        const blob = new Blob(pieces, { type: recorder.mimeType || "audio/webm" });
+        resolve(blob);
+      };
+    });
+    this.mediaRecorder = recorder;
+    this.mediaRecorderBlob = blobPromise;
+    recorder.start();
   }
 
   async stopRecording(): Promise<Blob | null> {
-    if (!this.recordingStream || !this.recordingWorkletNode) return null;
+    if (!this.recordingStream && !this.mediaRecorder) return null;
+
+    if (this.mediaRecorder && this.mediaRecorderBlob) {
+      const recorder = this.mediaRecorder;
+      const blobPromise = this.mediaRecorderBlob;
+      this.mediaRecorder = null;
+      this.mediaRecorderBlob = null;
+      try {
+        recorder.stop();
+      } catch {
+        /* already stopped */
+      }
+      try {
+        const blob = await blobPromise;
+        this.cleanupRecording();
+        return blob;
+      } catch {
+        this.cleanupRecording();
+        return null;
+      }
+    }
+
+    if (!this.recordingWorkletNode) {
+      this.cleanupRecording();
+      return null;
+    }
 
     this.recordingWorkletNode.disconnect();
     this.mediaStreamSource?.disconnect();
-    this.recordingStream.getTracks().forEach((t) => t.stop());
+    this.recordingStream?.getTracks().forEach((t) => t.stop());
 
-    this.recordingStream = null;
-    this.recordingWorkletNode = null;
-    this.mediaStreamSource = null;
+    const chunks = this.recordedChunks;
+    this.cleanupRecording();
 
-    if (this.recordedChunks.length === 0) return null;
-
-    const totalLength = this.recordedChunks.reduce((acc, chunk) => acc + chunk.length, 0);
-    const combined = new Float32Array(totalLength);
-    let offset = 0;
-    for (const chunk of this.recordedChunks) {
-      combined.set(chunk, offset);
-      offset += chunk.length;
-    }
+    if (chunks.length === 0) return null;
 
     const sampleRate = this._audioCtx?.sampleRate || 44100;
+    return this.encodeRecording(chunks, sampleRate);
+  }
+
+  /** Combine captured mono Float32 chunks into a WAV Blob (used by stopRecording and tests). */
+  encodeRecording(chunks: Float32Array[], sampleRate: number = this._audioCtx?.sampleRate || 44100): Blob | null {
+    if (!chunks || chunks.length === 0) return null;
+    const totalLength = chunks.reduce((acc, c) => acc + c.length, 0);
+    const combined = new Float32Array(totalLength);
+    let offset = 0;
+    for (const c of chunks) {
+      combined.set(c, offset);
+      offset += c.length;
+    }
+    // Mono capture is duplicated into both L/R channels to produce a valid 2-channel WAV.
     return this.float32ToWavBlob(combined, combined, sampleRate, 16);
+  }
+
+  private cleanupRecording(): void {
+    try {
+      this.recordingWorkletNode?.disconnect();
+    } catch {
+      /* node already disconnected */
+    }
+    try {
+      this.mediaStreamSource?.disconnect();
+    } catch {
+      /* node already disconnected */
+    }
+    if (this.recordingStream) {
+      this.recordingStream.getTracks().forEach((t) => t.stop());
+      this.recordingStream = null;
+    }
+    this.recordingWorkletNode = null;
+    this.mediaStreamSource = null;
+    this.recordedChunks = [];
+    this.mediaRecorder = null;
+    this.mediaRecorderBlob = null;
   }
 
   async ensureContext(): Promise<AudioContext | null> {
@@ -231,6 +320,7 @@ class UniversalAudioSystem {
       for (const region of track.regions) {
         if (region.url) {
           try {
+            // Recorded takes are stored as tracked blob URLs (createTrackedBlob); fetch + decode them here.
             const resp = await fetch(region.url, { credentials: "omit" });
             const ab = await resp.arrayBuffer();
             const buf = await this.decodeAudio(ab);

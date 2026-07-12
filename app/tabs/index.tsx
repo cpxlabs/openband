@@ -18,6 +18,7 @@ import {
   setMiniPlayerState,
   QuickTools,
   NewProject,
+  OnboardingFlow,
   FeedPostCard,
   Loading,
 } from "../../src/components";
@@ -176,10 +177,10 @@ const MOCK_POSTS: FeedPost[] = [
   },
 ];
 
-const GENRE_FILTERS = [
-  { id: "all", label: "Todos", icon: "♫" },
-  ...GENRES.map((g) => ({ id: g.id, label: g.name, icon: g.icon })),
-];
+  const GENRE_FILTERS = [
+    { id: "all", label: "all", icon: "♫" },
+    ...GENRES.map((g) => ({ id: g.id, label: g.name, icon: g.icon })),
+  ];
 
 type SortMode = "recent" | "popular" | "genre";
 
@@ -190,7 +191,8 @@ export default function Feed() {
   const { t } = useTranslation();
   const resp = useResponsive();
   const webAudio = useWebAudioPlayer({ trackTime: false });
-  const { tierLimits } = useAuth();
+  const { tierLimits, hasOnboarded } = useAuth();
+  const [showOnboarding, setShowOnboarding] = useState(!hasOnboarded);
   const expoPlayer = useAudioPlayer(null);
   const expoStatus = useAudioPlayerStatus(expoPlayer);
   const isWeb = Platform.OS === "web";
@@ -313,7 +315,7 @@ export default function Feed() {
         }
       } catch (error) {
         console.warn("Feed playback failed:", error);
-        Alert.alert("Erro", "Falha ao carregar prévia do áudio.");
+        Alert.alert(t("feed.errorTitle", "Erro"), t("feed.playbackError", "Falha ao carregar prévia do áudio."));
       } finally {
         if (isMountedRef.current) setLoadingId(null);
         loadingIdRef.current = null;
@@ -384,15 +386,18 @@ export default function Feed() {
   }, []);
 
   const handleCreateProject = useCallback(
-    (config: {
-      name: string;
-      genre: GenreTemplate;
-      key: string;
-      bpm: number;
-      mood?: Mood;
-      numBars?: number;
-      timeSignature?: string;
-    }) => {
+    (
+      config: {
+        name: string;
+        genre: GenreTemplate;
+        key: string;
+        bpm: number;
+        mood?: Mood;
+        numBars?: number;
+        timeSignature?: string;
+      },
+      fromOnboarding = false,
+    ) => {
       const projectId = `proj-${Date.now()}`;
       const params = new URLSearchParams({
         title: config.name,
@@ -403,10 +408,27 @@ export default function Feed() {
         timeSignature: config.timeSignature ?? "4/4",
       });
       if (config.mood) params.set("mood", config.mood);
+      if (fromOnboarding) params.set("fromOnboarding", "1");
       setShowNewProject(false);
+      setShowOnboarding(false);
       router.push(`/studio/${projectId}?${params.toString()}`);
     },
     [router],
+  );
+
+  const handleOnboardingCreate = useCallback(
+    (config: {
+      name: string;
+      genre: GenreTemplate;
+      key: string;
+      bpm: number;
+      mood?: Mood;
+      numBars?: number;
+      timeSignature?: string;
+    }) => {
+      handleCreateProject(config, true);
+    },
+    [handleCreateProject],
   );
 
   const handleShare = useCallback(async (post: FeedPost) => {
@@ -414,7 +436,7 @@ export default function Feed() {
       await navigator.clipboard.writeText(
         `https://openband.app/track/${post.id}`,
       );
-      Alert.alert("Compartilhar", "Link copiado para a área de transferência!");
+      Alert.alert(t("feed.shareTitle", "Compartilhar"), t("feed.shareCopied", "Link copiado para a área de transferência!"));
     } else {
       await Share.share({
         title: post.title,
@@ -461,6 +483,12 @@ export default function Feed() {
         onClose={() => setShowNewProject(false)}
         onCreate={handleCreateProject}
       />
+      <OnboardingFlow
+        visible={showOnboarding}
+        onClose={() => setShowOnboarding(false)}
+        onCreate={handleOnboardingCreate}
+        onStartFromScratch={handleOpenNewProject}
+      />
       <View style={maxWidthStyle}>
         <View className="pt-4 tablet:pt-12 px-4 tablet:px-6 flex-row items-start justify-between">
           <View className="flex-1">
@@ -497,13 +525,13 @@ export default function Feed() {
                   <Text
                     className={`text-xs ${genreFilter === genre.id ? "text-brand-primary" : "text-gray-400"}`}
                   >
-                    {genre.icon}
-                  </Text>
-                  <Text
-                    className={`text-xs font-semibold ${genreFilter === genre.id ? "text-brand-primary" : "text-white"}`}
-                  >
-                    {genre.label}
-                  </Text>
+                     {genre.icon}
+                   </Text>
+                   <Text
+                     className={`text-xs font-semibold ${genreFilter === genre.id ? "text-brand-primary" : "text-white"}`}
+                   >
+                     {genre.id === "all" ? t("feed.all", "Todos") : genre.label}
+                   </Text>
                 </Pressable>
               ))}
             </View>
@@ -556,7 +584,7 @@ export default function Feed() {
             }}
             ListEmptyComponent={
               loading ? (
-                <Loading message="Carregando feed..." />
+                <Loading message={t("feed.loadingFeed", "Carregando feed...")} />
               ) : (
                 <View className="py-16 items-center">
                   <Text className="text-4xl mb-3 opacity-50">🎵</Text>

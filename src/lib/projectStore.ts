@@ -39,6 +39,7 @@ export interface ProjectData {
 
 const STORAGE_PREFIX = "openband_project_";
 const INDEX_KEY = "openband_project_index";
+const ONBOARDING_KEY = "openband_onboarding";
 
 const pendingBridgeSaves = new Map<string, ProjectData>();
 let bridgeAvailable: boolean | null = null;
@@ -355,4 +356,31 @@ export function getFavoriteProjects(): string[] {
 
 export function isProjectFavorite(projectId: string): boolean {
   return getFavoriteProjects().includes(projectId);
+}
+
+export interface OnboardingState {
+  completed: boolean;
+}
+
+export function getOnboardingState(): OnboardingState {
+  const storage = getStorage();
+  if (!storage) return { completed: false };
+  try {
+    const raw = storage.getItem(ONBOARDING_KEY);
+    if (!raw) return { completed: false };
+    const parsed = JSON.parse(raw) as Partial<OnboardingState>;
+    return { completed: parsed.completed === true };
+  } catch {
+    return { completed: false };
+  }
+}
+
+export function setOnboardingCompleted(): void {
+  const storage = getStorage();
+  if (!storage) return;
+  try {
+    storage.setItem(ONBOARDING_KEY, JSON.stringify({ completed: true }));
+  } catch (e) {
+    console.warn("[projectStore] onboarding save failed:", e);
+  }
 }

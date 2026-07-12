@@ -4,17 +4,20 @@ interface ProgressBarProps {
   progress: number;
   className?: string;
   testID?: string;
+  accessibilityLabel?: string;
 }
 
 export function ProgressBar({
   progress,
   className = "",
   testID,
+  accessibilityLabel = "Progresso",
 }: ProgressBarProps) {
   return (
     <View
       testID={testID}
       accessibilityRole="progressbar"
+      accessibilityLabel={accessibilityLabel}
       aria-valuenow={progress}
       aria-valuemin={0}
       aria-valuemax={100}

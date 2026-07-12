@@ -280,4 +280,20 @@
   .btn-solo-active {
     @apply bg-green-500/30 border-green-400/60;
   }
+
+  .focus-ring {
+    outline: none;
+  }
+  .focus-ring:focus-visible {
+    outline: 2px solid #5ac8fa;
+    outline-offset: 2px;
+    border-radius: 8px;
+  }
+  .btn-primary:focus-visible,
+  .btn-secondary:focus-visible,
+  .btn-ghost:focus-visible,
+  .input-field:focus-visible {
+    outline: 2px solid #5ac8fa;
+    outline-offset: 2px;
+  }
 }

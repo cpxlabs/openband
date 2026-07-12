@@ -104,13 +104,14 @@ export function Sidebar({
                   onNavigate(item.key);
                   if (!isPersistent) onClose();
                 }}
-                className={`flex-row items-center gap-3 px-3 py-2.5 rounded-xl active:opacity-70 hover:bg-dark-muted/40 ${
+                className={`flex-row items-center gap-3 px-3 py-2.5 rounded-xl active:opacity-70 hover:bg-dark-muted/40 focus-ring ${
                   isActive
                     ? "bg-brand-primary/10 border border-brand-primary/20"
                     : "border border-transparent"
                 }`}
                 accessibilityRole="button"
                 aria-current={isActive ? "page" : undefined}
+                accessibilityLabel={item.label}
               >
                 <View
                   className={`w-8 h-8 rounded-lg items-center justify-center ${
@@ -146,8 +147,9 @@ export function Sidebar({
                         onNavigate(sub.route ? buildRoute(sub.route) : sub.key);
                         if (!isPersistent) onClose();
                       }}
-                      className="flex-row items-center gap-2 px-3 py-2 rounded-lg active:opacity-70 hover:bg-dark-muted/30 border border-transparent"
+                      className="flex-row items-center gap-2 px-3 py-2 rounded-lg active:opacity-70 hover:bg-dark-muted/30 border border-transparent focus-ring"
                       accessibilityRole="button"
+                      accessibilityLabel={sub.label}
                     >
                       <View className="w-6 h-6 rounded-md items-center justify-center bg-dark-muted/20">
                         <Text className="text-sm">{sub.icon}</Text>

@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { View, Text, Pressable, ScrollView, TextInput } from "react-native";
+import { useTranslation } from "react-i18next";
 import { GENRES, MUSICAL_KEYS, keyLabel, MOODS, TIME_SIGNATURES } from "../lib/projectTemplates";
 import type { GenreTemplate, Mood } from "../lib/projectTemplates";
 
@@ -38,6 +39,7 @@ export function NewProject({
   initialTimeSignature,
   testID,
 }: NewProjectProps) {
+  const { t } = useTranslation();
   const [name, setName] = useState(initialTitle ?? "");
   const [selectedGenre, setSelectedGenre] = useState<GenreTemplate>(
     initialGenre ?? GENRES[0],
@@ -75,7 +77,7 @@ export function NewProject({
   }, [selectedGenre.defaultBpm]);
 
   const handleCreate = useCallback(() => {
-    const finalName = name.trim() || `${selectedGenre.name} - Novo Projeto`;
+    const finalName = name.trim() || `${selectedGenre.name} - ${t("newProject.defaultName", "Novo Projeto")}`;
     const config = { name: finalName, genre: selectedGenre, key: selectedKey, bpm, mood: selectedMood, numBars, timeSignature };
     setName("");
     setSelectedGenre(GENRES[0]);
@@ -124,9 +126,9 @@ export function NewProject({
         <View className="flex-row items-center justify-between px-5 py-4 border-b border-dark-border">
           <Text className="text-white text-lg font-bold">
             {step === "genre"
-              ? "Novo Projeto"
+              ? t("newProject.title", "Novo Projeto")
               : step === "mood"
-                ? "Escolha o mood"
+                ? t("newProject.moodPrompt", "Escolha o mood")
                 : selectedGenre.name}
           </Text>
           <Pressable
@@ -141,7 +143,7 @@ export function NewProject({
           {step === "genre" ? (
             <View>
               <Text className="text-gray-400 text-xs font-medium mb-3">
-                Escolha um gênero
+                {t("newProject.chooseGenre", "Escolha um gênero")}
               </Text>
               <View className="flex-row flex-wrap gap-2">
                 {GENRES.map((g) => (
@@ -179,10 +181,10 @@ export function NewProject({
                   >
                     <Text className="text-3xl mb-1">▢</Text>
                     <Text className="text-white font-bold text-sm">
-                      Começar do Zero
+                      {t("newProject.startFromScratch", "Começar do Zero")}
                     </Text>
                     <Text className="text-gray-500 text-[10px] mt-0.5 text-center">
-                      Projeto vazio, sem tracks sugeridas
+                      {t("newProject.startFromScratchDesc", "Projeto vazio, sem tracks sugeridas")}
                     </Text>
                   </Pressable>
                 )}
@@ -191,7 +193,7 @@ export function NewProject({
           ) : step === "mood" ? (
             <View>
               <Text className="text-gray-400 text-xs font-medium mb-1">
-                Gênero selecionado
+                {t("newProject.selectedGenre", "Gênero selecionado")}
               </Text>
               <View className="flex-row items-center gap-3 bg-dark-surface rounded-xl border border-dark-border p-3 mb-4">
                 <Text className="text-2xl">{selectedGenre.icon}</Text>
@@ -209,7 +211,7 @@ export function NewProject({
               </View>
 
               <Text className="text-gray-400 text-xs font-medium mb-3">
-                Escolha o mood
+                {t("newProject.moodPrompt", "Escolha o mood")}
               </Text>
               <View className="flex-row flex-wrap gap-2 mb-4">
                 {MOODS.map((m) => (
@@ -249,7 +251,7 @@ export function NewProject({
                   className="flex-1 p-4 rounded-xl bg-dark-surface border border-dark-border items-center active:opacity-80"
                 >
                   <Text className="text-gray-300 font-bold text-sm">
-                    Voltar
+                    {t("newProject.back", "Voltar")}
                   </Text>
                 </Pressable>
                 <Pressable
@@ -259,25 +261,25 @@ export function NewProject({
                   }}
                   className="flex-1 p-4 rounded-xl bg-dark-surface border border-dark-border items-center active:opacity-80"
                 >
-                  <Text className="text-gray-300 text-sm">Pular</Text>
+                  <Text className="text-gray-300 text-sm">{t("newProject.skip", "Pular")}</Text>
                 </Pressable>
               </View>
             </View>
           ) : (
             <View>
               <Text className="text-gray-400 text-xs font-medium mb-1">
-                Nome do Projeto
+                {t("newProject.projectName", "Nome do Projeto")}
               </Text>
               <TextInput
                 value={name}
                 onChangeText={setName}
-                placeholder={`${selectedGenre.name} - Novo Projeto`}
+                placeholder={`${selectedGenre.name} - ${t("newProject.defaultName", "Novo Projeto")}`}
                 placeholderTextColor="#555"
                 className="bg-dark-surface border border-dark-border rounded-xl text-white text-sm p-4 mb-4"
               />
 
               <Text className="text-gray-400 text-xs font-medium mb-2">
-                Gênero
+                {t("newProject.genre", "Gênero")}
               </Text>
               <Pressable
                 onPress={() => setStep("genre")}
@@ -292,7 +294,7 @@ export function NewProject({
                     {selectedGenre.description}
                   </Text>
                 </View>
-                <Text className="text-gray-600 text-xs">Alterar →</Text>
+                <Text className="text-gray-600 text-xs">{t("newProject.change", "Alterar →")}</Text>
               </Pressable>
 
               <Text className="text-gray-400 text-xs font-medium mb-2">
@@ -333,7 +335,7 @@ export function NewProject({
               </View>
 
               <Text className="text-gray-400 text-xs font-medium mb-2">
-                Compassos
+                {t("newProject.bars", "Compassos")}
               </Text>
               <View className="flex-row items-center gap-3 mb-4">
                 <Pressable
@@ -346,7 +348,7 @@ export function NewProject({
                   <Text className="text-white font-mono text-base font-bold">
                     {numBars}
                   </Text>
-                  <Text className="text-gray-600 text-[10px]">compassos</Text>
+                  <Text className="text-gray-600 text-[10px]">{t("newProject.bars", "Compassos")}</Text>
                 </View>
                 <Pressable
                   onPress={() => setNumBars(Math.min(64, numBars + 2))}
@@ -357,7 +359,7 @@ export function NewProject({
               </View>
 
               <Text className="text-gray-400 text-xs font-medium mb-2">
-                Fórmula de Compasso
+                {t("newProject.timeSignature", "Fórmula de Compasso")}
               </Text>
               <View className="flex-row flex-wrap gap-1.5 mb-4">
                 {TIME_SIGNATURES.map((ts) => (
@@ -384,7 +386,7 @@ export function NewProject({
               </View>
 
               <Text className="text-gray-400 text-xs font-medium mb-2">
-                Tom
+                {t("newProject.key", "Tom")}
               </Text>
               <ScrollView
                 horizontal
@@ -420,7 +422,7 @@ export function NewProject({
               </ScrollView>
 
               <Text className="text-gray-400 text-xs font-medium mb-2">
-                Tracks Sugeridas
+                {t("newProject.suggestedTracks", "Tracks Sugeridas")}
               </Text>
               <View className="flex-row flex-wrap gap-2 mb-6">
                 {selectedGenre.suggestedTracks.map((t, i) => (
@@ -440,7 +442,7 @@ export function NewProject({
                   className="flex-1 p-4 rounded-xl bg-dark-surface border border-dark-border items-center active:opacity-80"
                 >
                   <Text className="text-gray-300 font-bold text-sm">
-                    Voltar
+                    {t("newProject.back", "Voltar")}
                   </Text>
                 </Pressable>
                 <Pressable
@@ -448,7 +450,7 @@ export function NewProject({
                   className="flex-[2] p-4 rounded-xl bg-brand-primary items-center active:opacity-80"
                 >
                   <Text className="text-white font-bold text-sm">
-                    Criar Projeto
+                    {t("newProject.create", "Criar Projeto")}
                   </Text>
                 </Pressable>
               </View>

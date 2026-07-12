@@ -1,7 +1,27 @@
 {
   "settings": {
     "title": "Configuraciones",
-    "language": "Idioma"
+    "language": "Idioma",
+    "profileName": "João Produtor",
+    "profileBio": "Productor musical independiente. Trabajo con géneros electrónicos y acústicos. Amante de los sintetizadores analógicos.",
+    "profileLocation": "São Paulo, BR",
+    "memberSince": "Marzo 2026",
+    "local": "Ubicación",
+    "memberSinceLabel": "Miembro desde",
+    "appearance": "Apariencia",
+    "themeDark": "Oscuro",
+    "themeLight": "Claro",
+    "info": "Información",
+    "appVersion": "Versión de la app",
+    "framework": "Framework",
+    "engine": "Motor",
+    "plan": "Plan",
+    "planCurrent": "Plan actual",
+    "publishFeed": "Publicar en el feed",
+    "createRemixes": "Crear remixes",
+    "exportVideo": "Exportar vídeo",
+    "yes": "Sí",
+    "no": "No"
   },
   "feed": {
     "title": "Feed",
@@ -15,7 +35,14 @@
     "noTracks": "No se encontraron pistas",
     "welcomeTitle": "¡Bienvenido a OpenBand!",
     "welcomeText": "Crea tu primer proyecto musical y empieza a producir música ahora.",
-    "viewLibrary": "Ver Biblioteca"
+    "viewLibrary": "Ver Biblioteca",
+    "errorTitle": "Error",
+    "playbackError": "No se pudo cargar la vista previa de audio.",
+    "shareCopied": "¡Enlace copiado al portapapeles!",
+    "shareTitle": "Compartir",
+    "loadingFeed": "Cargando feed...",
+    "upgradeRequired": "Plan requerido",
+    "remixUpgrade": "El remix requiere el plan Live o Studio. Actualiza para continuar."
   },
   "library": {
     "title": "Biblioteca",
@@ -35,6 +62,53 @@
   },
   "account": {
     "title": "Cuenta",
-    "subtitle": "Administra tu perfil"
+    "subtitle": "Administra tu perfil",
+    "error": "Error",
+    "saveError": "No se pudo guardar.",
+    "signOut": "Cerrar sesión",
+    "signOutConfirm": "¿Seguro que deseas cerrar sesión?",
+    "cancel": "Cancelar",
+    "editProfile": "Editar perfil",
+    "displayName": "Nombre de usuario",
+    "namePlaceholder": "Tu nombre",
+    "save": "Guardar",
+    "session": "Sesión",
+    "status": "Estado",
+    "connected": "Conectado",
+    "plan": "Plan",
+    "planTier": "Plan actual",
+    "maxProjects": "Proyectos",
+    "maxTracks": "Pistas",
+    "exportVideo": "Exportar vídeo",
+    "yes": "Sí",
+    "no": "No"
+  },
+  "newProject": {
+    "title": "Nuevo Proyecto",
+    "moodPrompt": "Elige el mood",
+    "chooseGenre": "Elige un género",
+    "selectedGenre": "Género seleccionado",
+    "startFromScratch": "Empezar desde Cero",
+    "startFromScratchDesc": "Proyecto vacío, sin pistas sugeridas",
+    "back": "Volver",
+    "skip": "Saltar",
+    "projectName": "Nombre del Proyecto",
+    "genre": "Género",
+    "change": "Cambiar →",
+    "bars": "Compases",
+    "timeSignature": "Fórmula de Compás",
+    "key": "Tonalidad",
+    "suggestedTracks": "Pistas Sugeridas",
+    "create": "Crear Proyecto",
+    "defaultName": "Nuevo Proyecto"
+  },
+  "moments": {
+    "title": "Momentos",
+    "subtitle": "Artistas y creadores",
+    "tabMoments": "Momentos",
+    "tabPacks": "Free Packs",
+    "credits": "Créditos",
+    "creditNote": "¡Recuerda acreditar a los artistas al publicar!",
+    "freePacksIntro": "Samples gratuitos hechos por artistas de la comunidad. ¡Úsalos en tus proyectos y acredita al artista!"
   }
 }

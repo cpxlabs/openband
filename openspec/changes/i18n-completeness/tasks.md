@@ -3,30 +3,33 @@
 Docs-only change spec. No source code is committed in this change; the checklist below is the implementation contract for a follow-up Apply phase.
 
 ## 1. Locale defaults (src/lib/i18n.ts)
-- [ ] Promote `pt-BR` to the canonical default locale: add `pt-BR` resource key (alias `pt` → same JSON), set `lng` default to `'pt-BR'`, `fallbackLng: 'en'`.
-- [ ] Normalize device `languageCode` (`pt`→`pt-BR`) in the init resolver (`src/lib/i18n.ts:28-30`).
-- [ ] Export `useT` convenience hook: `export const useT = () => useTranslation().t;`
+- [x] Promote `pt-BR` to the canonical default locale: add `pt-BR` resource key (alias `pt` → same JSON), set `lng` default to `'pt-BR'`, `fallbackLng: 'en'`.
+- [x] Normalize device `languageCode` (`pt`→`pt-BR`) in the init resolver (`src/lib/i18n.ts:28-30`).
+- [x] Export `useT` convenience hook: `export const useT = () => useTranslation().t;`
 
 ## 2. Expand dictionaries (src/locales/{en,pt,es}.json)
-- [ ] Extend `settings` namespace: mock-profile fields (`profileName`, `profileEmail`, `profileBio`, `profileLocation`, `memberSince`), `appearance`, `themeDark`, `themeLight`, `info`.
-- [ ] Extend `feed` namespace: share/copy toast, genre filter labels, audio-preview error.
-- [ ] Extend `library` namespace: confirm/sheet strings used by `app/tabs/library.tsx`.
-- [ ] Extend `account` namespace: sign-out confirmation.
-- [ ] Add `newProject` namespace (from `src/components/NewProject.tsx`): title, mood prompt, genre/mood option labels, back/next/done, start-from-scratch.
-- [ ] Add `studio` namespace (from `app/studio/[id].tsx`): mic-permission alert, record/MIDI/generate errors, command-palette labels (`play`,`record`,`undo`,`redo`,`delete`,`addTrack`), "saved" label, mix/compare labels.
-- [ ] Add `extractor` namespace (from `app/extractor.tsx`): demo-export toast, preset labels, status strings.
-- [ ] Add `mastering` namespace (from `app/mastering/index.tsx`): chain labels, export, LUFS.
-- [ ] Add `moments` namespace (from `app/tabs/moments.tsx`) and `explorer` namespace (from `app/tabs/explorer.tsx`).
-- [ ] Mirror every new key into all three files (en default + pt-BR + es).
+- [x] Extend `settings` namespace: mock-profile fields (`profileName`, `profileBio`, `profileLocation`, `memberSince`), `local`, `memberSinceLabel`, `appearance`, `themeDark`, `themeLight`, `info`, `appVersion`, `framework`, `engine`, `plan`, `planCurrent`, `publishFeed`, `createRemixes`, `exportVideo`, `yes`, `no`.
+- [x] Extend `feed` namespace: `errorTitle`, `playbackError`, `shareTitle`, `shareCopied`, `loadingFeed`, `upgradeRequired`, `remixUpgrade`.
+- [x] Extend `account` namespace: `error`, `saveError`, `signOut`, `signOutConfirm`, `cancel`, `editProfile`, `displayName`, `namePlaceholder`, `save`, `session`, `status`, `connected`, `plan`, `planTier`, `maxProjects`, `maxTracks`, `exportVideo`, `yes`, `no`.
+- [x] Add `newProject` namespace (from `src/components/NewProject.tsx`): `title`, `moodPrompt`, `chooseGenre`, `selectedGenre`, `startFromScratch`, `startFromScratchDesc`, `back`, `skip`, `projectName`, `genre`, `change`, `bars`, `timeSignature`, `key`, `suggestedTracks`, `create`, `defaultName`.
+- [ ] Add `studio` namespace (from `app/studio/[id].tsx`) — DEFERRED to next batch (out of scope for this tabs+settings+NewProject batch).
+- [ ] Add `extractor` namespace (from `app/extractor.tsx`) — DEFERRED.
+- [ ] Add `mastering` namespace (from `app/mastering/index.tsx`) — DEFERRED.
+- [x] Add `moments` namespace (from `app/tabs/moments.tsx`): `title`, `subtitle`, `tabMoments`, `tabPacks`, `credits`, `creditNote`, `freePacksIntro`.
+- [ ] Add `explorer` namespace (from `app/tabs/explorer.tsx`) — DEFERRED (explorer.tsx not part of this batch).
+- [x] Mirror every new key into all three files (en default + pt-BR + es).
 
 ## 3. Migrate screens (replace literals with t())
-- [ ] `app/tabs/settings.tsx` — mock profile, appearance labels, info section (keep language toggle; update to `pt-BR` key).
-- [ ] `app/tabs/index.tsx` + `app/tabs/feed.tsx` — share toast, genre labels, error alerts.
-- [ ] `app/tabs/library.tsx`, `app/tabs/account.tsx`, `app/tabs/moments.tsx`, `app/tabs/explorer.tsx`.
-- [ ] `src/components/NewProject.tsx` — all visible strings.
-- [ ] `app/studio/[id].tsx` — all `Alert.alert` strings + command-palette labels + status labels.
-- [ ] `app/extractor.tsx`, `app/mastering/index.tsx`, `app/mixing-console.tsx` (text labels only).
-- [ ] Swap `useTranslation()` → `useT()` where it simplifies calls (optional, non-breaking).
+- [x] `app/tabs/settings.tsx` — mock profile, appearance labels, info section (keep language toggle; update to `pt-BR` key).
+- [x] `app/tabs/index.tsx` (feed) — share toast, genre "all" label, error alerts, loading message. (Note: `app/tabs/feed.tsx` is a separate file not yet migrated — DEFERRED.)
+- [x] `app/tabs/library.tsx` — already fully uses `t()` (verified); no literals remaining.
+- [x] `app/tabs/account.tsx` — already fully uses `t()` (verified); no literals remaining.
+- [x] `app/tabs/moments.tsx` — title, subtitle, tab labels, credits, credit note, free-packs intro.
+- [ ] `app/tabs/explorer.tsx` — DEFERRED.
+- [x] `src/components/NewProject.tsx` — all visible strings migrated.
+- [ ] `app/studio/[id].tsx` — DEFERRED to next batch.
+- [ ] `app/extractor.tsx`, `app/mastering/index.tsx`, `app/mixing-console.tsx` — DEFERRED.
+- [ ] Swap `useTranslation()` → `useT()` where it simplifies calls (optional, non-breaking) — partially available via exported `useT`; not force-swapped to keep diff minimal.
 
 ## 4. Coverage test (new)
 - [ ] Create `tests/i18n-coverage.test.ts`:

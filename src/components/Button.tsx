@@ -11,6 +11,7 @@ interface ButtonProps {
   fullWidth?: boolean;
   className?: string;
   testID?: string;
+  accessibilityHint?: string;
 }
 
 const variantBase = {
@@ -48,6 +49,7 @@ export function Button({
   fullWidth,
   className = "",
   testID,
+  accessibilityHint,
 }: ButtonProps) {
   const isDisabled = disabled || loading;
   return (
@@ -57,8 +59,9 @@ export function Button({
       disabled={isDisabled}
       accessibilityRole="button"
       accessibilityLabel={title}
+      accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: isDisabled, busy: loading }}
-      className={`${variantBase[variant]} ${sizeStyles[size]} ${fullWidth ? "w-full" : ""} flex-row items-center justify-center gap-2 ${isDisabled ? "opacity-40" : "active:opacity-80 hover:opacity-90"} ${className}`.trim().replace(/\s+/g, " ")}
+      className={`${variantBase[variant]} ${sizeStyles[size]} ${fullWidth ? "w-full" : ""} flex-row items-center justify-center gap-2 focus-ring ${isDisabled ? "opacity-40" : "active:opacity-80 hover:opacity-90"} ${className}`.trim().replace(/\s+/g, " ")}
     >
       {loading ? (
         <ActivityIndicator

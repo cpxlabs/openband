@@ -97,6 +97,8 @@ android {
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
+    def releaseKeystoreFile = file('../../.secrets/android-keystore.p12')
+    def useReleaseKeystore = releaseKeystoreFile.exists()
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
@@ -105,10 +107,17 @@ android {
             keyPassword 'android'
         }
         release {
-            storeFile file('../../.secrets/android-keystore.p12')
-            storePassword 'openband123'
-            keyAlias 'openband-android'
-            keyPassword 'openband123'
+            if (useReleaseKeystore) {
+                storeFile releaseKeystoreFile
+                storePassword 'openband123'
+                keyAlias 'openband-android'
+                keyPassword 'openband123'
+            } else {
+                storeFile file('debug.keystore')
+                storePassword 'android'
+                keyAlias 'androiddebugkey'
+                keyPassword 'android'
+            }
         }
     }
     buildTypes {

@@ -9,6 +9,7 @@ import { GENRES } from "../../src/lib/projectTemplates";
 import type { GenreTemplate, Mood } from "../../src/lib/projectTemplates";
 import { LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive";
 import { SCREEN_BOTTOM_PADDING } from "../../src/lib/constants";
+import { useTranslation } from "react-i18next";
 
 const MOCK_MOMENTS: MomentData[] = [
   {
@@ -170,6 +171,7 @@ import { useResponsive } from "../../src/lib/responsive";
 export default function Moments() {
   const router = useRouter();
   const resp = useResponsive();
+  const { t } = useTranslation();
   const [tab, setTab] = useState<"moments" | "packs">("moments");
   const [moments, setMoments] = useState<MomentData[]>(MOCK_MOMENTS);
   const [credits, setCredits] = useState<{ artist: string; sample: string }[]>(
@@ -245,7 +247,7 @@ export default function Moments() {
       <View
         className="pt-4 tablet:pt-12 px-4 tablet:px-6 flex-row items-center justify-between mb-2"
       >
-        <PageHeader title="Momentos" subtitle="Artistas e criadores" />
+        <PageHeader title={t("moments.title", "Momentos")} subtitle={t("moments.subtitle", "Artistas e criadores")} />
       </View>
 
       <View
@@ -265,7 +267,7 @@ export default function Moments() {
           <Text
             className={`text-xs font-bold ${tab === "moments" ? "text-brand-primary" : "text-white"}`}
           >
-            Momentos
+            {t("moments.tabMoments", "Momentos")}
           </Text>
         </Pressable>
         <Pressable
@@ -282,7 +284,7 @@ export default function Moments() {
           <Text
             className={`text-xs font-bold ${tab === "packs" ? "text-brand-primary" : "text-white"}`}
           >
-            Free Packs
+            {t("moments.tabPacks", "Free Packs")}
           </Text>
         </Pressable>
       </View>
@@ -298,16 +300,16 @@ export default function Moments() {
         >
           <View className="p-3 rounded-xl bg-brand-primary/10 border border-brand-primary/20">
             <Text className="text-brand-primary text-[10px] font-bold uppercase tracking-wider">
-              Créditos
-            </Text>
-            {credits.map((c, i) => (
-              <Text key={i} className="text-gray-300 text-[10px] mt-0.5">
-                • {c.sample} por {c.artist}
-              </Text>
-            ))}
-            <Text className="text-gray-500 text-[8px] mt-1">
-              Lembre-se de creditar os artistas ao publicar!
-            </Text>
+               {t("moments.credits", "Créditos")}
+             </Text>
+             {credits.map((c, i) => (
+               <Text key={i} className="text-gray-300 text-[10px] mt-0.5">
+                 • {c.sample} por {c.artist}
+               </Text>
+             ))}
+             <Text className="text-gray-500 text-[8px] mt-1">
+               {t("moments.creditNote", "Lembre-se de creditar os artistas ao publicar!")}
+             </Text>
           </View>
         </View>
       )}
@@ -334,8 +336,7 @@ export default function Moments() {
           >
             <View className="card-premium p-4 mb-1 w-full">
               <Text className="text-gray-400 text-xs leading-relaxed">
-                Samples gratuitos feitos por artistas da comunidade. Use nos
-                seus projetos e credite o artista!
+                {t("moments.freePacksIntro", "Samples gratuitos feitos por artistas da comunidade. Use nos seus projetos e credite o artista!")}
               </Text>
             </View>
             {FREE_SAMPLE_PACKS.map((pack) => (

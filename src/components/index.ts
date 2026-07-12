@@ -15,6 +15,7 @@ export { PluginRack, MasterRack } from "./PluginRack";
 export { PluginEditor } from "./PluginEditor";
 export { MixManager } from "./MixManager";
 export { NewProject } from "./NewProject";
+export { OnboardingFlow } from "./OnboardingFlow";
 export { WaveformClip } from "./WaveformClip";
 export { WaveformCanvas } from "./WaveformCanvas";
 export { AutomationLane } from "./AutomationLane";

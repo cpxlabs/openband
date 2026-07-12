@@ -18,7 +18,7 @@ import {
   RecordingPresets,
 } from "expo-audio";
 import { renderTracksToUrl, disposeAudioContext } from "../../src/lib/midiSynth";
-import { audioSystem, createTrackedBlob, markBlobActive } from "../../src/lib/universalAudio";
+import { audioSystem, createTrackedBlob, markBlobActive, revokeTrackedBlob } from "../../src/lib/universalAudio";
 import { API_BASE_URL } from "../../src/lib/apiUrl";
 import { startClock, stopClock, onClockTick, disposeClockManager } from "../../src/lib/clockManager";
 import { startTelemetry, stopTelemetry, sendTelemetryReport, recordFrame, recordCpuLoad } from "../../src/lib/audioTelemetry";
@@ -188,6 +188,7 @@ export default function Studio() {
     scratch: scratchParam,
     tab: tabParam,
     tool: toolParam,
+    fromOnboarding: fromOnboardingParam,
   } = useLocalSearchParams<{
     id: string;
     genre?: string;
@@ -200,6 +201,7 @@ export default function Studio() {
     scratch?: string;
     tab?: string;
     tool?: string;
+    fromOnboarding?: string;
   }>();
   const rawMood = Array.isArray(moodParam) ? moodParam[0] : moodParam;
   const rawTab = Array.isArray(tabParam) ? tabParam[0] : tabParam;
@@ -218,6 +220,12 @@ export default function Studio() {
     : 8;
   const projectTimeSig = Array.isArray(tsParam) ? tsParam[0] : tsParam || "4/4";
   const isScratch = Array.isArray(scratchParam) ? scratchParam[0] : scratchParam === "1";
+  const isFromOnboarding =
+    Array.isArray(fromOnboardingParam)
+      ? fromOnboardingParam[0]
+      : fromOnboardingParam === "1";
+  const [tooltipDismissed, setTooltipDismissed] = useState(false);
+  const { completeOnboarding } = useAuth();
   const player = useAudioPlayer(null);
   const status = useAudioPlayerStatus(player);
   const webAudio = useWebAudioPlayer();
@@ -457,6 +465,21 @@ export default function Studio() {
     projectMood,
   ]);
 
+  const prevRegionUrlsRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    const current = new Set<string>();
+    for (const t of tracks) {
+      for (const r of t.regions) {
+        if (r.url) current.add(r.url);
+      }
+    }
+    for (const url of prevRegionUrlsRef.current) {
+      if (!current.has(url)) revokeTrackedBlob(url);
+    }
+    prevRegionUrlsRef.current = current;
+  }, [tracks]);
+
   const isPlaying = isWeb ? webAudio.isPlaying : player.playing;
   const currentTime = isWeb ? webAudio.currentTime : status.currentTime || 0;
   const duration = isWeb ? webAudio.duration : status.duration || 240;
@@ -650,10 +673,14 @@ export default function Studio() {
 
         if (isWeb) {
           const blob = await audioSystem.stopRecording();
-          if (blob) {
-            uri = createTrackedBlob(blob);
-            finalDuration = (Date.now() - (webRecordingStart || Date.now())) / 1000;
+          if (!blob) {
+            setIsRecording(false);
+            setWebRecordingStart(null);
+            liveRecordingDataRef.current = [];
+            return;
           }
+          uri = createTrackedBlob(blob);
+          finalDuration = (Date.now() - (webRecordingStart || Date.now())) / 1000;
         } else {
           await audioRecorder.stop();
           uri = recorderState?.url || audioRecorder.uri || "";
@@ -662,19 +689,18 @@ export default function Studio() {
 
         if (uri) {
           const armedTrack = tracks.find((t) => t.isArmed);
+          let updatedTracks: TrackDef[];
           if (armedTrack) {
-            const newRegion = {
+            const newRegion: TrackRegion = {
               id: `region-${Date.now()}`,
               start: currentBeat / (initialBpm / 60) || 0,
               duration: Math.max(finalDuration, 1),
               url: uri,
             };
-            setTracks(
-              tracks.map((t) =>
-                t.id === armedTrack.id
-                  ? { ...t, regions: [...t.regions, newRegion] }
-                  : t
-              )
+            updatedTracks = tracks.map((t) =>
+              t.id === armedTrack.id
+                ? { ...t, regions: [...t.regions, newRegion] }
+                : t
             );
           } else {
             const trackId = `rec-${Date.now()}`;
@@ -699,11 +725,20 @@ export default function Studio() {
               plugins: [],
               automation: {},
             };
-            setTracks([...tracks, newTrack]);
+            updatedTracks = [...tracks, newTrack];
             setSelectedTrackId(trackId);
+          }
+          setTracks(updatedTracks);
+          markBlobActive(uri);
+          if (isWeb) {
+            rerenderAfterMuteSolo(updatedTracks).catch((e) =>
+              console.warn("rerender after record failed:", e)
+            );
           }
         }
         setIsRecording(false);
+        setWebRecordingStart(null);
+        liveRecordingDataRef.current = [];
       } else {
         if (isWeb) {
           liveRecordingDataRef.current = [];
@@ -730,8 +765,16 @@ export default function Studio() {
         }
       }
     } catch (e) {
-      console.warn("Recording failed:", e);
-      Alert.alert("Erro", "Falha ao gravar áudio.");
+      const message = e instanceof Error ? e.message : "";
+      if (message === "MIC_PERMISSION_DENIED") {
+        Alert.alert(
+          "Permissão",
+          "Permissão para usar o microfone foi negada.",
+        );
+      } else {
+        console.warn("Recording failed:", e);
+        Alert.alert("Erro", "Falha ao gravar áudio.");
+      }
       setIsRecording(false);
     }
   }, [
@@ -832,6 +875,12 @@ export default function Studio() {
 
   const deleteTrack = useCallback(
     (trackId: string) => {
+      const removed = tracks.find((t) => t.id === trackId);
+      if (removed) {
+        for (const region of removed.regions) {
+          if (region.url) revokeTrackedBlob(region.url);
+        }
+      }
       setTracks(tracks.filter((t) => t.id !== trackId));
       if (selectedTrackId === trackId) setSelectedTrackId(null);
     },
@@ -1490,6 +1539,34 @@ export default function Studio() {
           isPersistent
         />
       )}
+      {isFromOnboarding && !tooltipDismissed && (
+        <View
+          testID="onboarding-coachmarks"
+          className="absolute inset-0 z-[60] bg-black/70 justify-end"
+        >
+          <View className="mx-4 mb-28 p-4 rounded-2xl bg-dark-elevated border border-brand-primary/40">
+            <Text className="text-white font-bold text-base mb-1">
+              Transporte
+            </Text>
+            <Text className="text-gray-300 text-xs leading-5 mb-3">
+              Use o botão ▶ para tocar sua música e o botão ● vermelho para
+              gravar um áudio com o microfone.
+            </Text>
+            <Pressable
+              testID="onboarding-coachmark-dismiss"
+              onPress={() => {
+                setTooltipDismissed(true);
+                completeOnboarding();
+              }}
+              className="bg-brand-primary rounded-xl py-3 items-center active:opacity-80"
+            >
+              <Text className="text-white font-bold text-sm">
+                Começar a produzir
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
       {drawerOpen && (
         <View className="absolute inset-0 z-50 flex-row">
           <Pressable
@@ -1546,19 +1623,25 @@ export default function Studio() {
           )}
           <Pressable
             onPress={() => seekRelative(-5)}
-            className="w-8 h-8 rounded-lg bg-dark-muted items-center justify-center active:opacity-70"
+            accessibilityRole="button"
+            accessibilityLabel="Voltar 5 segundos"
+            className="w-8 h-8 rounded-lg bg-dark-muted items-center justify-center active:opacity-70 focus-ring"
           >
             <Text className="text-gray-300 text-xs">⏮</Text>
           </Pressable>
           <Pressable
             onPress={togglePlay}
-            className={`w-11 h-11 rounded-full items-center justify-center ${isPlaying ? "bg-green-600" : "bg-dark-border"}`}
+            accessibilityRole="button"
+            accessibilityLabel={isPlaying ? "Pausar" : "Reproduzir"}
+            className={`w-11 h-11 rounded-full items-center justify-center focus-ring ${isPlaying ? "bg-green-600" : "bg-dark-border"}`}
           >
             <Text className="text-white text-lg">{isPlaying ? "⏸" : "▶"}</Text>
           </Pressable>
           <Pressable
             onPress={toggleRecording}
-            className={`w-11 h-11 rounded-full items-center justify-center ${isRecording ? "bg-red-600" : recordSettings.armed ? "bg-red-500/30" : "bg-dark-border"}`}
+            accessibilityRole="button"
+            accessibilityLabel={isRecording ? "Parar gravação" : "Gravar"}
+            className={`w-11 h-11 rounded-full items-center justify-center focus-ring ${isRecording ? "bg-red-600" : recordSettings.armed ? "bg-red-500/30" : "bg-dark-border"}`}
           >
             <View
               className={`w-4 h-4 rounded-sm ${isRecording ? "bg-white" : "bg-red-500"}`}
@@ -1566,13 +1649,17 @@ export default function Studio() {
           </Pressable>
           <Pressable
             onPress={() => seekRelative(5)}
-            className="w-8 h-8 rounded-lg bg-dark-muted items-center justify-center active:opacity-70"
+            accessibilityRole="button"
+            accessibilityLabel="Avançar 5 segundos"
+            className="w-8 h-8 rounded-lg bg-dark-muted items-center justify-center active:opacity-70 focus-ring"
           >
             <Text className="text-gray-300 text-xs">⏭</Text>
           </Pressable>
           <Pressable
             onPress={stopPlayback}
-            className="w-8 h-8 rounded-lg bg-dark-muted items-center justify-center active:opacity-70"
+            accessibilityRole="button"
+            accessibilityLabel="Parar"
+            className="w-8 h-8 rounded-lg bg-dark-muted items-center justify-center active:opacity-70 focus-ring"
           >
             <Text className="text-gray-300 text-xs">⏹</Text>
           </Pressable>
@@ -1592,13 +1679,19 @@ export default function Studio() {
         <View className="flex-row items-center gap-1.5">
           <Pressable
             onPress={undoHistory}
-            className={`w-8 h-8 rounded-lg items-center justify-center ${canUndo ? "bg-dark-muted active:opacity-70" : "opacity-30"}`}
+            accessibilityRole="button"
+            accessibilityLabel="Desfazer"
+            accessibilityState={{ disabled: !canUndo }}
+            className={`w-8 h-8 rounded-lg items-center justify-center focus-ring ${canUndo ? "bg-dark-muted active:opacity-70" : "opacity-30"}`}
           >
             <Text className="text-gray-300 text-xs">↩</Text>
           </Pressable>
           <Pressable
             onPress={redoHistory}
-            className={`w-8 h-8 rounded-lg items-center justify-center ${canRedo ? "bg-dark-muted active:opacity-70" : "opacity-30"}`}
+            accessibilityRole="button"
+            accessibilityLabel="Refazer"
+            accessibilityState={{ disabled: !canRedo }}
+            className={`w-8 h-8 rounded-lg items-center justify-center focus-ring ${canRedo ? "bg-dark-muted active:opacity-70" : "opacity-30"}`}
           >
             <Text className="text-gray-300 text-xs">↪</Text>
           </Pressable>

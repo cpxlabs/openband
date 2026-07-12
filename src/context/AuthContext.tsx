@@ -8,6 +8,7 @@ import {
 } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
+import { getOnboardingState, setOnboardingCompleted } from "../lib/projectStore";
 
 const VISITOR_STORAGE_KEY = "openband_visitor_session";
 
@@ -46,6 +47,8 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   signInAsVisitor: () => Promise<void>;
   convertVisitorToAccount: (email: string, password: string, name?: string) => Promise<{ error?: string }>;
+  hasOnboarded: boolean;
+  completeOnboarding: () => void;
 }
 
 function generateVisitorId(): string {
@@ -132,6 +135,8 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
   signInAsVisitor: async () => {},
   convertVisitorToAccount: async () => ({}),
+  hasOnboarded: false,
+  completeOnboarding: () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -142,6 +147,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [tier, setTier] = useState<PlanTier>("FREE");
   const [tierLimits, setTierLimits] = useState<TierLimits>(FREE_TIER_LIMITS);
+  const [hasOnboarded, setHasOnboarded] = useState(
+    () => getOnboardingState().completed,
+  );
 
   const fetchTier = useCallback(async () => {
     try {
@@ -302,9 +310,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [visitorId],
   );
 
+  const completeOnboarding = useCallback(() => {
+    try {
+      setOnboardingCompleted();
+    } catch (e) {
+      console.warn("completeOnboarding failed:", e);
+    }
+    setHasOnboarded(true);
+  }, []);
+
   return (
     <AuthContext.Provider
-      value={{ session, user, loading, isVisitor, visitorId, tier, tierLimits, signOut, signInAsVisitor, convertVisitorToAccount }}
+      value={{ session, user, loading, isVisitor, visitorId, tier, tierLimits, signOut, signInAsVisitor, convertVisitorToAccount, hasOnboarded, completeOnboarding }}
     >
       {children}
     </AuthContext.Provider>

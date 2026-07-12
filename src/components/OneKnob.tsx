@@ -19,9 +19,13 @@ interface OneKnobProps {
   step?: number;
   unit?: string;
   testID?: string;
+  hint?: string;
   modTarget?: ModTarget;
   modContext?: { time: number; velocity?: number; noteNumber?: number };
 }
+
+const clampValue = (v: number, min: number, max: number) =>
+  Math.max(min, Math.min(max, v));
 
 export function OneKnob({
   label,
@@ -32,6 +36,7 @@ export function OneKnob({
   step = 1,
   unit = "%",
   testID,
+  hint,
   modTarget,
   modContext,
 }: OneKnobProps) {
@@ -67,8 +72,40 @@ export function OneKnob({
     setShowValue(false);
   }, []);
 
+  const handleKeyDown = useCallback(
+    (e: any) => {
+      let next: number | null = null;
+      switch (e.key) {
+        case "ArrowUp":
+        case "ArrowRight":
+          next = clampValue(value + step, min, max);
+          break;
+        case "ArrowDown":
+        case "ArrowLeft":
+          next = clampValue(value - step, min, max);
+          break;
+        case "Home":
+          next = min;
+          break;
+        case "End":
+          next = max;
+          break;
+        default:
+          return;
+      }
+      e.preventDefault();
+      if (next !== value) onChange(next);
+    },
+    [value, min, max, step, onChange],
+  );
+
   const range = max - min;
   const pct = range === 0 ? 0 : ((value - min) / range) * 100;
+
+  const keyboardProps: any = {
+    onKeyDown: handleKeyDown,
+    focusable: true,
+  };
 
   return (
     <View testID={testID} className="items-center gap-1">
@@ -78,7 +115,12 @@ export function OneKnob({
         onStartShouldSetResponder={() => true}
         onResponderMove={handleMove}
         onResponderRelease={handleRelease}
-        className="w-12 h-12 rounded-full items-center justify-center border-2 active:opacity-80"
+        accessibilityRole="adjustable"
+        accessibilityLabel={label}
+        accessibilityValue={{ now: value, min, max }}
+        accessibilityHint={hint}
+        {...keyboardProps}
+        className="w-12 h-12 rounded-full items-center justify-center border-2 active:opacity-80 focus-ring"
         style={{
           borderColor: dragging ? "#5ac8fa" : "#444",
           backgroundColor: dragging ? "rgba(90,200,250,0.15)" : "#1c1c1e",

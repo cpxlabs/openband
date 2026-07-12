@@ -28,7 +28,7 @@ export default function Settings() {
       style={{ maxWidth: LAYOUT_MAX_WIDTHS.settings, alignSelf: "center", width: "100%" }}
     >
       <View className="pt-4 tablet:pt-12 px-4 tablet:px-6">
-        <PageHeader title={t("settings.title", "Configurações")} subtitle="Personalize sua experiência" />
+        <PageHeader title={t("settings.title", "Configurações")} subtitle={t("settings.subtitleCustom", "Personalize sua experiência")} />
       </View>
 
       <View className="px-4 tablet:px-6 gap-6">
@@ -40,18 +40,18 @@ export default function Settings() {
           </View>
           <View className="card-elevated p-4 w-full">
             <Text className="text-gray-400 text-sm text-center leading-relaxed">
-              {profile.bio}
+              {t("settings.profileBio", "Produtor musical independente. Trabalho com gêneros eletrônicos e acústicos. Amante de sintetizadores analógicos.")}
             </Text>
           </View>
           <View className="flex-row gap-6 mt-1">
             <View className="items-center">
-              <Text className="label mb-1">Local</Text>
-              <Text className="text-white text-sm font-medium">{profile.location}</Text>
+              <Text className="label mb-1">{t("settings.local", "Local")}</Text>
+              <Text className="text-white text-sm font-medium">{t("settings.profileLocation", "São Paulo, BR")}</Text>
             </View>
             <View className="w-px bg-dark-border" />
             <View className="items-center">
-              <Text className="label mb-1">Membro desde</Text>
-              <Text className="text-white text-sm font-medium">{profile.memberSince}</Text>
+              <Text className="label mb-1">{t("settings.memberSinceLabel", "Membro desde")}</Text>
+              <Text className="text-white text-sm font-medium">{t("settings.memberSince", "Março 2026")}</Text>
             </View>
           </View>
         </View>
@@ -59,9 +59,9 @@ export default function Settings() {
         <Divider label={t("settings.language", "Idioma")} />
 
         <View className="flex-row gap-2">
-          {['en', 'pt', 'es'].map((lng) => {
-            const isSelected = i18n.language === lng;
-            const labels: any = { en: "English", pt: "Português", es: "Español" };
+          {['en', 'pt-BR', 'es'].map((lng) => {
+            const isSelected = i18n.language === lng || (lng === 'pt-BR' && (i18n.language === 'pt' || i18n.language === 'pt-BR'));
+            const labels: any = { en: "English", "pt-BR": "Português", es: "Español" };
             return (
               <Pressable
                 key={lng}
@@ -80,7 +80,7 @@ export default function Settings() {
           })}
         </View>
 
-        <Divider label="Aparência" />
+        <Divider label={t("settings.appearance", "Aparência")} />
 
         <View className="flex-row gap-3">
           <Pressable
@@ -95,7 +95,7 @@ export default function Settings() {
               <Text className="text-white text-sm">☾</Text>
             </View>
             <Text className={`text-sm font-semibold ${theme === "dark" ? "text-brand-primary" : "text-white"}`}>
-              Escuro
+              {t("settings.themeDark", "Escuro")}
             </Text>
           </Pressable>
 
@@ -111,51 +111,51 @@ export default function Settings() {
               <Text className="text-yellow-600 text-sm">☀</Text>
             </View>
             <Text className={`text-sm font-semibold ${theme === "light" ? "text-brand-accent" : "text-white"}`}>
-              Claro
+              {t("settings.themeLight", "Claro")}
             </Text>
           </Pressable>
         </View>
 
-        <Divider label="Informações" />
+        <Divider label={t("settings.info", "Informações")} />
 
         <View className="card-elevated">
           <View className="p-4 flex-row justify-between items-center">
-            <Text className="text-gray-400 text-sm">Versão do App</Text>
+            <Text className="text-gray-400 text-sm">{t("settings.appVersion", "Versão do App")}</Text>
             <Text className="text-white text-sm font-medium">1.0.0</Text>
           </View>
           <View className="h-px bg-dark-border" />
           <View className="p-4 flex-row justify-between items-center">
-            <Text className="text-gray-400 text-sm">Framework</Text>
+            <Text className="text-gray-400 text-sm">{t("settings.framework", "Framework")}</Text>
             <Text className="text-white text-sm font-medium">Expo SDK 56</Text>
           </View>
           <View className="h-px bg-dark-border" />
           <View className="p-4 flex-row justify-between items-center">
-            <Text className="text-gray-400 text-sm">Engine</Text>
+            <Text className="text-gray-400 text-sm">{t("settings.engine", "Engine")}</Text>
             <Text className="text-white text-sm font-medium">React Native 0.85</Text>
           </View>
         </View>
 
-        <Divider label="Plano" />
+        <Divider label={t("settings.plan", "Plano")} />
 
         <View className="card-elevated">
           <View className="p-4 flex-row justify-between items-center">
-            <Text className="text-gray-400 text-sm">Plano atual</Text>
+            <Text className="text-gray-400 text-sm">{t("settings.planCurrent", "Plano atual")}</Text>
             <Badge text={tier} variant="active" />
           </View>
           <View className="h-px bg-dark-border" />
           <View className="p-4 flex-row justify-between items-center">
-            <Text className="text-gray-400 text-sm">Publicar no feed</Text>
-            <Text className="text-white text-sm font-medium">{tierLimits.canPublishToFeed ? "Sim" : "Não"}</Text>
+            <Text className="text-gray-400 text-sm">{t("settings.publishFeed", "Publicar no feed")}</Text>
+            <Text className="text-white text-sm font-medium">{tierLimits.canPublishToFeed ? t("settings.yes", "Sim") : t("settings.no", "Não")}</Text>
           </View>
           <View className="h-px bg-dark-border" />
           <View className="p-4 flex-row justify-between items-center">
-            <Text className="text-gray-400 text-sm">Criar remixes</Text>
-            <Text className="text-white text-sm font-medium">{tierLimits.canCreateRemixes ? "Sim" : "Não"}</Text>
+            <Text className="text-gray-400 text-sm">{t("settings.createRemixes", "Criar remixes")}</Text>
+            <Text className="text-white text-sm font-medium">{tierLimits.canCreateRemixes ? t("settings.yes", "Sim") : t("settings.no", "Não")}</Text>
           </View>
           <View className="h-px bg-dark-border" />
           <View className="p-4 flex-row justify-between items-center">
-            <Text className="text-gray-400 text-sm">Exportar vídeo</Text>
-            <Text className="text-white text-sm font-medium">{tierLimits.canExportVideo ? "Sim" : "Não"}</Text>
+            <Text className="text-gray-400 text-sm">{t("settings.exportVideo", "Exportar vídeo")}</Text>
+            <Text className="text-white text-sm font-medium">{tierLimits.canExportVideo ? t("settings.yes", "Sim") : t("settings.no", "Não")}</Text>
           </View>
         </View>
       </View>
