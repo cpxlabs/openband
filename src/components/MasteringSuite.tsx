@@ -24,6 +24,7 @@ import {
   createVersion,
 } from "../lib/masteringSuite";
 import { applyMasteringChain } from "../lib/mastering";
+import { measureLUFS, LufsResult } from "../lib/lufs";
 import { audioBufferToWavBlob, audioBufferToMp3BlobAsync } from "../lib/audio";
 import { audioSystem } from "../lib/universalAudio";
 import { OpenBandNative } from "../bridge";
@@ -107,6 +108,7 @@ export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
   >(44100);
   const [exporting, setExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
+  const [masterLufs, setMasterLufs] = useState<LufsResult | null>(null);
   const [seekBarWidth, setSeekBarWidth] = useState(0);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const meterSourceRef = useRef<HTMLAudioElement | null>(null);
@@ -320,6 +322,7 @@ export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
     }
     setExporting(true);
     setExportProgress(0);
+    setMasterLufs(null);
     try {
       const sr = exportFormat === "mp3" ? 44100 : exportSampleRate;
       const bd = exportFormat === "mp3" ? 16 : exportBitDepth;
@@ -329,6 +332,11 @@ export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
 
       const rendered = await fetchAndRenderAudio(sourceUrl, sr, duration);
       const processed = await applyMasteringChain(rendered, plugins, sr);
+      const channels: Float32Array[] = [];
+      for (let c = 0; c < processed.numberOfChannels; c++)
+        channels.push(processed.getChannelData(c));
+      const lufs = measureLUFS(channels, processed.sampleRate);
+      setMasterLufs(lufs);
       const blob = exportFormat === "mp3"
         ? await audioBufferToMp3BlobAsync(processed, 192, setExportProgress) // default 192kbps
         : audioBufferToWavBlob(processed, bd);
@@ -459,6 +467,21 @@ export function MasteringSuite({ onBack, testID }: MasteringSuiteProps) {
             isPlaying={playerStatus.playing && !session.bypassed}
             analyser={analyserRef.current}
           />
+          {masterLufs && (
+            <View className="card mt-2 p-3">
+              <Text className="label text-gray-400 text-xs mb-1">
+                Loudness da Master (pós-bounce)
+              </Text>
+              <Text className="text-brand-accent text-sm font-mono">
+                Integrado: {masterLufs.integrated.toFixed(1)} LUFS · True Peak:{" "}
+                {masterLufs.truePeak.toFixed(1)} dBTP
+              </Text>
+              <Text className="text-gray-500 text-[10px] font-mono mt-0.5">
+                Short-term: {masterLufs.shortTerm.toFixed(1)} LUFS · LRA:{" "}
+                {masterLufs.lra.toFixed(1)} LU
+              </Text>
+            </View>
+          )}
         </View>
 
         <View className="mt-4">
