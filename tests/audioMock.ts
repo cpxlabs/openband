@@ -164,7 +164,9 @@ class MockOfflineAudioContext {
       length: len,
       sampleRate: sr,
       duration: len / sr,
-      getChannelData: (c: number) => data[c],
+      getChannelData: (c: number): Float32Array<ArrayBuffer> => data[c],
+      copyFromChannel: (_dest: Float32Array<ArrayBuffer>, _channel: number, _bufferOffset?: number) => {},
+      copyToChannel: (_src: Float32Array<ArrayBuffer>, _channel: number, _bufferOffset?: number) => {},
     };
   }
   startRendering() {
@@ -186,7 +188,9 @@ class MockOfflineAudioContext {
       length: len,
       sampleRate: sr,
       duration: len / sr,
-      getChannelData: (c: number) => out[c],
+      getChannelData: (c: number): Float32Array<ArrayBuffer> => out[c],
+      copyFromChannel: (_dest: Float32Array<ArrayBuffer>, _channel: number, _bufferOffset?: number) => {},
+      copyToChannel: (_src: Float32Array<ArrayBuffer>, _channel: number, _bufferOffset?: number) => {},
     });
   }
   _topo(): MockNode[] {

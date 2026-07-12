@@ -91,7 +91,8 @@ function sampleRMS(buf: AudioBuffer, ch = 0): number {
 import { applyMasteringChain } from "../src/lib/mastering";
 import { applyPluginChain, snapToScale } from "../src/lib/pluginChain";
 import { djb2Hash } from "../src/lib/audio";
-import { markBlobActive } from "../src/lib/universalAudio";
+import { audioSystem, createTrackedBlob, markBlobActive, revokeTrackedBlob } from "../src/lib/universalAudio";
+import type { TrackRegion } from "../src/lib/types";
 
 const ALL_PLUGIN_TYPES: Plugin["type"][] = [
   "eq", "compressor", "limiter", "distortion", "reverb", "delay",
@@ -492,14 +493,49 @@ describe("loop marker logic", () => {
   });
 });
 
-// ─── Recording round-trip (conceptual) ───
+// ─── Recording round-trip (real) ───
 describe("recording round-trip", () => {
-  it("mock recording data can be rendered to buffer", async () => {
-    const buf = mockAudioBuffer(2, 44100, 44100);
-    expect(buf.length).toBe(44100);
-    expect(buf.numberOfChannels).toBe(2);
-    const rms = sampleRMS(buf);
+  it("synthetic float32 frames encode to a non-silent WAV blob region", async () => {
+    const sr = 44100;
+    const len = sr;
+    const chunk = new Float32Array(len);
+    for (let i = 0; i < len; i++) {
+      chunk[i] = Math.sin((i / sr) * 2 * Math.PI * 440) * 0.6;
+    }
+
+    const blob = audioSystem.encodeRecording([chunk], sr);
+    expect(blob).not.toBeNull();
+    expect(blob!.type).toBe("audio/wav");
+
+    const url = createTrackedBlob(blob!);
+    const region: TrackRegion = { id: "region-test", start: 0, duration: 1, url };
+    expect(region.url).toBe(url);
+
+    const ab = await blob!.arrayBuffer();
+    const view = new DataView(ab);
+    expect(view.getUint16(22, true)).toBe(2);
+    expect(view.getUint16(34, true)).toBe(16);
+
+    const dataOffset = 44;
+    const dataLen = view.getUint32(40, true);
+    let sumSq = 0;
+    let n = 0;
+    for (let i = 0; i + 1 < dataLen; i += 2) {
+      const s = view.getInt16(dataOffset + i, true) / 32768;
+      sumSq += s * s;
+      n++;
+    }
+    const rms = Math.sqrt(sumSq / Math.max(1, n));
     expect(rms).toBeGreaterThan(0);
+
+    expect(() => {
+      markBlobActive(url);
+      revokeTrackedBlob(url);
+    }).not.toThrow();
+  });
+
+  it("encodeRecording returns null for empty chunks", () => {
+    expect(audioSystem.encodeRecording([])).toBeNull();
   });
 
   it("recording region URL tracked via createTrackedBlob pattern", () => {

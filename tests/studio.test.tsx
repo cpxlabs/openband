@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 
-const { mockUseResponsive, mockPlay, mockPause, mockSeekTo, mockReplace, mockUseWebAudioPlayer, mockHistory, mockCloudSync, mockSaveProject, mockLoadProject, mockGenerateTracksForGenre } = vi.hoisted(() => ({
+const { mockUseResponsive, mockPlay, mockPause, mockSeekTo, mockReplace, mockUseWebAudioPlayer, mockHistory, mockCloudSync, mockSaveProject, mockLoadProject, mockGenerateTracksForGenre, mockStartRecording, mockStopRecording, mockCreateTrackedBlob, mockMarkBlobActive, mockRevokeTrackedBlob } = vi.hoisted(() => ({
   mockUseResponsive: vi.fn(() => ({ isMobile: true, isDesktop: false, isTablet: false, width: 390, height: 844, tracksSidebarWidth: 100, channelWidth: 96 })),
   mockPlay: vi.fn(),
   mockPause: vi.fn(),
@@ -18,6 +18,11 @@ const { mockUseResponsive, mockPlay, mockPause, mockSeekTo, mockReplace, mockUse
   mockGenerateTracksForGenre: vi.fn((): any => [{
     id: "track-1", name: "Guitar", color: "bg-blue-500", muted: false, solo: false, volume: 70, pan: 0, sends: {}, sidechainSource: null, regions: [], plugins: [], automation: {},
   }]),
+  mockStartRecording: vi.fn(() => Promise.resolve()),
+  mockStopRecording: vi.fn((): Promise<Blob | null> => Promise.resolve(null)),
+  mockCreateTrackedBlob: vi.fn((_b: Blob) => "blob:tracked-" + Math.random().toString(36)),
+  mockMarkBlobActive: vi.fn(),
+  mockRevokeTrackedBlob: vi.fn(),
 }));
 
 vi.mock("expo-audio", () => ({
@@ -42,7 +47,20 @@ vi.mock("../src/lib/projectStore", () => ({ saveProject: mockSaveProject, loadPr
 vi.mock("../src/lib/cloudSync", () => ({ useCloudSync: mockCloudSync }));
 vi.mock("../src/lib/projectTemplates", () => ({ generateTracksForGenre: mockGenerateTracksForGenre }));
 vi.mock("../src/lib/midiSynth", () => ({ renderTracksToUrl: vi.fn(() => Promise.resolve("blob:test")), disposeAudioContext: vi.fn() }));
-vi.mock("../src/lib/universalAudio", () => ({ audioSystem: { ensureContext: vi.fn(() => Promise.resolve(null)), initialize: vi.fn(), dispose: vi.fn() }, disposeAllAudio: vi.fn() }));
+vi.mock("../src/lib/universalAudio", () => ({
+  audioSystem: {
+    ensureContext: vi.fn(() => Promise.resolve(null)),
+    initialize: vi.fn(),
+    dispose: vi.fn(),
+    startRecording: mockStartRecording,
+    stopRecording: mockStopRecording,
+    encodeRecording: vi.fn(() => new Blob([new Uint8Array([82, 73, 70, 70])], { type: "audio/wav" })),
+  },
+  createTrackedBlob: mockCreateTrackedBlob,
+  markBlobActive: mockMarkBlobActive,
+  revokeTrackedBlob: mockRevokeTrackedBlob,
+  disposeAllAudio: vi.fn(),
+}));
 vi.mock("../src/lib/apiUrl", () => ({ API_BASE_URL: "http://localhost:3001" }));
 vi.mock("../src/lib/mastering", () => ({ MASTERING_CHAIN_PRESETS: [{ name: "Clean", chain: [] }], buildMasteringChain: vi.fn(() => []) }));
 vi.mock("../src/lib/automix", () => ({ autoMix: vi.fn(), AUTOMIX_GENRES: ["pop", "rock", "edm"] }));
@@ -63,7 +81,12 @@ vi.mock("../src/components", () => {
   const AutomationLane = ({ label }: any) => <div data-testid="automation-lane" data-label={label} />;
   const TrackGroupManager = ({ groups }: any) => <div data-testid="track-group-manager" data-groups={groups?.length} />;
   const LufsMeter = () => <div data-testid="lufs-meter" />;
-  const RecordOptions = ({ visible, onClose, settings }: any) => visible ? <div data-testid="record-options" data-samplerate={settings?.sampleRate}><button onClick={onClose}>close</button></div> : null;
+  const RecordOptions = ({ visible, onClose, settings, onChange }: any) => visible ? (
+    <div data-testid="record-options" data-samplerate={settings?.sampleRate}>
+      <button onClick={() => onChange({ armed: true, inputSource: "mic", quality: "high", sampleRate: 48000, mono: false, preRoll: 2 })}>ARM</button>
+      <button onClick={onClose}>close</button>
+    </div>
+  ) : null;
   const BounceDialog = ({ visible, onClose }: any) => visible ? <div data-testid="bounce-dialog"><button onClick={onClose}>close</button></div> : null;
   const SampleBrowser = ({ visible }: any) => visible ? <div data-testid="sample-browser" /> : null;
   const CodeSampler = ({ visible }: any) => visible ? <div data-testid="code-sampler" /> : null;
@@ -104,6 +127,9 @@ describe("Studio", () => {
     vi.clearAllMocks();
     mockUseResponsive.mockReturnValue({ isMobile: true, isDesktop: false, isTablet: false, width: 390, height: 844, tracksSidebarWidth: 100, channelWidth: 96 });
     mockHistory.mockReturnValue({ state: [{ id: "track-1", name: "Guitar", color: "bg-blue-500", muted: false, solo: false, volume: 70, pan: 0, sends: {}, sidechainSource: null, regions: [], plugins: [], automation: {} }], setState: vi.fn(), undo: vi.fn(), redo: vi.fn(), canUndo: false, canRedo: false });
+    mockStartRecording.mockImplementation(() => Promise.resolve());
+    mockStopRecording.mockReturnValue(Promise.resolve(null));
+    mockCreateTrackedBlob.mockImplementation((_b: Blob) => "blob:tracked-" + Math.random().toString(36));
   });
 
   describe("rendering structure", () => {
@@ -213,6 +239,19 @@ describe("Studio", () => {
       render(<Studio />);
       fireEvent.click(screen.getByText("⏭"));
       expect(mockSeekTo).toHaveBeenCalledWith(35);
+    });
+  });
+
+  describe("transport accessibility", () => {
+    it("exposes role=button with labels on transport controls", () => {
+      render(<Studio />);
+      expect(screen.getByRole("button", { name: "Reproduzir" })).toBeTruthy();
+      expect(screen.getByRole("button", { name: "Parar" })).toBeTruthy();
+      expect(screen.getByRole("button", { name: "Gravar" })).toBeTruthy();
+      expect(screen.getByRole("button", { name: "Voltar 5 segundos" })).toBeTruthy();
+      expect(screen.getByRole("button", { name: "Avançar 5 segundos" })).toBeTruthy();
+      expect(screen.getByRole("button", { name: "Desfazer" })).toBeTruthy();
+      expect(screen.getByRole("button", { name: "Refazer" })).toBeTruthy();
     });
   });
 
@@ -386,6 +425,62 @@ describe("Studio", () => {
       expect(screen.getByText("Biblioteca")).toBeTruthy();
       expect(screen.getByText("Conta")).toBeTruthy();
       expect(screen.getByText("Ajustes")).toBeTruthy();
+    });
+  });
+
+  describe("web recording", () => {
+    const record = async (label: string) => {
+      await act(async () => {
+        fireEvent.click(screen.getByLabelText(label));
+      });
+    };
+
+    it("opens RecordOptions when not armed, then starts recording after arming", async () => {
+      render(<Studio />);
+      expect(screen.queryByTestId("record-options")).toBeNull();
+      await record("Gravar");
+      expect(screen.getByTestId("record-options")).toBeTruthy();
+      await act(async () => { fireEvent.click(screen.getByText("ARM")); });
+      await record("Gravar");
+      expect(mockStartRecording).toHaveBeenCalled();
+    });
+
+    it("stops recording and adds a tracked region to the project on second press", async () => {
+      const recordedBlob = new Blob([new Uint8Array([82, 73, 70, 70, 36, 0, 0, 0, 87, 65, 86, 69])], { type: "audio/wav" });
+      mockStopRecording.mockReturnValue(Promise.resolve(recordedBlob));
+      const setTracks = vi.fn();
+      mockHistory.mockReturnValue({ state: [{ id: "track-1", name: "Guitar", color: "bg-blue-500", muted: false, solo: false, volume: 70, pan: 0, sends: {}, sidechainSource: null, regions: [], plugins: [], automation: {} }], setState: setTracks, undo: vi.fn(), redo: vi.fn(), canUndo: false, canRedo: false });
+
+      render(<Studio />);
+      await record("Gravar");
+      await act(async () => { fireEvent.click(screen.getByText("ARM")); });
+      await record("Gravar");
+      await record("Parar gravação");
+
+      expect(mockStartRecording).toHaveBeenCalled();
+      expect(mockStopRecording).toHaveBeenCalled();
+      expect(mockCreateTrackedBlob).toHaveBeenCalledWith(recordedBlob);
+
+      const lastCall = setTracks.mock.calls[setTracks.mock.calls.length - 1][0];
+      const trackWithRegion = lastCall.find(
+        (t: any) => t.regions && t.regions.some((r: any) => typeof r.url === "string" && r.url.startsWith("blob:tracked")),
+      );
+      expect(trackWithRegion).toBeTruthy();
+      expect(mockMarkBlobActive).toHaveBeenCalled();
+    });
+
+    it("permission denial sets isRecording false without creating a region", async () => {
+      mockStartRecording.mockImplementation(() => Promise.reject(new Error("MIC_PERMISSION_DENIED")));
+      const setTracks = vi.fn();
+      mockHistory.mockReturnValue({ state: [{ id: "track-1", name: "Guitar", color: "bg-blue-500", muted: false, solo: false, volume: 70, pan: 0, sends: {}, sidechainSource: null, regions: [], plugins: [], automation: {} }], setState: setTracks, undo: vi.fn(), redo: vi.fn(), canUndo: false, canRedo: false });
+
+      render(<Studio />);
+      await record("Gravar");
+      await act(async () => { fireEvent.click(screen.getByText("ARM")); });
+      await record("Gravar");
+
+      expect(mockStartRecording).toHaveBeenCalled();
+      expect(setTracks).not.toHaveBeenCalled();
     });
   });
 });
