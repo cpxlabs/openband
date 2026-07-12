@@ -7,6 +7,9 @@ import {
 } from "react-native";
 import {
   computeModulation,
+  getModulationState,
+  addModRoute,
+  removeModRoute,
   type ModTarget,
 } from "../lib/modulationMatrix";
 
@@ -102,6 +105,24 @@ export function OneKnob({
   const range = max - min;
   const pct = range === 0 ? 0 : ((value - min) / range) * 100;
 
+  const modActive = modTarget
+    ? getModulationState().routes.some(
+        (r) => r.enabled && r.target === modTarget,
+      )
+    : false;
+
+  const handleModPress = useCallback(() => {
+    if (!modTarget) return;
+    const existing = getModulationState().routes.find(
+      (r) => r.enabled && r.target === modTarget,
+    );
+    if (existing) {
+      removeModRoute(existing.id);
+    } else {
+      addModRoute("lfo1", modTarget, 0.5, false);
+    }
+  }, [modTarget]);
+
   const keyboardProps: any = {
     onKeyDown: handleKeyDown,
     focusable: true,
@@ -141,6 +162,26 @@ export function OneKnob({
           {value}
           {unit}
         </Text>
+      )}
+      {modTarget && (
+        <Pressable
+          onPress={handleModPress}
+          hitSlop={4}
+          className={`mt-0.5 px-1.5 py-0.5 rounded border ${
+            modActive
+              ? "border-brand-accent bg-brand-accent/20"
+              : "border-dark-border bg-dark-surface"
+          }`}
+          testID={testID ? `mod-${testID}` : "mod-knob"}
+        >
+          <Text
+            className={`text-[8px] font-bold ${
+              modActive ? "text-brand-accent" : "text-gray-500"
+            }`}
+          >
+            {modActive ? "MOD●" : "MOD"}
+          </Text>
+        </Pressable>
       )}
     </View>
   );

@@ -2,6 +2,12 @@ import type { Plugin, PluginType } from "./types";
 import { applyMasteringChain } from "./mastering";
 import { pitchShift } from "./timeStretch";
 import { PLUGIN_SPECS, clampParam } from "./types";
+import {
+  paramToTarget,
+  getModulationState,
+  applyModulation,
+  type ModTarget,
+} from "./modulationMatrix";
 
 export type ScaleType = "major" | "minor" | "chromatic" | "pentatonicMajor" | "pentatonicMinor";
 
@@ -163,10 +169,55 @@ export function buildPluginGraph(plugins: Plugin[]): Plugin[] {
   return plugins.filter((p) => p.enabled !== false);
 }
 
+export interface PluginChainOptions {
+  duration?: number;
+  modTime?: number;
+}
+
+function routeEnabledFor(target: ModTarget | null): boolean {
+  if (!target) return false;
+  return getModulationState().routes.some(
+    (r) => r.enabled && r.target === target,
+  );
+}
+
+function paramRange(plugin: Plugin, paramId: string): [number, number] {
+  const spec = PLUGIN_SPECS[plugin.type];
+  const p = spec?.params.find((pp) => pp.id === paramId);
+  if (p) return [p.min, p.max];
+  return [0, 1];
+}
+
+function scheduleModulated(
+  param: AudioParam,
+  base: number,
+  min: number,
+  max: number,
+  target: ModTarget | null,
+  duration: number,
+  modTime: number,
+): void {
+  if (!target || !routeEnabledFor(target)) {
+    param.value = base;
+    return;
+  }
+  const steps = Math.max(2, Math.min(256, Math.round(duration * 20)));
+  param.setValueAtTime(
+    applyModulation(target, base, min, max, { time: modTime }),
+    modTime,
+  );
+  for (let i = 1; i <= steps; i++) {
+    const t = modTime + (i / steps) * duration;
+    const v = applyModulation(target, base, min, max, { time: t });
+    param.linearRampToValueAtTime(v, t);
+  }
+}
+
 export async function applyPluginChain(
   buffer: AudioBuffer,
   plugins: Plugin[],
   sampleRate: number,
+  opts: PluginChainOptions = {},
 ): Promise<AudioBuffer> {
   if (!plugins || plugins.length === 0) return buffer;
 
@@ -188,7 +239,7 @@ export async function applyPluginChain(
   }
 
   for (const plugin of otherPlugins) {
-    current = await applySinglePlugin(current, plugin, sampleRate);
+    current = await applySinglePlugin(current, plugin, sampleRate, opts);
   }
 
   return current;
@@ -198,7 +249,10 @@ async function applySinglePlugin(
   buffer: AudioBuffer,
   plugin: Plugin,
   sampleRate: number,
+  opts: PluginChainOptions = {},
 ): Promise<AudioBuffer> {
+  const duration = opts.duration && opts.duration > 0 ? opts.duration : 1;
+  const modTime = opts.modTime ?? 0;
   if (plugin.type === "autoPitch") {
     return applyAutoPitch(buffer, plugin, sampleRate, plugin.params);
   }
@@ -298,9 +352,27 @@ async function applySinglePlugin(
       }
       filter.type = filterType;
       const freq = (resolveParam(p, "freq", "frequency") ?? 1000) as number;
-      filter.frequency.value = freq;
+      const [freqMin, freqMax] = paramRange(plugin, "freq");
+      scheduleModulated(
+        filter.frequency,
+        freq,
+        freqMin,
+        freqMax,
+        paramToTarget("freq"),
+        duration,
+        modTime,
+      );
       const res = (resolveParam(p, "resonance", "q") ?? 0) as number;
-      filter.Q.value = 0.707 + (res / 100) * 10;
+      const [resMin, resMax] = paramRange(plugin, "resonance");
+      scheduleModulated(
+        filter.Q,
+        0.707 + (res / 100) * 10,
+        resMin,
+        resMax,
+        paramToTarget("resonance"),
+        duration,
+        modTime,
+      );
       filter.gain.value = 0;
       source.connect(filter);
       filter.connect(ctx.destination);
@@ -361,11 +433,29 @@ async function applySinglePlugin(
         node = ws;
       }
       const gain = ctx.createGain();
-      gain.gain.value = Math.pow(10, gainDb / 20);
+      const [gainMin, gainMax] = paramRange(plugin, "gain");
+      scheduleModulated(
+        gain.gain,
+        Math.pow(10, gainDb / 20),
+        gainMin,
+        gainMax,
+        paramToTarget("gain"),
+        duration,
+        modTime,
+      );
       node.connect(gain);
       if (numCh > 1 && ctx.createStereoPanner) {
         const panner = ctx.createStereoPanner();
-        panner.pan.value = Math.max(-1, Math.min(1, pan / 100));
+        const [panMin, panMax] = paramRange(plugin, "pan");
+        scheduleModulated(
+          panner.pan,
+          Math.max(-1, Math.min(1, pan / 100)),
+          panMin,
+          panMax,
+          paramToTarget("pan"),
+          duration,
+          modTime,
+        );
         gain.connect(panner);
         panner.connect(ctx.destination);
       } else {
@@ -493,9 +583,26 @@ async function applySinglePlugin(
       const stereoize = (p.stereoize ?? 30) as number;
       const stereoizeFactor = 1 + (stereoize / 100) * 0.5;
       const sideL = ctx.createGain();
-      sideL.gain.value = widthScale * Math.pow(10, sideGainDb / 20) * stereoizeFactor;
+      const [widthMin, widthMax] = paramRange(plugin, "width");
+      scheduleModulated(
+        sideL.gain,
+        widthScale * Math.pow(10, sideGainDb / 20) * stereoizeFactor,
+        widthMin,
+        widthMax,
+        paramToTarget("width"),
+        duration,
+        modTime,
+      );
       const sideR = ctx.createGain();
-      sideR.gain.value = widthScale * Math.pow(10, sideGainDb / 20) * stereoizeFactor;
+      scheduleModulated(
+        sideR.gain,
+        widthScale * Math.pow(10, sideGainDb / 20) * stereoizeFactor,
+        widthMin,
+        widthMax,
+        paramToTarget("width"),
+        duration,
+        modTime,
+      );
       const midG = ctx.createGain();
       midG.gain.value = Math.pow(10, midGainDb / 20);
       const outL = ctx.createGain();

@@ -17,8 +17,8 @@ import {
   addModRoute,
   removeModRoute,
   applyModulation,
+  paramToTarget,
   type ModSource,
-  type ModTarget,
 } from "../lib/modulationMatrix";
 
 interface ModulationContextValue {
@@ -32,17 +32,6 @@ const ModulationContext = createContext<ModulationContextValue>({
   contextTime: 0,
   playing: false,
 });
-
-function paramToTarget(paramId: string): ModTarget | null {
-  if (paramId === "volume") return "volume";
-  if (paramId === "gain") return "amp.gain";
-  if (paramId.includes("cutoff")) return "filter.cutoff";
-  if (paramId.includes("resonance")) return "filter.resonance";
-  if (paramId.includes("detune")) return "osc1.detune";
-  if (paramId === "pan") return "pan.position";
-  if (paramId === "width") return "pan.position";
-  return null;
-}
 
 interface PluginEditorProps {
   plugin: Plugin | null;

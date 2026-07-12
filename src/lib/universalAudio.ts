@@ -1,5 +1,7 @@
 import { Platform } from "react-native";
 import { OpenBandNative } from "../bridge";
+import type { Plugin } from "../lib/types";
+import { applyPluginChain } from "../lib/pluginChain";
 
 /**
  * Central blob URL registry with leak protection.
@@ -289,7 +291,7 @@ class UniversalAudioSystem {
   }
 
   async renderMixdown(
-    tracks: { volume: number; pan: number; muted: boolean; solo: boolean; regions: { start: number; duration: number; url?: string }[] }[],
+    tracks: { volume: number; pan: number; muted: boolean; solo: boolean; regions: { start: number; duration: number; url?: string }[]; plugins?: Plugin[] }[],
     duration: number,
     sampleRate: number,
     onProgress?: (pct: number) => void,
@@ -301,7 +303,7 @@ class UniversalAudioSystem {
   }
 
   private async renderMixdownWeb(
-    tracks: { volume: number; pan: number; muted: boolean; solo: boolean; regions: { start: number; duration: number; url?: string }[] }[],
+    tracks: { volume: number; pan: number; muted: boolean; solo: boolean; regions: { start: number; duration: number; url?: string }[]; plugins?: Plugin[] }[],
     duration: number,
     sampleRate: number,
     onProgress?: (pct: number) => void,
@@ -323,7 +325,10 @@ class UniversalAudioSystem {
             // Recorded takes are stored as tracked blob URLs (createTrackedBlob); fetch + decode them here.
             const resp = await fetch(region.url, { credentials: "omit" });
             const ab = await resp.arrayBuffer();
-            const buf = await this.decodeAudio(ab);
+            let buf = await this.decodeAudio(ab);
+            if (track.plugins && track.plugins.length > 0) {
+              buf = await applyPluginChain(buf, track.plugins, sampleRate, { duration });
+            }
             const src = ctx.createBufferSource();
             src.buffer = buf;
             const gain = ctx.createGain();
@@ -350,7 +355,7 @@ class UniversalAudioSystem {
   }
 
   private async renderMixdownNative(
-    tracks: { volume: number; pan: number; muted: boolean; solo: boolean; regions: { start: number; duration: number; url?: string }[] }[],
+    tracks: { volume: number; pan: number; muted: boolean; solo: boolean; regions: { start: number; duration: number; url?: string }[]; plugins?: Plugin[] }[],
     duration: number,
     sampleRate: number,
     onProgress?: (pct: number) => void,

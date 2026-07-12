@@ -149,6 +149,18 @@ export function getModTargets(): ModTarget[] {
   return MOD_TARGETS;
 }
 
+export function paramToTarget(paramId: string): ModTarget | null {
+  if (paramId === "volume") return "volume";
+  if (paramId === "gain") return "amp.gain";
+  if (paramId.includes("cutoff")) return "filter.cutoff";
+  if (paramId === "freq") return "filter.cutoff";
+  if (paramId.includes("resonance")) return "filter.resonance";
+  if (paramId.includes("detune")) return "osc1.detune";
+  if (paramId === "pan") return "pan.position";
+  if (paramId === "width") return "pan.position";
+  return null;
+}
+
 export function getModulationState(): ModulationState {
   return JSON.parse(JSON.stringify(modulationState));
 }

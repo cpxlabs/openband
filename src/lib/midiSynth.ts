@@ -4,6 +4,7 @@ import type { Mood } from "./projectTemplates";
 import { MOODS } from "./projectTemplates";
 import { audioBufferToWavBlob } from "./audio";
 import { getSharedAudioContext, createTrackedBlob } from "./universalAudio";
+import { applyPluginChain } from "./pluginChain";
 import Soundfont from "soundfont-player";
 
 const sfCache: Record<string, Soundfont.Instrument> = {};
@@ -800,6 +801,29 @@ export async function renderTracksToUrl(
         const sfName = getTrackSfName(track.name);
         const sfInst = sfCache[sfName];
 
+        if (track.plugins && track.plugins.length > 0) {
+          try {
+            const trackBuf = await renderTrackBuffer(
+              track,
+              beatDuration,
+              duration,
+              sampleRate,
+              numSamples,
+              decodedRegions.get(track.id) || [],
+            );
+            const procBuf = await applyPluginChain(
+              trackBuf,
+              track.plugins,
+              sampleRate,
+              { duration },
+            );
+            const out = ctx.createBufferSource();
+            out.buffer = procBuf;
+            out.connect(panNode);
+          } catch (e) {
+            console.warn("Plugin chain render failed for track", track.name, e);
+          }
+        } else {
         if (track.midiNotes) for (const note of track.midiNotes) {
           const noteStart = note.start * beatDuration;
           const noteDur = note.duration * beatDuration;
@@ -853,6 +877,7 @@ export async function renderTracksToUrl(
             source.connect(panNode);
             source.start(r.start, 0, Math.min(r.duration, Math.max(0, duration - r.start)));
           }
+        }
         }
       }
 
@@ -933,6 +958,78 @@ export async function renderTracksToUrl(
     console.warn("Native MIDI render failed:", e);
     return null;
   }
+}
+
+async function renderTrackBuffer(
+  track: TrackDef,
+  beatDuration: number,
+  duration: number,
+  sampleRate: number,
+  numSamples: number,
+  decodedRegions: { buffer: AudioBuffer; start: number; duration: number }[],
+): Promise<AudioBuffer> {
+  const ctx2 = new OfflineAudioContext(2, numSamples, sampleRate);
+
+  const isDrumTrack =
+    track.name.toLowerCase().includes("bateria") ||
+    track.name.toLowerCase().includes("drums") ||
+    track.name.toLowerCase().includes("percussão") ||
+    track.name.toLowerCase().includes("percussion");
+
+  const waveform = getTrackWaveform(track.name);
+  const sfName = getTrackSfName(track.name);
+  const sfInst = sfCache[sfName];
+
+  if (track.midiNotes)
+    for (const note of track.midiNotes) {
+      const noteStart = note.start * beatDuration;
+      const noteDur = note.duration * beatDuration;
+      const vol = Math.max(0.01, note.velocity / 127) * 0.5;
+
+      if (sfInst && sfInst.buffers && sfInst.buffers[note.pitch]) {
+        const buffer = sfInst.buffers[note.pitch];
+        const source = ctx2.createBufferSource();
+        source.buffer = buffer;
+        const noteGain = ctx2.createGain();
+        noteGain.gain.setValueAtTime(vol, noteStart);
+        noteGain.gain.setValueAtTime(vol, noteStart + noteDur);
+        noteGain.gain.linearRampToValueAtTime(0, noteStart + noteDur + 0.1);
+        source.connect(noteGain);
+        noteGain.connect(ctx2.destination);
+        source.start(noteStart);
+        source.stop(noteStart + noteDur + 0.1);
+      } else if (isDrumTrack) {
+        const drumNode = createDrumSound(ctx2, note.pitch, noteStart, note.velocity);
+        drumNode.connect(ctx2.destination);
+      } else {
+        const freq = NOTE_FREQS[note.pitch] || 440;
+        const osc = ctx2.createOscillator();
+        osc.type = waveform;
+        osc.frequency.setValueAtTime(freq, noteStart);
+        const noteGain = ctx2.createGain();
+        noteGain.gain.setValueAtTime(0, noteStart);
+        noteGain.gain.linearRampToValueAtTime(vol, noteStart + 0.005);
+        noteGain.gain.setValueAtTime(vol, noteStart + noteDur - 0.02);
+        noteGain.gain.linearRampToValueAtTime(0, noteStart + noteDur);
+        osc.connect(noteGain);
+        noteGain.connect(ctx2.destination);
+        osc.start(noteStart);
+        osc.stop(noteStart + noteDur + 0.05);
+      }
+    }
+
+  for (const region of decodedRegions) {
+    try {
+      const source = ctx2.createBufferSource();
+      source.buffer = region.buffer;
+      source.connect(ctx2.destination);
+      source.start(region.start, 0, Math.min(region.duration, Math.max(0, duration - region.start)));
+    } catch (e) {
+      console.warn("Failed to schedule region for track buffer", track.name, e);
+    }
+  }
+
+  return ctx2.startRendering();
 }
 
 export function midiNoteToName(pitch: number): string {
