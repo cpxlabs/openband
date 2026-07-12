@@ -1,3 +1,5 @@
+import { getObjectStorage } from "./objectStorage";
+
 export interface SupabaseRemoteConfig {
   supabaseUrl: string;
   supabaseKey: string;
@@ -100,27 +102,15 @@ export async function uploadAsset(
     };
   }
 
-  const ext = filename.split(".").pop() ?? "wav";
-  const assetId = `asset-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const storage = getObjectStorage();
+  const presign = await storage.requestUploadUrl(hash, filename, "application/octet-stream");
+  await storage.upload(presign.key, data, presign.headers);
+  const assetId = presign.key;
 
-  const storageUrl = `${getBaseUrl()}/storage/v1/object/${config.bucketName}/${assetId}`;
-  const storageHeaders = {
-    ...headers,
-    "Content-Type": "application/octet-stream",
-    "x-upsert": "true",
-  };
-
-  const resp = await fetch(storageUrl, {
-    method: "POST",
-    headers: storageHeaders,
-    body: data,
-  });
-
-  if (!resp.ok) {
-    throw new Error(`Upload failed: ${resp.status} ${resp.statusText}`);
-  }
-
-  const publicUrl = `${getBaseUrl()}/storage/v1/object/public/${config.bucketName}/${assetId}`;
+  const publicUrl =
+    storage.kind === "mock"
+      ? `mock://${config.bucketName}/${presign.key}`
+      : `${getBaseUrl()}/storage/v1/object/public/${config.bucketName}/${presign.key}`;
 
   try {
     const dbUrl = `${getBaseUrl()}/rest/v1/assets`;

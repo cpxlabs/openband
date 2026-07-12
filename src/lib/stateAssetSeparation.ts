@@ -1,3 +1,5 @@
+import { getObjectStorage } from "./objectStorage";
+
 export interface OpenBandManifest {
   version: string;
   format: "openband-v2";
@@ -82,6 +84,51 @@ async function sha256(data: string): Promise<string> {
     hash |= 0;
   }
   return `fallback-${Math.abs(hash).toString(16)}`;
+}
+
+async function sha256Buffer(data: ArrayBuffer): Promise<string> {
+  if (typeof crypto !== "undefined" && crypto.subtle) {
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+  }
+  let hash = 0;
+  const bytes = new Uint8Array(data);
+  for (let i = 0; i < bytes.length; i++) {
+    hash = ((hash << 5) - hash) + bytes[i];
+    hash |= 0;
+  }
+  return `fallback-${Math.abs(hash).toString(16)}`;
+}
+
+export async function registerAsset(
+  trackId: string,
+  file: Blob | ArrayBuffer,
+  filename: string = "asset.wav",
+): Promise<string> {
+  const data = file instanceof Blob ? await file.arrayBuffer() : file;
+  const hash = await sha256Buffer(data);
+  const storage = getObjectStorage();
+  const presign = await storage.requestUploadUrl(
+    hash,
+    filename,
+    "application/octet-stream",
+  );
+  await storage.upload(presign.key, data, presign.headers);
+  updateTrackInState(trackId, { audioAssetRef: presign.key });
+  return presign.key;
+}
+
+export async function resolveAssetRef(key: string): Promise<string> {
+  const storage = getObjectStorage();
+  if (storage.kind === "mock") {
+    const buf = await storage.download(key);
+    const bytes = new Uint8Array(buf);
+    let binary = "";
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    return `data:application/octet-stream;base64,${btoa(binary)}`;
+  }
+  return (await storage.requestDownloadUrl(key)).url;
 }
 
 export async function createProject(

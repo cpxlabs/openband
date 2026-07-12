@@ -3,6 +3,8 @@ import type {
   OpenDialogOptions,
   SaveDialogOptions,
   ProjectMeta,
+  BridgeAudioDevice,
+  BridgePatchRoute,
 } from "./interface";
 
 let stubWarned = false;
@@ -67,5 +69,39 @@ export const tauriBridge: NativeBridge = {
 
   removeMenuActionListener(): void {
     warnStub("removeMenuActionListener");
+  },
+
+  async enumerateAudioDevices(): Promise<{
+    inputs: BridgeAudioDevice[];
+    outputs: BridgeAudioDevice[];
+  }> {
+    warnStub("enumerateAudioDevices");
+    return { inputs: [], outputs: [] };
+  },
+
+  async openHardwareInput(
+    _deviceId: string,
+    _channelCount?: number,
+    _sampleRate?: number,
+  ): Promise<boolean> {
+    warnStub("openHardwareInput");
+    return false;
+  },
+
+  async closeHardwareInput(): Promise<void> {
+    warnStub("closeHardwareInput");
+  },
+
+  async createPatchRoute(_route: BridgePatchRoute): Promise<void> {
+    warnStub("createPatchRoute");
+  },
+
+  async removePatchRoute(_routeId: string): Promise<void> {
+    warnStub("removePatchRoute");
+  },
+
+  async getPatchRoutes(): Promise<BridgePatchRoute[]> {
+    warnStub("getPatchRoutes");
+    return [];
   },
 };

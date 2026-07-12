@@ -5,6 +5,7 @@ import { Avatar } from "./Avatar";
 import { ProgressBar } from "./ProgressBar";
 import { MiniMastering } from "./MiniMastering";
 import { generatePreviewUrl } from "../lib/constants";
+import { toggleLike } from "../lib/feedApi";
 
 export interface MomentData {
   id: string;
@@ -119,7 +120,8 @@ export function MomentCard({ moment, testID }: MomentCardProps) {
   const handleLike = useCallback(() => {
     setLiked(!liked);
     setLikeCount((prev) => (liked ? prev - 1 : prev + 1));
-  }, [liked]);
+    toggleLike(moment.id).catch(() => {});
+  }, [liked, moment.id]);
 
   const handleEqChange = useCallback((band: string, value: number) => {
     setEqValues((prev) => ({ ...prev, [band]: value }));

@@ -6,7 +6,7 @@ Legend: `OK` = graph matches spec & reads canonical param ids; `APPROX` = roughl
 
 | # | Type | File | Branch | Status | Issue |
 |---|------|------|--------|--------|-------|
-| 1 | `eq` | `mastering.ts:157` | `eq` | **STUB** | Implemented as a single `lowpass` at `p.lowCut`; spec is 8-band (`b0..b7_freq/gain/q/type/enabled` + `master`). Whole EQ is missing. |
+| 1 | `eq` | `mastering.ts` `applyEq` | `eq` | **OK** (fixed: 8-band biquad chain from `bN_*` ids + `master` gain) |
 | 2 | `compressor` | `mastering.ts:166` | `compressor` | **APPROX** | `DynamicsCompressor` wired, reads `threshold/knee/ratio/attack/release` ✔, but ignores `makeupGain` (no auto make-up → level drop). |
 | 3 | `limiter` | `mastering.ts:178` | `limiter` | **APPROX** | Gain + hard-clip waveshaper at `p.ceiling` ✔, but reads `p.headroom` (not in spec), ignores `threshold/attack/release`. |
 | 4 | `distortion` | `pluginChain.ts:137` | `distortion` | **APPROX** | tanh-ish waveshaper + I/O gain ✔, but ignores `tone` (no tone filter) and `mix` (no dry/wet). |
@@ -15,11 +15,11 @@ Legend: `OK` = graph matches spec & reads canonical param ids; `APPROX` = roughl
 | 7 | `filter` | `pluginChain.ts:196` | `filter` | **APPROX** | Biquad ✔ but reads `p.type` (spec `mode`), `p.frequency` (spec `freq`), `p.q` (spec `resonance`); resonance never mapped to `Q`. |
 | 8 | `modulation` | `pluginChain.ts:209` | `modulation` | **APPROX** | Builds a **tremolo** (osc→gain), ignores `type` (chorus/flanger/phaser) and `mix`. |
 | 9 | `utility` | `pluginChain.ts:225` | `utility` | **APPROX** | Gain + phase-invert ✔ but reads `p.volume` (spec `gain`), `p.invert` (spec `phase` semantics differ); ignores `pan`. |
-| 10 | `multibandCompressor` | `mastering.ts:205` | `multibandCompressor` | **STUB** | Hard-codes **2 bands** (`crossLow`/`crossHigh`); spec is **3 bands** (`b0/b1/b2_cross`, `..._threshold/ratio/attack/release/makeup/mute`). Merges to a single `ChannelMerger(numChannels)` → collapses stereo to mono. |
+| 10 | `multibandCompressor` | `mastering.ts` `applyMultiband` | `multibandCompressor` | **OK** (fixed: 3-way crossover `b0/b1/b2_cross` → 4 bands, per-band compressor + makeup + mute, stereo-preserving sum) |
 | 11 | `stereoImager` | `mastering.ts:244` | `stereoImager` | **APPROX** | Mid/side width ✔ (sum/diff), but ignores `midGain`, `sideGain`, `monoCross`, `balance`. |
-| 12 | `deesser` | `mastering.ts:288` | `deesser` | **STUB** | Single static `notch` at `frequency` — not a de-esser. Needs high-shelf **sidechain compressor** keyed to sibilance band. |
+| 12 | `deesser` | `mastering.ts` `applyDeesser` | `deesser` | **OK** (fixed: low-pass kept dry + high-pass sibilance band through `DynamicsCompressor` keyed by `threshold`/`range`; `mode` wideband toggle) |
 | 13 | `tapeSaturator` | `mastering.ts:276` | `tapeSaturator` | **APPROX** | tanh waveshaper at `drive` ✔; ignores `warmth`, `noise`, `wow`, `mix`. |
-| 14 | `truePeakLimiter` | `mastering.ts:192` | `truePeakLimiter` | **STUB** | Plain waveshaper clip at `ceiling`; no 4× oversampling (spec `oversample`), no `lookahead`, no `release`, reads `p.gain` (not in spec). |
+| 14 | `truePeakLimiter` | `mastering.ts` `applyTruePeakLimiter` | `truePeakLimiter` | **OK** (fixed: `2^oversample`× upsampled render → fast `DynamicsCompressor` (`lookahead`) + `ceiling` waveshaper → downsample; honors `threshold`/`release`) |
 | 15 | `noiseGate` | `pluginChain.ts:245` | `noiseGate` | **APPROX** | Whole-buffer static RMS gate using `threshold` ✔; ignores `ratio/attack/release/range/hold`; only analyzes `ch[0]`; no envelope following. |
 | 16 | `autoPitch` | `pluginChain.ts:341` | `autoPitch` | **APPROX** | Zero-cross pitch detect + global `pitchShift` + `mix` ✔; ignores `speed/formant/vibrato`; treats buffer as single global pitch (no frame analysis). |
 | 17 | `bassMono` | `pluginChain.ts:258` | `bassMono` | **APPROX** | Low/high split + mono-sum below crossover ✔; reads `p.frequency` (spec `crossover`); ignores `amount/phase/dryWet`. |

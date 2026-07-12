@@ -3,6 +3,8 @@ import type {
   OpenDialogOptions,
   SaveDialogOptions,
   ProjectMeta,
+  BridgeAudioDevice,
+  BridgePatchRoute,
 } from "./interface";
 
 const api: NativeBridge | null =
@@ -62,5 +64,36 @@ export const electronBridge: NativeBridge = {
 
   removeMenuActionListener(): void {
     requireAPI().removeMenuActionListener();
+  },
+
+  async enumerateAudioDevices(): Promise<{
+    inputs: BridgeAudioDevice[];
+    outputs: BridgeAudioDevice[];
+  }> {
+    return requireAPI().enumerateAudioDevices();
+  },
+
+  async openHardwareInput(
+    deviceId: string,
+    channelCount?: number,
+    sampleRate?: number,
+  ): Promise<boolean> {
+    return requireAPI().openHardwareInput(deviceId, channelCount, sampleRate);
+  },
+
+  async closeHardwareInput(): Promise<void> {
+    return requireAPI().closeHardwareInput();
+  },
+
+  async createPatchRoute(route: BridgePatchRoute): Promise<void> {
+    return requireAPI().createPatchRoute(route);
+  },
+
+  async removePatchRoute(routeId: string): Promise<void> {
+    return requireAPI().removePatchRoute(routeId);
+  },
+
+  async getPatchRoutes(): Promise<BridgePatchRoute[]> {
+    return requireAPI().getPatchRoutes();
   },
 };

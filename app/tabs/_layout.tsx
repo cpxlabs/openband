@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { key: "settings", label: "Ajustes", icon: "⚙" },
   { key: "explorer", label: "Explorer", icon: "🌍" },
   { key: "virtual-studio", label: "3D Studio", icon: "🏠" },
+  { key: "modes", label: "Modos", icon: "✨" },
 ];
 
 export default function TabLayout() {
@@ -33,6 +34,7 @@ export default function TabLayout() {
     settings: "Ajustes",
     explorer: "Explorer",
     "virtual-studio": "3D Studio",
+    modes: "Modos",
   };
   const pageTitle = routeNameMap[currentSegment] || "OpenBand";
 
@@ -164,6 +166,7 @@ export default function TabLayout() {
             <Tabs.Screen name="settings" />
             <Tabs.Screen name="explorer" />
             <Tabs.Screen name="virtual-studio" />
+            <Tabs.Screen name="modes" />
           </Tabs>
           <MiniPlayer />
         </View>

@@ -66,6 +66,8 @@ function buildPluginUrl(pluginId: string, _wasmBytes?: ArrayBuffer): string {
         this._heapF32 = null;
         this._inputPtrs = [];
         this._outputPtrs = [];
+        this._inputPtr = 0;
+        this._outputPtr = 0;
 
         this.port.onmessage = (e) => {
           const msg = e.data;
@@ -92,10 +94,18 @@ function buildPluginUrl(pluginId: string, _wasmBytes?: ArrayBuffer): string {
           try {
             const bytes = Uint8Array.from(atob(msg.wasmB64), c => c.charCodeAt(0));
             const module = await WebAssembly.instantiate(bytes, {
-              env: { memory: new WebAssembly.Memory({ initial: 256, maximum: 512 }) }
+              env: {
+                memory: new WebAssembly.Memory({ initial: 256, maximum: 512 }),
+                abort: () => {},
+                seed: () => 0,
+                trace: () => {},
+              },
             });
             this._wasmInstance = module.instance;
             this._heapF32 = new Float32Array(this._wasmInstance.exports.memory.buffer);
+
+            this._inputPtr = this._wasmInstance.exports.input_ptr?.() ?? 0;
+            this._outputPtr = this._wasmInstance.exports.output_ptr?.() ?? 0;
 
             const paramCount = this._wasmInstance.exports.param_count?.() ?? 0;
             for (let i = 0; i < paramCount; i++) {
@@ -126,19 +136,46 @@ function buildPluginUrl(pluginId: string, _wasmBytes?: ArrayBuffer): string {
         const input = inputs[0];
         const output = outputs[0];
 
-        if (this._wasmInstance && this._heapF32) {
-          const paramArray = Object.values(this._params);
-          const wasmProcess = this._wasmInstance.exports.process;
-          if (wasmProcess) {
-            wasmProcess(input.length, paramArray.length, ...this._inputPtrs, ...this._outputPtrs);
-          }
-        } else {
-          for (let ch = 0; ch < output.length; ch++) {
-            if (input[ch]) {
-              output[ch].set(input[ch]);
-            } else {
-              output[ch].fill(0);
+        if (this._wasmInstance && this._heapF32 && this._inputPtr && this._outputPtr) {
+          const numChannels = Math.max(input.length, output.length);
+          const numFrames = output[0]
+            ? output[0].length
+            : (input[0] ? input[0].length : 0);
+
+          if (numFrames > 0 && numFrames * numChannels <= 8192 * 8) {
+            const heap = this._heapF32;
+            const inBase = this._inputPtr >> 2;
+            const outBase = this._outputPtr >> 2;
+
+            for (let ch = 0; ch < numChannels; ch++) {
+              const inCh = input[ch];
+              const base = inBase + ch * numFrames;
+              for (let i = 0; i < numFrames; i++) {
+                heap[base + i] = inCh ? inCh[i] : 0;
+              }
             }
+
+            this._wasmInstance.exports.process(numFrames, numChannels, this._inputPtr, this._outputPtr);
+
+            for (let ch = 0; ch < numChannels; ch++) {
+              const outCh = output[ch];
+              if (outCh) {
+                const base = outBase + ch * numFrames;
+                for (let i = 0; i < numFrames; i++) {
+                  outCh[i] = heap[base + i];
+                }
+              }
+            }
+
+            return true;
+          }
+        }
+
+        for (let ch = 0; ch < output.length; ch++) {
+          if (input[ch]) {
+            output[ch].set(input[ch]);
+          } else {
+            output[ch].fill(0);
           }
         }
 
@@ -265,6 +302,24 @@ export async function loadPlugin(
       loadedPlugins.delete(descriptor.id);
     },
   };
+}
+
+export async function fetchWasm(url: string): Promise<ArrayBuffer> {
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch WASM at ${url}: ${res.status}`);
+  }
+  return res.arrayBuffer();
+}
+
+export async function fetchWasmPlugin(
+  url: string,
+  descriptor: PluginDescriptor,
+  ctx: AudioContext,
+  outputNode?: AudioNode,
+): Promise<IPlugin> {
+  const bytes = await fetchWasm(url);
+  return loadPlugin(descriptor, ctx, bytes, outputNode);
 }
 
 export function unloadPlugin(pluginId: string): void {

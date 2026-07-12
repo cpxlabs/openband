@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase";
 import { loadProject, ProjectData, setOnProjectSaved } from "./projectStore";
+import { getObjectStorage } from "./objectStorage";
+import { getAssetRefs } from "./stateAssetSeparation";
 
 export interface CloudSyncState {
   isSyncing: boolean;
@@ -32,6 +34,19 @@ async function uploadProjectToStorage(
     });
 
   if (error) throw error;
+
+  await syncAssetRefs();
+}
+
+async function syncAssetRefs(): Promise<void> {
+  try {
+    const refs = getAssetRefs();
+    if (refs.length === 0) return;
+    const storage = getObjectStorage();
+    await Promise.all(refs.map((ref) => storage.headAsset(ref).catch(() => false)));
+  } catch {
+    /* object storage is best-effort alongside the JSON push */
+  }
 }
 
 /** Immediately sync a project to Supabase Storage. */

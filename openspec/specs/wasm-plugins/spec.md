@@ -4,7 +4,7 @@
 OpenBand hosts DSP plugins and instruments as WebAssembly modules running inside an `AudioWorklet` processor. A JSON-RPC `MessagePort` control protocol bridges the main thread and the worklet; plugin metadata is described by a `PluginDescriptor`. A unified instrument engine provides polyphonic synthesis with presets and a `AudioWorkletNode` front-end. When no `.wasm` binary is shipped, the worklet falls back to a **pass-through** copy of input to output so the graph still runs.
 
 ## Implementation Notes
-The host framework lives in `src/lib/wasmPluginHost.ts`: `loadPlugin(descriptor, ctx, wasmBytes?)` builds the worklet source (base64 WASM decoded via `atob` + `WebAssembly.instantiate`), wires a `MessagePort` JSON-RPC protocol (`init` / `setParam` / `getParam` / `reset` / `disposed` / `ready` / `paramAck` / `paramValue`), and exposes an `IPlugin` with `setParam` / `getParam` / `reset` / `dispose`. `parsePluginSchema(json)` deserializes a `PluginDescriptor` with sensible defaults (`version: "1.0.0"`, `inputChannels: 2`, `outputChannels: 2`, `category: "Effect"`). `createGenericPluginUI` groups params into a `PluginUIState`. The instrument engine (`src/lib/wasmInstrumentEngine.ts`) exports `INSTRUMENT_PRESETS`, `createUnifiedInstrumentEngine`, and `createWasmInstrumentWorkletNode`. **No real `.wasm` binary is shipped** — `buildPluginUrl` instantiates WASM only when `wasmBytes` is supplied; otherwise the worklet `process` copies `input[ch] -> output[ch]` (pass-through).
+The host framework lives in `src/lib/wasmPluginHost.ts`: `loadPlugin(descriptor, ctx, wasmBytes?)` builds the worklet source (base64 WASM decoded via `atob` + `WebAssembly.instantiate`), wires a `MessagePort` JSON-RPC protocol (`init` / `setParam` / `getParam` / `reset` / `disposed` / `ready` / `paramAck` / `paramValue`), and exposes an `IPlugin` with `setParam` / `getParam` / `reset` / `dispose`. `parsePluginSchema(json)` deserializes a `PluginDescriptor` with sensible defaults (`version: "1.0.0"`, `inputChannels: 2`, `outputChannels: 2`, `category: "Effect"`). `createGenericPluginUI` groups params into a `PluginUIState`. The instrument engine (`src/lib/wasmInstrumentEngine.ts`) exports `INSTRUMENT_PRESETS`, `createUnifiedInstrumentEngine`, and `createWasmInstrumentWorkletNode`. **A real `.wasm` binary is shipped** (`openband-plugin.wasm`, built from `wasm/plugin.ts` via AssemblyScript). The worklet `process` allocates planar float buffers on the WASM heap (via `input_ptr`/`output_ptr`), copies input samples in, calls `process(numFrames, numChannels, inputPtr, outputPtr)`, and copies the result back out — so real DSP (a `tanh` waveshaper distortion) runs inside the worklet. When no binary is supplied, `process` falls back to a pass-through copy of `input[ch] -> output[ch]`.
 
 ## Requirements
 
@@ -20,6 +20,20 @@ The system MUST provide `loadPlugin` that, given base64/ArrayBuffer WASM, instan
 - **Given** a `PluginDescriptor` with no `wasmBytes`
 - **When** the worklet `process` runs
 - **Then** each output channel mirrors its input channel (no crash, no DSP)
+
+### Requirement: Real DSP Execution (shipped binary)
+The system MUST, when a real `openband-plugin.wasm` is loaded, execute DSP inside the worklet rather than pass-through: allocate planar float buffers on the WASM heap (`input_ptr`/`output_ptr`), copy `inputs[ch]` into the input buffer, call `process(numFrames, numChannels, inputPtr, outputPtr)`, and copy the output buffer back to `outputs[ch]`.
+
+#### Scenario: Shipped binary alters audio
+- **Given** `openband-plugin.wasm` (a `tanh` waveshaper) loaded into the worklet
+- **When** a non-zero input buffer is processed
+- **Then** the output buffer differs from a pass-through copy of the same input (e.g. large samples are soft-clipped)
+
+#### Scenario: Fetch helper
+- **Given** a URL pointing at a WASM binary
+- **When** `fetchWasmPlugin(url, descriptor, ctx)` is awaited
+- **Then** it fetches the bytes and resolves an `IPlugin`
+- **And** a missing URL rejects without crashing the loader
 
 ### Requirement: JSON-RPC MessagePort Control Protocol
 The system MUST communicate with the worklet exclusively through `PluginMessage` over `port`, supporting `setParam` (acked via `paramAck`) and `getParam` (answered via `paramValue`).
@@ -66,3 +80,6 @@ The system MUST provide `createUnifiedInstrumentEngine(preset?)` returning a pol
 - [ ] `INSTRUMENT_PRESETS` is non-empty and `createUnifiedInstrumentEngine()` defaults to preset[0]
 - [ ] Engine `render` produces zeros with no active voices
 - [ ] `loadPlugin` resolves a pass-through `IPlugin` (no WASM provided)
+- [ ] `openband-plugin.wasm` is a valid module exposing `process`/`input_ptr`/`output_ptr`/`param_count`
+- [ ] Loaded binary alters audio (tanh distortion) vs pass-through
+- [ ] `loadPlugin` without bytes resolves a pass-through `IPlugin`; `fetchWasmPlugin` rejects on missing URL

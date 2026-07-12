@@ -277,8 +277,77 @@ ipcMain.handle("delete-project", async (_event, id) => {
   }
 });
 
-app.whenReady().then(createWindow);
+// Hardware I/O
 
+let activeHardwareInput = null;
+
+function loadNativeAudioDevices() {
+  try {
+    const mod = require("node-audiodevice");
+    if (typeof mod.enumerate === "function") {
+      return mod.enumerate();
+    }
+  } catch (err) {
+    console.warn("Native audio device bindings unavailable:", err.message);
+  }
+  return { inputs: [], outputs: [] };
+}
+
+const ROUTES_FILE = path.join(
+  app.getPath("userData"),
+  "patch-routes.json",
+);
+
+function readPatchRoutes() {
+  try {
+    if (!fs.existsSync(ROUTES_FILE)) return [];
+    return JSON.parse(fs.readFileSync(ROUTES_FILE, "utf-8"));
+  } catch (err) {
+    console.error("read patch routes error:", err);
+    return [];
+  }
+}
+
+function writePatchRoutes(routes) {
+  try {
+    fs.writeFileSync(ROUTES_FILE, JSON.stringify(routes), "utf-8");
+  } catch (err) {
+    console.error("write patch routes error:", err);
+  }
+}
+
+ipcMain.handle("enumerate-audio-devices", async () => {
+  return loadNativeAudioDevices();
+});
+
+ipcMain.handle(
+  "open-hardware-input",
+  async (_event, deviceId, channelCount, sampleRate) => {
+    activeHardwareInput = { deviceId, channelCount, sampleRate };
+    return true;
+  },
+);
+
+ipcMain.handle("close-hardware-input", async () => {
+  activeHardwareInput = null;
+});
+
+ipcMain.handle("create-patch-route", async (_event, route) => {
+  const routes = readPatchRoutes();
+  routes.push(route);
+  writePatchRoutes(routes);
+});
+
+ipcMain.handle("remove-patch-route", async (_event, routeId) => {
+  const routes = readPatchRoutes().filter((r) => r.id !== routeId);
+  writePatchRoutes(routes);
+});
+
+ipcMain.handle("get-patch-routes", async () => {
+  return readPatchRoutes();
+});
+
+app.whenReady().then(createWindow);
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     app.quit();

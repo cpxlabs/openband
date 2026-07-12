@@ -1,9 +1,10 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import { PageHeader, NewProject, SamplePackCard } from "../../src/components";
 import { MomentCard } from "../../src/components";
 import type { MomentData } from "../../src/components/MomentCard";
+import { fetchFeed } from "../../src/lib/feedApi";
 import { GENRES } from "../../src/lib/projectTemplates";
 import type { GenreTemplate, Mood } from "../../src/lib/projectTemplates";
 import { LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive";
@@ -170,6 +171,7 @@ export default function Moments() {
   const router = useRouter();
   const resp = useResponsive();
   const [tab, setTab] = useState<"moments" | "packs">("moments");
+  const [moments, setMoments] = useState<MomentData[]>(MOCK_MOMENTS);
   const [credits, setCredits] = useState<{ artist: string; sample: string }[]>(
     [],
   );
@@ -178,6 +180,22 @@ export default function Moments() {
     title?: string;
     genre?: GenreTemplate;
   }>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchFeed({ type: "moment" })
+      .then((res) => {
+        if (!cancelled && Array.isArray(res.posts) && res.posts.length > 0) {
+          setMoments(res.posts as MomentData[]);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setMoments(MOCK_MOMENTS);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleUsePack = useCallback(
     (pack: (typeof FREE_SAMPLE_PACKS)[0], sampleName: string) => {
@@ -306,7 +324,7 @@ export default function Moments() {
       >
         {tab === "moments" ? (
           <View className="px-4 tablet:px-6">
-            {MOCK_MOMENTS.map((moment) => (
+            {moments.map((moment) => (
               <MomentCard key={moment.id} moment={moment} />
             ))}
           </View>

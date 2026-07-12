@@ -11,6 +11,7 @@ import magicLinkRoutes from "./routes/magicLink";
 import sessionRoutes from "./routes/sessions";
 import trashRoutes from "./routes/trash";
 import projectsRoutes from "./routes/projects";
+import feedRoutes from "./routes/feed";
 import activityRoutes from "./routes/activity";
 import dnaRoutes from "./routes/dna";
 import bandsRoutes from "./routes/bands";
@@ -20,6 +21,7 @@ import stemsRoutes from "./routes/stems";
 import presenceRoutes from "./routes/presence";
 import collabRoutes from "./routes/collab";
 import telemetryRoutes from "./routes/telemetry";
+import storageRoutes from "./routes/storage";
 import { checkDemucsInstalled } from "./services/demucs";
 import { requireFeature } from "./middleware/tierGuard";
 import { checkBlacklist } from "./middleware/sessionBlacklist";
@@ -142,6 +144,7 @@ app.use("/api", exportRoutes);
 app.use("/api", remixRoutes);
 app.use("/api", trashRoutes);
 app.use("/api", projectsRoutes);
+app.use("/api", feedRoutes);
 app.use("/api", activityRoutes);
 app.use("/api", dnaRoutes);
 app.use("/api", bandsRoutes);
@@ -151,6 +154,7 @@ app.use("/api", stemsRoutes);
 app.use("/api", presenceRoutes);
 app.use("/api", collabRoutes);
 app.use("/api", telemetryRoutes);
+app.use("/api", storageRoutes);
 
 app.use(
   (

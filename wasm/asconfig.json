@@ -1,0 +1,13 @@
+{
+  "targets": {
+    "release": {
+      "outFile": "../dist/openband-plugin.wasm",
+      "optimize": true,
+      "runtime": "stub",
+      "exportRuntime": true
+    }
+  },
+  "options": {
+    "bindings": "raw"
+  }
+}

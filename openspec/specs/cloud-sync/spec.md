@@ -30,6 +30,19 @@ The system MUST allow an immediate synchronous upload that cancels any pending d
 ### Requirement: Asset Dedup via SHA-256
 The system MUST compute a SHA-256 hash of asset bytes (`uploadAsset`) and skip re-uploading when an identical hash already exists, returning `duplicated: true` with the existing asset id/url.
 
+### Requirement: Assets Sync Via Object Storage With SHA-256 Dedup
+`supabaseRemote.uploadAsset` MUST route the asset byte transfer through the uniform `ObjectStorageClient` (`src/lib/objectStorage.ts`) while preserving the SHA-256 dedup (`computeHash`, `checkAssetExists`, `assetHashCache`) and the DB hash→id registration. The default back-end is Supabase Storage as the S3 stand-in; an in-memory `MockStorageBackend` is used with no creds. `cloudSync.uploadProjectToStorage` MAY additionally delegate `getAssetRefs()` through `ObjectStorageClient.headAsset` alongside the existing `projects`-bucket JSON push; the `@aws-sdk/client-s3` path remains optional/gated behind `S3_*` env vars and is not enabled (no new dependency).
+
+#### Scenario: uploadAsset transfers bytes via object storage and dedups
+- **Given** `uploadAsset` is configured with a remote
+- **When** it is called with byte-identical content twice
+- **Then** the byte transfer goes through `ObjectStorageClient` and the second call returns `duplicated: true` with an equal 64-char hash
+
+#### Scenario: Cloud sync delegates asset refs without breaking JSON push
+- **Given** a project with audio asset refs
+- **When** `uploadProjectToStorage` runs under the mock object-storage back-end
+- **Then** the `projects`-bucket JSON push still succeeds and no error is thrown
+
 #### Scenario: Identical bytes are deduped
 - **Given** `uploadAsset` is called with blob A
 - **When** `uploadAsset` is called again with byte-identical blob A

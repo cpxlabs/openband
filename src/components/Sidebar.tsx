@@ -19,6 +19,7 @@ const NAV_ITEMS = [
     ],
   },
   { key: "explorer", label: "Explorer", icon: "🌍" },
+  { key: "modes", label: "Modos", icon: "✨" },
   { key: "account", label: "Conta", icon: "●" },
   { key: "settings", label: "Ajustes", icon: "⚙" },
 ];

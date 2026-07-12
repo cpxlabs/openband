@@ -363,7 +363,27 @@ CREATE TABLE IF NOT EXISTS posts (
   title TEXT NOT NULL,
   description TEXT,
   master_audio_url TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  type TEXT DEFAULT 'post',
+  genre TEXT DEFAULT '',
+  key TEXT DEFAULT '',
+  bpm INTEGER DEFAULT 120,
+  duration INTEGER DEFAULT 0,
+  color TEXT DEFAULT 'bg-brand-primary',
+  plays INTEGER DEFAULT 0,
+  caption TEXT,
+  image_url TEXT,
+  song_title TEXT,
+  comments INTEGER DEFAULT 0,
+  time_ago TEXT DEFAULT 'now'
+);
+
+CREATE TABLE IF NOT EXISTS post_likes (
+  id TEXT PRIMARY KEY,
+  post_id TEXT NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+  user_id TEXT REFERENCES profiles(id) ON DELETE CASCADE,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(post_id, user_id)
 );
 
 CREATE TABLE IF NOT EXISTS user_sessions (
@@ -426,6 +446,32 @@ CREATE TABLE IF NOT EXISTS band_members (
 
 export function initializeSchema(): void {
   getDb().exec(SCHEMA_SQL)
+  migratePostsColumns()
+}
+
+function migratePostsColumns(): void {
+  const db = getDb()
+  const columns = db.prepare("PRAGMA table_info(posts)").all() as { name: string }[]
+  const existing = new Set(columns.map((c) => c.name))
+  const additions: [string, string][] = [
+    ["type", "TEXT DEFAULT 'post'"],
+    ["genre", "TEXT DEFAULT ''"],
+    ["key", "TEXT DEFAULT ''"],
+    ["bpm", "INTEGER DEFAULT 120"],
+    ["duration", "INTEGER DEFAULT 0"],
+    ["color", "TEXT DEFAULT 'bg-brand-primary'"],
+    ["plays", "INTEGER DEFAULT 0"],
+    ["caption", "TEXT"],
+    ["image_url", "TEXT"],
+    ["song_title", "TEXT"],
+    ["comments", "INTEGER DEFAULT 0"],
+    ["time_ago", "TEXT DEFAULT 'now'"],
+  ]
+  for (const [col, def] of additions) {
+    if (!existing.has(col)) {
+      db.prepare(`ALTER TABLE posts ADD COLUMN ${col} ${def}`).run()
+    }
+  }
 }
 
 initializeSchema()

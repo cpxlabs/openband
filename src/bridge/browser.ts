@@ -3,6 +3,8 @@ import type {
   OpenDialogOptions,
   SaveDialogOptions,
   ProjectMeta,
+  BridgeAudioDevice,
+  BridgePatchRoute,
 } from "./interface";
 
 function createBlobDownload(
@@ -139,4 +141,29 @@ export const browserBridge: NativeBridge = {
   onMenuAction(_callback: (action: string) => void): void {},
 
   removeMenuActionListener(): void {},
+
+  async enumerateAudioDevices(): Promise<{
+    inputs: BridgeAudioDevice[];
+    outputs: BridgeAudioDevice[];
+  }> {
+    return { inputs: [], outputs: [] };
+  },
+
+  async openHardwareInput(
+    _deviceId: string,
+    _channelCount?: number,
+    _sampleRate?: number,
+  ): Promise<boolean> {
+    return false;
+  },
+
+  async closeHardwareInput(): Promise<void> {},
+
+  async createPatchRoute(_route: BridgePatchRoute): Promise<void> {},
+
+  async removePatchRoute(_routeId: string): Promise<void> {},
+
+  async getPatchRoutes(): Promise<BridgePatchRoute[]> {
+    return [];
+  },
 };

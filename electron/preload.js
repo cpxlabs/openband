@@ -19,4 +19,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
   removeMenuActionListener: () => {
     ipcRenderer.removeAllListeners("menu-action");
   },
+  enumerateAudioDevices: () => ipcRenderer.invoke("enumerate-audio-devices"),
+  openHardwareInput: (deviceId, channelCount, sampleRate) =>
+    ipcRenderer.invoke("open-hardware-input", deviceId, channelCount, sampleRate),
+  closeHardwareInput: () => ipcRenderer.invoke("close-hardware-input"),
+  createPatchRoute: (route) => ipcRenderer.invoke("create-patch-route", route),
+  removePatchRoute: (routeId) =>
+    ipcRenderer.invoke("remove-patch-route", routeId),
+  getPatchRoutes: () => ipcRenderer.invoke("get-patch-routes"),
 });

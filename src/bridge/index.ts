@@ -8,6 +8,9 @@ export type {
   OpenDialogOptions,
   SaveDialogOptions,
   ProjectMeta,
+  BridgeAudioDevice,
+  BridgeHardwareChannel,
+  BridgePatchRoute,
 } from "./interface";
 
 function detectBridge(): NativeBridge {

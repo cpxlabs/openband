@@ -1,5 +1,5 @@
 import type { Plugin } from "./types";
-import { getDefaultParams } from "./types";
+import { getDefaultParams, EQ_DEFAULT_BANDS } from "./types";
 
 export interface MasteringChainPreset {
   name: string;
@@ -140,169 +140,54 @@ export function getOversampleLabel(value: number): string {
   return map[value] || "2x";
 }
 
+const EQ_BAND_FILTER_TYPES = [
+  "lowpass",
+  "lowshelf",
+  "peaking",
+  "notch",
+  "highshelf",
+  "highpass",
+];
+
 export async function applyMasteringChain(
   buffer: AudioBuffer,
   plugins: Plugin[],
   sampleRate: number,
 ): Promise<AudioBuffer> {
-  const len = buffer.length;
-  const numChannels = buffer.numberOfChannels;
-  const offlineCtx = new OfflineAudioContext(numChannels, len, sampleRate);
-  const source = offlineCtx.createBufferSource();
-  source.buffer = buffer;
-  let chain: AudioNode = source;
+  let current = buffer;
   for (const plugin of plugins) {
     if (!plugin.enabled) continue;
-    switch (plugin.type) {
-      case "eq": {
-        const p = plugin.params;
-        const filter = offlineCtx.createBiquadFilter();
-        filter.type = "lowpass";
-        filter.frequency.value = p.lowCut ?? 20000;
-        chain.connect(filter);
-        chain = filter;
-        break;
-      }
-      case "compressor": {
-        const p = plugin.params;
-        const comp = offlineCtx.createDynamicsCompressor();
-        if (p.threshold != null) comp.threshold.value = p.threshold;
-        if (p.knee != null) comp.knee.value = p.knee;
-        if (p.ratio != null) comp.ratio.value = p.ratio;
-        if (p.attack != null) comp.attack.value = p.attack / 1000;
-        if (p.release != null) comp.release.value = p.release / 1000;
-        chain.connect(comp);
-        chain = comp;
-        break;
-      }
-      case "limiter": {
-        const p = plugin.params;
-        const gain = offlineCtx.createGain();
-        const ceiling = p.ceiling ?? -0.5;
-        const headroom = p.headroom ?? 1;
-        const makeup = Math.min(headroom, 10);
-        gain.gain.value = makeup;
-        const waveShaper = offlineCtx.createWaveShaper();
-        waveShaper.curve = makeLimiterCurve(4096, ceiling);
-        chain.connect(gain);
-        gain.connect(waveShaper);
-        chain = waveShaper;
-        break;
-      }
-      case "truePeakLimiter": {
-        const p = plugin.params;
-        const gain = offlineCtx.createGain();
-        const ceiling = p.ceiling ?? -2;
-        const makeup = p.gain ?? 4;
-        gain.gain.value = makeup;
-        const waveShaper = offlineCtx.createWaveShaper();
-        waveShaper.curve = makeLimiterCurve(4096, ceiling);
-        chain.connect(gain);
-        gain.connect(waveShaper);
-        chain = waveShaper;
-        break;
-      }
-      case "multibandCompressor": {
-        const p = plugin.params;
-        const lowBand = offlineCtx.createBiquadFilter();
-        lowBand.type = "lowpass";
-        lowBand.frequency.value = p.crossLow ?? 200;
-        lowBand.Q.value = 0.707;
-        const midBand = offlineCtx.createBiquadFilter();
-        midBand.type = "bandpass";
-        midBand.frequency.value = ((p.crossLow ?? 200) + (p.crossHigh ?? 2000)) / 2;
-        midBand.Q.value = 0.707;
-        const highBand = offlineCtx.createBiquadFilter();
-        highBand.type = "highpass";
-        highBand.frequency.value = p.crossHigh ?? 2000;
-        highBand.Q.value = 0.707;
-        const compLow = offlineCtx.createDynamicsCompressor();
-        compLow.threshold.value = p.thresholdLow ?? -20;
-        compLow.ratio.value = p.ratioLow ?? 4;
-        const compMid = offlineCtx.createDynamicsCompressor();
-        compMid.threshold.value = p.thresholdMid ?? -20;
-        compMid.ratio.value = p.ratioMid ?? 3;
-        const compHigh = offlineCtx.createDynamicsCompressor();
-        compHigh.threshold.value = p.thresholdHigh ?? -20;
-        compHigh.ratio.value = p.ratioHigh ?? 3;
-        const gainLow = offlineCtx.createGain();
-        gainLow.gain.value = p.makeupLow ?? 3;
-        const gainMid = offlineCtx.createGain();
-        gainMid.gain.value = p.makeupMid ?? 2;
-        const gainHigh = offlineCtx.createGain();
-        gainHigh.gain.value = p.makeupHigh ?? 2;
-        const merger = offlineCtx.createChannelMerger(numChannels);
-        chain.connect(lowBand);
-        lowBand.connect(compLow).connect(gainLow).connect(merger, 0, 0);
-        chain.connect(midBand);
-        midBand.connect(compMid).connect(gainMid).connect(merger, 0, 0);
-        chain.connect(highBand);
-        highBand.connect(compHigh).connect(gainHigh).connect(merger, 0, 0);
-        chain = merger;
-        break;
-      }
-      case "stereoImager": {
-        const p = plugin.params;
-        const width = p.width ?? 150;
-        const widthScale = Math.max(0, width / 100);
-        const splitter = offlineCtx.createChannelSplitter(2);
-        const sumL = offlineCtx.createGain();
-        sumL.gain.value = 0.5;
-        const sumR = offlineCtx.createGain();
-        sumR.gain.value = 0.5;
-        const diffL = offlineCtx.createGain();
-        diffL.gain.value = 0.5;
-        const diffR = offlineCtx.createGain();
-        diffR.gain.value = -0.5;
-        const sideL = offlineCtx.createGain();
-        sideL.gain.value = widthScale;
-        const sideR = offlineCtx.createGain();
-        sideR.gain.value = widthScale;
-        const merger = offlineCtx.createChannelMerger(2);
-        chain.connect(splitter);
-        splitter.connect(sumL, 0);
-        splitter.connect(sumR, 1);
-        splitter.connect(diffL, 0);
-        splitter.connect(diffR, 1);
-        sumL.connect(merger, 0, 0);
-        sumR.connect(merger, 0, 1);
-        diffL.connect(sideL);
-        diffR.connect(sideR);
-        sideL.connect(merger, 0, 0);
-        sideR.connect(merger, 0, 1);
-        chain = merger;
-        break;
-      }
-      case "tapeSaturator": {
-        const p = plugin.params;
-        const drive = p.drive ?? 3;
-        const gain = offlineCtx.createGain();
-        gain.gain.value = 1;
-        const waveShaper = offlineCtx.createWaveShaper();
-        waveShaper.curve = makeTapeCurve(4096, drive);
-        chain.connect(gain);
-        gain.connect(waveShaper);
-        chain = waveShaper;
-        break;
-      }
-      case "deesser": {
-        const p = plugin.params;
-        const filter = offlineCtx.createBiquadFilter();
-        filter.type = "notch";
-        filter.frequency.value = p.frequency ?? 7000;
-        filter.Q.value = p.q ?? 1;
-        chain.connect(filter);
-        chain = filter;
-        break;
-      }
-    }
+    current = await applyMasteringPlugin(current, plugin, sampleRate);
   }
-  const masterGain = offlineCtx.createGain();
-  masterGain.gain.value = 0.99;
-  chain.connect(masterGain);
-  masterGain.connect(offlineCtx.destination);
-  source.start(0);
-  return offlineCtx.startRendering();
+  return current;
+}
+
+async function applyMasteringPlugin(
+  buffer: AudioBuffer,
+  plugin: Plugin,
+  sampleRate: number,
+): Promise<AudioBuffer> {
+  const p = plugin.params;
+  switch (plugin.type) {
+    case "eq":
+      return applyEq(buffer, p, sampleRate);
+    case "compressor":
+      return applyCompressor(buffer, p, sampleRate);
+    case "limiter":
+      return applyLimiter(buffer, p, sampleRate);
+    case "truePeakLimiter":
+      return applyTruePeakLimiter(buffer, p, sampleRate);
+    case "multibandCompressor":
+      return applyMultiband(buffer, p, sampleRate);
+    case "stereoImager":
+      return applyStereoImager(buffer, p, sampleRate);
+    case "tapeSaturator":
+      return applyTapeSaturator(buffer, p, sampleRate);
+    case "deesser":
+      return applyDeesser(buffer, p, sampleRate);
+    default:
+      return buffer;
+  }
 }
 
 function makeLimiterCurve(size: number, ceilingDb: number): Float32Array<ArrayBuffer> {
@@ -327,4 +212,395 @@ function makeTapeCurve(size: number, drive: number): Float32Array<ArrayBuffer> {
     curve[i] = Math.tanh(x * drive) / Math.tanh(drive);
   }
   return curve;
+}
+
+async function applyEq(
+  buffer: AudioBuffer,
+  p: Record<string, number>,
+  sampleRate: number,
+): Promise<AudioBuffer> {
+  const numCh = buffer.numberOfChannels;
+  const len = buffer.length;
+  const ctx = new OfflineAudioContext(numCh, len, sampleRate);
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  let node: AudioNode = source;
+  for (let i = 0; i < 8; i++) {
+    const enabled = (p[`b${i}_enabled`] ?? EQ_DEFAULT_BANDS[i].enabled) as number;
+    if (!enabled) continue;
+    const f = ctx.createBiquadFilter();
+    const typeVal = (p[`b${i}_type`] ?? EQ_DEFAULT_BANDS[i].type) as number;
+    f.type = (EQ_BAND_FILTER_TYPES[typeVal] || "peaking") as BiquadFilterType;
+    f.frequency.value = (p[`b${i}_freq`] ?? EQ_DEFAULT_BANDS[i].freq) as number;
+    f.gain.value = (p[`b${i}_gain`] ?? EQ_DEFAULT_BANDS[i].gain) as number;
+    f.Q.value = (p[`b${i}_q`] ?? EQ_DEFAULT_BANDS[i].q) as number;
+    node.connect(f);
+    node = f;
+  }
+  const master = ctx.createGain();
+  master.gain.value = Math.pow(10, ((p.master ?? 0) as number) / 20);
+  node.connect(master);
+  master.connect(ctx.destination);
+  source.start(0);
+  return ctx.startRendering();
+}
+
+async function applyCompressor(
+  buffer: AudioBuffer,
+  p: Record<string, number>,
+  sampleRate: number,
+): Promise<AudioBuffer> {
+  const numCh = buffer.numberOfChannels;
+  const len = buffer.length;
+  const ctx = new OfflineAudioContext(numCh, len, sampleRate);
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  const comp = ctx.createDynamicsCompressor();
+  if (p.threshold != null) comp.threshold.value = p.threshold;
+  if (p.knee != null) comp.knee.value = p.knee;
+  if (p.ratio != null) comp.ratio.value = p.ratio;
+  if (p.attack != null) comp.attack.value = Math.max(0.001, p.attack / 1000);
+  if (p.release != null) comp.release.value = p.release / 1000;
+  const makeup = ctx.createGain();
+  makeup.gain.value = Math.pow(10, ((p.makeupGain ?? 0) as number) / 20);
+  source.connect(comp);
+  comp.connect(makeup);
+  makeup.connect(ctx.destination);
+  source.start(0);
+  return ctx.startRendering();
+}
+
+async function applyLimiter(
+  buffer: AudioBuffer,
+  p: Record<string, number>,
+  sampleRate: number,
+): Promise<AudioBuffer> {
+  const numCh = buffer.numberOfChannels;
+  const len = buffer.length;
+  const ctx = new OfflineAudioContext(numCh, len, sampleRate);
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  const comp = ctx.createDynamicsCompressor();
+  comp.threshold.value = (p.threshold ?? -6) as number;
+  comp.knee.value = 0;
+  comp.ratio.value = 20;
+  comp.attack.value = Math.max(0.001, ((p.attack ?? 0.5) as number) / 1000);
+  comp.release.value = ((p.release ?? 40) as number) / 1000;
+  const waveShaper = ctx.createWaveShaper();
+  waveShaper.curve = makeLimiterCurve(4096, (p.ceiling ?? -1) as number);
+  source.connect(comp);
+  comp.connect(waveShaper);
+  waveShaper.connect(ctx.destination);
+  source.start(0);
+  return ctx.startRendering();
+}
+
+async function applyTruePeakLimiter(
+  buffer: AudioBuffer,
+  p: Record<string, number>,
+  sampleRate: number,
+): Promise<AudioBuffer> {
+  const oversample = Math.pow(2, (p.oversample ?? 2) as number);
+  const osr = sampleRate * oversample;
+  const olen = buffer.length * oversample;
+  const osCtx = new OfflineAudioContext(buffer.numberOfChannels, olen, osr);
+  const osBuf = osCtx.createBuffer(
+    buffer.numberOfChannels,
+    olen,
+    osr,
+  );
+  for (let c = 0; c < buffer.numberOfChannels; c++) {
+    const src = buffer.getChannelData(c);
+    const dst = osBuf.getChannelData(c);
+    for (let i = 0; i < olen; i++) {
+      const idx = i / oversample;
+      const i0 = Math.floor(idx);
+      const frac = idx - i0;
+      const i1 = Math.min(src.length - 1, i0 + 1);
+      dst[i] = src[i0] * (1 - frac) + src[i1] * frac;
+    }
+  }
+  const src = osCtx.createBufferSource();
+  src.buffer = osBuf;
+  const inGain = osCtx.createGain();
+  inGain.gain.value = Math.pow(10, (Math.abs((p.threshold ?? -3) as number)) / 20);
+  const comp = osCtx.createDynamicsCompressor();
+  comp.threshold.value = (p.threshold ?? -3) as number;
+  comp.knee.value = 0;
+  comp.ratio.value = 20;
+  comp.attack.value = Math.max(0.0001, ((p.lookahead ?? 1) as number) / 1000);
+  comp.release.value = ((p.release ?? 50) as number) / 1000;
+  const waveShaper = osCtx.createWaveShaper();
+  waveShaper.curve = makeLimiterCurve(4096, (p.ceiling ?? -0.5) as number);
+  src.connect(inGain);
+  inGain.connect(comp);
+  comp.connect(waveShaper);
+  waveShaper.connect(osCtx.destination);
+  src.start(0);
+  const rendered = await osCtx.startRendering();
+  const factor = oversample;
+  const outCtx = new OfflineAudioContext(buffer.numberOfChannels, buffer.length, sampleRate);
+  const out = outCtx.createBuffer(buffer.numberOfChannels, buffer.length, sampleRate);
+  for (let c = 0; c < buffer.numberOfChannels; c++) {
+    const r = rendered.getChannelData(c);
+    const d = out.getChannelData(c);
+    for (let i = 0; i < buffer.length; i++) {
+      d[i] = r[Math.min(r.length - 1, Math.floor(i * factor))];
+    }
+  }
+  return out;
+}
+
+async function applyMultiband(
+  buffer: AudioBuffer,
+  p: Record<string, number>,
+  sampleRate: number,
+): Promise<AudioBuffer> {
+  const numCh = buffer.numberOfChannels;
+  const len = buffer.length;
+  const crosses = [
+    (p.b0_cross ?? 200) as number,
+    (p.b1_cross ?? 2000) as number,
+    (p.b2_cross ?? 20000) as number,
+  ];
+  const bands: { lo: number | null; hi: number | null }[] = [
+    { lo: null, hi: crosses[0] },
+    { lo: crosses[0], hi: crosses[1] },
+    { lo: crosses[1], hi: crosses[2] },
+    { lo: crosses[2], hi: null },
+  ];
+  const outCh: Float32Array[] = [];
+  for (let c = 0; c < numCh; c++) outCh.push(new Float32Array(len));
+  for (let bi = 0; bi < 4; bi++) {
+    if (((p[`b${bi}_mute`] ?? 0) as number) === 1) continue;
+    const ctx = new OfflineAudioContext(numCh, len, sampleRate);
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    let node: AudioNode = source;
+    if (bands[bi].lo != null) {
+      const hp = ctx.createBiquadFilter();
+      hp.type = "highpass";
+      hp.frequency.value = bands[bi].lo ?? 0;
+      node.connect(hp);
+      node = hp;
+    }
+    if (bands[bi].hi != null) {
+      const lp = ctx.createBiquadFilter();
+      lp.type = "lowpass";
+      lp.frequency.value = bands[bi].hi ?? 0;
+      node.connect(lp);
+      node = lp;
+    }
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = (p[`b${bi}_threshold`] ?? -20) as number;
+    comp.ratio.value = (p[`b${bi}_ratio`] ?? 4) as number;
+    comp.knee.value = 3;
+    comp.attack.value = Math.max(0.001, ((p[`b${bi}_attack`] ?? 2) as number) / 1000);
+    comp.release.value = ((p[`b${bi}_release`] ?? 80) as number) / 1000;
+    const makeup = ctx.createGain();
+    makeup.gain.value = Math.pow(10, ((p[`b${bi}_makeup`] ?? 4) as number) / 20);
+    node.connect(comp);
+    comp.connect(makeup);
+    makeup.connect(ctx.destination);
+    source.start(0);
+    const bandBuf = await ctx.startRendering();
+    for (let c = 0; c < numCh; c++) {
+      const d = bandBuf.getChannelData(c);
+      const o = outCh[c];
+      for (let i = 0; i < len; i++) o[i] += d[i];
+    }
+  }
+  const outCtx = new OfflineAudioContext(numCh, len, sampleRate);
+  const out = outCtx.createBuffer(numCh, len, sampleRate);
+  for (let c = 0; c < numCh; c++) out.getChannelData(c).set(outCh[c]);
+  return out;
+}
+
+async function applyStereoImager(
+  buffer: AudioBuffer,
+  p: Record<string, number>,
+  sampleRate: number,
+): Promise<AudioBuffer> {
+  const numCh = buffer.numberOfChannels;
+  const len = buffer.length;
+  const ctx = new OfflineAudioContext(numCh, len, sampleRate);
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  if (numCh < 2) {
+    source.connect(ctx.destination);
+    source.start(0);
+    return ctx.startRendering();
+  }
+  const width = ((p.width ?? 100) as number) / 100;
+  const midGainDb = (p.midGain ?? 0) as number;
+  const sideGainDb = (p.sideGain ?? 0) as number;
+  const monoCross = (p.monoCross ?? 150) as number;
+  const balance = (p.balance ?? 0) as number;
+  const splitter = ctx.createChannelSplitter(2);
+  const sumL = ctx.createGain();
+  sumL.gain.value = 0.5;
+  const sumR = ctx.createGain();
+  sumR.gain.value = 0.5;
+  const diffL = ctx.createGain();
+  diffL.gain.value = 0.5;
+  const diffR = ctx.createGain();
+  diffR.gain.value = -0.5;
+  const sideHpL = ctx.createBiquadFilter();
+  sideHpL.type = "highpass";
+  sideHpL.frequency.value = monoCross;
+  const sideHpR = ctx.createBiquadFilter();
+  sideHpR.type = "highpass";
+  sideHpR.frequency.value = monoCross;
+  const sideL = ctx.createGain();
+  sideL.gain.value = width * Math.pow(10, sideGainDb / 20);
+  const sideR = ctx.createGain();
+  sideR.gain.value = width * Math.pow(10, sideGainDb / 20);
+  const midG = ctx.createGain();
+  midG.gain.value = Math.pow(10, midGainDb / 20);
+  const outL = ctx.createGain();
+  const outR = ctx.createGain();
+  source.connect(splitter);
+  splitter.connect(sumL, 0);
+  splitter.connect(sumR, 1);
+  splitter.connect(diffL, 0);
+  splitter.connect(diffR, 1);
+  sumL.connect(midG);
+  sumR.connect(midG);
+  diffL.connect(sideHpL);
+  diffR.connect(sideHpR);
+  sideHpL.connect(sideL);
+  sideHpR.connect(sideR);
+  midG.connect(outL);
+  midG.connect(outR);
+  sideL.connect(outL);
+  sideR.connect(outR);
+  if (ctx.createStereoPanner) {
+    const panner = ctx.createStereoPanner();
+    panner.pan.value = Math.max(-1, Math.min(1, balance / 100));
+    outL.connect(panner);
+    outR.connect(panner);
+    panner.connect(ctx.destination);
+  } else {
+    outL.connect(ctx.destination);
+    outR.connect(ctx.destination);
+  }
+  source.start(0);
+  return ctx.startRendering();
+}
+
+async function applyTapeSaturator(
+  buffer: AudioBuffer,
+  p: Record<string, number>,
+  sampleRate: number,
+): Promise<AudioBuffer> {
+  const numCh = buffer.numberOfChannels;
+  const len = buffer.length;
+  const ctx = new OfflineAudioContext(numCh, len, sampleRate);
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  const drive = (p.drive ?? 3) as number;
+  const warmth = (p.warmth ?? 50) as number;
+  const noise = (p.noise ?? 5) as number;
+  const wow = (p.wow ?? 10) as number;
+  const mix = (p.mix ?? 60) as number;
+  const waveShaper = ctx.createWaveShaper();
+  waveShaper.curve = makeTapeCurve(4096, drive);
+  const warmthFilter = ctx.createBiquadFilter();
+  warmthFilter.type = "lowpass";
+  warmthFilter.frequency.value = 2000 + (100 - warmth) * 180;
+  const wetGain = ctx.createGain();
+  wetGain.gain.value = mix / 100;
+  const dryGain = ctx.createGain();
+  dryGain.gain.value = 1 - mix / 100;
+  source.connect(dryGain);
+  dryGain.connect(ctx.destination);
+  source.connect(waveShaper);
+  waveShaper.connect(warmthFilter);
+  warmthFilter.connect(wetGain);
+  wetGain.connect(ctx.destination);
+  if (wow > 0 && ctx.createDelay) {
+    const delay = ctx.createDelay(0.02);
+    delay.delayTime.value = 0.005;
+    const lfo = ctx.createOscillator();
+    lfo.frequency.value = 0.5 + wow / 50;
+    const lfoGain = ctx.createGain();
+    lfoGain.gain.value = (wow / 100) * 0.003;
+    lfo.connect(lfoGain);
+    lfoGain.connect(delay.delayTime);
+    const wowGain = ctx.createGain();
+    wowGain.gain.value = mix / 100;
+    source.connect(delay);
+    delay.connect(wowGain);
+    wowGain.connect(ctx.destination);
+    lfo.start(0);
+  }
+  if (noise > 0) {
+    const noiseLen = Math.floor(0.1 * sampleRate);
+    const noiseBuf = ctx.createBuffer(numCh, noiseLen, sampleRate);
+    for (let c = 0; c < numCh; c++) {
+      const d = noiseBuf.getChannelData(c);
+      for (let i = 0; i < noiseLen; i++) d[i] = Math.random() * 2 - 1;
+    }
+    const noiseSrc = ctx.createBufferSource();
+    noiseSrc.buffer = noiseBuf;
+    noiseSrc.loop = true;
+    const noiseGain = ctx.createGain();
+    noiseGain.gain.value = (noise / 100) * 0.02;
+    noiseSrc.connect(noiseGain);
+    noiseGain.connect(ctx.destination);
+    noiseSrc.start(0);
+  }
+  source.start(0);
+  return ctx.startRendering();
+}
+
+async function applyDeesser(
+  buffer: AudioBuffer,
+  p: Record<string, number>,
+  sampleRate: number,
+): Promise<AudioBuffer> {
+  const numCh = buffer.numberOfChannels;
+  const len = buffer.length;
+  const ctx = new OfflineAudioContext(numCh, len, sampleRate);
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  const freq = (p.frequency ?? 6000) as number;
+  const threshold = (p.threshold ?? -18) as number;
+  const range = (p.range ?? 12) as number;
+  const mode = (p.mode ?? 0) as number;
+  const ratio = 2 + range / 2;
+  const low = ctx.createBiquadFilter();
+  low.type = "lowpass";
+  low.frequency.value = freq;
+  const lowGain = ctx.createGain();
+  source.connect(low);
+  low.connect(lowGain);
+  lowGain.connect(ctx.destination);
+  const high = ctx.createBiquadFilter();
+  high.type = "highpass";
+  high.frequency.value = freq;
+  const comp = ctx.createDynamicsCompressor();
+  comp.threshold.value = threshold;
+  comp.ratio.value = ratio;
+  comp.knee.value = 0;
+  comp.attack.value = 0.005;
+  comp.release.value = 0.05;
+  const highGain = ctx.createGain();
+  source.connect(high);
+  high.connect(comp);
+  comp.connect(highGain);
+  highGain.connect(ctx.destination);
+  if (mode === 1) {
+    const comp2 = ctx.createDynamicsCompressor();
+    comp2.threshold.value = threshold;
+    comp2.ratio.value = ratio;
+    comp2.attack.value = 0.005;
+    comp2.release.value = 0.05;
+    const wideGain = ctx.createGain();
+    source.connect(comp2);
+    comp2.connect(wideGain);
+    wideGain.connect(ctx.destination);
+  }
+  source.start(0);
+  return ctx.startRendering();
 }

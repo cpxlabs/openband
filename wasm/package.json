@@ -1,0 +1,13 @@
+{
+  "name": "openband-wasm",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AssemblyScript DSP modules for OpenBand WASM plugins",
+  "scripts": {
+    "build": "npx --yes asc plugin.ts -o ../dist/openband-plugin.wasm --optimize --runtime stub --exportRuntime",
+    "build:wasm": "npm run build"
+  },
+  "devDependencies": {
+    "assemblyscript": "^0.27.30"
+  }
+}

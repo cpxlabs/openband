@@ -19,8 +19,10 @@ import {
   QuickTools,
   NewProject,
   FeedPostCard,
+  Loading,
 } from "../../src/components";
 import type { FeedPost } from "../../src/components/FeedPostCard";
+import { fetchFeed, toggleLike, createRemix } from "../../src/lib/feedApi";
 import { generatePreviewUrl, SCREEN_BOTTOM_PADDING } from "../../src/lib/constants";
 import { LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive";
 import { GENRES } from "../../src/lib/projectTemplates";
@@ -231,7 +233,26 @@ export default function Feed() {
   const [genreFilter, setGenreFilter] = useState("all");
   const [sortMode, setSortMode] = useState<SortMode>("recent");
   const [posts, setPosts] = useState(MOCK_POSTS);
-  const currentPostRef = useRef(posts[0]);
+  const [loading, setLoading] = useState(false);
+  const currentPostRef = useRef<FeedPost | undefined>(undefined);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetchFeed({})
+      .then((res) => {
+        if (!cancelled && Array.isArray(res.posts) && res.posts.length > 0) {
+          setPosts(res.posts as FeedPost[]);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const filteredPosts = useMemo(() => {
     let result =
@@ -313,6 +334,27 @@ export default function Feed() {
           : p,
       ),
     );
+    toggleLike(postId)
+      .then((res) => {
+        setPosts((prev) =>
+          prev.map((p) =>
+            p.id === postId ? { ...p, userLiked: res.liked, likes: res.likes } : p,
+          ),
+        );
+      })
+      .catch(() => {
+        setPosts((prev) =>
+          prev.map((p) =>
+            p.id === postId
+              ? {
+                  ...p,
+                  userLiked: !p.userLiked,
+                  likes: p.userLiked ? p.likes - 1 : p.likes + 1,
+                }
+              : p,
+          ),
+        );
+      });
   }, []);
 
   const handleRemix = useCallback(
@@ -325,6 +367,7 @@ export default function Feed() {
         return;
       }
       const projectId = `remix-${post.id}-${Date.now()}`;
+      createRemix(post.id, projectId).catch(() => {});
       router.push(
         `/studio/${projectId}?title=${encodeURIComponent(`Remix: ${post.title}`)}&genre=${post.genre}&key=${post.key}&bpm=${post.bpm}`,
       );
@@ -492,7 +535,7 @@ export default function Feed() {
             <View className="flex-row items-center gap-2.5">
               <View className="w-2.5 h-2.5 rounded-full bg-green-500" />
               <Text className="text-green-400 text-xs font-medium flex-1">
-                {t("feed.playing", "Tocando: ")}{currentPostRef.current.title}
+                {t("feed.playing", "Tocando: ")}{currentPostRef.current?.title ?? ""}
               </Text>
             </View>
           </View>
@@ -512,12 +555,16 @@ export default function Feed() {
               paddingHorizontal: resp.isDesktop ? 16 : 0,
             }}
             ListEmptyComponent={
-              <View className="py-16 items-center">
-                <Text className="text-4xl mb-3 opacity-50">🎵</Text>
-                <Text className="text-gray-500 text-sm">
-                  {t("feed.noTracks", "Nenhum track encontrado")}
-                </Text>
-              </View>
+              loading ? (
+                <Loading message="Carregando feed..." />
+              ) : (
+                <View className="py-16 items-center">
+                  <Text className="text-4xl mb-3 opacity-50">🎵</Text>
+                  <Text className="text-gray-500 text-sm">
+                    {t("feed.noTracks", "Nenhum track encontrado")}
+                  </Text>
+                </View>
+              )
             }
             ListHeaderComponent={
               !hasProjects ? (

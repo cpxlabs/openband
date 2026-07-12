@@ -1,5 +1,8 @@
 import { defineConfig } from "vitest/config";
+import { resolve } from "node:path";
 import okReporter from "./tests/ok-reporter";
+
+const rootDir = process.cwd();
 
 export default defineConfig({
   test: {
@@ -18,6 +21,8 @@ export default defineConfig({
   resolve: {
     alias: {
       "react-native": "react-native-web",
+      "@bridge": resolve(rootDir, "./src/bridge/index.ts"),
+      "@bridge/": resolve(rootDir, "./src/bridge/"),
     },
   },
   optimizeDeps: {

@@ -64,6 +64,29 @@ create table public.posts (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
+-- 5b. Feed-specific columns on posts
+alter table public.posts add column if not exists type text default 'post';
+alter table public.posts add column if not exists genre text default '';
+alter table public.posts add column if not exists key text default '';
+alter table public.posts add column if not exists bpm integer default 120;
+alter table public.posts add column if not exists duration integer default 0;
+alter table public.posts add column if not exists color text default 'bg-brand-primary';
+alter table public.posts add column if not exists plays integer default 0;
+alter table public.posts add column if not exists caption text;
+alter table public.posts add column if not exists image_url text;
+alter table public.posts add column if not exists song_title text;
+alter table public.posts add column if not exists comments integer default 0;
+alter table public.posts add column if not exists time_ago text default 'now';
+
+-- 5c. Per-user feed likes
+create table if not exists public.post_likes (
+  id uuid default gen_random_uuid() primary key,
+  post_id uuid not null references public.posts(id) on delete cascade,
+  user_id uuid references public.profiles(id) on delete cascade,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  unique(post_id, user_id)
+);
+
 -- ============================================================
 -- AUTH COLUMNS (email/password + Google OAuth)
 -- ============================================================
@@ -274,6 +297,19 @@ create policy "Users can update own posts"
 
 create policy "Users can delete own posts"
   on public.posts for delete using (auth.uid() = user_id);
+
+-- Post Likes
+alter table public.post_likes enable row level security;
+
+create policy "Post likes are publicly viewable"
+  on public.post_likes for select using (true);
+
+create policy "Authenticated users can manage own likes"
+  on public.post_likes for insert
+  with check (auth.uid() = user_id);
+
+create policy "Users can delete own likes"
+  on public.post_likes for delete using (auth.uid() = user_id);
 
 -- Remixes
 create policy "Remixes are publicly viewable"

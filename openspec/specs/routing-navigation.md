@@ -17,6 +17,24 @@ All routes are declared under the `app/` directory and resolve automatically via
 - `/studio/[id]` -> `app/studio/[id].tsx` (Multi-track DAW studio mixer workspace)
 - `/extractor` -> `app/extractor.tsx` (Stem separator audio upload)
 - `/mastering` -> `app/mastering/index.tsx` (Smart mastering suite panel)
+- `/tabs/modes` -> `app/tabs/modes.tsx` (Creative Modes hub listing all creative workflows)
+- `/acoustics` -> `app/acoustics.tsx` (Room acoustics simulation)
+- `/autotune` -> `app/autotune.tsx` (Real-time pitch correction)
+- `/beatmaker` -> `app/beatmaker.tsx` (Beat production)
+- `/cover-jam` -> `app/cover-jam.tsx` (Cover jam sessions)
+- `/dj-stage` -> `app/dj-stage.tsx` (Live DJ mixing stage)
+- `/live-room` -> `app/live-room.tsx` (Live performance room)
+- `/lofi-tape` -> `app/lofi-tape.tsx` (Lo-fi tape recording)
+- `/mixing-console` -> `app/mixing-console.tsx` (Mixing console)
+- `/spatial-audio` -> `app/spatial-audio.tsx` (Spatial/immersive audio)
+- `/stem-collider` -> `app/stem-collider.tsx` (Stem collision/fusion)
+- `/synth-lab` -> `app/synth-lab.tsx` (Synthesizer lab)
+- `/vocal-booth` -> `app/vocal-booth.tsx` (Vocal recording booth)
+- `/tabs/explorer` -> `app/tabs/explorer.tsx` (Mission/explorer, also a primary tab)
+
+### Creative Modes Hub
+
+The `Creative Modes` hub (`/tabs/modes`) is the single primary entry point for the 13 creative workflow screens above. Each mode is registered via `CREATIVE_MODES` in `src/lib/creativeModes.ts` and surfaced as a `CommandPalette` command (category `"Modes"`) so Cmd/Ctrl+K can navigate directly to any mode. The hub is registered as a tab (`modes`) in `app/tabs/_layout.tsx` and as a flat nav item in `src/components/Sidebar.tsx`.
 
 ---
 

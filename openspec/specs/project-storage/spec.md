@@ -32,6 +32,35 @@ The system MUST serialize a saved project to pretty-printed JSON and re-import i
 ### Requirement: .openband Binary Archive With CRC32 Integrity
 The system MUST produce a binary `.openband` archive (magic `OPENBAND`, version, entries with CRC32) and parse it back, detecting corruption.
 
+### Requirement: OpenBandManifest v2 Assets Resolve To Object-Storage URLs
+`stateAssetSeparation.ts` MUST resolve each `TrackState.audioAssetRef` to a real, resolvable object-storage pointer via the uniform `ObjectStorageClient` (`src/lib/objectStorage.ts`). The default back-end is Supabase Storage (`openband-assets` bucket) as the S3 stand-in; an in-memory `MockStorageBackend` is used when no creds are present (mirroring `supabase.ts` mock fallback). The `@aws-sdk/client-s3` back-end is documented as optional/gated behind `S3_*` env vars and is not enabled (no new dependency).
+
+#### Scenario: Asset registration produces a resolvable pointer
+- **Given** a project with an audio track and a binary asset blob
+- **When** `registerAsset(trackId, blob, filename)` is called
+- **Then** the bytes are SHA-256 hashed, uploaded through `ObjectStorageClient.upload`, and `TrackState.audioAssetRef` holds the resolved key/URL
+- **And** `getAssetRefs()` returns that pointer and `resolveAssetRef(key)` yields a downloadable URL
+
+#### Scenario: Identical bytes dedup to the same hash
+- **Given** two asset registrations with byte-identical content
+- **When** the SHA-256 hash is computed for each
+- **Then** both hashes are equal 64-char hex strings and map to the same storage key (dedup opportunity, preserved from `supabaseRemote.uploadAsset`)
+
+#### Scenario: Presign round-trip stores and returns bytes
+- **Given** the `MockStorageBackend`
+- **When** `requestUploadUrl` → `upload` → `download` is performed
+- **Then** the downloaded `ArrayBuffer` deep-equals the uploaded bytes
+- **And** `headAsset(key)` returns `true` after upload
+
+### Requirement: Object-Storage Abstraction With Pluggable Back-Ends
+The system MUST expose `ObjectStorageClient` (`requestUploadUrl`, `requestDownloadUrl`, `headAsset`, `upload`, `download`) with `getObjectStorage()` selecting the back-end by env: `MockStorageBackend` when no creds, `SupabaseStorageBackend` when Supabase env is present. The backend `presign` route (`backend/src/routes/storage.ts`) issues presigned PUT/GET URLs via `createPresigner()`, reusing `requireAuth`/`AuthenticatedRequest`.
+
+#### Scenario: Back-end selection by environment
+- **Given** no `EXPO_PUBLIC_SUPABASE_URL` is set
+- **When** `getObjectStorage()` is called
+- **Then** a `mock` back-end is returned
+- **And** when the env var is set, a `supabase` back-end is returned
+
 #### Scenario: Archive round-trips project
 - **Given** an `OpenBandProject`
 - **When** `createOpenBandArchive` then `parseOpenBandArchive` is called

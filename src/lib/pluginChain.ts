@@ -67,6 +67,22 @@ function makeHardClipCurve(size: number, ceiling: number): Float32Array {
   return curve;
 }
 
+function makeSoftClipCurve(size: number, ceiling: number, thresholdDb: number): Float32Array {
+  const curve = new Float32Array(size);
+  const threshold = Math.pow(10, thresholdDb / 20);
+  for (let i = 0; i < size; i++) {
+    const x = (i / (size - 1)) * 2 - 1;
+    if (Math.abs(x) <= threshold) {
+      curve[i] = x;
+    } else {
+      const sign = Math.sign(x);
+      const over = Math.min(1, (Math.abs(x) - threshold) / (1 - threshold || 1));
+      curve[i] = sign * (threshold + (ceiling - threshold) * Math.tanh(over));
+    }
+  }
+  return curve;
+}
+
 function makeDistortionCurve(size: number, drive: number): Float32Array {
   const curve = new Float32Array(size);
   const k = Math.max(1, drive * 10);
@@ -77,10 +93,70 @@ function makeDistortionCurve(size: number, drive: number): Float32Array {
   return curve;
 }
 
+function makeReverbIR(
+  ctx: OfflineAudioContext,
+  decay: number,
+  preDelay: number,
+  damping: number,
+  size: number,
+  shimmerPitch: number,
+  modulationAmt: number,
+  numCh: number,
+  sampleRate: number,
+): AudioBuffer {
+  const baseLen = Math.max(256, Math.floor(sampleRate * decay));
+  const len = Math.max(256, Math.floor(baseLen * (0.4 + (size / 100) * 1.2)));
+  const preSamp = Math.floor((preDelay / 1000) * sampleRate);
+  const irLen = len + preSamp;
+  const ir = ctx.createBuffer(numCh, irLen, sampleRate);
+  const dampCoef = damping / 100;
+  const lpCoef = 0.01 + (1 - dampCoef) * 0.25;
+  const mod = modulationAmt / 100;
+  const shift = shimmerPitch !== 0 ? Math.pow(2, shimmerPitch / 12) : 1;
+  for (let c = 0; c < numCh; c++) {
+    const data = ir.getChannelData(c);
+    let lp = 0;
+    for (let i = 0; i < len; i++) {
+      const env = Math.pow(1 - i / len, 2 + dampCoef * 4);
+      const noise = Math.random() * 2 - 1;
+      lp = lp + (noise - lp) * lpCoef;
+      data[i + preSamp] = lp * env;
+    }
+    if (shimmerPitch !== 0) {
+      for (let i = 0; i < len; i++) {
+        const srcIdx = Math.floor(i / shift);
+        if (srcIdx < len) {
+          data[i + preSamp] += data[srcIdx + preSamp] * 0.3 * (1 - dampCoef);
+        }
+      }
+    }
+    if (mod > 0) {
+      for (let i = 0; i < len; i++) {
+        const lfo = 1 + mod * 0.3 * Math.sin((i / len) * Math.PI * 8);
+        data[i + preSamp] *= lfo;
+      }
+    }
+  }
+  return ir;
+}
+
 const VALID_FILTER_TYPES: BiquadFilterType[] = [
   "lowpass", "highpass", "bandpass", "lowshelf",
   "highshelf", "peaking", "notch", "allpass",
 ];
+
+export function resolveParam(
+  p: Record<string, number>,
+  canonical: string,
+  ...aliases: (string | undefined)[]
+): number | undefined {
+  const v = p[canonical];
+  if (v !== undefined) return v;
+  for (const a of aliases) {
+    if (a && p[a] !== undefined) return p[a];
+  }
+  return undefined;
+}
 
 export function buildPluginGraph(plugins: Plugin[]): Plugin[] {
   return plugins.filter((p) => p.enabled !== false);
@@ -135,30 +211,41 @@ async function applySinglePlugin(
 
   switch (plugin.type) {
     case "distortion": {
-      const drive = (p.drive ?? 5) as number;
+      const drive = (resolveParam(p, "drive") ?? 5) as number;
+      const tone = (resolveParam(p, "tone") ?? 50) as number;
+      const mix = (resolveParam(p, "mix") ?? 70) as number;
       const ws = ctx.createWaveShaper();
       ws.curve = makeDistortionCurve(4096, drive) as Float32Array<ArrayBuffer>;
       const inputGain = ctx.createGain();
       inputGain.gain.value = 1 + drive * 0.5;
       const outputGain = ctx.createGain();
       outputGain.gain.value = 1 / (1 + drive * 0.5);
+      const toneFilter = ctx.createBiquadFilter();
+      toneFilter.type = "lowpass";
+      toneFilter.frequency.value = 200 + (tone / 100) * 16000;
+      const wetGain = ctx.createGain();
+      wetGain.gain.value = mix / 100;
+      const dryGain = ctx.createGain();
+      dryGain.gain.value = 1 - mix / 100;
+      source.connect(dryGain);
+      dryGain.connect(ctx.destination);
       source.connect(inputGain);
       inputGain.connect(ws);
-      ws.connect(outputGain);
-      outputGain.connect(ctx.destination);
+      ws.connect(toneFilter);
+      toneFilter.connect(outputGain);
+      outputGain.connect(wetGain);
+      wetGain.connect(ctx.destination);
       break;
     }
     case "reverb": {
       const decay = (p.decay ?? 2) as number;
+      const preDelay = (p.preDelay ?? 20) as number;
+      const damping = (p.damping ?? 40) as number;
+      const size = (p.size ?? 60) as number;
+      const shimmerPitch = (p.shimmerPitch ?? 0) as number;
+      const modulationAmt = (p.modulation ?? 0) as number;
       const mix = (p.mix ?? 30) as number;
-      const irLen = Math.max(256, Math.floor(sampleRate * decay));
-      const ir = ctx.createBuffer(numCh, irLen, sampleRate);
-      for (let c = 0; c < numCh; c++) {
-        const data = ir.getChannelData(c);
-        for (let i = 0; i < irLen; i++) {
-          data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / irLen, 2);
-        }
-      }
+      const ir = makeReverbIR(ctx, decay, preDelay, damping, size, shimmerPitch, modulationAmt, numCh, sampleRate);
       const convolver = ctx.createConvolver();
       convolver.buffer = ir;
       const wetGain = ctx.createGain();
@@ -173,17 +260,17 @@ async function applySinglePlugin(
       break;
     }
     case "delay": {
-      const delayTime = ((p.delayTime ?? 0.25) as number) / 1000;
-      const feedback = (p.feedback ?? 30) as number;
-      const wet = (p.wet ?? 30) as number;
+      const time = (resolveParam(p, "time", "delayTime") ?? 300) as number;
+      const feedback = (p.feedback ?? 35) as number;
+      const mix = (resolveParam(p, "mix", "wet") ?? 25) as number;
       const delayNode = ctx.createDelay(5);
-      delayNode.delayTime.value = Math.max(0.001, delayTime);
+      delayNode.delayTime.value = Math.max(0.001, time / 1000);
       const fbGain = ctx.createGain();
       fbGain.gain.value = feedback / 100;
       const wetGain = ctx.createGain();
-      wetGain.gain.value = wet / 100;
+      wetGain.gain.value = mix / 100;
       const dryGain = ctx.createGain();
-      dryGain.gain.value = 1 - wet / 100;
+      dryGain.gain.value = 1 - mix / 100;
       source.connect(dryGain);
       dryGain.connect(ctx.destination);
       source.connect(delayNode);
@@ -195,13 +282,21 @@ async function applySinglePlugin(
     }
     case "filter": {
       const filter = ctx.createBiquadFilter();
-      const requestedType = String(p.type ?? "lowpass");
-      filter.type = VALID_FILTER_TYPES.includes(requestedType as BiquadFilterType)
-        ? (requestedType as BiquadFilterType)
-        : "lowpass";
-      filter.frequency.value = (p.frequency ?? 1000) as number;
-      filter.Q.value = (p.q ?? 0.707) as number;
-      filter.gain.value = (p.gain ?? 0) as number;
+      const modeVal = resolveParam(p, "mode", "type") ?? 0;
+      let filterType: BiquadFilterType = "lowpass";
+      if (typeof modeVal === "string") {
+        filterType = VALID_FILTER_TYPES.includes(modeVal as BiquadFilterType)
+          ? (modeVal as BiquadFilterType)
+          : "lowpass";
+      } else {
+        filterType = modeVal >= 1 ? "highpass" : "lowpass";
+      }
+      filter.type = filterType;
+      const freq = (resolveParam(p, "freq", "frequency") ?? 1000) as number;
+      filter.frequency.value = freq;
+      const res = (resolveParam(p, "resonance", "q") ?? 0) as number;
+      filter.Q.value = 0.707 + (res / 100) * 10;
+      filter.gain.value = 0;
       source.connect(filter);
       filter.connect(ctx.destination);
       break;
@@ -209,6 +304,7 @@ async function applySinglePlugin(
     case "modulation": {
       const rate = (p.rate ?? 2) as number;
       const depth = (p.depth ?? 50) as number;
+      const mix = (resolveParam(p, "mix") ?? 40) as number;
       const osc = ctx.createOscillator();
       osc.frequency.value = rate;
       const modGain = ctx.createGain();
@@ -217,17 +313,24 @@ async function applySinglePlugin(
       mainGain.gain.value = 0.5;
       osc.connect(modGain);
       modGain.connect(mainGain.gain);
+      const wetGain = ctx.createGain();
+      wetGain.gain.value = mix / 100;
+      const dryGain = ctx.createGain();
+      dryGain.gain.value = 1 - mix / 100;
+      source.connect(dryGain);
+      dryGain.connect(ctx.destination);
       source.connect(mainGain);
-      mainGain.connect(ctx.destination);
+      mainGain.connect(wetGain);
+      wetGain.connect(ctx.destination);
       osc.start(0);
       break;
     }
     case "utility": {
-      const volume = (p.volume ?? 0) as number;
-      const invert = Boolean(p.invert ?? false);
-      const gain = ctx.createGain();
-      gain.gain.value = Math.pow(10, volume / 20);
-      if (invert) {
+      const gainDb = (resolveParam(p, "gain", "volume") ?? 0) as number;
+      const pan = (p.pan ?? 0) as number;
+      const phase = (resolveParam(p, "phase", "invert") ?? 0) as number;
+      let node: AudioNode = source;
+      if (phase) {
         const ws = ctx.createWaveShaper();
         const invCurve = new Float32Array(4096);
         for (let i = 0; i < 4096; i++) {
@@ -235,28 +338,64 @@ async function applySinglePlugin(
         }
         ws.curve = invCurve;
         source.connect(ws);
-        ws.connect(gain);
-      } else {
-        source.connect(gain);
+        node = ws;
       }
-      gain.connect(ctx.destination);
+      const gain = ctx.createGain();
+      gain.gain.value = Math.pow(10, gainDb / 20);
+      node.connect(gain);
+      if (numCh > 1 && ctx.createStereoPanner) {
+        const panner = ctx.createStereoPanner();
+        panner.pan.value = Math.max(-1, Math.min(1, pan / 100));
+        gain.connect(panner);
+        panner.connect(ctx.destination);
+      } else {
+        gain.connect(ctx.destination);
+      }
       break;
     }
     case "noiseGate": {
       const threshold = (p.threshold ?? -40) as number;
+      const attack = (p.attack ?? 1) as number;
+      const release = (p.release ?? 100) as number;
+      const rangeDb = (p.range ?? 60) as number;
+      const hold = (p.hold ?? 20) as number;
+      const threshLin = Math.pow(10, threshold / 20);
+      const rangeLin = Math.pow(10, -rangeDb / 20);
+      const ref = buffer.getChannelData(0);
+      const block = 256;
+      const attackCoef = Math.max(0.001, 1 / Math.max(1, (attack / 1000) * sampleRate / block));
+      const releaseCoef = Math.max(0.001, 1 / Math.max(1, (release / 1000) * sampleRate / block));
+      const holdBlocks = Math.max(0, Math.floor((hold / 1000) * sampleRate / block));
       const gate = ctx.createGain();
-      const gateData = buffer.getChannelData(0);
-      const thresholdLinear = Math.pow(10, threshold / 20);
-      let rms = 0;
-      for (let i = 0; i < gateData.length; i++) rms += gateData[i] * gateData[i];
-      rms = Math.sqrt(rms / gateData.length);
-      gate.gain.value = rms < thresholdLinear ? 0.01 : 1;
+      let g = 1;
+      let holdCount = 0;
+      for (let b = 0; b < len; b += block) {
+        let peak = 0;
+        for (let i = b; i < Math.min(b + block, len); i++) {
+          peak = Math.max(peak, Math.abs(ref[i]));
+        }
+        const open = peak > threshLin;
+        if (open) {
+          holdCount = holdBlocks;
+          const target = 1;
+          g = g + (target - g) * attackCoef;
+        } else if (holdCount > 0) {
+          holdCount--;
+        } else {
+          const target = rangeLin;
+          g = g + (target - g) * releaseCoef;
+        }
+        gate.gain.setValueAtTime(g, b / sampleRate);
+      }
       source.connect(gate);
       gate.connect(ctx.destination);
       break;
     }
     case "bassMono": {
-      const freq = (p.frequency ?? 100) as number;
+      const freq = (resolveParam(p, "crossover", "frequency") ?? 150) as number;
+      const amount = (p.amount ?? 100) as number;
+      const phaseFlip = (p.phase ?? 0) as number;
+      const dryWet = (p.dryWet ?? 100) as number;
       const splitter = ctx.createChannelSplitter(2);
       const lowL = ctx.createBiquadFilter();
       lowL.type = "lowpass";
@@ -270,8 +409,17 @@ async function applySinglePlugin(
       const highR = ctx.createBiquadFilter();
       highR.type = "highpass";
       highR.frequency.value = freq;
+      const monoGain = phaseFlip ? -0.5 : 0.5;
       const monoSum = ctx.createGain();
-      monoSum.gain.value = 0.5;
+      monoSum.gain.value = monoGain;
+      const origLowL = ctx.createGain();
+      origLowL.gain.value = 1 - amount / 100;
+      const origLowR = ctx.createGain();
+      origLowR.gain.value = 1 - amount / 100;
+      const monoLowL = ctx.createGain();
+      monoLowL.gain.value = amount / 100;
+      const monoLowR = ctx.createGain();
+      monoLowR.gain.value = amount / 100;
       const merger = ctx.createChannelMerger(2);
       source.connect(splitter);
       splitter.connect(lowL, 0);
@@ -280,16 +428,33 @@ async function applySinglePlugin(
       splitter.connect(highR, 1);
       lowL.connect(monoSum);
       lowR.connect(monoSum);
-      monoSum.connect(merger, 0, 0);
-      monoSum.connect(merger, 0, 1);
+      lowL.connect(origLowL);
+      lowR.connect(origLowR);
+      monoSum.connect(monoLowL);
+      monoSum.connect(monoLowR);
+      monoLowL.connect(merger, 0, 0);
+      monoLowR.connect(merger, 0, 1);
+      origLowL.connect(merger, 0, 0);
+      origLowR.connect(merger, 0, 1);
       highL.connect(merger, 0, 0);
       highR.connect(merger, 0, 1);
-      merger.connect(ctx.destination);
+      const wetGain = ctx.createGain();
+      wetGain.gain.value = dryWet / 100;
+      const dryGain = ctx.createGain();
+      dryGain.gain.value = 1 - dryWet / 100;
+      merger.connect(wetGain);
+      wetGain.connect(ctx.destination);
+      source.connect(dryGain);
+      dryGain.connect(ctx.destination);
       break;
     }
     case "stereoWidener": {
-      const width = (p.width ?? 150) as number;
+      const width = (p.width ?? 120) as number;
       const widthScale = Math.max(0, width / 100);
+      const midGainDb = (p.midGain ?? 0) as number;
+      const sideGainDb = (p.sideGain ?? 0) as number;
+      const crossover = (p.crossover ?? 200) as number;
+      const mix = (p.mix ?? 100) as number;
       const splitter = ctx.createChannelSplitter(2);
       const sumL = ctx.createGain();
       sumL.gain.value = 0.5;
@@ -299,35 +464,67 @@ async function applySinglePlugin(
       diffL.gain.value = 0.5;
       const diffR = ctx.createGain();
       diffR.gain.value = -0.5;
+      const sideHpL = ctx.createBiquadFilter();
+      sideHpL.type = "highpass";
+      sideHpL.frequency.value = crossover;
+      const sideHpR = ctx.createBiquadFilter();
+      sideHpR.type = "highpass";
+      sideHpR.frequency.value = crossover;
       const sideL = ctx.createGain();
-      sideL.gain.value = widthScale;
+      sideL.gain.value = widthScale * Math.pow(10, sideGainDb / 20);
       const sideR = ctx.createGain();
-      sideR.gain.value = widthScale;
-      const merger = ctx.createChannelMerger(2);
+      sideR.gain.value = widthScale * Math.pow(10, sideGainDb / 20);
+      const midG = ctx.createGain();
+      midG.gain.value = Math.pow(10, midGainDb / 20);
+      const outL = ctx.createGain();
+      outL.gain.value = 1;
+      const outR = ctx.createGain();
+      outR.gain.value = 1;
       source.connect(splitter);
       splitter.connect(sumL, 0);
       splitter.connect(sumR, 1);
       splitter.connect(diffL, 0);
       splitter.connect(diffR, 1);
-      sumL.connect(merger, 0, 0);
-      sumR.connect(merger, 0, 1);
-      diffL.connect(sideL);
-      diffR.connect(sideR);
-      sideL.connect(merger, 0, 0);
-      sideR.connect(merger, 0, 1);
-      merger.connect(ctx.destination);
+      sumL.connect(midG);
+      sumR.connect(midG);
+      diffL.connect(sideHpL);
+      diffR.connect(sideHpR);
+      sideHpL.connect(sideL);
+      sideHpR.connect(sideR);
+      midG.connect(outL);
+      midG.connect(outR);
+      sideL.connect(outL);
+      sideR.connect(outR);
+      const wetGain = ctx.createGain();
+      wetGain.gain.value = mix / 100;
+      const dryGain = ctx.createGain();
+      dryGain.gain.value = 1 - mix / 100;
+      outL.connect(wetGain);
+      outR.connect(wetGain);
+      wetGain.connect(ctx.destination);
+      source.connect(dryGain);
+      dryGain.connect(ctx.destination);
       break;
     }
     case "clipper": {
+      const threshold = (p.threshold ?? -3) as number;
       const ceilingDb = (p.ceiling ?? -0.5) as number;
+      const mode = (p.mode ?? 0) as number;
+      const mix = (p.mix ?? 100) as number;
       const ceiling = Math.pow(10, ceilingDb / 20);
       const ws = ctx.createWaveShaper();
-      ws.curve = makeHardClipCurve(4096, ceiling) as Float32Array<ArrayBuffer>;
-      const gain = ctx.createGain();
-      gain.gain.value = 1;
-      source.connect(gain);
-      gain.connect(ws);
-      ws.connect(ctx.destination);
+      ws.curve = mode === 1
+        ? makeHardClipCurve(4096, ceiling) as Float32Array<ArrayBuffer>
+        : makeSoftClipCurve(4096, ceiling, threshold) as Float32Array<ArrayBuffer>;
+      const wetGain = ctx.createGain();
+      wetGain.gain.value = mix / 100;
+      const dryGain = ctx.createGain();
+      dryGain.gain.value = 1 - mix / 100;
+      source.connect(dryGain);
+      dryGain.connect(ctx.destination);
+      source.connect(ws);
+      ws.connect(wetGain);
+      wetGain.connect(ctx.destination);
       break;
     }
     default:
@@ -347,19 +544,30 @@ async function applyAutoPitch(
   const amount = (p.amount ?? 70) as number;
   const key = (p.key ?? 0) as number;
   const scaleIdx = (p.scale ?? 0) as number;
-  const mix = (p.mix ?? 80) as number;
+  const mix = (resolveParam(p, "mix") ?? 80) as number;
+  const speed = (p.speed ?? 30) as number;
+  const formant = (p.formant ?? 0) as number;
+  const vibrato = (p.vibrato ?? 15) as number;
   const scaleMap: ScaleType[] = ["major", "minor", "chromatic"];
   const scale = scaleMap[scaleIdx] || "major";
   const data = buffer.getChannelData(0);
-  let zeroCrossings = 0;
-  for (let i = 1; i < data.length; i++) {
-    if (data[i - 1] <= 0 && data[i] > 0) zeroCrossings++;
+  const frameSize = Math.max(256, Math.floor((speed / 100) * data.length || 256));
+  const frameCount = Math.max(1, Math.floor(data.length / frameSize));
+  let correctionSum = 0;
+  for (let f = 0; f < frameCount; f++) {
+    const start = f * frameSize;
+    let zc = 0;
+    for (let i = start + 1; i < start + frameSize && i < data.length; i++) {
+      if (data[i - 1] <= 0 && data[i] > 0) zc++;
+    }
+    const fDur = frameSize / buffer.sampleRate;
+    const fFreq = fDur > 0 ? zc / fDur : 440;
+    correctionSum += snapToScale(fFreq, key, scale).correction;
   }
-  const duration = buffer.duration;
-  const detectedFreq = duration > 0 ? zeroCrossings / duration : 440;
-  const snap = snapToScale(detectedFreq, key, scale);
-  const correctionSemitones = snap.correction * (amount / 100);
+  const avgCorrection = correctionSum / frameCount;
+  const correctionSemitones = avgCorrection * (amount / 100);
   const shifted = await pitchShift(buffer, correctionSemitones);
+  void formant;
   const mixRatio = mix / 100;
   const numCh = buffer.numberOfChannels;
   const len = buffer.length;
@@ -373,6 +581,15 @@ async function applyAutoPitch(
   dryGain.gain.value = 1 - mixRatio;
   const wetGain = ctx2.createGain();
   wetGain.gain.value = mixRatio;
+  if (vibrato > 0 && numCh > 0) {
+    const lfo = ctx2.createOscillator();
+    lfo.frequency.value = 5 + vibrato / 20;
+    const lfoGain = ctx2.createGain();
+    lfoGain.gain.value = (vibrato / 100) * mixRatio * 0.5;
+    lfo.connect(lfoGain);
+    lfoGain.connect(wetGain.gain);
+    lfo.start(0);
+  }
   srcDry.connect(dryGain);
   dryGain.connect(ctx2.destination);
   srcWet.connect(wetGain);

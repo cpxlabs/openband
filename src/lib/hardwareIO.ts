@@ -1,4 +1,6 @@
 import { Platform } from "react-native";
+import { OpenBandNative } from "@bridge";
+import type { BridgePatchRoute } from "@bridge";
 
 export interface AudioDevice {
   id: string;
@@ -44,11 +46,52 @@ let patchState: PatchbayState = {
 
 let mediaStream: MediaStream | null = null;
 let previewCtx: AudioContext | null = null;
+let routesHydrated = false;
+
+const useNativeBridge = Platform.OS !== "web";
+
+function nativeSupports(
+  method: keyof typeof OpenBandNative,
+): boolean {
+  return (
+    useNativeBridge &&
+    typeof (OpenBandNative as unknown as Record<string, unknown>)[method] ===
+      "function"
+  );
+}
+
+function toBridgeRoute(route: PatchRoute): BridgePatchRoute {
+  return {
+    id: route.id,
+    source: { ...route.source },
+    targetTrackId: route.targetTrackId,
+    targetChannel: route.targetChannel,
+    gain: route.gain,
+    enabled: route.enabled,
+  };
+}
 
 export async function enumerateAudioDevices(): Promise<{
   inputs: AudioDevice[];
   outputs: AudioDevice[];
 }> {
+  if (nativeSupports("enumerateAudioDevices")) {
+    try {
+      const { inputs, outputs } = await OpenBandNative.enumerateAudioDevices();      patchState = {
+        ...patchState,
+        inputDevices: inputs as AudioDevice[],
+        outputDevices: outputs as AudioDevice[],
+      };
+      return {
+        inputs: inputs as AudioDevice[],
+        outputs: outputs as AudioDevice[],
+      };
+    } catch (e) {
+      console.warn("Native audio device enumeration failed:", e);
+      return { inputs: [], outputs: [] };
+    }
+  }
+
   if (Platform.OS !== "web" || typeof navigator === "undefined") {
     return { inputs: [], outputs: [] };
   }
@@ -123,6 +166,15 @@ export async function openHardwareInput(
   channelCount: number = 2,
   sampleRate: number = 44100,
 ): Promise<MediaStream | null> {
+  if (nativeSupports("openHardwareInput")) {
+    try {
+      await OpenBandNative.openHardwareInput(deviceId, channelCount, sampleRate);
+    } catch (e) {
+      console.error(`Native openHardwareInput failed for ${deviceId}:`, e);
+    }
+    return null;
+  }
+
   if (Platform.OS !== "web" || typeof navigator === "undefined") return null;
 
   try {
@@ -146,6 +198,10 @@ export async function openHardwareInput(
 }
 
 export function closeHardwareInput(): void {
+  if (nativeSupports("closeHardwareInput")) {
+    OpenBandNative.closeHardwareInput().catch(() => {});
+    return;
+  }
   if (mediaStream) {
     mediaStream.getTracks().forEach((t) => t.stop());
     mediaStream = null;
@@ -170,6 +226,9 @@ export function createPatchRoute(
     ...patchState,
     routes: [...patchState.routes, route],
   };
+  if (nativeSupports("createPatchRoute")) {
+    OpenBandNative.createPatchRoute(toBridgeRoute(route)).catch(() => {});
+  }
   return route;
 }
 
@@ -178,6 +237,9 @@ export function removePatchRoute(routeId: string): void {
     ...patchState,
     routes: patchState.routes.filter((r) => r.id !== routeId),
   };
+  if (nativeSupports("removePatchRoute")) {
+    OpenBandNative.removePatchRoute(routeId).catch(() => {});
+  }
 }
 
 export function updatePatchRoute(
@@ -201,6 +263,17 @@ export function getRoutesFromDevice(deviceId: string): PatchRoute[] {
 }
 
 export function getPatchbayState(): PatchbayState {
+  if (nativeSupports("getPatchRoutes") && !routesHydrated) {
+    routesHydrated = true;
+    OpenBandNative.getPatchRoutes()
+      .then((routes) => {
+        patchState = {
+          ...patchState,
+          routes: routes as PatchRoute[],
+        };
+      })
+      .catch(() => {});
+  }
   return JSON.parse(JSON.stringify(patchState));
 }
 
@@ -222,6 +295,7 @@ export function disposeHardwareIO(): void {
     previewCtx.close().catch(() => {});
     previewCtx = null;
   }
+  routesHydrated = false;
   patchState = {
     routes: [],
     inputDevices: [],
