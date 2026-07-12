@@ -20,3 +20,8 @@ electron/node_modules/
 electron/.env
 ios/
 .opencode/
+
+# local sqlite artifacts
+data/*.sqlite
+data/*.sqlite-wal
+data/*.sqlite-shm
