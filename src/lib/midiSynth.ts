@@ -5,6 +5,7 @@ import { MOODS } from "./projectTemplates";
 import { audioBufferToWavBlob } from "./audio";
 import { getSharedAudioContext, createTrackedBlob } from "./universalAudio";
 import { applyPluginChain } from "./pluginChain";
+import { applyAutomationToParam, buildAutomationSchedule } from "./automationEngine";
 import Soundfont from "soundfont-player";
 
 const sfCache: Record<string, Soundfont.Instrument> = {};
@@ -696,6 +697,32 @@ function createDrumSound(ctx: OfflineAudioContext, pitch: number, startTime: num
   return gain
 }
 
+export function getProjectDurationSeconds(
+  tracks: TrackDef[],
+  bpm: number,
+): number {
+  const safeBpm = Math.max(1, bpm);
+  const beatDuration = 60 / safeBpm;
+
+  let totalBeats = 0;
+  let regionMaxEnd = 0;
+  for (const track of tracks) {
+    if (track.midiNotes) {
+      for (const note of track.midiNotes) {
+        const end = note.start + note.duration;
+        if (end > totalBeats) totalBeats = end;
+      }
+    }
+    for (const region of track.regions || []) {
+      const end = region.start + region.duration;
+      if (end > regionMaxEnd) regionMaxEnd = end;
+    }
+  }
+  const hasRegions = tracks.some((t) => (t.regions || []).some((r) => r.url));
+  if (totalBeats === 0 && !hasRegions) return 0;
+  return Math.max(totalBeats * beatDuration, regionMaxEnd) + 2;
+}
+
 export async function renderTracksToUrl(
   tracks: TrackDef[],
   bpm: number,
@@ -956,6 +983,163 @@ export async function renderTracksToUrl(
     return createTrackedBlob(blob);
   } catch (e) {
     console.warn("Native MIDI render failed:", e);
+    return null;
+  }
+}
+
+export async function renderTrackStem(
+  track: TrackDef,
+  bpm: number,
+  duration: number,
+  _buses?: BusDef[],
+): Promise<AudioBuffer | null> {
+  const safeBpm = Math.max(1, bpm);
+  const beatDuration = 60 / safeBpm;
+  if (!duration || duration <= 0) return null;
+
+  const sampleRate = 44100;
+  const numSamples = Math.ceil(sampleRate * duration);
+
+  let totalBeats = 0;
+  let regionMaxEnd = 0;
+  if (track.midiNotes) {
+    for (const note of track.midiNotes) {
+      const end = note.start + note.duration;
+      if (end > totalBeats) totalBeats = end;
+    }
+  }
+  for (const region of track.regions || []) {
+    const end = region.start + region.duration;
+    if (end > regionMaxEnd) regionMaxEnd = end;
+  }
+  const hasRegions = (track.regions || []).some((r) => r.url);
+  if (totalBeats === 0 && !hasRegions) return null;
+
+  if (typeof OfflineAudioContext === "undefined") return null;
+
+  try {
+    const ctx = new OfflineAudioContext(2, numSamples, sampleRate);
+
+    const trackGain = ctx.createGain();
+    trackGain.gain.value = (track.volume ?? 100) / 100;
+    const panNode = ctx.createStereoPanner();
+    panNode.pan.value = (track.pan ?? 0) / 100;
+
+    const automation = track.automation ?? {};
+    for (const key of Object.keys(automation)) {
+      const points = (automation as Record<string, { time: number; value: number; curve: "linear" | "exponential" }[]>)[key];
+      if (!points || points.length === 0) continue;
+      if (key === "volume") {
+        const schedule = buildAutomationSchedule(
+          points.map((p) => ({ ...p, value: (p.value ?? 0) / 100 })),
+          bpm,
+        );
+        applyAutomationToParam(trackGain.gain, schedule, 0);
+      } else if (key === "pan") {
+        const schedule = buildAutomationSchedule(
+          points.map((p) => ({ ...p, value: (p.value ?? 0) / 100 })),
+          bpm,
+        );
+        applyAutomationToParam(panNode.pan, schedule, 0);
+      }
+    }
+
+    panNode.connect(trackGain);
+    trackGain.connect(ctx.destination);
+
+    const decodedRegions: { buffer: AudioBuffer; start: number; duration: number }[] = [];
+    for (const region of track.regions || []) {
+      if (!region.url) continue;
+      try {
+        const r = await fetch(region.url, { credentials: "omit" });
+        const ab = await r.arrayBuffer();
+        const decodeCtx = getSharedAudioContext() || ctx;
+        const buffer = await decodeCtx.decodeAudioData(ab);
+        decodedRegions.push({ buffer, start: region.start, duration: region.duration });
+      } catch (e) {
+        console.warn("Failed to decode region for stem", track.name, e);
+      }
+    }
+
+    const isDrumTrack =
+      track.name.toLowerCase().includes("bateria") ||
+      track.name.toLowerCase().includes("drums") ||
+      track.name.toLowerCase().includes("percussão") ||
+      track.name.toLowerCase().includes("percussion");
+    const waveform = getTrackWaveform(track.name);
+    const sfName = getTrackSfName(track.name);
+    const sfInst = sfCache[sfName];
+
+    if (track.plugins && track.plugins.length > 0) {
+      const trackBuf = await renderTrackBuffer(
+        track,
+        beatDuration,
+        duration,
+        sampleRate,
+        numSamples,
+        decodedRegions,
+      );
+      const procBuf = await applyPluginChain(trackBuf, track.plugins, sampleRate, {
+        duration,
+      });
+      const out = ctx.createBufferSource();
+      out.buffer = procBuf;
+      out.connect(panNode);
+    } else {
+      if (track.midiNotes)
+        for (const note of track.midiNotes) {
+          const noteStart = note.start * beatDuration;
+          const noteDur = note.duration * beatDuration;
+          const vol = Math.max(0.01, note.velocity / 127) * 0.5;
+
+          if (sfInst && sfInst.buffers && sfInst.buffers[note.pitch]) {
+            const buffer = sfInst.buffers[note.pitch];
+            const source = ctx.createBufferSource();
+            source.buffer = buffer;
+            const noteGain = ctx.createGain();
+            noteGain.gain.setValueAtTime(vol, noteStart);
+            noteGain.gain.setValueAtTime(vol, noteStart + noteDur);
+            noteGain.gain.linearRampToValueAtTime(0, noteStart + noteDur + 0.1);
+            source.connect(noteGain);
+            noteGain.connect(panNode);
+            source.start(noteStart);
+            source.stop(noteStart + noteDur + 0.1);
+          } else if (isDrumTrack) {
+            const drumNode = createDrumSound(ctx, note.pitch, noteStart, note.velocity);
+            drumNode.connect(panNode);
+          } else {
+            const freq = NOTE_FREQS[note.pitch] || 440;
+            const osc = ctx.createOscillator();
+            osc.type = waveform;
+            osc.frequency.setValueAtTime(freq, noteStart);
+            const noteGain = ctx.createGain();
+            noteGain.gain.setValueAtTime(0, noteStart);
+            noteGain.gain.linearRampToValueAtTime(vol, noteStart + 0.005);
+            noteGain.gain.setValueAtTime(vol, noteStart + noteDur - 0.02);
+            noteGain.gain.linearRampToValueAtTime(0, noteStart + noteDur);
+            osc.connect(noteGain);
+            noteGain.connect(panNode);
+            osc.start(noteStart);
+            osc.stop(noteStart + noteDur + 0.05);
+          }
+        }
+
+      for (const region of decodedRegions) {
+        try {
+          const source = ctx.createBufferSource();
+          source.buffer = region.buffer;
+          source.connect(panNode);
+          source.start(region.start, 0, Math.min(region.duration, Math.max(0, duration - region.start)));
+        } catch (e) {
+          console.warn("Failed to schedule region for stem", track.name, e);
+        }
+      }
+    }
+
+    const buffer = await ctx.startRendering();
+    return buffer;
+  } catch (e) {
+    console.warn("renderTrackStem failed:", e);
     return null;
   }
 }

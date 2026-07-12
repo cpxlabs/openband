@@ -17,7 +17,8 @@ import {
   setAudioModeAsync,
   RecordingPresets,
 } from "expo-audio";
-import { renderTracksToUrl, disposeAudioContext } from "../../src/lib/midiSynth";
+import { renderTracksToUrl, disposeAudioContext, getProjectDurationSeconds } from "../../src/lib/midiSynth";
+import { PlaybackEngine } from "../../src/lib/playbackEngine";
 import { audioSystem, createTrackedBlob, markBlobActive, revokeTrackedBlob } from "../../src/lib/universalAudio";
 import { API_BASE_URL } from "../../src/lib/apiUrl";
 import { startClock, stopClock, onClockTick, disposeClockManager } from "../../src/lib/clockManager";
@@ -263,6 +264,14 @@ export default function Studio() {
   const webAudio = useWebAudioPlayer();
   const isWeb = Platform.OS === "web";
   const currentUrlRef = useRef<string | null>(null);
+  const engineRef = useRef<PlaybackEngine | null>(null);
+  const [engineActive, setEngineActive] = useState(false);
+  const currentSeekRef = useRef(0);
+
+  function getEngine(): PlaybackEngine {
+    if (!engineRef.current) engineRef.current = new PlaybackEngine();
+    return engineRef.current;
+  }
 
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const recorderState = useAudioRecorderState(audioRecorder);
@@ -512,9 +521,21 @@ export default function Studio() {
     prevRegionUrlsRef.current = current;
   }, [tracks]);
 
-  const isPlaying = isWeb ? webAudio.isPlaying : player.playing;
-  const currentTime = isWeb ? webAudio.currentTime : status.currentTime || 0;
-  const duration = isWeb ? webAudio.duration : status.duration || 240;
+  const isPlaying = isWeb
+    ? engineActive
+      ? (engineRef.current?.isPlaying ?? false)
+      : webAudio.isPlaying
+    : player.playing;
+  const currentTime = isWeb
+    ? engineActive
+      ? (engineRef.current?.getCurrentTime() ?? 0)
+      : webAudio.currentTime
+    : status.currentTime || 0;
+  const duration = isWeb
+    ? engineActive
+      ? (engineRef.current?.duration ?? 0)
+      : webAudio.duration
+    : status.duration || 240;
   const anySolo = useMemo(() => tracks.some((t) => t.solo), [tracks]);
 
   const sendCursorRef = useRef(sendCursor);
@@ -587,7 +608,11 @@ export default function Studio() {
 
   useEffect(() => {
     const unsub = onClockTick((_time, audioTime) => {
-      const timeSource = isWeb ? (webAudio?.currentTime ?? audioTime) : audioTime;
+      const timeSource = isWeb
+        ? engineActive
+          ? (engineRef.current?.getCurrentTime() ?? audioTime)
+          : (webAudio?.currentTime ?? audioTime)
+        : audioTime;
       const beatsPerMeasure = projectTimeSig.split("/").map(Number)[0];
       const beat = ((timeSource * metronome.bpm) / 60) % (beatsPerMeasure * 4);
       recordFrame();
@@ -602,23 +627,43 @@ export default function Studio() {
       }
     });
     return unsub;
-  }, [metronome.bpm, projectTimeSig, isConnected, isWeb, webAudio]);
+  }, [metronome.bpm, projectTimeSig, isConnected, isWeb, webAudio, engineActive]);
 
   const togglePlay = useCallback(async () => {
     if (isWeb) webAudio.unlock();
-    const playing = isWeb ? webAudio.isPlaying : player.playing;
+    const playing = isWeb
+      ? engineActive
+        ? (engineRef.current?.isPlaying ?? false)
+        : webAudio.isPlaying
+      : player.playing;
     if (playing) {
-      if (isWeb) webAudio.pause(); else player.pause();
+      if (isWeb && engineActive && engineRef.current) {
+        engineRef.current.pause();
+        currentSeekRef.current = engineRef.current.getCurrentTime();
+        setEngineActive(false);
+      } else if (isWeb) {
+        webAudio.pause();
+      } else {
+        player.pause();
+      }
       return;
     }
 
     try {
-      await audioSystem.ensureContext();
-    } catch {
-      setAutoplayBlocked(true);
-      return;
+      const ctx = await audioSystem.ensureContext();
+      if (ctx) {
+        const engine = getEngine();
+        const durSec = getProjectDurationSeconds(tracks, initialBpm);
+        const beatsPerMeasure = projectTimeSig.split("/").map(Number)[0];
+        await engine.prepare(tracks, initialBpm, durSec, beatsPerMeasure);
+        engine.onEnded = () => setEngineActive(false);
+        await engine.play(currentSeekRef.current);
+        setEngineActive(true);
+        return;
+      }
+    } catch (e) {
+      console.warn("PlaybackEngine unavailable, falling back to blob playback:", e);
     }
-    setAutoplayBlocked(false);
 
     if (currentUrlRef.current) revokeTrackedBlob(currentUrlRef.current);
     let url = await renderTracksToUrl(tracks, initialBpm, projectMood, buses);
@@ -643,17 +688,29 @@ export default function Studio() {
         setAutoplayBlocked(true);
       }
     }
-  }, [player, webAudio, isWeb, tracks, initialBpm, projectMood, buses, pitchCorrected, playbackRate, pitchShiftSemitones]);
+  }, [player, webAudio, isWeb, tracks, initialBpm, projectMood, buses, pitchCorrected, playbackRate, pitchShiftSemitones, engineActive, projectTimeSig]);
 
   const seekRelative = useCallback((seconds: number) => {
+    if (isWeb && engineActive && engineRef.current) {
+      engineRef.current.seek(engineRef.current.getCurrentTime() + seconds);
+      currentSeekRef.current = engineRef.current.getCurrentTime();
+      return;
+    }
     if (isWeb) {
       webAudio.seekTo(Math.max(0, webAudio.currentTime + seconds));
     } else if (player) {
       player.seekTo(Math.max(0, (status.currentTime || 0) + seconds));
     }
-  }, [isWeb, webAudio, player, status.currentTime]);
+  }, [isWeb, webAudio, player, status.currentTime, engineActive]);
 
   const stopPlayback = useCallback(() => {
+    if (isWeb && engineActive && engineRef.current) {
+      engineRef.current.stop();
+      currentSeekRef.current = 0;
+      setEngineActive(false);
+      setCurrentBeat(0);
+      return;
+    }
     if (isWeb) {
       webAudio.pause();
       webAudio.seekTo(0);
@@ -663,11 +720,13 @@ export default function Studio() {
     }
     stopClock();
     setCurrentBeat(0);
-  }, [isWeb, webAudio, player]);
+  }, [isWeb, webAudio, player, engineActive]);
 
   // Stop playback when studio unmounts
   useEffect(() => () => {
-    if (isWeb) webAudio.pause(); else player.pause();
+    if (isWeb && engineRef.current) engineRef.current.dispose();
+    else if (isWeb) webAudio.pause();
+    else player.pause();
   }, [player, isWeb, webAudio]);
 
   const toggleRecording = useCallback(async () => {
@@ -801,6 +860,15 @@ export default function Studio() {
 
   const rerenderAfterMuteSolo = useCallback(
     async (updatedTracks: TrackDef[]) => {
+      if (isWeb && engineActive && engineRef.current) {
+        try {
+          const durSec = getProjectDurationSeconds(updatedTracks, initialBpm);
+          await engineRef.current.syncTracks(updatedTracks, initialBpm, durSec);
+          return;
+        } catch (e) {
+          console.warn("Engine sync failed, falling back to blob re-render:", e);
+        }
+      }
       try {
         await audioSystem.ensureContext();
         if (currentUrlRef.current) revokeTrackedBlob(currentUrlRef.current);
@@ -831,7 +899,7 @@ export default function Studio() {
       console.warn("rerenderAfterMuteSolo render failed:", e);
     }
   },
-  [player, webAudio, isWeb, initialBpm, projectMood, buses, pitchCorrected, playbackRate, pitchShiftSemitones],
+  [player, webAudio, isWeb, initialBpm, projectMood, buses, pitchCorrected, playbackRate, pitchShiftSemitones, engineActive],
   );
 
   const toggleMute = useCallback(
@@ -840,11 +908,16 @@ export default function Studio() {
         t.id === trackId ? { ...t, muted: !t.muted } : t,
       );
       setTracks(updated);
+      const newMuted = !tracks.find((t) => t.id === trackId)?.muted;
+      if (isWeb && engineActive && engineRef.current) {
+        engineRef.current.setMuted(trackId, newMuted);
+        return;
+      }
       rerenderAfterMuteSolo(updated).catch((e) =>
         console.warn("toggleMute rerender failed:", e),
       );
     },
-    [tracks, setTracks, rerenderAfterMuteSolo],
+    [tracks, setTracks, rerenderAfterMuteSolo, isWeb, engineActive],
   );
 
   const toggleSolo = useCallback(
@@ -853,11 +926,16 @@ export default function Studio() {
         t.id === trackId ? { ...t, solo: !t.solo } : t,
       );
       setTracks(updated);
+      const newSolo = !tracks.find((t) => t.id === trackId)?.solo;
+      if (isWeb && engineActive && engineRef.current) {
+        engineRef.current.setSolo(trackId, newSolo);
+        return;
+      }
       rerenderAfterMuteSolo(updated).catch((e) =>
         console.warn("toggleSolo rerender failed:", e),
       );
     },
-    [tracks, setTracks, rerenderAfterMuteSolo],
+    [tracks, setTracks, rerenderAfterMuteSolo, isWeb, engineActive],
   );
 
   const deleteTrack = useCallback(
@@ -879,15 +957,21 @@ export default function Studio() {
       setTracks(
         tracks.map((t) => (t.id === trackId ? { ...t, volume: vol } : t)),
       );
+      if (isWeb && engineActive && engineRef.current) {
+        engineRef.current.setTrackVolume(trackId, vol);
+      }
     },
-    [tracks, setTracks],
+    [tracks, setTracks, isWeb, engineActive],
   );
 
   const setTrackPan = useCallback(
     (trackId: string, pan: number) => {
       setTracks(tracks.map((t) => (t.id === trackId ? { ...t, pan } : t)));
+      if (isWeb && engineActive && engineRef.current) {
+        engineRef.current.setTrackPan(trackId, pan);
+      }
     },
-    [tracks, setTracks],
+    [tracks, setTracks, isWeb, engineActive],
   );
 
   const setTrackColor = useCallback(
