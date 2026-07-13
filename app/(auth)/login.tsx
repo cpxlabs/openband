@@ -33,6 +33,25 @@ export default function Login() {
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+  const friendlyAuthError = (e: unknown): string => {
+    const status = (e as { status?: number })?.status;
+    const message =
+      e instanceof Error
+        ? e.message
+        : typeof e === "string"
+        ? e
+        : "";
+    const lower = message.toLowerCase();
+    if (
+      lower.includes("rate limit") ||
+      lower.includes("too many requests") ||
+      status === 429
+    ) {
+      return "Muitas tentativas. Aguarde alguns instantes e tente novamente.";
+    }
+    return message || "Ocorreu um erro inesperado. Tente novamente.";
+  };
+
   const handleSubmit = async () => {
     if (!email.trim() || !password.trim() || (isSignUp && !name.trim())) {
       setError("Preencha todos os campos.");
@@ -68,7 +87,7 @@ export default function Login() {
           options: { data: { name: name.trim() } },
         });
         if (error) {
-          setError(error.message);
+          setError(friendlyAuthError(error));
           return;
         }
         if (data.session) {
@@ -81,11 +100,11 @@ export default function Login() {
           email,
           password,
         });
-        if (error) setError(error.message);
+        if (error) setError(friendlyAuthError(error));
       }
     } catch (e) {
       console.error("Login error:", e);
-      setError("Ocorreu um erro inesperado. Tente novamente.");
+      setError(friendlyAuthError(e));
     } finally {
       setLoading(false);
     }
@@ -107,7 +126,7 @@ export default function Login() {
           email.trim()
         );
         if (error) {
-          setError(error.message);
+          setError(friendlyAuthError(error));
           return;
         }
         setResetMessage("Enviamos um link de redefinição para o seu e-mail.");
@@ -119,7 +138,7 @@ export default function Login() {
       }
     } catch (e) {
       console.error("Reset password error:", e);
-      setError("Ocorreu um erro inesperado. Tente novamente.");
+      setError(friendlyAuthError(e));
     }
   };
 
@@ -137,7 +156,11 @@ export default function Login() {
         }}
       >
         <View className="items-center mb-12">
-          <View className="w-20 h-20 rounded-2xl bg-brand-primary items-center justify-center mb-6 shadow-lg shadow-brand-primary/30">
+          <View
+            className="w-20 h-20 rounded-2xl bg-brand-primary items-center justify-center mb-6 shadow-lg shadow-brand-primary/30"
+            accessibilityRole="image"
+            accessibilityLabel="OpenBand"
+          >
             <Text className="text-white text-4xl">♫</Text>
           </View>
           <Text className="text-white text-4xl font-bold tracking-tight">

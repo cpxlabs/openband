@@ -7,6 +7,7 @@ import {
   ScrollView,
   Platform,
   Alert,
+  Modal,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
@@ -291,6 +292,7 @@ export default function Studio() {
   const [showOutputSelector, setShowOutputSelector] = useState(false);
   const [showPatchbay, setShowPatchbay] = useState(false);
   const [showMidi, setShowMidi] = useState(false);
+  const [showToolbarOverflow, setShowToolbarOverflow] = useState(false);
   const [colorPickerTrackId, setColorPickerTrackId] = useState<string | null>(null);
   const [oneKnobValues, setOneKnobValues] = useState<
     Record<string, Record<string, number>>
@@ -1916,9 +1918,9 @@ export default function Studio() {
 
         <ScrollView
           horizontal
-          showsHorizontalScrollIndicator={false}
+          showsHorizontalScrollIndicator={!resp.isDesktop}
           className="mx-2 flex-1 min-w-[200px]"
-          contentContainerStyle={{ alignItems: "center", gap: 12, paddingHorizontal: 4 }}
+          contentContainerStyle={{ alignItems: "center", gap: 12, paddingHorizontal: 4, paddingRight: 40 }}
         >
           <Metronome
             settings={metronome}
@@ -2018,6 +2020,58 @@ export default function Studio() {
             </Text>
           </Pressable>
         </ScrollView>
+
+        {!resp.isDesktop && (
+          <Pressable
+            onPress={() => setShowToolbarOverflow(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Mais ferramentas"
+            className="h-8 rounded-lg flex-row items-center justify-center px-2 bg-dark-muted active:opacity-70 focus-ring"
+          >
+            <Text className="text-gray-300 text-xs">⋯ mais</Text>
+          </Pressable>
+        )}
+
+        <Modal
+          visible={showToolbarOverflow}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowToolbarOverflow(false)}
+        >
+          <Pressable
+            className="flex-1 bg-black/50"
+            onPress={() => setShowToolbarOverflow(false)}
+          >
+            <View className="mt-14 mr-2 ml-auto w-56 bg-dark-muted rounded-lg p-2 gap-1">
+              {[
+                { label: "🎵  Afinador", action: () => setShowTuner(true) },
+                { label: "⌘K  Comandos", action: () => setShowCommandPalette(true) },
+                { label: "⎇  Branches", action: () => setShowBranchManager(true) },
+                { label: "✓  Commit", action: () => setShowCommitModal(true) },
+                { label: "🎛️  Sampler", action: () => setShowSampler(true) },
+                { label: "🎹  Synth", action: () => setShowSynth(true) },
+                { label: "🔊  Saída de áudio", action: () => setShowOutputSelector(true) },
+                { label: "🔌  Patchbay", action: () => setShowPatchbay(true) },
+                { label: "🎹  MIDI", action: () => setShowMidi(true) },
+                { label: "🔁  Looper", action: () => setShowLooper(true) },
+                { label: "⌨  Code Sampler", action: () => setShowCodeSampler(true) },
+                { label: "✨  Prompt Sampler", action: () => setShowPromptSampler(true) },
+                { label: "📂  Samples", action: () => setShowSampleBrowser((prev) => !prev) },
+              ].map((item) => (
+                <Pressable
+                  key={item.label}
+                  onPress={() => {
+                    setShowToolbarOverflow(false);
+                    item.action();
+                  }}
+                  className="h-9 rounded-md px-3 justify-center active:opacity-70"
+                >
+                  <Text className="text-gray-200 text-sm">{item.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </Pressable>
+        </Modal>
 
         <View className="flex-row items-center gap-2">
           <TimeDisplay seconds={currentTime} />
