@@ -104,4 +104,9 @@ export const tauriBridge: NativeBridge = {
     warnStub("getPatchRoutes");
     return [];
   },
+
+  async runVoiceCleaner(_input: string): Promise<string> {
+    warnStub("runVoiceCleaner");
+    return _input;
+  },
 };

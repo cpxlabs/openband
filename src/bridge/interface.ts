@@ -69,4 +69,5 @@ export interface NativeBridge {
   createPatchRoute(route: BridgePatchRoute): Promise<void>;
   removePatchRoute(routeId: string): Promise<void>;
   getPatchRoutes(): Promise<BridgePatchRoute[]>;
+  runVoiceCleaner?(input: string): Promise<string>;
 }

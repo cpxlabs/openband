@@ -372,7 +372,136 @@ export async function downloadVideoFile(
 ): Promise<void> {
   onProgress?.(50);
 
-  // Use the existing audioSystem exportToFile pattern
   await audioSystem.exportToFile(blob, filename);
   onProgress?.(100);
+}
+
+export interface RenderVideoJobOptions {
+  durationSec: number;
+  fps?: number;
+  onProgress?: (pct: number) => void;
+}
+
+export interface RenderVideoJobResult {
+  blob: Blob;
+  mime: string;
+}
+
+export function frameCount(durationSec: number, fps: number): number {
+  if (!fps || fps <= 0 || !durationSec || durationSec <= 0) return 0;
+  return Math.ceil(durationSec * fps);
+}
+
+export function mixdownLength(sampleRate: number, durationSec: number): number {
+  if (!sampleRate || sampleRate <= 0 || !durationSec || durationSec <= 0) return 0;
+  return Math.ceil(sampleRate * durationSec);
+}
+
+export function isVideoExportSupported(): boolean {
+  if (typeof MediaRecorder === "undefined") return false;
+  if (typeof document === "undefined") return false;
+  try {
+    const canvas = document.createElement("canvas");
+    return (
+      typeof canvas.getContext === "function" &&
+      typeof (canvas as unknown as { captureStream?: unknown }).captureStream ===
+        "function"
+    );
+  } catch {
+    return false;
+  }
+}
+
+function drawLevelBar(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  progress: number,
+): void {
+  ctx.fillStyle = "#0f0f14";
+  ctx.fillRect(0, 0, width, height);
+
+  const barTop = height * 0.4;
+  const barHeight = height * 0.2;
+  const padding = width * 0.1;
+  const barWidth = width - padding * 2;
+
+  ctx.fillStyle = "#1e1e2e";
+  ctx.beginPath();
+  ctx.roundRect(padding, barTop, barWidth, barHeight, 8);
+  ctx.fill();
+
+  const fillWidth = Math.max(0, Math.min(1, progress)) * barWidth;
+  ctx.fillStyle = "#6366f1";
+  ctx.beginPath();
+  ctx.roundRect(padding, barTop, fillWidth, barHeight, 8);
+  ctx.fill();
+}
+
+export async function renderVideoJob(
+  opts: RenderVideoJobOptions,
+): Promise<RenderVideoJobResult> {
+  if (!isVideoExportSupported()) {
+    throw new Error("video-export-unsupported");
+  }
+
+  const fps = opts.fps && opts.fps > 0 ? opts.fps : 30;
+  const durationSec = Math.max(0, opts.durationSec || 0);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = 1080;
+  canvas.height = 1080;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("video-export-unsupported");
+
+  const videoStream = canvas.captureStream(fps);
+
+  let audioTracks: MediaStreamTrack[] = [];
+  try {
+    const liveCtx = audioSystem.audioCtx ?? (await audioSystem.ensureContext());
+    if (liveCtx && typeof liveCtx.createMediaStreamDestination === "function") {
+      const dest = liveCtx.createMediaStreamDestination();
+      audioTracks = dest.stream.getAudioTracks();
+    }
+  } catch {
+    audioTracks = [];
+  }
+
+  const combined = new MediaStream([
+    ...videoStream.getVideoTracks(),
+    ...audioTracks,
+  ]);
+
+  const mime = "video/webm";
+  const recorder = new MediaRecorder(combined, {
+    mimeType: mime,
+    videoBitsPerSecond: 2_500_000,
+  });
+
+  const chunks: BlobPart[] = [];
+  recorder.ondataavailable = (e) => {
+    if (e.data && e.data.size > 0) chunks.push(e.data);
+  };
+  const done = new Promise<void>((resolve) => {
+    recorder.onstop = () => resolve();
+  });
+
+  recorder.start(100);
+  opts.onProgress?.(0);
+
+  const totalFrames = frameCount(durationSec, fps);
+  for (let frame = 0; frame <= totalFrames; frame++) {
+    const progress = totalFrames === 0 ? 1 : frame / totalFrames;
+    drawLevelBar(ctx, canvas.width, canvas.height, progress);
+    opts.onProgress?.(Math.round(progress * 100));
+    if (frame % 5 === 0) {
+      await new Promise((r) => setTimeout(r, 0));
+    }
+  }
+
+  recorder.stop();
+  await done;
+
+  const blob = new Blob(chunks, { type: mime });
+  return { blob, mime };
 }

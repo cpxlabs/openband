@@ -166,4 +166,8 @@ export const browserBridge: NativeBridge = {
   async getPatchRoutes(): Promise<BridgePatchRoute[]> {
     return [];
   },
+
+  async runVoiceCleaner(_input: string): Promise<string> {
+    return _input;
+  },
 };

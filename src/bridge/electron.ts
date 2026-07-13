@@ -96,4 +96,10 @@ export const electronBridge: NativeBridge = {
   async getPatchRoutes(): Promise<BridgePatchRoute[]> {
     return requireAPI().getPatchRoutes();
   },
+
+  async runVoiceCleaner(input: string): Promise<string> {
+    const api = requireAPI() as Partial<NativeBridge>;
+    if (api.runVoiceCleaner) return api.runVoiceCleaner(input);
+    return input;
+  },
 };

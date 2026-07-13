@@ -110,7 +110,8 @@ export type PluginType =
   | "autoPitch"
   | "bassMono"
   | "stereoWidener"
-  | "clipper";
+  | "clipper"
+  | "voiceCleaner";
 
 export interface PluginParamSpec {
   id: string;
@@ -1635,6 +1636,60 @@ export const PLUGIN_SPECS: Record<PluginType, PluginTypeSpec> = {
       },
     ],
   },
+  voiceCleaner: {
+    params: [
+      {
+        id: "threshold",
+        label: "Threshold",
+        min: -80,
+        max: 0,
+        step: 0.5,
+        default: -40,
+        unit: "dB",
+      },
+      {
+        id: "highpass",
+        label: "High-Pass",
+        min: 20,
+        max: 500,
+        step: 1,
+        default: 80,
+        unit: "Hz",
+      },
+      {
+        id: "reduction",
+        label: "Reduction",
+        min: 0,
+        max: 100,
+        step: 1,
+        default: 40,
+        unit: "%",
+      },
+      {
+        id: "mix",
+        label: "Mix",
+        min: 0,
+        max: 100,
+        step: 1,
+        default: 100,
+        unit: "%",
+      },
+    ],
+    presets: [
+      {
+        name: "Podcast",
+        values: { threshold: -50, highpass: 100, reduction: 60, mix: 100 },
+      },
+      {
+        name: "Voz Suave",
+        values: { threshold: -45, highpass: 80, reduction: 40, mix: 100 },
+      },
+      {
+        name: "Hard Gate",
+        values: { threshold: -30, highpass: 120, reduction: 80, mix: 100 },
+      },
+    ],
+  },
 };
 
 const PLUGIN_LATENCY: Partial<Record<PluginType, number>> = {
@@ -1656,6 +1711,7 @@ const PLUGIN_LATENCY: Partial<Record<PluginType, number>> = {
   bassMono: 0,
   stereoWidener: 0,
   clipper: 0,
+  voiceCleaner: 0,
 };
 
 (Object.keys(PLUGIN_SPECS) as PluginType[]).forEach((type) => {
@@ -1721,6 +1777,7 @@ export const PLUGIN_PRESETS: Partial<Plugin>[] = [
   { name: "Auto-Pitch", type: "autoPitch", color: "#ff6482" },
   { name: "Bass Mono", type: "bassMono", color: "#34c759" },
   { name: "Stereo Widener", type: "stereoWidener", color: "#5ac8fa" },
+  { name: "Voice Cleaner", type: "voiceCleaner", color: "#30d158" },
 ];
 
 export const PLUGIN_ICONS: Record<string, string> = {
@@ -1743,6 +1800,7 @@ export const PLUGIN_ICONS: Record<string, string> = {
   autoPitch: "↗",
   bassMono: "⊡",
   stereoWidener: "⇔",
+  voiceCleaner: "♻",
 };
 
 export interface GuitarPedal {

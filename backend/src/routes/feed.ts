@@ -243,7 +243,7 @@ router.post(
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       const userId = req.userTokenData!.userId
-      const postId = req.params.id
+      const postId = req.params.id as string
 
       const { data: existing } = await supabase
         .from("post_likes")
@@ -284,7 +284,7 @@ router.post(
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       const userId = req.userTokenData!.userId
-      const postId = req.params.id
+      const postId = req.params.id as string
       const newProjectId =
         typeof req.body?.newProjectId === "string" ? req.body.newProjectId : undefined
 

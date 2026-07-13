@@ -1841,6 +1841,70 @@ function UtilityEditor({
   );
 }
 
+function VoiceCleanerEditor({
+  plugin,
+  onParamChange,
+}: {
+  plugin: Plugin;
+  onParamChange: (id: string, v: number) => void;
+}) {
+  return (
+    <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+      <ParamRow
+        param={{
+          id: "threshold",
+          label: "Threshold",
+          min: -80,
+          max: 0,
+          step: 0.5,
+          unit: "dB",
+        }}
+        value={plugin.params.threshold ?? -40}
+        onChange={(v) => onParamChange("threshold", v)}
+      />
+      <ParamRow
+        param={{
+          id: "highpass",
+          label: "High-Pass",
+          min: 20,
+          max: 500,
+          step: 1,
+          unit: "Hz",
+        }}
+        value={plugin.params.highpass ?? 80}
+        onChange={(v) => onParamChange("highpass", v)}
+      />
+      <ParamRow
+        param={{
+          id: "reduction",
+          label: "Reduction",
+          min: 0,
+          max: 100,
+          step: 1,
+          unit: "%",
+        }}
+        value={plugin.params.reduction ?? 40}
+        onChange={(v) => onParamChange("reduction", v)}
+      />
+      <ParamRow
+        param={{
+          id: "mix",
+          label: "Mix",
+          min: 0,
+          max: 100,
+          step: 1,
+          unit: "%",
+        }}
+        value={plugin.params.mix ?? 100}
+        onChange={(v) => onParamChange("mix", v)}
+      />
+      <Text className="text-gray-600 text-[10px] mt-2 text-center">
+        Voice Cleaner remove ruído de fundo com high-pass e noise gate.
+      </Text>
+    </ScrollView>
+  );
+}
+
 type EditorComp = (props: {
   plugin: Plugin;
   onParamChange: (id: string, v: number) => void;
@@ -1867,6 +1931,7 @@ const EDITOR_MAP: Record<string, EditorComp> = {
   bassMono: BassMonoEditor,
   stereoWidener: StereoWidenerEditor,
   utility: UtilityEditor,
+  voiceCleaner: VoiceCleanerEditor,
 };
 
 export function PluginEditor({

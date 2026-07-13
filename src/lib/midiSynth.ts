@@ -6,7 +6,26 @@ import { audioBufferToWavBlob } from "./audio";
 import { getSharedAudioContext, createTrackedBlob } from "./universalAudio";
 import { applyPluginChain } from "./pluginChain";
 import { applyAutomationToParam, buildAutomationSchedule } from "./automationEngine";
+import { crossfadeGain } from "./regionEdit";
+import { timeStretch } from "./timeStretch";
 import Soundfont from "soundfont-player";
+
+async function maybeTimeStretchRegion(
+  buffer: AudioBuffer,
+  targetDuration: number,
+): Promise<AudioBuffer> {
+  if (!targetDuration || targetDuration <= 0) return buffer;
+  const src = buffer.duration;
+  if (src <= 0) return buffer;
+  const rate = src / targetDuration;
+  if (!isFinite(rate) || Math.abs(rate - 1) < 0.02) return buffer;
+  try {
+    const stretched = await timeStretch(buffer, rate);
+    return stretched && stretched.length > 0 ? stretched : buffer;
+  } catch {
+    return buffer;
+  }
+}
 
 const sfCache: Record<string, Soundfont.Instrument> = {};
 
@@ -1124,12 +1143,48 @@ export async function renderTrackStem(
           }
         }
 
-      for (const region of decodedRegions) {
+      const ordered = decodedRegions
+        .map((r, i) => ({ r, i }))
+        .sort((a, b) => a.r.start - b.r.start);
+      for (let oi = 0; oi < ordered.length; oi++) {
+        const region = ordered[oi].r;
         try {
           const source = ctx.createBufferSource();
           source.buffer = region.buffer;
-          source.connect(panNode);
-          source.start(region.start, 0, Math.min(region.duration, Math.max(0, duration - region.start)));
+          const playDur = Math.min(region.duration, Math.max(0, duration - region.start));
+          if (playDur <= 0) continue;
+          const regionEnd = region.start + playDur;
+          const prev = oi > 0 ? ordered[oi - 1].r : null;
+          const prevEnd = prev ? prev.start + prev.duration : -Infinity;
+          const overlapIn = prev ? Math.max(0, prevEnd - region.start) : 0;
+          const gainNode = ctx.createGain();
+          if (overlapIn > 0) {
+            const fadeSec = Math.min(overlapIn, playDur, 0.05);
+            const [, gIn] = crossfadeGain(0, 1);
+            gainNode.gain.setValueAtTime(0.0001, region.start);
+            gainNode.gain.linearRampToValueAtTime(gIn, region.start + fadeSec);
+            const next = oi + 1 < ordered.length ? ordered[oi + 1].r : null;
+            const overlapOut = next ? Math.max(0, regionEnd - next.start) : 0;
+            if (overlapOut > 0) {
+              const fadeOut = Math.min(overlapOut, playDur, 0.05);
+              gainNode.gain.setValueAtTime(gIn, regionEnd - fadeOut);
+              gainNode.gain.linearRampToValueAtTime(0.0001, regionEnd);
+            }
+          } else {
+            const next = oi + 1 < ordered.length ? ordered[oi + 1].r : null;
+            const overlapOut = next ? Math.max(0, regionEnd - next.start) : 0;
+            gainNode.gain.setValueAtTime(1, region.start);
+            if (overlapOut > 0) {
+              const fadeOut = Math.min(overlapOut, playDur, 0.05);
+              const [gOut] = crossfadeGain(1, 0);
+              gainNode.gain.setValueAtTime(gOut, regionEnd - fadeOut);
+              gainNode.gain.linearRampToValueAtTime(0.0001, regionEnd);
+            }
+          }
+          source.buffer = await maybeTimeStretchRegion(region.buffer, playDur);
+          source.connect(gainNode);
+          gainNode.connect(panNode);
+          source.start(region.start, 0, playDur);
         } catch (e) {
           console.warn("Failed to schedule region for stem", track.name, e);
         }

@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { View, Text, Modal, Pressable, Alert } from "react-native";
 import { ProgressBar } from "./ProgressBar";
 import { audioSystem } from "../lib/universalAudio";
-import { exportVideo, downloadVideoFile, VideoExportOptions } from "../lib/videoExport";
+import { exportVideo, downloadVideoFile, VideoExportOptions, isVideoExportSupported, renderVideoJob } from "../lib/videoExport";
 
 type ExportFormat = "wav" | "aiff" | "flac";
 type BitDepth = 16 | 24 | 32;
@@ -67,6 +67,7 @@ export function BounceDialog({
   const [exporting, setExporting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [videoColor, setVideoColor] = useState("#6366f1");
+  const [video, setVideo] = useState(false);
 
   const updateProgress = useCallback((pct: number) => {
     setProgress(pct);
@@ -75,6 +76,15 @@ export function BounceDialog({
   const handleVideoExport = useCallback(async () => {
     setExporting(true);
     setProgress(0);
+
+    if (!isVideoExportSupported()) {
+      Alert.alert(
+        "Vídeo indisponível",
+        "A exportação de vídeo requer um navegador web compatível.",
+      );
+      setExporting(false);
+      return;
+    }
 
     try {
       await audioSystem.initialize();
@@ -175,6 +185,24 @@ export function BounceDialog({
         "Exportado",
         `Mix exportado como ${format.toUpperCase()} (${bitDepth}bit, ${sampleRate}Hz)`,
       );
+
+      if (video) {
+        if (!isVideoExportSupported()) {
+          Alert.alert(
+            "Vídeo indisponível",
+            "A exportação de vídeo requer um navegador web compatível.",
+          );
+        } else {
+          const result = await renderVideoJob({
+            durationSec: Math.min(duration, 300),
+            fps: 30,
+            onProgress: updateProgress,
+          });
+          const filename = `${projectTitle.replace(/[^a-zA-Z0-9_-]/g, "").replace(/\s+/g, "_")}_video.webm`;
+          await audioSystem.exportToFile(result.blob, filename);
+          Alert.alert("Vídeo exportado", `Vídeo salvo como ${filename}`);
+        }
+      }
     } catch (e) {
       console.error("Export failed:", e);
       Alert.alert("Erro", "Falha ao exportar mix.");
@@ -189,6 +217,7 @@ export function BounceDialog({
     duration,
     tracks,
     updateProgress,
+    video,
   ]);
 
   return (
@@ -243,6 +272,26 @@ export function BounceDialog({
                 }`}
               >
                 Video
+              </Text>
+            </Pressable>
+          </View>
+
+          <View className="flex-row items-center justify-between mb-4">
+            <Text className="label">Vídeo</Text>
+            <Pressable
+              onPress={() => setVideo(!video)}
+              className={`px-4 py-2 rounded-xl border ${
+                video
+                  ? "bg-brand-accent/20 border-brand-accent"
+                  : "bg-dark-elevated border-dark-border"
+              }`}
+            >
+              <Text
+                className={`text-sm font-semibold ${
+                  video ? "text-brand-accent" : "text-white"
+                }`}
+              >
+                {video ? "Ligado" : "Desligado"}
               </Text>
             </Pressable>
           </View>

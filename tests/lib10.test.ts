@@ -54,9 +54,9 @@ describe("ITEM1 plugin param clamping", () => {
     expect(clampParam(spec, 99)).toBe(9);
   });
 
-  it("all 19 plugin types default params within [min,max]", () => {
+  it("all 20 plugin types default params within [min,max]", () => {
     const types = Object.keys(PLUGIN_SPECS) as (keyof typeof PLUGIN_SPECS)[];
-    expect(types.length).toBe(19);
+    expect(types.length).toBe(20);
     for (const type of types) {
       const params = getDefaultParams(type);
       for (const spec of PLUGIN_SPECS[type].params) {

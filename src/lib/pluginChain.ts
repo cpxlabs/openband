@@ -2,6 +2,7 @@ import type { Plugin, PluginType } from "./types";
 import { applyMasteringChain } from "./mastering";
 import { pitchShift } from "./timeStretch";
 import { PLUGIN_SPECS, clampParam } from "./types";
+import { applyVoiceCleanerGraph } from "./plugins/voiceCleaner";
 import {
   paramToTarget,
   getModulationState,
@@ -654,6 +655,10 @@ async function applySinglePlugin(
       source.connect(ws);
       ws.connect(wetGain);
       wetGain.connect(ctx.destination);
+      break;
+    }
+    case "voiceCleaner": {
+      applyVoiceCleanerGraph(ctx, source, p, sampleRate, len);
       break;
     }
     default:
