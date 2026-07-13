@@ -260,6 +260,14 @@ export default function Studio() {
 
   const [isRecording, setIsRecording] = useState(false);
   const [webRecordingStart, setWebRecordingStart] = useState<number | null>(null);
+  const [recordingTick, setRecordingTick] = useState(0);
+  const faderHeightRef = useRef<Record<string, number>>({});
+  const panWidthRef = useRef<Record<string, number>>({});
+  useEffect(() => {
+    if (!isRecording || webRecordingStart == null) return;
+    const id = setInterval(() => setRecordingTick((t) => t + 1), 100);
+    return () => clearInterval(id);
+  }, [isRecording, webRecordingStart]);
   const liveRecordingDataRef = useRef<Float32Array[]>([]);
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
   const [bottomTab, setBottomTab] = useState<BottomTab>(initialBottomTab);
@@ -2285,7 +2293,7 @@ export default function Studio() {
                         <View
                           style={{
                             left: currentBeat * 2.4, // rough sync with beat width, but usually recording starts at current position
-                            width: (Date.now() - (webRecordingStart || Date.now())) / 1000 * (initialBpm / 60) * 2.4,
+                            width: ((Date.now() - (webRecordingStart || Date.now())) / 1000 + recordingTick * 0) * (initialBpm / 60) * 2.4,
                             minWidth: 100, // so we can see it growing
                             position: "absolute",
                           }}
@@ -2480,15 +2488,20 @@ export default function Studio() {
                           peakLevel={isAudible(track) ? Math.min(1, effVol / 100) : 0}
                         />
                         <Pressable
-                          onPress={() =>
+                          onLayout={(e) =>
+                            (faderHeightRef.current[track.id] =
+                              e.nativeEvent.layout.height)
+                          }
+                          onPress={(e) => {
+                            const h = faderHeightRef.current[track.id];
+                            const y = e.nativeEvent.locationY;
+                            if (!h) return;
+                            const vol = Math.round((1 - y / h) * 100);
                             setTrackVolume(
                               track.id,
-                              Math.min(
-                                100,
-                                Math.max(0, trackVolume(track.id) - 10),
-                              ),
-                            )
-                          }
+                              Math.min(100, Math.max(0, vol)),
+                            );
+                          }}
                           className="w-3 flex-1 bg-dark-bg rounded-full relative justify-end overflow-hidden active:opacity-80"
                         >
                           <View
@@ -2528,12 +2541,28 @@ export default function Studio() {
                         <Text className="text-[9px] text-gray-600 w-4 text-center">
                           L
                         </Text>
-                        <View className="flex-1 h-1 bg-dark-bg rounded-full overflow-hidden">
+                        <Pressable
+                          onLayout={(e) =>
+                            (panWidthRef.current[track.id] =
+                              e.nativeEvent.layout.width)
+                          }
+                          onPress={(e) => {
+                            const w = panWidthRef.current[track.id];
+                            const x = e.nativeEvent.locationX;
+                            if (!w) return;
+                            const pan = Math.round((x / w) * 200 - 100);
+                            setTrackPan(
+                              track.id,
+                              Math.min(100, Math.max(-100, pan)),
+                            );
+                          }}
+                          className="flex-1 h-1 bg-dark-bg rounded-full overflow-hidden"
+                        >
                           <View
                             className="h-full bg-cyan-500 rounded-full"
                             style={{ width: `${(track.pan + 100) / 2}%` }}
                           />
-                        </View>
+                        </Pressable>
                         <Text className="text-[9px] text-gray-600 w-4 text-center">
                           R
                         </Text>

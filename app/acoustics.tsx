@@ -254,10 +254,10 @@ export default function AcousticsLab() {
       const raycaster = new THREE.Raycaster();
       const mouse = new THREE.Vector2();
 
-      const onClick = (event: MouseEvent) => {
+      const doRaycast = (clientX: number, clientY: number) => {
         const rect = renderer.domElement.getBoundingClientRect();
-        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
         raycaster.setFromCamera(mouse, camera);
 
         const allChildren: ThreeAny[] = [];
@@ -280,6 +280,8 @@ export default function AcousticsLab() {
           }
         }
       };
+
+      const onClick = (event: MouseEvent) => doRaycast(event.clientX, event.clientY);
 
       renderer.domElement.addEventListener("click", onClick);
 
@@ -324,8 +326,16 @@ export default function AcousticsLab() {
 
       // Touch support
       let lastTouchDist = 0;
+      let tapStartX = 0;
+      let tapStartY = 0;
       const onTouchStart = (e: TouchEvent) => {
-        if (e.touches.length === 1) { isDragging = true; lastMX = e.touches[0].clientX; lastMY = e.touches[0].clientY; }
+        if (e.touches.length === 1) {
+          isDragging = true;
+          lastMX = e.touches[0].clientX;
+          lastMY = e.touches[0].clientY;
+          tapStartX = e.touches[0].clientX;
+          tapStartY = e.touches[0].clientY;
+        }
         if (e.touches.length === 2) {
           const dx = e.touches[0].clientX - e.touches[1].clientX;
           const dy = e.touches[0].clientY - e.touches[1].clientY;
@@ -352,7 +362,17 @@ export default function AcousticsLab() {
           updateCamera();
         }
       };
-      const onTouchEnd = () => { isDragging = false; };
+      const onTouchEnd = (e: TouchEvent) => {
+        isDragging = false;
+        if (e.changedTouches.length === 1) {
+          const dx = e.changedTouches[0].clientX - tapStartX;
+          const dy = e.changedTouches[0].clientY - tapStartY;
+          if (Math.sqrt(dx * dx + dy * dy) < 10) {
+            doRaycast(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+            e.preventDefault();
+          }
+        }
+      };
 
       renderer.domElement.addEventListener("touchstart", onTouchStart);
       renderer.domElement.addEventListener("touchmove", onTouchMove, { passive: false });

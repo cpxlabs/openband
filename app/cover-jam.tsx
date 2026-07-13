@@ -184,9 +184,9 @@ export default function CoverJamStudio() {
       // State refs for animation loop
       let speedIdx = 2;
 
-      const handleClick = (e: MouseEvent) => {
+      const doRaycast = (clientX: number, clientY: number) => {
         const rect = renderer.domElement.getBoundingClientRect();
-        const mouse = new THREE.Vector2(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
+        const mouse = new THREE.Vector2(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
         const raycaster = new THREE.Raycaster();
         raycaster.setFromCamera(mouse, camera);
 
@@ -218,6 +218,8 @@ export default function CoverJamStudio() {
           }
         }
       };
+
+      const handleClick = (e: MouseEvent) => doRaycast(e.clientX, e.clientY);
       renderer.domElement.addEventListener("click", handleClick);
 
       // Orbit controls
@@ -254,8 +256,16 @@ export default function CoverJamStudio() {
 
       // Touch support
       let lastTouchDist = 0;
+      let tapStartX = 0;
+      let tapStartY = 0;
       const handleTouchStart = (e: TouchEvent) => {
-        if (e.touches.length === 1) { isDragging = true; lastMX = e.touches[0].clientX; lastMY = e.touches[0].clientY; }
+        if (e.touches.length === 1) {
+          isDragging = true;
+          lastMX = e.touches[0].clientX;
+          lastMY = e.touches[0].clientY;
+          tapStartX = e.touches[0].clientX;
+          tapStartY = e.touches[0].clientY;
+        }
         if (e.touches.length === 2) {
           const dx = e.touches[0].clientX - e.touches[1].clientX;
           const dy = e.touches[0].clientY - e.touches[1].clientY;
@@ -269,7 +279,8 @@ export default function CoverJamStudio() {
           const dy = e.touches[0].clientY - lastMY;
           sphericalTheta -= dx * 0.005;
           sphericalPhi = Math.max(0.2, Math.min(Math.PI / 2 - 0.05, sphericalPhi - dy * 0.005));
-          lastMX = e.touches[0].clientX; lastMY = e.touches[0].clientY;
+          lastMX = e.touches[0].clientX;
+          lastMY = e.touches[0].clientY;
           updateCamera();
         }
         if (e.touches.length === 2) {
@@ -281,7 +292,17 @@ export default function CoverJamStudio() {
           updateCamera();
         }
       };
-      const handleTouchEnd = () => { isDragging = false; };
+      const handleTouchEnd = (e: TouchEvent) => {
+        isDragging = false;
+        if (e.changedTouches.length === 1) {
+          const dx = e.changedTouches[0].clientX - tapStartX;
+          const dy = e.changedTouches[0].clientY - tapStartY;
+          if (Math.sqrt(dx * dx + dy * dy) < 10) {
+            doRaycast(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+            e.preventDefault();
+          }
+        }
+      };
 
       renderer.domElement.addEventListener("mousedown", handleMouseDown);
       window.addEventListener("mousemove", handleMouseMove);

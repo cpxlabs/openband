@@ -183,9 +183,9 @@ export default function AutoTuneStudio() {
       // Retune mode state
       let retuneMode = 0;
 
-      const handleClick = (e: MouseEvent) => {
+      const doRaycast = (clientX: number, clientY: number) => {
         const rect = renderer.domElement.getBoundingClientRect();
-        const mouse = new THREE.Vector2(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
+        const mouse = new THREE.Vector2(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
         const raycaster = new THREE.Raycaster();
         raycaster.setFromCamera(mouse, camera);
 
@@ -217,6 +217,8 @@ export default function AutoTuneStudio() {
           }
         }
       };
+
+      const handleClick = (e: MouseEvent) => doRaycast(e.clientX, e.clientY);
 
       // Orbit controls
       let sphericalTheta = 0.3;
@@ -254,6 +256,43 @@ export default function AutoTuneStudio() {
       window.addEventListener("mousemove", handleMouseMove);
       window.addEventListener("mouseup", handleMouseUp);
       renderer.domElement.addEventListener("wheel", handleWheel);
+
+      // Touch support (orbit + tap-to-interact)
+      let tapStartX = 0;
+      let tapStartY = 0;
+      const handleTouchStart = (e: TouchEvent) => {
+        if (e.touches.length === 1) {
+          isDragging = true;
+          lastMX = e.touches[0].clientX;
+          lastMY = e.touches[0].clientY;
+          tapStartX = e.touches[0].clientX;
+          tapStartY = e.touches[0].clientY;
+        }
+      };
+      const handleTouchMove = (e: TouchEvent) => {
+        e.preventDefault();
+        if (e.touches.length === 1 && isDragging) {
+          sphericalTheta -= (e.touches[0].clientX - lastMX) * 0.005;
+          sphericalPhi = Math.max(0.2, Math.min(Math.PI / 2 - 0.05, sphericalPhi - (e.touches[0].clientY - lastMY) * 0.005));
+          lastMX = e.touches[0].clientX;
+          lastMY = e.touches[0].clientY;
+          updateCamera();
+        }
+      };
+      const handleTouchEnd = (e: TouchEvent) => {
+        isDragging = false;
+        if (e.changedTouches.length === 1) {
+          const dx = e.changedTouches[0].clientX - tapStartX;
+          const dy = e.changedTouches[0].clientY - tapStartY;
+          if (Math.sqrt(dx * dx + dy * dy) < 10) {
+            doRaycast(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+            e.preventDefault();
+          }
+        }
+      };
+      renderer.domElement.addEventListener("touchstart", handleTouchStart);
+      renderer.domElement.addEventListener("touchmove", handleTouchMove, { passive: false });
+      renderer.domElement.addEventListener("touchend", handleTouchEnd);
 
       // Animation
       function animate(time: number) {
@@ -294,6 +333,9 @@ export default function AutoTuneStudio() {
         window.removeEventListener("mousemove", handleMouseMove);
         window.removeEventListener("mouseup", handleMouseUp);
         renderer.domElement.removeEventListener("wheel", handleWheel);
+        renderer.domElement.removeEventListener("touchstart", handleTouchStart);
+        renderer.domElement.removeEventListener("touchmove", handleTouchMove);
+        renderer.domElement.removeEventListener("touchend", handleTouchEnd);
         window.removeEventListener("resize", handleResize);
         if (container.contains(renderer.domElement)) container.removeChild(renderer.domElement);
         renderer.dispose();

@@ -242,8 +242,16 @@ export default function StemCollider() {
 
       // Touch support
       let lastTouchDist = 0;
+      let tapStartX = 0;
+      let tapStartY = 0;
       const handleTouchStart = (e: TouchEvent) => {
-        if (e.touches.length === 1) { isDragging = true; lastMX = e.touches[0].clientX; lastMY = e.touches[0].clientY; }
+        if (e.touches.length === 1) {
+          isDragging = true;
+          lastMX = e.touches[0].clientX;
+          lastMY = e.touches[0].clientY;
+          tapStartX = e.touches[0].clientX;
+          tapStartY = e.touches[0].clientY;
+        }
         if (e.touches.length === 2) {
           const dx = e.touches[0].clientX - e.touches[1].clientX;
           const dy = e.touches[0].clientY - e.touches[1].clientY;
@@ -270,7 +278,17 @@ export default function StemCollider() {
           updateCamera();
         }
       };
-      const handleTouchEnd = () => { isDragging = false; };
+      const handleTouchEnd = (e: TouchEvent) => {
+        isDragging = false;
+        if (e.changedTouches.length === 1) {
+          const dx = e.changedTouches[0].clientX - tapStartX;
+          const dy = e.changedTouches[0].clientY - tapStartY;
+          if (Math.sqrt(dx * dx + dy * dy) < 10) {
+            doRaycast(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+            e.preventDefault();
+          }
+        }
+      };
 
       renderer.domElement.addEventListener("mousedown", handleMouseDown);
       window.addEventListener("mousemove", handleMouseMove);
@@ -304,10 +322,10 @@ export default function StemCollider() {
         }
       };
 
-      const handleClick = (e: MouseEvent) => {
+      const doRaycast = (clientX: number, clientY: number) => {
         const rect = renderer.domElement.getBoundingClientRect();
-        mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-        mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
         raycaster.setFromCamera(mouse, camera);
         const intersects = raycaster.intersectObjects(orbMeshes, false);
         if (intersects.length > 0) {
@@ -318,6 +336,8 @@ export default function StemCollider() {
           }
         }
       };
+
+      const handleClick = (e: MouseEvent) => doRaycast(e.clientX, e.clientY);
       renderer.domElement.addEventListener("click", handleClick);
 
       // Animation loop
