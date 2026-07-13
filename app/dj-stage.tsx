@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { addSceneBulb, addRGBStrip } from "../src/lib/sceneLighting";
 import LightControls from "../src/components/LightControls";
+import { Screen3DFallback } from "../src/components";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ThreeAny = any;
@@ -316,6 +317,10 @@ export default function DJStudio() {
     init().then(fn => { cleanup = fn; });
     return () => { cleanup?.(); };
   }, []);
+
+  if (Platform.OS !== "web") {
+    return <Screen3DFallback title="DJ STAGE" icon="💿" />;
+  }
 
   return (
     <View className="flex-1 bg-dark-bg">

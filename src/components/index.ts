@@ -65,6 +65,7 @@ export { Patchbay } from "./Patchbay";
 export { CommitModal, VersionHistory } from "./CommitModal";
 export { CommandPalette } from "./CommandPalette";
 export { default as LightControls } from "./LightControls";
+export { Screen3DFallback, Screen3DHeader } from "./Screen3DFallback";
 export { VuMeter } from "./VuMeter";
 export { TrackColorPicker } from "./TrackColorPicker";
 export { MidiLearnPanel } from "./MidiLearnPanel";

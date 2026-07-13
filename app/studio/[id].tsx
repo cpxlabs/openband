@@ -89,7 +89,7 @@ import type {
   TrackRegion,
   MIDINote,
 } from "../../src/lib/types";
-import { EQ_DEFAULT_BANDS } from "../../src/lib/types";
+import { EQ_DEFAULT_BANDS, PLUGIN_SPECS, clampParam } from "../../src/lib/types";
 import type { Mood } from "../../src/lib/projectTemplates";
 import { useResponsive } from "../../src/lib/responsive";
 import {
@@ -1052,9 +1052,41 @@ export default function Studio() {
           break;
         }
         case "pluginParam": {
-          // Best-effort: deep per-plugin live CC binding is a follow-up.
-          // TODO: route to the active plugin editor's onParamChange path.
-          console.info("MIDI pluginParam live binding not yet wired:", target);
+          if (!target.paramId) break;
+          const tid = resolveTrackId(target) ?? selectedTrackIdRef.current;
+          if (!tid) break;
+          const track = tracksRef.current.find((t) => t.id === tid);
+          if (!track) break;
+          // Find the plugin in the track chain whose spec exposes this paramId.
+          const plugin = track.plugins.find((p) => {
+            const spec = PLUGIN_SPECS[p.type];
+            return spec?.params.some((ps) => ps.id === target.paramId);
+          });
+          if (!plugin) break;
+          const spec = PLUGIN_SPECS[plugin.type];
+          const paramSpec = spec.params.find((ps) => ps.id === target.paramId);
+          if (!paramSpec) break;
+          const scaled = clampParam(
+            paramSpec,
+            paramSpec.min + value01 * (paramSpec.max - paramSpec.min),
+          );
+          setTracks(
+            tracksRef.current.map((t) =>
+              t.id === tid
+                ? {
+                    ...t,
+                    plugins: t.plugins.map((p) =>
+                      p.id === plugin.id
+                        ? {
+                            ...p,
+                            params: { ...p.params, [target.paramId!]: scaled },
+                          }
+                        : p,
+                    ),
+                  }
+                : t,
+            ),
+          );
           break;
         }
       }

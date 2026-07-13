@@ -1,8 +1,13 @@
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, Platform } from "react-native";
 import { useRouter } from "expo-router";
+import { Screen3DFallback } from "../src/components";
 
 export default function ExplorerScreen() {
   const router = useRouter();
+
+  if (Platform.OS !== "web") {
+    return <Screen3DFallback title="MISSÃO" icon="🗺️" />;
+  }
 
   return (
     <View className="flex-1 bg-dark-bg">

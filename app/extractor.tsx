@@ -18,6 +18,7 @@ import { setMasteringInput } from "../src/lib/masteringBridge";
 import type { TrackDef, TrackRegion } from "../src/lib/types";
 import type { GenreTemplate, Mood } from "../src/lib/projectTemplates";
 import { useWebAudioPlayer } from "../src/hooks/useWebAudioPlayer";
+import { extractStems } from "../src/lib/stemExtractor";
 
 type StemType = "drums" | "bass" | "vocals" | "other";
 
@@ -140,82 +141,104 @@ export default function Extractor() {
   const [phase, setPhase] = useState<Phase>("select");
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState("");
-  const [selectedTrack, setSelectedTrack] = useState<string | null>(null);
   const [results, setResults] = useState<StemResult[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [sourceName, setSourceName] = useState<string>("");
   const [animTick, setAnimTick] = useState(0);
   const [showNewProject, setShowNewProject] = useState(false);
   const [newProjectPrefill, setNewProjectPrefill] = useState<{
     title?: string;
   }>({});
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const animRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const stemUrlsRef = useRef<string[]>([]);
 
-  const statusMessages = [
-    "Analisando espectro de frequências...",
-    "Separando bateria...",
-    "Extraindo linha de baixo...",
-    "Isolando vocais...",
-    "Separando instrumentos restantes...",
-    "Renderizando stems...",
-    "Finalizando...",
-  ];
-
-  const startProcessing = useCallback(() => {
-    if (timerRef.current) clearInterval(timerRef.current);
+  const runExtraction = useCallback(async (file: File) => {
+    stemUrlsRef.current.forEach((u) => URL.revokeObjectURL(u));
+    stemUrlsRef.current = [];
+    setError(null);
+    setSourceName(file.name);
     setPhase("processing");
     setProgress(0);
-    let step = 0;
+    setStatusText("Analisando espectro de frequências...");
 
-    timerRef.current = setInterval(() => {
-      step += 1;
-      const pct = Math.min(100, (step / statusMessages.length) * 100);
-      setProgress(pct);
-      setStatusText(
-        statusMessages[Math.min(step - 1, statusMessages.length - 1)],
+    try {
+      const { stems } = await extractStems(file, (pct, text) => {
+        setProgress(pct);
+        setStatusText(text);
+      });
+      const mapped: StemResult[] = stems.map((s) => ({
+        type: s.type,
+        label: STEM_META[s.type].label,
+        icon: STEM_META[s.type].icon,
+        color: STEM_META[s.type].color,
+        url: s.url,
+        duration: s.duration,
+      }));
+      stemUrlsRef.current = mapped.map((s) => s.url);
+      setResults(mapped);
+      setPhase("done");
+    } catch (e) {
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Falha ao processar o áudio. Tente outro arquivo.",
       );
-
-      if (pct >= 100) {
-        if (timerRef.current) clearInterval(timerRef.current);
-
-        const stems: StemResult[] = [
-          {
-            type: "drums",
-            label: "Bateria",
-            icon: "🥁",
-            color: "bg-green-600",
-            url: DEMO_AUDIO_URL,
-            duration: 30,
-          },
-          {
-            type: "bass",
-            label: "Baixo",
-            icon: "🎸",
-            color: "bg-blue-600",
-            url: DEMO_AUDIO_URL,
-            duration: 28,
-          },
-          {
-            type: "vocals",
-            label: "Vocal",
-            icon: "🎤",
-            color: "bg-purple-600",
-            url: DEMO_AUDIO_URL,
-            duration: 25,
-          },
-          {
-            type: "other",
-            label: "Outros",
-            icon: "🎹",
-            color: "bg-amber-600",
-            url: DEMO_AUDIO_URL,
-            duration: 32,
-          },
-        ];
-        setResults(stems);
-        setPhase("done");
-      }
-    }, 600);
+      setPhase("select");
+    }
   }, []);
+
+  const handlePickFile = useCallback(() => {
+    if (Platform.OS !== "web") {
+      Alert.alert(
+        "Indisponível",
+        "A separação de stems está disponível apenas na versão web.",
+      );
+      return;
+    }
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".wav,.mp3,.aiff,.flac,.ogg,.m4a,audio/*";
+    input.onchange = (e: Event) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      if (file.size > 200 * 1024 * 1024) {
+        setError("Arquivo muito grande (máximo 200MB).");
+        return;
+      }
+      runExtraction(file);
+    };
+    input.click();
+  }, [runExtraction]);
+
+  const handleSelectPreset = useCallback(
+    async (preset: { id: string; title: string }) => {
+      if (Platform.OS !== "web") {
+        Alert.alert(
+          "Indisponível",
+          "A separação de stems está disponível apenas na versão web.",
+        );
+        return;
+      }
+      try {
+        setPhase("processing");
+        setProgress(2);
+        setStatusText("Carregando faixa de demonstração...");
+        const resp = await fetch(DEMO_AUDIO_URL);
+        if (!resp.ok) throw new Error("Falha ao carregar a demonstração.");
+        const blob = await resp.blob();
+        const file = new File([blob], `${preset.title}.mp3`, {
+          type: blob.type || "audio/mpeg",
+        });
+        await runExtraction(file);
+      } catch (e) {
+        setError(
+          e instanceof Error ? e.message : "Falha ao carregar a demonstração.",
+        );
+        setPhase("select");
+      }
+    },
+    [runExtraction],
+  );
 
   useEffect(() => {
     if (phase === "processing") {
@@ -230,12 +253,8 @@ export default function Extractor() {
 
   useEffect(() => {
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      stemUrlsRef.current.forEach((u) => URL.revokeObjectURL(u));
     };
-  }, []);
-
-  const handleSelectPreset = useCallback((id: string) => {
-    setSelectedTrack(id);
   }, []);
 
   const router = useRouter();
@@ -344,7 +363,7 @@ export default function Extractor() {
       const region: TrackRegion = {
         id: `region-${Date.now()}`,
         start: 0,
-        duration: 30,
+        duration: stem.duration,
         url: stem.url,
       };
       const track: TrackDef = {
@@ -402,13 +421,12 @@ export default function Extractor() {
   );
 
   const handleReset = useCallback(() => {
-    if (timerRef.current) clearInterval(timerRef.current);
     if (animRef.current) clearInterval(animRef.current);
     setPhase("select");
     setProgress(0);
-    setSelectedTrack(null);
     setResults([]);
     setStatusText("");
+    setError(null);
   }, []);
 
   return (
@@ -510,7 +528,18 @@ export default function Extractor() {
       >
         {phase === "select" && (
           <View>
-            <View className="card-elevated p-5 tablet:p-8 mb-6 items-center border-dashed border-2 border-dark-border active:border-brand-accent">
+            {error && (
+              <View className="card-elevated p-4 mb-4 flex-row items-center gap-3 border border-brand-primary/40">
+                <View className="w-8 h-8 rounded-lg bg-brand-primary/20 items-center justify-center">
+                  <Text className="text-brand-primary text-base">!</Text>
+                </View>
+                <Text className="flex-1 text-brand-primary text-sm">{error}</Text>
+              </View>
+            )}
+            <Pressable
+              onPress={handlePickFile}
+              className="card-elevated p-5 tablet:p-8 mb-6 items-center border-dashed border-2 border-dark-border active:border-brand-accent"
+            >
               <View className="w-16 h-16 rounded-2xl bg-brand-primary/10 items-center justify-center mb-4">
                 <Text className="text-3xl">📁</Text>
               </View>
@@ -524,12 +553,9 @@ export default function Extractor() {
                 title="Escolher arquivo"
                 variant="secondary"
                 icon="📂"
-                onPress={() => {
-                  handleSelectPreset("custom");
-                  startProcessing();
-                }}
+                onPress={handlePickFile}
               />
-            </View>
+            </Pressable>
 
             <View className="flex-row items-center gap-3 mb-4">
               <View className="flex-1 h-px bg-dark-border" />
@@ -542,10 +568,7 @@ export default function Extractor() {
             {PRESET_TRACKS.map((track) => (
               <Pressable
                 key={track.id}
-                onPress={() => {
-                  handleSelectPreset(track.id);
-                  startProcessing();
-                }}
+                onPress={() => handleSelectPreset(track)}
                 className="card p-4 mb-3 active:border-brand-accent/50 flex-row items-center gap-4"
               >
                 <View className="w-12 h-12 rounded-xl bg-brand-primary/20 items-center justify-center">
@@ -631,9 +654,7 @@ export default function Extractor() {
                 </Text>
                 <Text className="text-gray-500 text-xs">
                   {results.length} stems gerados a partir de{" "}
-                  {selectedTrack === "custom"
-                    ? "arquivo selecionado"
-                    : "faixa de demonstração"}
+                  {sourceName || "faixa de demonstração"}
                 </Text>
               </View>
             </View>
