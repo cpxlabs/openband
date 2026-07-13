@@ -67,3 +67,4 @@ export { CommandPalette } from "./CommandPalette";
 export { default as LightControls } from "./LightControls";
 export { VuMeter } from "./VuMeter";
 export { TrackColorPicker } from "./TrackColorPicker";
+export { MidiLearnPanel } from "./MidiLearnPanel";

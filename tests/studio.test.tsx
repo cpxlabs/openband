@@ -105,6 +105,7 @@ vi.mock("../src/components", () => {
   const CommitModal = ({ visible }: any) => visible ? <div data-testid="commit-modal" /> : null;
   const OutputSelector = ({ visible }: any) => visible ? <div data-testid="output-selector" /> : null;
   const Patchbay = ({ visible }: any) => visible ? <div data-testid="patchbay" /> : null;
+  const MidiLearnPanel = ({ visible }: any) => visible ? <div data-testid="midi-learn-panel" /> : null;
   const VuMeter = () => <div data-testid="vu-meter" />;
   const TrackColorPicker = ({ visible }: any) => visible ? <div data-testid="track-color-picker" /> : null;
   const LoadingModal = ({ visible }: any) => visible ? <div data-testid="loading-modal" /> : null;
@@ -113,7 +114,7 @@ vi.mock("../src/components", () => {
     WaveformCanvas, AutomationLane, TrackGroupManager, LufsMeter, BounceDialog,
     SampleBrowser, CodeSampler, Tuner, PedalRack, PianoRoll, Looper, Sampler,
     Synth, PromptSampler, VisualEQ, ChordTrack, CommandPalette, BranchManager,
-    CommitModal, OutputSelector, Patchbay, VuMeter, TrackColorPicker, LoadingModal,
+    CommitModal, OutputSelector, Patchbay, VuMeter, TrackColorPicker, LoadingModal, MidiLearnPanel,
     OneKnob, ONE_KNOB_TYPES: ["volume"],
   };
 });

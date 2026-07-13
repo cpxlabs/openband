@@ -60,7 +60,14 @@ import {
   TrackColorPicker,
   Sidebar,
   LiveWaveformCanvas,
+  MidiLearnPanel,
 } from "../../src/components";
+import {
+  applyMidiMessage,
+  setMidiTargetHandler,
+  subscribeToInputs,
+} from "../../src/lib/midiLearn";
+import type { MidiTarget } from "../../src/lib/midiLearn";
 import { registerCommand, initKeyBindings, disposeKeyBindings } from "../../src/lib/commandRegistry";
 import { chordsToMIDINotes } from "../../src/lib/harmonicAssistant";
 import { useHistory } from "../../src/lib/history";
@@ -336,6 +343,7 @@ export default function Studio() {
   const [showCommitModal, setShowCommitModal] = useState(false);
   const [showOutputSelector, setShowOutputSelector] = useState(false);
   const [showPatchbay, setShowPatchbay] = useState(false);
+  const [showMidi, setShowMidi] = useState(false);
   const [colorPickerTrackId, setColorPickerTrackId] = useState<string | null>(null);
   const [oneKnobValues, setOneKnobValues] = useState<
     Record<string, Record<string, number>>
@@ -544,6 +552,14 @@ export default function Studio() {
   selectedTrackIdRef.current = selectedTrackId;
   const durationRef = useRef(duration);
   durationRef.current = duration;
+  const currentTimeRef = useRef(currentTime);
+  currentTimeRef.current = currentTime;
+  const isPlayingRef = useRef(isPlaying);
+  isPlayingRef.current = isPlaying;
+  const engineActiveRef = useRef(engineActive);
+  engineActiveRef.current = engineActive;
+  const tracksRef = useRef(tracks);
+  tracksRef.current = tracks;
 
   const handleTimelinePointerMove = useCallback(
     (e: { nativeEvent?: { locationX?: number; offsetX?: number } }) => {
@@ -721,6 +737,13 @@ export default function Studio() {
     stopClock();
     setCurrentBeat(0);
   }, [isWeb, webAudio, player, engineActive]);
+
+  // Stop playback when studio unmounts
+  useEffect(() => () => {
+    if (isWeb && engineRef.current) engineRef.current.dispose();
+    else if (isWeb) webAudio.pause();
+    else player.pause();
+  }, [player, isWeb, webAudio]);
 
   // Stop playback when studio unmounts
   useEffect(() => () => {
@@ -973,6 +996,79 @@ export default function Studio() {
     },
     [tracks, setTracks, isWeb, engineActive],
   );
+
+  // Live MIDI dispatch: route incoming CC/note messages to mixer + transport.
+  useEffect(() => {
+    const resolveTrackId = (target: MidiTarget): string | undefined => {
+      if (target.trackIndex != null) return tracksRef.current[target.trackIndex]?.id;
+      return target.trackId;
+    };
+    const handleMidiTarget = (target: MidiTarget, value01: number) => {
+      switch (target.type) {
+        case "trackVolume": {
+          const tid = resolveTrackId(target);
+          if (tid) setTrackVolume(tid, value01 * 100);
+          break;
+        }
+        case "trackPan": {
+          const tid = resolveTrackId(target);
+          if (tid) setTrackPan(tid, (value01 * 2 - 1) * 100);
+          break;
+        }
+        case "masterVolume": {
+          getEngine().setMasterVolume(value01);
+          break;
+        }
+        case "transport": {
+          switch (target.action) {
+            case "play":
+              if (!isPlayingRef.current) togglePlay();
+              break;
+            case "togglePlay":
+              togglePlay();
+              break;
+            case "stop":
+              stopPlayback();
+              break;
+            case "record":
+              toggleRecording();
+              break;
+            case "loop": {
+              const engine = getEngine();
+              const looping = engine.isLooping();
+              engine.setLoop(looping ? null : 0, looping ? null : durationRef.current);
+              break;
+            }
+            case "scrub": {
+              const pos = value01 * durationRef.current;
+              if (engineActiveRef.current && engineRef.current) {
+                engineRef.current.seek(pos);
+              } else {
+                seekRelative(pos - currentTimeRef.current);
+              }
+              break;
+            }
+          }
+          break;
+        }
+        case "pluginParam": {
+          // Best-effort: deep per-plugin live CC binding is a follow-up.
+          // TODO: route to the active plugin editor's onParamChange path.
+          console.info("MIDI pluginParam live binding not yet wired:", target);
+          break;
+        }
+      }
+    };
+    setMidiTargetHandler(handleMidiTarget);
+    let unsub: (() => void) | null = null;
+    subscribeToInputs(applyMidiMessage).then((u) => {
+      unsub = u;
+    });
+    return () => {
+      unsub?.();
+      setMidiTargetHandler(null);
+    };
+  }, [togglePlay, stopPlayback, toggleRecording, seekRelative, setTrackVolume, setTrackPan]);
 
   const setTrackColor = useCallback(
     (trackId: string, color: string) => {
@@ -1834,6 +1930,12 @@ export default function Studio() {
               className="h-8 rounded-lg items-center justify-center px-2 bg-dark-muted active:opacity-70"
             >
               <Text className="text-gray-300 text-xs">🔌</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setShowMidi(true)}
+              className="h-8 rounded-lg items-center justify-center px-2 bg-dark-muted active:opacity-70"
+            >
+              <Text className="text-gray-300 text-xs">🎹</Text>
             </Pressable>
           <Pressable
             onPress={() => setShowLooper(true)}
@@ -3163,6 +3265,11 @@ export default function Studio() {
         trackIds={trackIds}
         onRouteCreated={() => {}}
         onRouteRemoved={() => {}}
+      />
+      <MidiLearnPanel
+        visible={showMidi}
+        onClose={() => setShowMidi(false)}
+        tracks={tracks}
       />
       <LoadingModal
         visible={autoplayBlocked}

@@ -265,6 +265,16 @@ export class PlaybackEngine {
     node.panner.pan.setTargetAtTime(pan / 100, this.ctx.currentTime, 0.01);
   }
 
+  setMasterVolume(v01: number): void {
+    if (!this.master || !this.ctx) return;
+    const v = Math.max(0, Math.min(1, v01));
+    this.master.gain.setTargetAtTime(v, this.ctx.currentTime, 0.01);
+  }
+
+  isLooping(): boolean {
+    return this.loopA !== null && this.loopB !== null;
+  }
+
   setLoop(a: number | null, b: number | null): void {
     this.loopA = a;
     this.loopB = b;
