@@ -84,6 +84,14 @@ export const INSTRUMENT_PRESETS: InstrumentPreset[] = [
     filterAttack: 0.01, filterDecay: 0.5, filterSustain: 0.5, filterRelease: 0.5,
     volume: 0.7, glideTime: 0.02, voices: 8,
   },
+  {
+    name: "Orchestral",
+    osc1Type: "sawtooth", osc2Type: "triangle", osc2Detune: 8, osc2Level: 0.6,
+    filterCutoff: 4000, filterResonance: 1.5, filterEnvAmount: 1500,
+    ampAttack: 0.15, ampDecay: 0.6, ampSustain: 0.8, ampRelease: 1.2,
+    filterAttack: 0.1, filterDecay: 0.6, filterSustain: 0.6, filterRelease: 1.0,
+    volume: 0.65, glideTime: 0.03, voices: 12,
+  },
 ];
 
 const NOTE_FREQS: number[] = [];
