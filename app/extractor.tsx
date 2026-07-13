@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { View, Text, Pressable, ScrollView, Alert, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
+import { useTranslation } from "react-i18next";
 import {
   PageHeader,
   Card,
@@ -34,12 +35,26 @@ interface StemResult {
 
 const STEM_META: Record<
   StemType,
-  { label: string; icon: string; color: string }
+  { icon: string; color: string }
 > = {
-  drums: { label: "Bateria", icon: "🥁", color: "bg-green-600" },
-  bass: { label: "Baixo", icon: "🎸", color: "bg-blue-600" },
-  vocals: { label: "Vocal", icon: "🎤", color: "bg-purple-600" },
-  other: { label: "Outros", icon: "🎹", color: "bg-amber-600" },
+  drums: { icon: "🥁", color: "bg-green-600" },
+  bass: { icon: "🎸", color: "bg-blue-600" },
+  vocals: { icon: "🎤", color: "bg-purple-600" },
+  other: { icon: "🎹", color: "bg-amber-600" },
+};
+
+const STEM_LABEL_KEY: Record<StemType, string> = {
+  drums: "extractor.stemDrums",
+  bass: "extractor.stemBass",
+  vocals: "extractor.stemVocals",
+  other: "extractor.stemOther",
+};
+
+const STEM_LABEL_FALLBACK: Record<StemType, string> = {
+  drums: "Bateria",
+  bass: "Baixo",
+  vocals: "Vocal",
+  other: "Outros",
 };
 
 const PRESET_TRACKS = [
@@ -48,6 +63,20 @@ const PRESET_TRACKS = [
 ];
 
 type Phase = "select" | "processing" | "done";
+
+const STATUS_THRESHOLDS: { pct: number; key: string; fallback: string }[] = [
+  { pct: 100, key: "extractor.finalizing", fallback: "Finalizando..." },
+  { pct: 74, key: "extractor.separatingOthers", fallback: "Separando instrumentos restantes..." },
+  { pct: 56, key: "extractor.isolatingVocals", fallback: "Isolando vocais..." },
+  { pct: 38, key: "extractor.separatingDrums", fallback: "Separando bateria..." },
+  { pct: 20, key: "extractor.extractingBass", fallback: "Extraindo linha de baixo..." },
+  { pct: 0, key: "extractor.analyzing", fallback: "Analisando espectro de frequências..." },
+];
+
+function localizedStatus(t: (k: string, f: string) => string, pct: number) {
+  const match = STATUS_THRESHOLDS.find((s) => pct >= s.pct) ?? STATUS_THRESHOLDS[STATUS_THRESHOLDS.length - 1];
+  return t(match.key, match.fallback);
+}
 
 function formatTime(s: number) {
   const m = Math.floor(s / 60);
@@ -62,6 +91,7 @@ function StemPlayer({
   stem: StemResult;
   onAddToProject: () => void;
 }) {
+  const { t } = useTranslation();
   const isWeb = Platform.OS === "web";
   const webPlayer = useWebAudioPlayer();
   const expoPlayer = useAudioPlayer(stem.url);
@@ -73,6 +103,7 @@ function StemPlayer({
   const player = isWeb ? webPlayer : expoPlayer;
 
   const meta = STEM_META[stem.type];
+  const stemLabel = t(STEM_LABEL_KEY[stem.type], STEM_LABEL_FALLBACK[stem.type]);
 
   return (
     <Card className="mb-3">
@@ -84,7 +115,7 @@ function StemPlayer({
         </View>
 
         <View className="flex-1 gap-1">
-          <Text className="text-white font-bold text-base">{meta.label}</Text>
+          <Text className="text-white font-bold text-base">{stemLabel}</Text>
           <View className="flex-row items-center gap-2">
             <Badge text={formatTime(stem.duration)} variant="play" />
             <Badge text="Stem" />
@@ -139,6 +170,7 @@ function StemPlayer({
 }
 
 export default function Extractor() {
+  const { t } = useTranslation();
   const [phase, setPhase] = useState<Phase>("select");
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState("");
@@ -160,16 +192,16 @@ export default function Extractor() {
     setSourceName(file.name);
     setPhase("processing");
     setProgress(0);
-    setStatusText("Analisando espectro de frequências...");
+    setStatusText(t("extractor.analyzing", "Analisando espectro de frequências..."));
 
     try {
-      const { stems } = await extractStems(file, (pct, text) => {
+      const { stems } = await extractStems(file, (pct) => {
         setProgress(pct);
-        setStatusText(text);
+        setStatusText(localizedStatus(t, pct));
       });
       const mapped: StemResult[] = stems.map((s) => ({
         type: s.type,
-        label: STEM_META[s.type].label,
+        label: t(STEM_LABEL_KEY[s.type], STEM_LABEL_FALLBACK[s.type]),
         icon: STEM_META[s.type].icon,
         color: STEM_META[s.type].color,
         url: s.url,
@@ -182,17 +214,17 @@ export default function Extractor() {
       setError(
         e instanceof Error
           ? e.message
-          : "Falha ao processar o áudio. Tente outro arquivo.",
+          : t("extractor.processingError", "Falha ao processar o áudio. Tente outro arquivo."),
       );
       setPhase("select");
     }
-  }, []);
+  }, [t]);
 
   const handlePickFile = useCallback(() => {
     if (Platform.OS !== "web") {
       Alert.alert(
-        "Indisponível",
-        "A separação de stems está disponível apenas na versão web.",
+        t("extractor.unavailable", "Indisponível"),
+        t("extractor.webOnly", "A separação de stems está disponível apenas na versão web."),
       );
       return;
     }
@@ -203,7 +235,7 @@ export default function Extractor() {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
       if (file.size > 200 * 1024 * 1024) {
-        setError("Arquivo muito grande (máximo 200MB).");
+        setError(t("extractor.fileTooLarge", "Arquivo muito grande (máximo 200MB)."));
         return;
       }
       runExtraction(file);
@@ -215,17 +247,17 @@ export default function Extractor() {
     async (preset: { id: string; title: string }) => {
       if (Platform.OS !== "web") {
         Alert.alert(
-          "Indisponível",
-          "A separação de stems está disponível apenas na versão web.",
+          t("extractor.unavailable", "Indisponível"),
+          t("extractor.webOnly", "A separação de stems está disponível apenas na versão web."),
         );
         return;
       }
       try {
         setPhase("processing");
         setProgress(2);
-        setStatusText("Carregando faixa de demonstração...");
+        setStatusText(t("extractor.loadingDemo", "Carregando faixa de demonstração..."));
         const resp = await fetch(DEMO_AUDIO_URL);
-        if (!resp.ok) throw new Error("Falha ao carregar a demonstração.");
+        if (!resp.ok) throw new Error(t("extractor.demoLoadFailed", "Falha ao carregar a demonstração."));
         const blob = await resp.blob();
         const file = new File([blob], `${preset.title}.mp3`, {
           type: blob.type || "audio/mpeg",
@@ -233,12 +265,12 @@ export default function Extractor() {
         await runExtraction(file);
       } catch (e) {
         setError(
-          e instanceof Error ? e.message : "Falha ao carregar a demonstração.",
+          e instanceof Error ? e.message : t("extractor.demoLoadFailed", "Falha ao carregar a demonstração."),
         );
         setPhase("select");
       }
     },
-    [runExtraction],
+    [runExtraction, t],
   );
 
   useEffect(() => {
@@ -458,7 +490,7 @@ export default function Extractor() {
               <Text className="text-gray-300 text-lg">☰</Text>
             </Pressable>
             <View className="flex-1 items-center">
-              <Text className="text-white font-bold text-sm tracking-wide">Extrator de Stems</Text>
+              <Text className="text-white font-bold text-sm tracking-wide">{t("extractor.mobileHeader", "Extrator de Stems")}</Text>
             </View>
             <View className="w-9" />
           </View>
@@ -473,9 +505,9 @@ export default function Extractor() {
           }}
         >
           <Pressable onPress={handleReset} className="p-2 active:opacity-60">
-            <Text className="text-brand-accent text-sm font-medium">
-              Nova extração
-            </Text>
+             <Text className="text-brand-accent text-sm font-medium">
+               {t("extractor.newExtraction", "Nova extração")}
+             </Text>
           </Pressable>
         </View>
       )}
@@ -489,8 +521,8 @@ export default function Extractor() {
         }}
       >
         <PageHeader
-          title="Separar Stems"
-          subtitle="Extraia faixas individuais de qualquer áudio"
+          title={t("extractor.title", "Separar Stems")}
+          subtitle={t("extractor.subtitle", "Extraia faixas individuais de qualquer áudio")}
         />
       </View>
 
@@ -521,13 +553,13 @@ export default function Extractor() {
                 <Text className="text-3xl">📁</Text>
               </View>
               <Text className="text-white font-semibold text-lg mb-1">
-                Selecionar arquivo de áudio
+                {t("extractor.selectFile", "Selecionar arquivo de áudio")}
               </Text>
               <Text className="text-gray-500 text-sm text-center mb-4 max-w-xs">
-                MP3, WAV, FLAC ou M4A
+                {t("extractor.formats", "MP3, WAV, FLAC ou M4A")}
               </Text>
               <Button
-                title="Escolher arquivo"
+                title={t("extractor.chooseFile", "Escolher arquivo")}
                 variant="secondary"
                 icon="📂"
                 onPress={handlePickFile}
@@ -537,7 +569,7 @@ export default function Extractor() {
             <View className="flex-row items-center gap-3 mb-4">
               <View className="flex-1 h-px bg-dark-border" />
               <Text className="text-gray-600 text-xs font-medium">
-                ou use uma faixa de demonstração
+                {t("extractor.orDemo", "ou use uma faixa de demonstração")}
               </Text>
               <View className="flex-1 h-px bg-dark-border" />
             </View>
@@ -610,7 +642,7 @@ export default function Extractor() {
                       <Text className="text-lg">{meta.icon}</Text>
                     </View>
                     <Text className={`text-xs font-medium ${isActive ? "text-white" : "text-gray-500"}`}>
-                      {meta.label}
+                      {t(STEM_LABEL_KEY[type], STEM_LABEL_FALLBACK[type])}
                     </Text>
                   </View>
                 );
@@ -627,11 +659,13 @@ export default function Extractor() {
               </View>
               <View className="flex-1">
                 <Text className="text-white font-semibold">
-                  Extração concluída
+                  {t("extractor.extractionDone", "Extração concluída")}
                 </Text>
                 <Text className="text-gray-500 text-xs">
-                  {results.length} stems gerados a partir de{" "}
-                  {sourceName || "faixa de demonstração"}
+                  {t("extractor.doneSummary", "{{count}} stems gerados a partir de {{source}}", {
+                    count: results.length,
+                    source: sourceName || t("extractor.demoTrack", "faixa de demonstração"),
+                  })}
                 </Text>
               </View>
             </View>
@@ -646,36 +680,42 @@ export default function Extractor() {
 
             <View className="card-elevated p-4 mt-4 gap-3">
               <Text className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-1">
-                Ações
+                {t("extractor.actions", "Ações")}
               </Text>
               <Button
-                title="Adicionar todos ao estúdio"
+                title={t("extractor.addAllToStudio", "Adicionar todos ao estúdio")}
                 icon="+"
                 onPress={() => {
                   const title = results
-                    .map((s) => STEM_META[s.type].label)
+                    .map((s) => t(STEM_LABEL_KEY[s.type], STEM_LABEL_FALLBACK[s.type]))
                     .join(" + ");
                   setNewProjectPrefill({ title });
                   setShowNewProject(true);
                 }}
               />
               <Button
-                title="Exportar stems"
+                title={t("extractor.exportStems", "Exportar stems")}
                 variant="secondary"
                 icon="📦"
                 onPress={() =>
-                  Alert.alert("Exportação", "Exportação iniciada (demo)")
+                  Alert.alert(
+                    t("extractor.exportTitle", "Exportação"),
+                    t("extractor.exportStarted", "Exportação iniciada (demo)"),
+                  )
                 }
               />
               <Button
-                title="Masterizar stems"
+                title={t("extractor.masterizeStems", "Masterizar stems")}
                 variant="secondary"
                 icon="🎚"
                 onPress={() => {
                   setMasteringInput({
                     url: results[0]?.url || "",
                     filename: "stem_mix",
-                    stems: results.map((s) => ({ name: s.label, url: s.url })),
+                    stems: results.map((s) => ({
+                      name: t(STEM_LABEL_KEY[s.type], STEM_LABEL_FALLBACK[s.type]),
+                      url: s.url,
+                    })),
                   });
                   router.push("/mastering");
                 }}

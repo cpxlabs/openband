@@ -10,6 +10,44 @@ import { OpenBandNative } from "../../src/bridge"
 import { fetchCloudProjects } from "../../src/lib/cloudSync"
 import { useTranslation } from "react-i18next"
 
+function decodeUtf8Manual(bytes: Uint8Array): string {
+  let result = ""
+  let i = 0
+  const len = bytes.length
+  while (i < len) {
+    const byte = bytes[i]
+    if (byte < 0x80) {
+      result += String.fromCharCode(byte)
+      i += 1
+    } else if (byte >= 0xc0 && byte < 0xe0) {
+      const code = ((byte & 0x1f) << 6) | (bytes[i + 1] & 0x3f)
+      result += String.fromCharCode(code)
+      i += 2
+    } else if (byte >= 0xe0 && byte < 0xf0) {
+      const code = ((byte & 0x0f) << 12) | ((bytes[i + 1] & 0x3f) << 6) | (bytes[i + 2] & 0x3f)
+      result += String.fromCharCode(code)
+      i += 3
+    } else if (byte >= 0xf0) {
+      const code = ((byte & 0x07) << 18) | ((bytes[i + 1] & 0x3f) << 12) | ((bytes[i + 2] & 0x3f) << 6) | (bytes[i + 3] & 0x3f)
+      result += String.fromCodePoint(code)
+      i += 4
+    } else {
+      i += 1
+    }
+  }
+  return result
+}
+
+async function decodeFileText(buffer: ArrayBuffer): Promise<string> {
+  if (typeof Blob !== "undefined" && typeof Blob.prototype.text === "function") {
+    return new Blob([buffer]).text()
+  }
+  if (typeof TextDecoder !== "undefined") {
+    return new TextDecoder("utf-8").decode(buffer)
+  }
+  return decodeUtf8Manual(new Uint8Array(buffer))
+}
+
 type FilterTab = "all" | "favorites" | "cloud" | "collabs" | "trash"
 
 const FILTER_TABS: { id: FilterTab; label: string; icon: string }[] = [
@@ -127,10 +165,13 @@ export default function Library() {
       })
       if (!path) return
       const buffer = await OpenBandNative.readFile(path)
-      const text = typeof TextDecoder !== "undefined"
-        ? new TextDecoder().decode(buffer)
-        : String.fromCharCode(...new Uint8Array(buffer))
-      const id = importProject(text)
+      const text = await decodeFileText(buffer)
+      let id: string | null
+      try {
+        id = importProject(text)
+      } catch {
+        id = null
+      }
       if (id) {
         setRefreshKey(k => k + 1)
         router.push(`/studio/${id}`)
