@@ -1,7 +1,0 @@
-- [ ] Implement K-weighting filter chain in `src/lib/lufs.ts`.
-- [ ] Implement gated loudness $L_K$ per formula above.
-- [ ] Implement true-peak via $4\times$ oversample.
-- [ ] Power `LufsMeter.tsx` with live `AnalyserNode` ring buffer.
-- [ ] Show LUFS + dBTP in `MasteringSuite` post-bounce.
-- [ ] Add Vitest test: $-23$ dBFS sine → $\approx -23.0$ LUFS; $0$ dBFS → $\leq 0.0$ dBTP.
-- [ ] Manual: master a track, confirm readout matches a reference meter within $\pm 0.5$ LU.

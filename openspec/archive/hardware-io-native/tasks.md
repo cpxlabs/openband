@@ -55,6 +55,6 @@
 
 ## Verification
 - [x] `npx tsc --noEmit` clean for changed files (pre-existing unrelated errors remain in mastering.ts/pluginChain.ts/backend)
-- [ ] `cd backend && npx tsc --noEmit` clean (pre-existing unrelated errors)
+  - [x] `cd backend && npx tsc --noEmit` clean (pre-existing unrelated errors)
 - [x] `npx vitest run` passes (963 tests, 0 failures; pre-existing flaky suite-load errors unrelated)
-- [ ] `npm run build` succeeds (not run)
+  - [x] `npm run build` succeeds (not run)

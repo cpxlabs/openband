@@ -35,6 +35,6 @@ Docs-only change spec (no source edits landed in this change). Implementation ch
 
 ## 7. Verification
 - [x] `npx tsc --noEmit` clean for all changed source files (pre-existing `typeof` parse error in the full `src/components/index.ts` graph is unrelated to this change — `components.test.tsx` fails identically without these edits).
-- [ ] `cd backend && npx tsc --noEmit` clean
+  - [x] `cd backend && npx tsc --noEmit` clean
 - [x] `npx vitest run tests/onboarding.test.tsx` — 8/8 pass.
-- [ ] `npm run build` succeeds
+  - [x] `npm run build` succeeds

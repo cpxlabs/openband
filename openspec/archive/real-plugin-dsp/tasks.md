@@ -8,4 +8,4 @@
   - `distortion` — proper tanh `WaveShaper` driven by `drive`.
 - [x] Keep `resolveParam` legacy aliases so existing `PluginEditor` sliders still map.
 - [x] Extend `tests/plugins/dsp.test.ts` with audible/FFT assertions (filter notch, lowpass HF drop, utility sign-flip). `tests/lib9.test.ts` retained (weak but green).
-- [ ] Manual: load each plugin in Studio, confirm audible effect on a test tone.
+  - [x] Manual: load each plugin in Studio, confirm audible effect on a test tone.

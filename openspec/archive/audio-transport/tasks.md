@@ -6,20 +6,20 @@ Step-by-step checklist to implement transport and responsive layout changes in `
 
 ## Tasks
 
-- [ ] **1. Define Unified Transport Functions**
+  - [x] **1. Define Unified Transport Functions**
   - Implement `seekRelative(seconds: number)` supporting both `webAudio` (web) and `player` (native).
   - Implement `stopPlayback()` supporting both `webAudio` (web) and `player` (native), resetting the clock tick interval and current beat state.
 
-- [ ] **2. Bind Transport Buttons**
+  - [x] **2. Bind Transport Buttons**
   - Wire rewind (`⏮`) button to `seekRelative(-5)`.
   - Wire fast-forward (`⏭`) button to `seekRelative(5)`.
   - Wire stop (`⏹`) button to `stopPlayback()`.
 
-- [ ] **3. Update Time Displays**
+  - [x] **3. Update Time Displays**
   - Change elapsed playhead time display to use `currentTime` instead of `player?.currentTime`.
   - Change total time estimate display to use `duration` instead of the manual calculation `player?.currentTime / progressPct`.
 
-- [ ] **4. Responsive Layout & Navigation Integration**
+  - [x] **4. Responsive Layout & Navigation Integration**
   - Import the `Sidebar` component in `app/studio/[id].tsx`.
   - Declare state variable `const [drawerOpen, setDrawerOpen] = useState(false);`.
   - Define `handleNavigate(route)` to route back to `tabs` views (e.g. `/tabs/feed` or `/tabs/${route}`).
@@ -28,7 +28,7 @@ Step-by-step checklist to implement transport and responsive layout changes in `
   - Insert a hamburger menu trigger button (`☰`) at the far left of the studio header if `resp.isDesktop` is false.
   - Render the absolute-positioned mobile drawer overlay at the root of the layout when `drawerOpen` is true (matching layout style from `TabLayout`).
 
-- [ ] **5. Verification**
+  - [x] **5. Verification**
   - Run typechecks: `npx tsc --noEmit`.
   - Run unit tests: `npx vitest run`.
   - Run legacy tests: `npm run test:legacy`.

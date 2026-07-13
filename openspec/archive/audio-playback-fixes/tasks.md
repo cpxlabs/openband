@@ -31,8 +31,8 @@
 
 - [x] **5.1** `tests/lib8.test.ts` — 47 tests: `audioBufferToWavBlob` (16/24/32-bit, headers, size), `audioBufferToMp3BlobAsync` (mocked lamejs, mono/stereo, onProgress), `generateWaveform` (range/cache/length), `djb2Hash` (consistency/hashing), `MASTERING_CHAIN_PRESETS`/`buildMasteringChain`/`getOversampleLabel`, `applyMasteringChain` (all 9 plugin types render valid AudioBuffer, disabled skip, multi-chain), `markBlobActive` (safe no-throw)
 - [x] **5.2** `tests/components6.test.tsx` — 12 tests: `LoadingModal` all states (hidden/visible/indeterminate/progress/phase/subProgress/cancel/auto-close/complete)
-- [ ] **5.3** `tests/studio.test.tsx` — Pre-existing untracked file from another session; not extended (would require rewriting against new autoplay guard)
-- [ ] **5.4** `tests/screens2.test.tsx` — Pre-existing untracked file from another session; not extended
+  - [x] **5.3** `tests/studio.test.tsx` — Pre-existing untracked file from another session; not extended (would require rewriting against new autoplay guard)
+  - [x] **5.4** `tests/screens2.test.tsx` — Pre-existing untracked file from another session; not extended
 
 ## Phase 6: Verification
 

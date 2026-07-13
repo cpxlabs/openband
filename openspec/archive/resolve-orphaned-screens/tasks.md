@@ -51,8 +51,8 @@
        Added `@bridge` alias to `vitest.config.ts` so the test runner resolves
        the tsconfig path alias (required for suites importing the components
        barrel / `hardwareIO`).
-- [ ] `cd backend && npx tsc --noEmit` clean
-- [ ] `npm run test:legacy` passes
-- [ ] `npm run build` succeeds
-- [ ] Manual: open app → "Modos" tab lists all 13 → tapping a tile navigates;
+  - [x] `cd backend && npx tsc --noEmit` clean
+  - [x] `npm run test:legacy` passes
+  - [x] `npm run build` succeeds
+  - [x] Manual: open app → "Modos" tab lists all 13 → tapping a tile navigates;
        Cmd/Ctrl+K finds each mode and navigates on select.
