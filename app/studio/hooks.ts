@@ -5,7 +5,7 @@ import { Alert } from "react-native";
 import { AudioModule, setAudioModeAsync } from "expo-audio";
 import type { AudioPlayer, AudioStatus } from "expo-audio";
 import type { Mood } from "../../src/lib/projectTemplates";
-import type { MixSnapshot, TrackDef, BusDef, Plugin } from "../../src/lib/types";
+import type { MixSnapshot, TrackDef, BusDef, Plugin, GroupDef, SendBus, TrackAmpChain } from "../../src/lib/types";
 import {
   MASTERING_CHAIN_PRESETS,
   buildMasteringChain,
@@ -776,4 +776,48 @@ export function usePluginChains(params: {
   );
 
   return { handlePluginParamChange, handleTogglePlugin, handleLoadMasteringPreset };
+}
+
+/**
+ * Owns mixer + mix-snapshot state (groups, buses, sends, amp chains, track→bus
+ * assignments, master/mastering plugin chains, saved mix snapshots). Returned
+ * with identical names so call sites are unchanged.
+ */
+export function useMixerState() {
+  const [groups, setGroups] = useState<GroupDef[]>([]);
+  const [buses, setBuses] = useState<BusDef[]>([]);
+  const [sendBuses, setSendBuses] = useState<SendBus[]>([]);
+  const [trackAmpChains, setTrackAmpChains] = useState<
+    Record<string, TrackAmpChain>
+  >({});
+  const [trackAssignments, setTrackAssignments] = useState<
+    Record<string, string | null>
+  >({});
+  const [masterPlugins, setMasterPlugins] = useState<Plugin[]>([]);
+  const [masteringChain, setMasteringChain] = useState<Plugin[]>(() =>
+    buildMasteringChain(MASTERING_CHAIN_PRESETS[0]),
+  );
+  const [mixSnapshots, setMixSnapshots] = useState<MixSnapshot[]>([]);
+  const [activeMixId, setActiveMixId] = useState<string | undefined>();
+
+  return {
+    groups,
+    setGroups,
+    buses,
+    setBuses,
+    sendBuses,
+    setSendBuses,
+    trackAmpChains,
+    setTrackAmpChains,
+    trackAssignments,
+    setTrackAssignments,
+    masterPlugins,
+    setMasterPlugins,
+    masteringChain,
+    setMasteringChain,
+    mixSnapshots,
+    setMixSnapshots,
+    activeMixId,
+    setActiveMixId,
+  };
 }

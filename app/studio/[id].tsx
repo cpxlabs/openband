@@ -58,14 +58,10 @@ import { parseMidi, midiToTrackRegions } from "../../src/lib/midiParser";
 import { getGroupVolume } from "../../src/components/TrackGroup";
 import type {
   Plugin,
-  MixSnapshot,
   MetronomeSettings,
   RecordSettings,
   TrackDef,
   GroupDef,
-  BusDef,
-  SendBus,
-  TrackAmpChain,
   TrackRegion,
   MIDINote,
 } from "../../src/lib/types";
@@ -73,7 +69,6 @@ import { EQ_DEFAULT_BANDS, PLUGIN_SPECS, clampParam } from "../../src/lib/types"
 import { useResponsive } from "../../src/lib/responsive";
 import {
   MASTERING_CHAIN_PRESETS,
-  buildMasteringChain,
 } from "../../src/lib/mastering";
 import { autoMix, AUTOMIX_GENRES } from "../../src/lib/automix";
 import { generateTracksForGenre } from "../../src/lib/projectTemplates";
@@ -94,7 +89,7 @@ import {
   type PluginSource,
 } from "./parts";
 import { StudioModals } from "./StudioModals";
-import { useProjectParams, useStudioPersistence, useMixSnapshots, useStudioModals, useStudioTransport, usePluginChains, applyPitchShift, type BottomTab } from "./hooks";
+import { useProjectParams, useStudioPersistence, useMixSnapshots, useStudioModals, useStudioTransport, usePluginChains, useMixerState, applyPitchShift, type BottomTab } from "./hooks";
 
 export default function Studio() {
   const {
@@ -186,21 +181,26 @@ export default function Studio() {
   const [showPanAutomation, setShowPanAutomation] = useState<Record<string, boolean>>(
     {},
   );
-  const [groups, setGroups] = useState<GroupDef[]>([]);
-  const [buses, setBuses] = useState<BusDef[]>([]);
-  const [sendBuses, setSendBuses] = useState<SendBus[]>([]);
-  const [trackAmpChains, setTrackAmpChains] = useState<
-    Record<string, TrackAmpChain>
-  >({});
-  const [trackAssignments, setTrackAssignments] = useState<
-    Record<string, string | null>
-  >({});
-  const [masterPlugins, setMasterPlugins] = useState<Plugin[]>([]);
-  const [masteringChain, setMasteringChain] = useState<Plugin[]>(() =>
-    buildMasteringChain(MASTERING_CHAIN_PRESETS[0]),
-  );
-  const [mixSnapshots, setMixSnapshots] = useState<MixSnapshot[]>([]);
-  const [activeMixId, setActiveMixId] = useState<string | undefined>();
+  const {
+    groups,
+    setGroups,
+    buses,
+    setBuses,
+    sendBuses,
+    setSendBuses,
+    trackAmpChains,
+    setTrackAmpChains,
+    trackAssignments,
+    setTrackAssignments,
+    masterPlugins,
+    setMasterPlugins,
+    masteringChain,
+    setMasteringChain,
+    mixSnapshots,
+    setMixSnapshots,
+    activeMixId,
+    setActiveMixId,
+  } = useMixerState();
   const syncState = useCloudSync(id);
 
   const { user, visitorId } = useAuth();
