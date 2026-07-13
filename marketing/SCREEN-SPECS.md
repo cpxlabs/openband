@@ -38,7 +38,8 @@
   to app/studio/hooks.ts. Main studio component 3285 → 3089 lines.
 - STU-1 (hooks cont.): useStudioModals (17 modal booleans), useStudioTransport
   (playback engine + transport controls + effects), usePluginChains (plugin/mastering
-  edit handlers). Main studio component 3089 → 2847 lines. Verified against studio
+  edit handlers), useMixerState (9 mixer/mix state atoms). Main studio component
+  3089 → 2847 lines. STU-1 hook decomposition complete. Verified against studio
   test suite (39 pass; 2 pre-existing failures unrelated to refactor).
 
 **Remaining (larger/deferred):** STU-1 (full stateful decomposition), STU-13/16/17,
@@ -75,9 +76,10 @@ stale-closure regressions. Keep `tracks`/`useHistory` in the main component (und
 is cross-cutting). Behavior must be identical.
 
 Status: (1) useStudioPersistence ✅, (2) useProjectParams ✅, (3) useStudioModals ✅,
-(4) partial — useMixSnapshots ✅ + usePluginChains ✅, (5) useStudioTransport ✅.
-Remaining: (4) rest of mixer state (groups/buses/sends/assignments — entangled with
-persistence snapshot/hydrate, lower priority). Main studio: 3452 → 2847 lines.
+(4) useMixSnapshots ✅ + usePluginChains ✅ + useMixerState ✅ (mixer state atoms),
+(5) useStudioTransport ✅. STU-1 hook decomposition COMPLETE — all 5 planned slices
+extracted. Main studio: 3452 → 2847 lines; tracks/undo-redo state intentionally kept
+in the component (cross-cutting).
 
 ---
 
