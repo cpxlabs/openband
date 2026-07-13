@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { View, Text, ScrollView, Alert } from "react-native";
+import { View, Text, ScrollView, Alert, Platform, Pressable } from "react-native";
 import { useAuth } from "../../src/context/AuthContext";
 import { supabase } from "../../src/lib/supabase";
 import {
@@ -9,6 +9,7 @@ import {
   TextInput,
   Divider,
   Badge,
+  Loading,
 } from "../../src/components";
 import { LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive";
 import { SCREEN_BOTTOM_PADDING } from "../../src/lib/constants";
@@ -27,17 +28,25 @@ function tierLabel(tier: string): string {
 
 export default function Account() {
   const { t } = useTranslation();
-  const { user, signOut, tier, tierLimits } = useAuth();
+  const { user, signOut, tier, tierLimits, loading } = useAuth();
   const currentName =
     (user?.user_metadata?.name as string) ?? user?.email?.split("@")[0] ?? "";
   const [name, setName] = useState(currentName);
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(
+    user?.user_metadata?.avatar_url as string | undefined,
+  );
 
   useEffect(() => {
     setName(currentName);
   }, [currentName]);
 
+  useEffect(() => {
+    setAvatarUrl(user?.user_metadata?.avatar_url as string | undefined);
+  }, [user]);
+
   const [saving, setSaving] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [savingAvatar, setSavingAvatar] = useState(false);
   const [saved, setSaved] = useState(false);
 
   const handleSaveName = async () => {
@@ -81,6 +90,86 @@ export default function Account() {
     ]);
   };
 
+  const handlePickAvatar = () => {
+    if (Platform.OS !== "web") return;
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result as string;
+        void storeAvatar(dataUrl);
+      };
+      reader.readAsDataURL(file);
+    };
+    input.click();
+  };
+
+  const storeAvatar = async (dataUrl: string) => {
+    setSavingAvatar(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        data: { avatar_url: dataUrl },
+      });
+      if (error) {
+        Alert.alert(t("account.error", "Erro"), error.message);
+        return;
+      }
+      setAvatarUrl(dataUrl);
+    } catch (e) {
+      console.warn("Update avatar failed:", e);
+      Alert.alert(t("account.error", "Erro"), t("account.saveError", "Não foi possível salvar."));
+    } finally {
+      setSavingAvatar(false);
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    const confirm = () => {
+      Alert.alert(
+        t("account.deleteUnsupportedTitle", "Exclusão de conta indisponível"),
+        t(
+          "account.deleteUnsupportedBody",
+          "A exclusão definitiva da conta ainda não está disponível neste app. Você foi desconectado. Para excluir sua conta permanentemente, entre em contato com o suporte.",
+        ),
+        [
+          {
+            text: t("account.ok", "OK"),
+            onPress: async () => {
+              try {
+                await signOut();
+              } catch (e) {
+                console.error("Sign out failed:", e);
+              }
+            },
+          },
+        ],
+      );
+    };
+
+    if (Platform.OS === "web") {
+      if (window.confirm(t("account.deleteConfirm", "Tem certeza que deseja excluir sua conta? Esta ação não pode ser desfeita."))) {
+        confirm();
+      }
+    } else {
+      Alert.alert(
+        t("account.deleteConfirmTitle", "Excluir conta"),
+        t("account.deleteConfirm", "Tem certeza que deseja excluir sua conta? Esta ação não pode ser desfeita."),
+        [
+          { text: t("account.cancel", "Cancelar"), style: "cancel" },
+          { text: t("account.delete", "Excluir"), style: "destructive", onPress: confirm },
+        ],
+      );
+    }
+  };
+
+  if (loading) {
+    return <Loading message={t("account.loading", "Carregando perfil...")} fullScreen />;
+  }
+
   return (
     <ScrollView
       className="flex-1 bg-dark-bg"
@@ -93,9 +182,21 @@ export default function Account() {
 
       <View className="px-4 tablet:px-6 gap-6">
         <View className="items-center py-6">
-          <Avatar name={currentName} size="lg" />
+          <Pressable
+            onPress={handlePickAvatar}
+            disabled={Platform.OS !== "web" || savingAvatar}
+            accessibilityRole="imagebutton"
+            accessibilityLabel={t("account.changeAvatar", "Alterar foto do perfil")}
+          >
+            <Avatar name={currentName} size="lg" imageUrl={avatarUrl} />
+          </Pressable>
           <Text className="text-white text-xl font-bold mt-4">{currentName}</Text>
           <Text className="text-gray-500 text-sm mt-1">{user?.email}</Text>
+          {Platform.OS === "web" && (
+            <Text className="text-brand-primary text-xs mt-2">
+              {t("account.tapToChangeAvatar", "Toque para alterar a foto")}
+            </Text>
+          )}
         </View>
 
         <Divider label={t("account.editProfile", "Editar perfil")} />
@@ -159,6 +260,26 @@ export default function Account() {
           variant="ghost"
           loading={signingOut}
         />
+
+        <Divider label={t("account.dangerZone", "Zona de perigo")} />
+
+        <View className="card-elevated p-4 gap-3 border-2 border-red-500/40">
+          <Text className="text-white text-sm font-semibold">
+            {t("account.deleteTitle", "Excluir conta")}
+          </Text>
+          <Text className="text-gray-500 text-sm leading-relaxed">
+            {t("account.deleteDescription", "A exclusão permanente da conta remove todos os seus dados. Esta ação não pode ser desfeita.")}
+          </Text>
+          <View>
+            <Button
+              title={t("account.delete", "Excluir conta")}
+              onPress={handleDeleteAccount}
+              variant="secondary"
+              disabled={signingOut}
+              testID="delete-account-button"
+            />
+          </View>
+        </View>
       </View>
     </ScrollView>
   );

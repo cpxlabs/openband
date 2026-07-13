@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   Alert,
   Platform,
   Pressable,
+  type TextInput as RNTextInput,
 } from "react-native";
 import { Button, TextInput } from "../../src/components";
 import { supabase } from "../../src/lib/supabase";
@@ -24,6 +25,11 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resetMessage, setResetMessage] = useState<string | null>(null);
+  const [signupSuccess, setSignupSuccess] = useState<string | null>(null);
+
+  const nameRef = useRef<RNTextInput>(null);
+  const emailRef = useRef<RNTextInput>(null);
+  const passwordRef = useRef<RNTextInput>(null);
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -53,14 +59,23 @@ export default function Login() {
     Keyboard.dismiss();
     setLoading(true);
     setError(null);
+    setSignupSuccess(null);
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: { data: { name: name.trim() } },
         });
-        if (error) setError(error.message);
+        if (error) {
+          setError(error.message);
+          return;
+        }
+        if (data.session) {
+          setSignupSuccess("Conta criada com sucesso! Bem-vindo ao OpenBand.");
+        } else {
+          setSignupSuccess("Conta criada! Verifique seu e-mail para confirmar.");
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -136,15 +151,19 @@ export default function Login() {
         <View className="gap-4">
           {isSignUp && (
             <TextInput
+              ref={nameRef}
               label="Nome"
               placeholder="Seu nome"
               onChangeText={setName}
               value={name}
               autoCapitalize="words"
               autoComplete="name"
+              returnKeyType="next"
+              onSubmitEditing={() => emailRef.current?.focus()}
             />
           )}
           <TextInput
+            ref={emailRef}
             label="E-mail"
             placeholder="seu@email.com"
             onChangeText={setEmail}
@@ -152,9 +171,12 @@ export default function Login() {
             autoCapitalize="none"
             keyboardType="email-address"
             autoComplete="email"
+            returnKeyType="next"
+            onSubmitEditing={() => passwordRef.current?.focus()}
           />
           <View className="relative">
             <TextInput
+              ref={passwordRef}
               label="Senha"
               placeholder="••••••••"
               secureTextEntry={!showPassword}
@@ -162,6 +184,8 @@ export default function Login() {
               value={password}
               autoComplete={isSignUp ? "new-password" : "current-password"}
               className="pr-12"
+              returnKeyType="go"
+              onSubmitEditing={handleSubmit}
             />
             <Pressable
               onPress={() => setShowPassword((v) => !v)}
@@ -200,6 +224,14 @@ export default function Login() {
           </View>
         )}
 
+        {signupSuccess && (
+          <View className="mt-4 bg-green-500/10 border border-green-500/30 rounded-xl p-3">
+            <Text className="text-green-400 text-sm text-center">
+              {signupSuccess}
+            </Text>
+          </View>
+        )}
+
         <View className="mt-6">
           <Button
             title={isSignUp ? "Criar conta" : "Entrar"}
@@ -214,6 +246,7 @@ export default function Login() {
             setPassword("");
             setError(null);
             setResetMessage(null);
+            setSignupSuccess(null);
           }}
           className="mt-4"
         >

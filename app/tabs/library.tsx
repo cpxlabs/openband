@@ -1,10 +1,10 @@
-import { useState, useCallback, useMemo } from "react"
+import { useState, useCallback, useMemo, useRef, useEffect } from "react"
 import { View, Text, FlatList, Pressable, Alert } from "react-native"
 import { useRouter } from "expo-router"
 import { EmptyState, PageHeader, Button, NewProject, ProjectCard, Loading } from "../../src/components"
 import type { GenreTemplate, Mood } from "../../src/lib/projectTemplates"
 import { useResponsive, LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive"
-import { listProjectIndex, importProject, loadProject, getFavoriteProjects, isProjectFavorite, toggleProjectFavorite, saveProject } from "../../src/lib/projectStore"
+import { listProjectIndex, importProject, loadProject, getFavoriteProjects, toggleProjectFavorite, saveProject, type ProjectData } from "../../src/lib/projectStore"
 import { SCREEN_BOTTOM_PADDING } from "../../src/lib/constants"
 import { OpenBandNative } from "../../src/bridge"
 import { fetchCloudProjects } from "../../src/lib/cloudSync"
@@ -32,10 +32,23 @@ export default function Library() {
 
   const projectIndex = useMemo(() => listProjectIndex(), [refreshKey])
 
+  const metadataCache = useRef<Map<string, ProjectData>>(new Map())
+
+  useEffect(() => {
+    metadataCache.current.clear()
+  }, [refreshKey])
+
   const projects = useMemo(() => {
     return Object.entries(projectIndex)
       .map(([id, meta]) => {
-        const full = loadProject(id)
+        let full = metadataCache.current.get(id)
+        if (!full) {
+          const loaded = loadProject(id)
+          if (loaded) {
+            full = loaded
+            metadataCache.current.set(id, full)
+          }
+        }
         return {
           id,
           title: meta.title,
@@ -54,6 +67,8 @@ export default function Library() {
     setRefreshKey(k => k + 1)
   }, [])
 
+  const favoriteSet = useMemo(() => new Set(getFavoriteProjects()), [refreshKey])
+
   const filtered = useMemo(() => {
     if (filterTab === "cloud") {
       return cloudProjects.map(p => ({
@@ -67,8 +82,7 @@ export default function Library() {
       }))
     }
     if (filterTab === "favorites") {
-      const favorites = getFavoriteProjects();
-      return projects.filter(p => favorites.includes(p.id));
+      return projects.filter(p => favoriteSet.has(p.id));
     }
     if (filterTab === "collabs") {
       return projects.filter(p => p.metadata?.parentProjectId);
@@ -77,7 +91,7 @@ export default function Library() {
       return []
     }
     return projects
-  }, [projects, filterTab, cloudProjects])
+  }, [projects, filterTab, cloudProjects, favoriteSet])
 
   const handleTabChange = useCallback(async (tab: FilterTab) => {
     setFilterTab(tab)
@@ -109,7 +123,7 @@ export default function Library() {
   const handleImportProject = useCallback(async () => {
     try {
       const path = await OpenBandNative.showOpenDialog({
-        filters: [{ name: "OpenBand Project", extensions: ["json"] }],
+        filters: [{ name: "OpenBand Project", extensions: ["json", "openband"] }],
       })
       if (!path) return
       const buffer = await OpenBandNative.readFile(path)
@@ -207,7 +221,7 @@ export default function Library() {
           )
         }
         renderItem={({ item }) => {
-          const isFavorite = isProjectFavorite(item.id)
+          const isFavorite = favoriteSet.has(item.id)
           return (
             <ProjectCard
               project={item}

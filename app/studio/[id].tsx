@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import {
   View,
   Text,
+  TextInput,
   Pressable,
   ScrollView,
   Platform,
@@ -183,8 +184,11 @@ export default function Studio() {
   const allMoods: Mood[] = ["dark", "bright", "warm", "cold", "aggressive", "chill", "epic", "minimal", "nostalgic", "euphoric"];
   const projectMood: Mood | undefined = allMoods.includes(rawMood as Mood) ? (rawMood as Mood) : undefined;
   const router = useRouter();
-  const projectTitle =
-    (Array.isArray(titleParam) ? titleParam[0] : titleParam) || "Projeto";
+  const [projectTitle, setProjectTitle] = useState(
+    (Array.isArray(titleParam) ? titleParam[0] : titleParam) || "Projeto",
+  );
+  const [editingTitle, setEditingTitle] = useState(false);
+  const titleInputRef = useRef<TextInput>(null);
   const initialBpm = bpmParam
     ? parseInt(Array.isArray(bpmParam) ? bpmParam[0] : bpmParam, 10) || 120
     : 120;
@@ -379,6 +383,49 @@ export default function Studio() {
     if (isWeb) webAudio.setPlaybackRate(playbackRate);
     else player.playbackRate = playbackRate;
   }, [playbackRate, player, isWeb, webAudio]);
+
+  const commitTitle = useCallback(() => {
+    setEditingTitle(false);
+    const trimmed = projectTitle.trim() || "Projeto";
+    setProjectTitle(trimmed);
+    saveProject(id, {
+      title: trimmed,
+      genre: genreParam || "",
+      key: projectKey || "",
+      mood: projectMood,
+      bpm: metronome.bpm,
+      tracks,
+      groups,
+      buses,
+      trackAssignments,
+      masterPlugins,
+      masteringChain,
+      mixSnapshots,
+      activeMixId,
+      metronome,
+      recordSettings,
+      sendBuses,
+      trackAmpChains,
+    });
+  }, [
+    projectTitle,
+    id,
+    genreParam,
+    projectKey,
+    projectMood,
+    metronome,
+    tracks,
+    groups,
+    buses,
+    trackAssignments,
+    masterPlugins,
+    masteringChain,
+    mixSnapshots,
+    activeMixId,
+    recordSettings,
+    sendBuses,
+    trackAmpChains,
+  ]);
 
   useEffect(() => {
     const saved = loadProject(id);
@@ -1770,6 +1817,30 @@ export default function Studio() {
         className={`${resp.isMobile ? "h-12 px-2" : "h-14 px-4"} bg-dark-surface/95 border-b border-dark-border/50 flex-row items-center justify-between`}
       >
         <View className="flex-row items-center gap-2">
+          {editingTitle ? (
+            <TextInput
+              ref={titleInputRef}
+              value={projectTitle}
+              onChangeText={setProjectTitle}
+              onBlur={commitTitle}
+              onSubmitEditing={commitTitle}
+              accessibilityLabel="Título do projeto"
+              returnKeyType="done"
+              autoFocus
+              className="h-9 px-2 rounded-lg bg-dark-elevated text-white text-sm border border-brand-primary/60 min-w-[140px] max-w-[200px]"
+            />
+          ) : (
+            <Pressable
+              onPress={() => setEditingTitle(true)}
+              accessibilityRole="button"
+              accessibilityLabel="Editar título do projeto"
+              className="h-9 px-2 rounded-lg items-center justify-center bg-dark-muted/30 active:opacity-70 focus-ring max-w-[200px]"
+            >
+              <Text className="text-white font-bold text-sm" numberOfLines={1} ellipsizeMode="tail">
+                {projectTitle}
+              </Text>
+            </Pressable>
+          )}
           {!resp.isDesktop && (
             <Pressable
               onPress={() => setDrawerOpen(true)}
@@ -1870,9 +1941,11 @@ export default function Studio() {
           </Pressable>
           <Pressable
             onPress={() => setShowCommandPalette(true)}
-            className="h-8 rounded-lg items-center justify-center px-2 bg-dark-muted active:opacity-70"
+            accessibilityRole="button"
+            accessibilityLabel="Abrir paleta de comandos"
+            className="h-8 rounded-lg items-center justify-center px-2 bg-dark-muted active:opacity-70 focus-ring"
           >
-            <Text className="text-gray-300 text-xs">⌘</Text>
+            <Text className="text-gray-300 text-xs font-bold">⌘K</Text>
           </Pressable>
           <Pressable
             onPress={() => setShowBranchManager(true)}
