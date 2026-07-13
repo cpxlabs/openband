@@ -1,14 +1,44 @@
 import { useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Dispatch, SetStateAction } from "react";
+import type { Dispatch, SetStateAction, MutableRefObject } from "react";
 import { Alert } from "react-native";
+import { AudioModule, setAudioModeAsync } from "expo-audio";
+import type { AudioPlayer, AudioStatus } from "expo-audio";
 import type { Mood } from "../../src/lib/projectTemplates";
-import type { MixSnapshot, TrackDef } from "../../src/lib/types";
+import type { MixSnapshot, TrackDef, BusDef } from "../../src/lib/types";
 import {
   saveProject,
   loadProject,
   type ProjectData,
 } from "../../src/lib/projectStore";
+import { PlaybackEngine } from "../../src/lib/playbackEngine";
+import {
+  renderTracksToUrl,
+  disposeAudioContext,
+  getProjectDurationSeconds,
+} from "../../src/lib/midiSynth";
+import {
+  audioSystem,
+  createTrackedBlob,
+  markBlobActive,
+  revokeTrackedBlob,
+} from "../../src/lib/universalAudio";
+import {
+  startClock,
+  stopClock,
+  onClockTick,
+  disposeClockManager,
+} from "../../src/lib/clockManager";
+import {
+  startTelemetry,
+  stopTelemetry,
+  sendTelemetryReport,
+  recordFrame,
+  recordCpuLoad,
+} from "../../src/lib/audioTelemetry";
+import type { useWebAudioPlayer } from "../../src/hooks/useWebAudioPlayer";
+import { pitchShift } from "../../src/lib/timeStretch";
+import { audioBufferToWavBlob } from "../../src/lib/audio";
 
 type Snapshot = Omit<ProjectData, "id" | "lastSaved">;
 
@@ -349,5 +379,318 @@ export function useStudioModals(init: { synth: boolean; pianoRoll: boolean }) {
     setShowToolbarOverflow,
     showPianoRoll,
     setShowPianoRoll,
+  };
+}
+
+/**
+ * Applies a cumulative pitch shift (in semitones) to a rendered audio URL,
+ * producing a new tracked blob and revoking the source. Falls back to the
+ * original URL on failure.
+ */
+export async function applyPitchShift(
+  sourceUrl: string,
+  totalSemitones: number,
+): Promise<string> {
+  const sharedCtx = await audioSystem.ensureContext();
+  if (!sharedCtx) return sourceUrl;
+  try {
+    const resp = await fetch(sourceUrl);
+    const arrayBuf = await resp.arrayBuffer();
+    const audioBuf = await sharedCtx.decodeAudioData(arrayBuf);
+    const shifted = await pitchShift(audioBuf, totalSemitones);
+    const offline = new OfflineAudioContext(
+      shifted.numberOfChannels,
+      shifted.length,
+      shifted.sampleRate,
+    );
+    const source = offline.createBufferSource();
+    source.buffer = shifted;
+    source.connect(offline.destination);
+    source.start();
+    const rendered = await offline.startRendering();
+    const blob = await audioBufferToWavBlob(rendered);
+    const pitchUrl = createTrackedBlob(blob);
+    markBlobActive(pitchUrl);
+    revokeTrackedBlob(sourceUrl);
+    return pitchUrl;
+  } catch (e) {
+    console.warn("Pitch shift failed, using original:", e);
+    return sourceUrl;
+  }
+}
+
+/**
+ * Owns the Studio playback-TRANSPORT concern: the WebAudio/Native playback
+ * engine, audio-mode/permission setup, clock + telemetry wiring, and the
+ * play/seek/stop imperative controls. This is a faithful relocation of the
+ * transport logic that previously lived inline in `app/studio/[id].tsx`.
+ */
+export function useStudioTransport(params: {
+  isWeb: boolean;
+  player: AudioPlayer;
+  status: AudioStatus;
+  webAudio: ReturnType<typeof useWebAudioPlayer>;
+  tracks: TrackDef[];
+  initialBpm: number;
+  projectMood?: Mood;
+  buses: BusDef[];
+  projectTimeSig: string;
+  metronomeBpm: number;
+  isConnected: boolean;
+  pitchCorrected: boolean;
+  playbackRate: number;
+  pitchShiftSemitones: number;
+  setCurrentBeat: (b: number) => void;
+  setAutoplayBlocked: (v: boolean) => void;
+  sendCursorRef: MutableRefObject<
+    (x: number, trackId: string | null, time: number) => void
+  >;
+  selectedTrackIdRef: MutableRefObject<string | null>;
+  durationRef: MutableRefObject<number>;
+}): {
+  isPlaying: boolean;
+  currentTime: number;
+  duration: number;
+  engineActive: boolean;
+  setEngineActive: Dispatch<SetStateAction<boolean>>;
+  engineRef: MutableRefObject<PlaybackEngine | null>;
+  currentSeekRef: MutableRefObject<number>;
+  currentUrlRef: MutableRefObject<string | null>;
+  getEngine: () => PlaybackEngine;
+  togglePlay: () => Promise<void>;
+  seekRelative: (seconds: number) => void;
+  stopPlayback: () => void;
+} {
+  const {
+    isWeb,
+    player,
+    status,
+    webAudio,
+    tracks,
+    initialBpm,
+    projectMood,
+    buses,
+    projectTimeSig,
+    metronomeBpm,
+    isConnected,
+    pitchCorrected,
+    playbackRate,
+    pitchShiftSemitones,
+    setCurrentBeat,
+    setAutoplayBlocked,
+    sendCursorRef,
+    selectedTrackIdRef,
+    durationRef,
+  } = params;
+
+  const currentUrlRef = useRef<string | null>(null);
+  const engineRef = useRef<PlaybackEngine | null>(null);
+  const [engineActive, setEngineActive] = useState(false);
+  const currentSeekRef = useRef(0);
+
+  function getEngine(): PlaybackEngine {
+    if (!engineRef.current) engineRef.current = new PlaybackEngine();
+    return engineRef.current;
+  }
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { granted } =
+          await AudioModule.requestRecordingPermissionsAsync();
+        if (!granted) {
+          Alert.alert(
+            "Permissão",
+            "Permissão para usar o microfone foi negada.",
+          );
+        }
+        await setAudioModeAsync({
+          playsInSilentMode: true,
+          allowsRecording: true,
+        });
+      } catch (e) {
+        console.warn("Failed to set audio mode:", e);
+      }
+    })();
+    return () => {
+      disposeAudioContext();
+      disposeClockManager();
+      if (currentUrlRef.current) revokeTrackedBlob(currentUrlRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isWeb) webAudio.setPlaybackRate(playbackRate);
+    else player.playbackRate = playbackRate;
+  }, [playbackRate, player, isWeb, webAudio]);
+
+  const isPlaying = isWeb
+    ? engineActive
+      ? (engineRef.current?.isPlaying ?? false)
+      : webAudio.isPlaying
+    : player.playing;
+  const currentTime = isWeb
+    ? engineActive
+      ? (engineRef.current?.getCurrentTime() ?? 0)
+      : webAudio.currentTime
+    : status.currentTime || 0;
+  const duration = isWeb
+    ? engineActive
+      ? (engineRef.current?.duration ?? 0)
+      : webAudio.duration
+    : status.duration || 240;
+
+  useEffect(() => {
+    if (isPlaying) {
+      startClock(25);
+      startTelemetry({}, (metrics) => {
+        sendTelemetryReport(metrics);
+      });
+    } else {
+      stopClock();
+      stopTelemetry();
+      setCurrentBeat(0);
+    }
+    return () => {
+      if (!isPlaying) stopClock();
+      stopTelemetry();
+    };
+  }, [isPlaying]);
+
+  useEffect(() => {
+    const unsub = onClockTick((_time, audioTime) => {
+      const timeSource = isWeb
+        ? engineActive
+          ? (engineRef.current?.getCurrentTime() ?? audioTime)
+          : (webAudio?.currentTime ?? audioTime)
+        : audioTime;
+      const beatsPerMeasure = projectTimeSig.split("/").map(Number)[0];
+      const beat = ((timeSource * metronomeBpm) / 60) % (beatsPerMeasure * 4);
+      recordFrame();
+      recordCpuLoad(Math.min(100, Math.max(0, (timeSource % 1) * 100)));
+      setCurrentBeat(beat);
+      if (isConnected) {
+        sendCursorRef.current(
+          timeSource / Math.max(1, durationRef.current),
+          selectedTrackIdRef.current,
+          timeSource,
+        );
+      }
+    });
+    return unsub;
+  }, [metronomeBpm, projectTimeSig, isConnected, isWeb, webAudio, engineActive]);
+
+  const togglePlay = useCallback(async () => {
+    if (isWeb) webAudio.unlock();
+    const playing = isWeb
+      ? engineActive
+        ? (engineRef.current?.isPlaying ?? false)
+        : webAudio.isPlaying
+      : player.playing;
+    if (playing) {
+      if (isWeb && engineActive && engineRef.current) {
+        engineRef.current.pause();
+        currentSeekRef.current = engineRef.current.getCurrentTime();
+        setEngineActive(false);
+      } else if (isWeb) {
+        webAudio.pause();
+      } else {
+        player.pause();
+      }
+      return;
+    }
+
+    try {
+      const ctx = await audioSystem.ensureContext();
+      if (ctx) {
+        const engine = getEngine();
+        const durSec = getProjectDurationSeconds(tracks, initialBpm);
+        const beatsPerMeasure = projectTimeSig.split("/").map(Number)[0];
+        await engine.prepare(tracks, initialBpm, durSec, beatsPerMeasure);
+        engine.onEnded = () => setEngineActive(false);
+        await engine.play(currentSeekRef.current);
+        setEngineActive(true);
+        return;
+      }
+    } catch (e) {
+      console.warn("PlaybackEngine unavailable, falling back to blob playback:", e);
+    }
+
+    if (currentUrlRef.current) revokeTrackedBlob(currentUrlRef.current);
+    let url = await renderTracksToUrl(tracks, initialBpm, projectMood, buses);
+    const totalSemitones =
+      pitchShiftSemitones + (pitchCorrected ? -Math.log2(playbackRate) * 12 : 0);
+    if (url && totalSemitones !== 0) {
+      url = await applyPitchShift(url, totalSemitones);
+    }
+    if (url) {
+      try {
+        currentUrlRef.current = url;
+        if (isWeb) {
+          await webAudio.replace(url);
+          await webAudio.play();
+        } else {
+          await player.replace(url);
+          await player.play();
+        }
+        markBlobActive(url);
+      } catch (e) {
+        console.warn("Playback failed:", e);
+        setAutoplayBlocked(true);
+      }
+    }
+  }, [player, webAudio, isWeb, tracks, initialBpm, projectMood, buses, pitchCorrected, playbackRate, pitchShiftSemitones, engineActive, projectTimeSig]);
+
+  const seekRelative = useCallback((seconds: number) => {
+    if (isWeb && engineActive && engineRef.current) {
+      engineRef.current.seek(engineRef.current.getCurrentTime() + seconds);
+      currentSeekRef.current = engineRef.current.getCurrentTime();
+      return;
+    }
+    if (isWeb) {
+      webAudio.seekTo(Math.max(0, webAudio.currentTime + seconds));
+    } else if (player) {
+      player.seekTo(Math.max(0, (status.currentTime || 0) + seconds));
+    }
+  }, [isWeb, webAudio, player, status.currentTime, engineActive]);
+
+  const stopPlayback = useCallback(() => {
+    if (isWeb && engineActive && engineRef.current) {
+      engineRef.current.stop();
+      currentSeekRef.current = 0;
+      setEngineActive(false);
+      setCurrentBeat(0);
+      return;
+    }
+    if (isWeb) {
+      webAudio.pause();
+      webAudio.seekTo(0);
+    } else if (player) {
+      player.pause();
+      player.seekTo(0);
+    }
+    stopClock();
+    setCurrentBeat(0);
+  }, [isWeb, webAudio, player, engineActive]);
+
+  useEffect(() => () => {
+    if (isWeb && engineRef.current) engineRef.current.dispose();
+    else if (isWeb) webAudio.pause();
+    else player.pause();
+  }, [player, isWeb, webAudio]);
+
+  return {
+    isPlaying,
+    currentTime,
+    duration,
+    engineActive,
+    setEngineActive,
+    engineRef,
+    currentSeekRef,
+    currentUrlRef,
+    getEngine,
+    togglePlay,
+    seekRelative,
+    stopPlayback,
   };
 }
