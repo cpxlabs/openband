@@ -244,6 +244,7 @@ export default function Studio() {
   }, []);
 
   const resp = useResponsive();
+  const [zoom, setZoom] = useState(1);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const handleNavigate = useCallback((route: string) => {
     const target = route === "index" ? "/tabs/feed" : `/tabs/${route}`;
@@ -494,6 +495,10 @@ export default function Studio() {
   selectedTrackIdRef.current = selectedTrackId;
   const durationRef = useRef(duration);
   durationRef.current = duration;
+
+  const pxPerSec = 2.4 * zoom;
+  const secondsPerMarker = 20;
+  const timelineWidth = Math.max(TIMELINE_WIDTH, duration * pxPerSec);
   const currentTimeRef = useRef(currentTime);
   currentTimeRef.current = currentTime;
   const isPlayingRef = useRef(isPlaying);
@@ -507,10 +512,10 @@ export default function Studio() {
     (e: { nativeEvent?: { locationX?: number; offsetX?: number } }) => {
       if (!isConnected) return;
       const x = e?.nativeEvent?.locationX ?? e?.nativeEvent?.offsetX ?? 0;
-      const cursorX = Math.max(0, Math.min(1, x / TIMELINE_WIDTH));
+      const cursorX = Math.max(0, Math.min(1, x / timelineWidth));
       sendCursor(cursorX, selectedTrackIdRef.current, currentTime);
     },
-    [isConnected, sendCursor, currentTime],
+    [isConnected, sendCursor, currentTime, timelineWidth],
   );
 
   useEffect(() => {
@@ -2040,12 +2045,19 @@ export default function Studio() {
           showsHorizontalScrollIndicator={false}
           className="flex-1"
         >
-          <View className="flex-row items-center" style={{ width: 1200 }}>
+          <View
+            className="flex-row items-center"
+            style={{ width: 25 * secondsPerMarker * pxPerSec }}
+          >
             {Array.from({ length: 25 }, (_, i) => (
-              <View key={i} className="flex-row" style={{ width: 48 }}>
+              <View
+                key={i}
+                className="flex-row"
+                style={{ width: secondsPerMarker * pxPerSec }}
+              >
                 <Text className="text-gray-600 font-mono text-[10px]">
-                  {String(Math.floor((i * 2) / 60)).padStart(2, "0")}:
-                  {String((i * 2) % 60).padStart(2, "0")}
+                  {String(Math.floor((i * secondsPerMarker) / 60)).padStart(2, "0")}:
+                  {String((i * secondsPerMarker) % 60).padStart(2, "0")}
                 </Text>
                 {i % 4 === 0 && (
                   <View className="w-px h-3 bg-gray-700 absolute right-0" />
@@ -2054,6 +2066,31 @@ export default function Studio() {
             ))}
           </View>
         </ScrollView>
+        <View className="flex-row items-center gap-1 pl-2">
+          <Pressable
+            accessibilityLabel="Diminuir zoom"
+            onPress={() => setZoom((z) => Math.max(0.5, +(z / 1.5).toFixed(2)))}
+            className="w-7 h-7 rounded items-center justify-center bg-dark-muted/40 border border-dark-border text-gray-300 active:opacity-70"
+          >
+            <Text className="text-gray-300 text-sm font-bold">−</Text>
+          </Pressable>
+          <Pressable
+            accessibilityLabel="Aumentar zoom"
+            onPress={() => setZoom((z) => Math.min(3, +(z * 1.5).toFixed(2)))}
+            className="w-7 h-7 rounded items-center justify-center bg-dark-muted/40 border border-dark-border text-gray-300 active:opacity-70"
+          >
+            <Text className="text-gray-300 text-sm font-bold">+</Text>
+          </Pressable>
+          <Pressable
+            accessibilityLabel="Resetar zoom"
+            onPress={() => setZoom(1)}
+            className="w-7 h-7 rounded items-center justify-center bg-dark-muted/40 border border-dark-border text-gray-400 active:opacity-70"
+          >
+            <Text className="text-[10px] text-gray-400 font-bold">
+              {Math.round(zoom * 100)}%
+            </Text>
+          </Pressable>
+        </View>
       </View>
 
       <View className="flex-1 flex-row">
@@ -2235,14 +2272,14 @@ export default function Studio() {
 
         <ScrollView horizontal className="flex-1 bg-dark-bg">
           {tracks.length === 0 ? (
-            <View className="flex-1 items-center justify-center px-6" style={{ width: TIMELINE_WIDTH }}>
+              <View className="flex-1 items-center justify-center px-6" style={{ width: timelineWidth }}>
               <Text className="text-gray-400 text-base font-semibold">Nenhuma track ainda</Text>
               <Text className="text-gray-500 text-xs mt-1 text-center">
                 Adicione uma track para começar
               </Text>
             </View>
           ) : (
-          <View style={{ width: TIMELINE_WIDTH }}>
+          <View style={{ width: timelineWidth }}>
             <View
               className="relative"
               onPointerMove={handleTimelinePointerMove}
@@ -2270,8 +2307,8 @@ export default function Studio() {
                         <View
                           key={region.id}
                           style={{
-                            left: region.start * 2.4,
-                            width: region.duration * 2.4,
+                            left: region.start * pxPerSec,
+                            width: region.duration * pxPerSec,
                             position: "absolute",
                           }}
                           className={`h-14 rounded-xl border border-white/10 overflow-hidden shadow-md ${
@@ -2292,8 +2329,8 @@ export default function Studio() {
                       {isRecording && track.isArmed && (
                         <View
                           style={{
-                            left: currentBeat * 2.4, // rough sync with beat width, but usually recording starts at current position
-                            width: ((Date.now() - (webRecordingStart || Date.now())) / 1000 + recordingTick * 0) * (initialBpm / 60) * 2.4,
+                            left: currentBeat * pxPerSec, // rough sync with beat width, but usually recording starts at current position
+                            width: ((Date.now() - (webRecordingStart || Date.now())) / 1000 + recordingTick * 0) * (initialBpm / 60) * pxPerSec,
                             minWidth: 100, // so we can see it growing
                             position: "absolute",
                           }}
@@ -2344,10 +2381,10 @@ export default function Studio() {
               {isPlaying && (
                 <View
                   className="absolute top-0 bottom-0 w-0.5 bg-brand-primary z-10 shadow-sm shadow-brand-primary/50"
-                  style={{ left: currentTime * 2.4 }}
+                  style={{ left: currentTime * pxPerSec }}
                 />
               )}
-              <CollaboratorCursors cursors={cursors} timelineWidth={TIMELINE_WIDTH} />
+              <CollaboratorCursors cursors={cursors} timelineWidth={timelineWidth} />
             </View>
           </View>
           )}

@@ -15,6 +15,7 @@ import { useAuth } from "../../src/context/AuthContext";
 import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
 import {
   PageHeader,
+  Button,
   QuickActions,
   setMiniPlayerState,
   QuickTools,
@@ -390,6 +391,7 @@ export default function Feed() {
             horizontal
             showsHorizontalScrollIndicator={false}
             className="mb-2"
+            contentContainerStyle={{ paddingRight: 16 }}
           >
             <View className="flex-row gap-2 py-1.5">
               {GENRE_FILTERS.map((genre) => (
@@ -425,8 +427,8 @@ export default function Feed() {
               <Pressable
                 key={mode}
                 onPress={() => setSortMode(mode)}
-                className={`px-3 py-1 rounded-lg border ${sortMode === mode ? "bg-dark-muted border-brand-accent/40" : "bg-dark-elevated border-dark-border"}`}
-                accessibilityRole="button"
+                className={`px-3 py-1 rounded-lg border ${sortMode === mode ? "bg-brand-accent border-brand-accent" : "bg-dark-elevated border-dark-border"}`}
+                accessibilityRole="radio"
                 accessibilityLabel={
                   mode === "recent"
                     ? t("feed.recent", "Recentes")
@@ -437,7 +439,7 @@ export default function Feed() {
                 accessibilityState={{ selected: sortMode === mode }}
               >
                 <Text
-                  className={`text-[10px] font-semibold ${sortMode === mode ? "text-brand-accent" : "text-gray-400"}`}
+                  className={`text-[10px] font-semibold ${sortMode === mode ? "text-dark-bg" : "text-gray-400"}`}
                 >
                   {mode === "recent"
                     ? t("feed.recent", "Recentes")
@@ -508,26 +510,18 @@ export default function Feed() {
                     {t("feed.welcomeText", "Crie seu primeiro projeto musical e comece a produzir música agora.")}
                   </Text>
                   <View className="flex-row gap-2">
-                    <Pressable
+                    <Button
+                      title={`+ ${t("feed.newProject", "Novo Projeto")}`}
                       onPress={handleNewProject}
-                      className="flex-1 bg-brand-primary rounded-xl py-3 items-center"
-                      accessibilityRole="button"
-                      accessibilityLabel={t("feed.newProject", "Novo Projeto")}
-                    >
-                      <Text className="text-white font-bold text-sm">
-                        + {t("feed.newProject", "Novo Projeto")}
-                      </Text>
-                    </Pressable>
-                    <Pressable
+                      variant="primary"
+                      className="flex-1"
+                    />
+                    <Button
+                      title={t("feed.viewLibrary", "Ver Biblioteca")}
                       onPress={() => router.push("/tabs/library")}
-                      className="flex-1 bg-dark-elevated border border-dark-border rounded-xl py-3 items-center"
-                      accessibilityRole="button"
-                      accessibilityLabel={t("feed.viewLibrary", "Ver Biblioteca")}
-                    >
-                      <Text className="text-white font-bold text-sm">
-                        {t("feed.viewLibrary", "Ver Biblioteca")}
-                      </Text>
-                    </Pressable>
+                      variant="secondary"
+                      className="flex-1"
+                    />
                   </View>
                 </View>
               ) : null
