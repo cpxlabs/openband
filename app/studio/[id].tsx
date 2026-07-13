@@ -9,7 +9,7 @@ import {
   Alert,
   Modal,
 } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import {
   useAudioPlayer,
   useAudioPlayerStatus,
@@ -75,7 +75,6 @@ import type {
   MIDINote,
 } from "../../src/lib/types";
 import { EQ_DEFAULT_BANDS, PLUGIN_SPECS, clampParam } from "../../src/lib/types";
-import type { Mood } from "../../src/lib/projectTemplates";
 import { useResponsive } from "../../src/lib/responsive";
 import {
   MASTERING_CHAIN_PRESETS,
@@ -102,8 +101,7 @@ import {
   type PluginSource,
 } from "./parts";
 import { StudioModals } from "./StudioModals";
-
-type BottomTab = "mixer" | "fx" | "mastering" | "groups" | "buses" | "mixes" | "chords";
+import { useProjectParams, type BottomTab } from "./hooks";
 
 async function applyPitchShift(
   sourceUrl: string,
@@ -141,55 +139,22 @@ async function applyPitchShift(
 export default function Studio() {
   const {
     id,
-    genre: genreParam,
-    key: keyParam,
-    bpm: bpmParam,
-    title: titleParam,
-    mood: moodParam,
-    numBars: numBarsParam,
-    timeSignature: tsParam,
-    scratch: scratchParam,
-    tab: tabParam,
-    tool: toolParam,
-    fromOnboarding: fromOnboardingParam,
-  } = useLocalSearchParams<{
-    id: string;
-    genre?: string;
-    key?: string;
-    bpm?: string;
-    title?: string;
-    mood?: string;
-    numBars?: string;
-    timeSignature?: string;
-    scratch?: string;
-    tab?: string;
-    tool?: string;
-    fromOnboarding?: string;
-  }>();
-  const rawMood = Array.isArray(moodParam) ? moodParam[0] : moodParam;
-  const rawTab = Array.isArray(tabParam) ? tabParam[0] : tabParam;
-  const rawTool = Array.isArray(toolParam) ? toolParam[0] : toolParam;
-  const allMoods: Mood[] = ["dark", "bright", "warm", "cold", "aggressive", "chill", "epic", "minimal", "nostalgic", "euphoric"];
-  const projectMood: Mood | undefined = allMoods.includes(rawMood as Mood) ? (rawMood as Mood) : undefined;
+    genreParam,
+    projectKey,
+    initialBpm,
+    initialTitle,
+    projectMood,
+    initialNumBars,
+    projectTimeSig,
+    isScratch,
+    rawTool,
+    isFromOnboarding,
+    initialBottomTab,
+  } = useProjectParams();
   const router = useRouter();
-  const [projectTitle, setProjectTitle] = useState(
-    (Array.isArray(titleParam) ? titleParam[0] : titleParam) || "Projeto",
-  );
+  const [projectTitle, setProjectTitle] = useState(initialTitle);
   const [editingTitle, setEditingTitle] = useState(false);
   const titleInputRef = useRef<TextInput>(null);
-  const initialBpm = bpmParam
-    ? parseInt(Array.isArray(bpmParam) ? bpmParam[0] : bpmParam, 10) || 120
-    : 120;
-  const projectKey = Array.isArray(keyParam) ? keyParam[0] : keyParam;
-  const initialNumBars = numBarsParam
-    ? parseInt(Array.isArray(numBarsParam) ? numBarsParam[0] : numBarsParam, 10) || 8
-    : 8;
-  const projectTimeSig = Array.isArray(tsParam) ? tsParam[0] : tsParam || "4/4";
-  const isScratch = Array.isArray(scratchParam) ? scratchParam[0] : scratchParam === "1";
-  const isFromOnboarding =
-    Array.isArray(fromOnboardingParam)
-      ? fromOnboardingParam[0]
-      : fromOnboardingParam === "1";
   const [tooltipDismissed, setTooltipDismissed] = useState(false);
   const { completeOnboarding } = useAuth();
   const player = useAudioPlayer(null);
@@ -243,13 +208,6 @@ export default function Studio() {
     router.push(target as Parameters<typeof router.push>[0]);
     setDrawerOpen(false);
   }, [router]);
-
-  const initialBottomTab = (() => {
-    if (rawTab === "fx" || rawTab === "mastering" || rawTab === "groups" || rawTab === "buses" || rawTab === "mixes" || rawTab === "chords") {
-      return rawTab;
-    }
-    return "mixer";
-  })();
 
   const [isRecording, setIsRecording] = useState(false);
   const [webRecordingStart, setWebRecordingStart] = useState<number | null>(null);

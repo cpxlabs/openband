@@ -42,6 +42,36 @@ FEED-11, SET-2/5/10, TAB-1/2/6, EXPL-4/5/6, LIB-8.
 
 ---
 
+## STU-1 Hook Decomposition Spec
+
+Goal: shrink `app/studio/[id].tsx` by extracting cohesive state slices into custom
+hooks in `app/studio/hooks/` (or `parts.tsx`), without a Context rewrite. Each hook
+owns its state + effects + handlers and returns a typed API. Extract one at a time,
+`tsc` clean + commit between each. Order chosen low→high coupling:
+
+1. **`useStudioPersistence(id, snapshotInputs)`** — owns autosave debounce effect,
+   `lastSavedLabel` + timer, `loadProject` hydrate effect, `commitTitle`, and the
+   manual-save handler. Returns `{ lastSavedLabel, commitTitle, handleManualSave,
+   hydrated }`. Consumes `buildProjectData`. Lowest coupling — reads state, writes storage.
+2. **`useProjectParams()`** — parses `useLocalSearchParams` into typed project config
+   (title, bpm, key, mood, numBars, timeSig, scratch, tab, tool, fromOnboarding).
+   Pure derivation, zero state. Very safe.
+3. **`useStudioModalState()`** — consolidates the ~22 `show*` boolean toggles into a
+   single reducer/record + `openModal/closeModal` helpers. Reduces ~22 useState lines.
+4. **`useStudioMixerState()`** — groups, buses, sendBuses, trackAmpChains,
+   trackAssignments, masterPlugins, masteringChain, mixSnapshots, activeMixId, and
+   their mix save/load/delete/compare handlers. Higher coupling (playback reads these).
+5. **`useStudioTransport()`** — play/record/seek, engine refs, clock/telemetry effects.
+   Highest coupling with audio libs — do LAST, most careful testing.
+
+Risk notes: transport + mixer hooks touch refs shared by many callbacks; verify no
+stale-closure regressions. Keep `tracks`/`useHistory` in the main component (undo/redo
+is cross-cutting). Behavior must be identical.
+
+Status: (1) in progress.
+
+---
+
 ## Table of Contents
 
 - [Cross-Cutting Issues](#cross-cutting-issues)
