@@ -176,6 +176,9 @@ export default function Library() {
               <Pressable
                 onPress={() => handleTabChange(item.id)}
                 className={`flex-row items-center gap-1.5 px-4 py-2 rounded-full mr-2 ${filterTab === item.id ? "bg-brand-primary" : "bg-dark-surface"}`}
+                accessibilityRole="tab"
+                accessibilityLabel={label}
+                accessibilityState={{ selected: filterTab === item.id }}
               >
                 <Text className="text-white font-semibold text-xs">{item.icon} {label}</Text>
               </Pressable>

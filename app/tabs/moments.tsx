@@ -268,6 +268,8 @@ export default function Moments() {
           className={`flex-1 py-2.5 rounded-xl items-center border flex-row justify-center gap-2 ${
             tab === "moments" ? "bg-brand-primary/15 border-brand-primary/50" : "bg-dark-elevated border-dark-border/50"
           }`}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: tab === "moments" }}
         >
           <Text
             className={`text-xs ${tab === "moments" ? "text-brand-primary" : "text-gray-400"}`}
@@ -285,6 +287,8 @@ export default function Moments() {
           className={`flex-1 py-2.5 rounded-xl items-center border flex-row justify-center gap-2 ${
             tab === "packs" ? "bg-brand-primary/15 border-brand-primary/50" : "bg-dark-elevated border-dark-border/50"
           }`}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: tab === "packs" }}
         >
           <Text
             className={`text-xs ${tab === "packs" ? "text-brand-primary" : "text-gray-400"}`}

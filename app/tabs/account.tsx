@@ -11,7 +11,19 @@ import {
   Badge,
 } from "../../src/components";
 import { LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive";
+import { SCREEN_BOTTOM_PADDING } from "../../src/lib/constants";
 import { useTranslation } from "react-i18next";
+
+const TIER_LABELS: Record<string, string> = {
+  free: "Gratuito",
+  live: "Live",
+  studio: "Studio",
+};
+
+function tierLabel(tier: string): string {
+  if (!tier) return "";
+  return TIER_LABELS[tier.toLowerCase()] ?? tier.charAt(0).toUpperCase() + tier.slice(1);
+}
 
 export default function Account() {
   const { t } = useTranslation();
@@ -26,17 +38,22 @@ export default function Account() {
 
   const [saving, setSaving] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   const handleSaveName = async () => {
     if (!name.trim() || name.trim() === currentName) return;
     setSaving(true);
+    setSaved(false);
     try {
       const { error } = await supabase.auth.updateUser({
         data: { name: name.trim() },
       });
       if (error) {
         Alert.alert(t("account.error", "Erro"), error.message);
+        return;
       }
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
     } catch (e) {
       console.warn("Update user failed:", e);
       Alert.alert(t("account.error", "Erro"), t("account.saveError", "Não foi possível salvar."));
@@ -67,7 +84,7 @@ export default function Account() {
   return (
     <ScrollView
       className="flex-1 bg-dark-bg"
-      contentContainerStyle={{ paddingBottom: 100, flexGrow: 1 }}
+      contentContainerStyle={{ paddingBottom: SCREEN_BOTTOM_PADDING, flexGrow: 1 }}
       style={{ maxWidth: LAYOUT_MAX_WIDTHS.account, alignSelf: "center", width: "100%" }}
     >
       <View className="pt-4 tablet:pt-12 px-4 tablet:px-6">
@@ -94,8 +111,13 @@ export default function Account() {
           title={t("account.save", "Salvar")}
           onPress={handleSaveName}
           loading={saving}
-          disabled={!name.trim() || name.trim() === currentName}
+          disabled={!name.trim() || name.trim() === currentName || saving}
         />
+        {saved && (
+          <Text className="text-brand-green text-sm font-medium mt-2">
+            {t("account.nameUpdated", "Nome atualizado")}
+          </Text>
+        )}
 
         <Divider label={t("account.session", "Sessão")} />
 
@@ -112,7 +134,7 @@ export default function Account() {
         <View className="card-elevated p-4 gap-3">
           <View className="flex-row justify-between items-center">
             <Text className="text-gray-400 text-sm">{t("account.planTier", "Plano atual")}</Text>
-            <Badge text={tier} variant="active" />
+            <Badge text={tierLabel(tier)} variant="active" />
           </View>
           <View className="h-px bg-dark-border" />
           <View className="flex-row justify-between items-center">

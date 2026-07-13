@@ -543,6 +543,9 @@ export default function Feed() {
                       ? "bg-brand-primary/20 border-brand-primary"
                       : "bg-dark-elevated border-dark-border"
                   }`}
+                  accessibilityRole="button"
+                  accessibilityLabel={genre.id === "all" ? t("feed.all", "Todos") : genre.label}
+                  accessibilityState={{ selected: genreFilter === genre.id }}
                 >
                   <Text
                     className={`text-xs ${genreFilter === genre.id ? "text-brand-primary" : "text-gray-400"}`}
@@ -565,6 +568,15 @@ export default function Feed() {
                 key={mode}
                 onPress={() => setSortMode(mode)}
                 className={`px-3 py-1 rounded-lg border ${sortMode === mode ? "bg-dark-muted border-brand-accent/40" : "bg-dark-elevated border-dark-border"}`}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  mode === "recent"
+                    ? t("feed.recent", "Recentes")
+                    : mode === "popular"
+                      ? t("feed.popular", "Populares")
+                      : t("feed.genre", "Gênero")
+                }
+                accessibilityState={{ selected: sortMode === mode }}
               >
                 <Text
                   className={`text-[10px] font-semibold ${sortMode === mode ? "text-brand-accent" : "text-gray-400"}`}
@@ -641,6 +653,8 @@ export default function Feed() {
                     <Pressable
                       onPress={handleNewProject}
                       className="flex-1 bg-brand-primary rounded-xl py-3 items-center"
+                      accessibilityRole="button"
+                      accessibilityLabel={t("feed.newProject", "Novo Projeto")}
                     >
                       <Text className="text-white font-bold text-sm">
                         + {t("feed.newProject", "Novo Projeto")}
@@ -649,6 +663,8 @@ export default function Feed() {
                     <Pressable
                       onPress={() => router.push("/tabs/library")}
                       className="flex-1 bg-dark-elevated border border-dark-border rounded-xl py-3 items-center"
+                      accessibilityRole="button"
+                      accessibilityLabel={t("feed.viewLibrary", "Ver Biblioteca")}
                     >
                       <Text className="text-white font-bold text-sm">
                         {t("feed.viewLibrary", "Ver Biblioteca")}

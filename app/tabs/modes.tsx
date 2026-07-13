@@ -29,7 +29,10 @@ export default function ModesScreen() {
 
   return (
     <View className="flex-1 bg-dark-bg">
-      <ScrollView className="flex-1 px-4 pt-4 pb-8">
+      <ScrollView
+        className="flex-1 px-4 pt-4 pb-8"
+        style={{ maxWidth: 1200, alignSelf: "center", width: "100%" }}
+      >
         <PageHeader
           title="Modos Criativos"
           subtitle="Acesse todos os modos de criação do OpenBand"

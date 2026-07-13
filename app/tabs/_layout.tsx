@@ -3,7 +3,7 @@ import { Tabs, useRouter, useSegments, type Href } from "expo-router";
 import { Text, View, Pressable, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useResponsive } from "../../src/lib/responsive";
-import { MiniPlayer, Sidebar } from "../../src/components";
+import { MiniPlayer, Sidebar, ErrorBoundary } from "../../src/components";
 
 const NAV_ITEMS = [
   { key: "index", label: "Feed", icon: "♫" },
@@ -49,7 +49,7 @@ export default function TabLayout() {
       return;
     }
     const target = route === "index" ? "/tabs/feed" : `/tabs/${route}`;
-    router.replace(target as Href);
+    router.push(target as Href);
     setDrawerOpen(false);
   }, [currentSegment, router]);
 
@@ -152,22 +152,24 @@ export default function TabLayout() {
         )}
 
         <View className="flex-1">
-          <Tabs
-            screenOptions={{
-              headerShown: false,
-              tabBarStyle: { display: "none" },
-            }}
-          >
-            <Tabs.Screen name="index" />
-            <Tabs.Screen name="feed" />
-            <Tabs.Screen name="moments" />
-            <Tabs.Screen name="library" />
-            <Tabs.Screen name="account" />
-            <Tabs.Screen name="settings" />
-            <Tabs.Screen name="explorer" />
-            <Tabs.Screen name="virtual-studio" />
-            <Tabs.Screen name="modes" />
-          </Tabs>
+          <ErrorBoundary fallbackTitle="Algo deu errado">
+            <Tabs
+              screenOptions={{
+                headerShown: false,
+                tabBarStyle: { display: "none" },
+              }}
+            >
+              <Tabs.Screen name="index" />
+              <Tabs.Screen name="feed" />
+              <Tabs.Screen name="moments" />
+              <Tabs.Screen name="library" />
+              <Tabs.Screen name="account" />
+              <Tabs.Screen name="settings" />
+              <Tabs.Screen name="explorer" />
+              <Tabs.Screen name="virtual-studio" />
+              <Tabs.Screen name="modes" />
+            </Tabs>
+          </ErrorBoundary>
           <MiniPlayer />
         </View>
       </View>

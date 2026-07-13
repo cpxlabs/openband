@@ -70,3 +70,5 @@ export { VuMeter } from "./VuMeter";
 export { TrackColorPicker } from "./TrackColorPicker";
 export { MidiLearnPanel } from "./MidiLearnPanel";
 export { TunePanel } from "./TunePanel";
+export { ErrorBoundary } from "./ErrorBoundary";
+export { MobileDrawer } from "./MobileDrawer";
