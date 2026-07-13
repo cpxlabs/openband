@@ -31,6 +31,9 @@
 - Batch 11: FEED-5 (Skeleton), FEED-10 (pinned now-playing), ACC-3 (real session status),
   EXPL-2/3 (iframe loading/error states, shared Screen3DHeader)
 - Batch 12: CC-1 partial (Extractor fully localized en/pt/es), LIB-5 (robust UTF-8 import)
+- STU-1 (incremental): extracted StudioModals (17-modal cluster), buildProjectData helper
+  (dedupe autosave/title-commit), StudioOnboardingCoachmark + StudioDrawer. Main studio
+  component 3452 → 3285 lines. EXPL-5 (3D header back fallback).
 
 **Remaining (larger/deferred):** STU-1 (full stateful decomposition), STU-13/16/17,
 DS-3 (light-theme token refactor), DS-4/6/7, CC-1 (remaining screens i18n audit), CC-2/3/4 remaining,
