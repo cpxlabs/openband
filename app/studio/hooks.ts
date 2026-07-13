@@ -289,3 +289,65 @@ export function useMixSnapshots(params: {
 
   return { handleSaveMix, handleLoadMix, handleDeleteMix, handleCompareMix };
 }
+
+/**
+ * Extracted modal/overlay boolean state for the Studio screen. All 17 modal
+ * flags live here so call sites in `[id].tsx` stay unchanged. Setters from
+ * `useState` are stable, so returning them directly preserves identity.
+ */
+export function useStudioModals(init: { synth: boolean; pianoRoll: boolean }) {
+  const [showRecordOptions, setShowRecordOptions] = useState(false);
+  const [showBounce, setShowBounce] = useState(false);
+  const [showSampleBrowser, setShowSampleBrowser] = useState(false);
+  const [showCodeSampler, setShowCodeSampler] = useState(false);
+  const [showTuner, setShowTuner] = useState(false);
+  const [showLooper, setShowLooper] = useState(false);
+  const [showSampler, setShowSampler] = useState(false);
+  const [showSynth, setShowSynth] = useState(init.synth);
+  const [showPromptSampler, setShowPromptSampler] = useState(false);
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
+  const [showBranchManager, setShowBranchManager] = useState(false);
+  const [showCommitModal, setShowCommitModal] = useState(false);
+  const [showOutputSelector, setShowOutputSelector] = useState(false);
+  const [showPatchbay, setShowPatchbay] = useState(false);
+  const [showMidi, setShowMidi] = useState(false);
+  const [showToolbarOverflow, setShowToolbarOverflow] = useState(false);
+  const [showPianoRoll, setShowPianoRoll] = useState(init.pianoRoll);
+
+  return {
+    showRecordOptions,
+    setShowRecordOptions,
+    showBounce,
+    setShowBounce,
+    showSampleBrowser,
+    setShowSampleBrowser,
+    showCodeSampler,
+    setShowCodeSampler,
+    showTuner,
+    setShowTuner,
+    showLooper,
+    setShowLooper,
+    showSampler,
+    setShowSampler,
+    showSynth,
+    setShowSynth,
+    showPromptSampler,
+    setShowPromptSampler,
+    showCommandPalette,
+    setShowCommandPalette,
+    showBranchManager,
+    setShowBranchManager,
+    showCommitModal,
+    setShowCommitModal,
+    showOutputSelector,
+    setShowOutputSelector,
+    showPatchbay,
+    setShowPatchbay,
+    showMidi,
+    setShowMidi,
+    showToolbarOverflow,
+    setShowToolbarOverflow,
+    showPianoRoll,
+    setShowPianoRoll,
+  };
+}

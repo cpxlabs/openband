@@ -101,7 +101,7 @@ import {
   type PluginSource,
 } from "./parts";
 import { StudioModals } from "./StudioModals";
-import { useProjectParams, useStudioPersistence, useMixSnapshots, type BottomTab } from "./hooks";
+import { useProjectParams, useStudioPersistence, useMixSnapshots, useStudioModals, type BottomTab } from "./hooks";
 
 async function applyPitchShift(
   sourceUrl: string,
@@ -222,22 +222,25 @@ export default function Studio() {
   const liveRecordingDataRef = useRef<Float32Array[]>([]);
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
   const [bottomTab, setBottomTab] = useState<BottomTab>(initialBottomTab);
-  const [showRecordOptions, setShowRecordOptions] = useState(false);
-  const [showBounce, setShowBounce] = useState(false);
-  const [showSampleBrowser, setShowSampleBrowser] = useState(false);
-  const [showCodeSampler, setShowCodeSampler] = useState(false);
-  const [showTuner, setShowTuner] = useState(false);
-  const [showLooper, setShowLooper] = useState(false);
-  const [showSampler, setShowSampler] = useState(false);
-  const [showSynth, setShowSynth] = useState(rawTool === "synth");
-  const [showPromptSampler, setShowPromptSampler] = useState(false);
-  const [showCommandPalette, setShowCommandPalette] = useState(false);
-  const [showBranchManager, setShowBranchManager] = useState(false);
-  const [showCommitModal, setShowCommitModal] = useState(false);
-  const [showOutputSelector, setShowOutputSelector] = useState(false);
-  const [showPatchbay, setShowPatchbay] = useState(false);
-  const [showMidi, setShowMidi] = useState(false);
-  const [showToolbarOverflow, setShowToolbarOverflow] = useState(false);
+  const {
+    showRecordOptions, setShowRecordOptions,
+    showBounce, setShowBounce,
+    showSampleBrowser, setShowSampleBrowser,
+    showCodeSampler, setShowCodeSampler,
+    showTuner, setShowTuner,
+    showLooper, setShowLooper,
+    showSampler, setShowSampler,
+    showSynth, setShowSynth,
+    showPromptSampler, setShowPromptSampler,
+    showCommandPalette, setShowCommandPalette,
+    showBranchManager, setShowBranchManager,
+    showCommitModal, setShowCommitModal,
+    showOutputSelector, setShowOutputSelector,
+    showPatchbay, setShowPatchbay,
+    showMidi, setShowMidi,
+    showToolbarOverflow, setShowToolbarOverflow,
+    showPianoRoll, setShowPianoRoll,
+  } = useStudioModals({ synth: rawTool === "synth", pianoRoll: rawTool === "piano" });
   const [colorPickerTrackId, setColorPickerTrackId] = useState<string | null>(null);
   const [oneKnobValues, setOneKnobValues] = useState<
     Record<string, Record<string, number>>
@@ -245,7 +248,6 @@ export default function Studio() {
   const [chords, setChords] = useState<
     { id: string; degree: number; quality: import("../../src/lib/harmony").ChordQuality; beats: number }[]
   >([]);
-  const [showPianoRoll, setShowPianoRoll] = useState(rawTool === "piano");
   const [autoplayBlocked, setAutoplayBlocked] = useState(false);
   const [editingMidiTrackId, setEditingMidiTrackId] = useState<string | null>(
     null,
