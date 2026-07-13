@@ -23,6 +23,7 @@ import {
   OnboardingFlow,
   FeedPostCard,
   Loading,
+  FeedSkeletonCard,
   useToast,
 } from "../../src/components";
 import type { FeedPost } from "../../src/components/FeedPostCard";
@@ -100,10 +101,12 @@ export default function Feed() {
   const [sortMode, setSortMode] = useState<SortMode>("recent");
   const [posts, setPosts] = useState(MOCK_POSTS);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [visibleCount, setVisibleCount] = useState(FEED_PAGE_SIZE);
   const currentPostRef = useRef<FeedPost | undefined>(undefined);
 
+  const didInitialLoad = useRef(false);
   const loadFeed = useCallback(() => {
     setLoading(true);
     return fetchFeed({})
@@ -113,7 +116,13 @@ export default function Feed() {
         }
       })
       .catch(() => {})
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+        if (!didInitialLoad.current) {
+          didInitialLoad.current = true;
+          setInitialLoading(false);
+        }
+      });
   }, []);
 
   useEffect(() => {
@@ -471,21 +480,28 @@ export default function Feed() {
             ))}
           </View>
         </View>
-
-        {playingId && (
-          <View className="px-4 tablet:px-6 py-3 bg-brand-primary/10 border-b border-brand-primary/20">
-            <View className="flex-row items-center gap-2.5">
-              <View className="w-2.5 h-2.5 rounded-full bg-green-500" />
-              <Text className="text-green-400 text-xs font-medium flex-1">
-                {t("feed.playing", "Tocando: ")}{currentPostRef.current?.title ?? ""}
-              </Text>
-            </View>
-          </View>
-        )}
       </View>
+
+      {playingId && (
+        <View className="px-4 tablet:px-6 py-3 bg-brand-primary/10 border-b border-brand-primary/20" style={maxWidthStyle}>
+          <View className="flex-row items-center gap-2.5">
+            <View className="w-2.5 h-2.5 rounded-full bg-green-500" />
+            <Text className="text-green-400 text-xs font-medium flex-1">
+              {t("feed.playing", "Tocando: ")}{currentPostRef.current?.title ?? ""}
+            </Text>
+          </View>
+        </View>
+      )}
 
       <View className="flex-1 flex-row" style={maxWidthStyle}>
         <View style={resp.isDesktop ? { flex: 7 } : { flex: 1 }}>
+          {initialLoading ? (
+            <View className="px-4 tablet:px-6" style={{ paddingTop: 8 }}>
+              {Array.from({ length: 4 }).map((_, i) => (
+                <FeedSkeletonCard key={i} />
+              ))}
+            </View>
+          ) : (
           <FlatList
             key={resp.numColumns}
             numColumns={resp.numColumns}
@@ -548,6 +564,7 @@ export default function Feed() {
             }
             renderItem={renderItem}
           />
+          )}
         </View>
 
         {resp.isDesktop && (

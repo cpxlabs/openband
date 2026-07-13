@@ -1,9 +1,24 @@
-import { View, Text, Pressable, Platform } from "react-native";
-import { useRouter } from "expo-router";
-import { Screen3DFallback } from "../src/components";
+import { useEffect, useRef, useState } from "react";
+import { View, Text, Platform } from "react-native";
+import { Screen3DFallback, Screen3DHeader } from "../src/components";
 
 export default function ExplorerScreen() {
-  const router = useRouter();
+  const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+    timeoutRef.current = setTimeout(() => {
+      setLoaded((done) => {
+        if (!done) setFailed(true);
+        return done;
+      });
+    }, 15000);
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
 
   if (Platform.OS !== "web") {
     return <Screen3DFallback title="MISSÃO" icon="🗺️" />;
@@ -11,25 +26,39 @@ export default function ExplorerScreen() {
 
   return (
     <View className="flex-1 bg-dark-bg">
-      <View className="bg-dark-surface border-b border-dark-border flex-row items-center px-4 py-3">
-        <Pressable
-          onPress={() => router.back()}
-          className="w-9 h-9 rounded-lg bg-dark-muted/40 items-center justify-center active:opacity-70"
-        >
-          <Text className="text-gray-300 text-lg">←</Text>
-        </Pressable>
-        <View className="flex-1 items-center">
-          <Text className="text-white font-bold text-base">MISSÃO</Text>
-        </View>
-        <View className="w-9" />
-      </View>
+      <Screen3DHeader title="MISSÃO" />
 
       <View className="flex-1 relative bg-[#4a4440]">
         <iframe
           srcDoc={MISSION_HTML}
           title="MISSÃO"
           className="w-full h-full border-0"
+          onLoad={() => {
+            setLoaded(true);
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+          }}
         />
+
+        {!loaded && !failed && (
+          <View className="absolute inset-0 items-center justify-center bg-[#4a4440]">
+            <Text className="text-4xl mb-3">🗺️</Text>
+            <Text className="text-white font-bold text-base">
+              Carregando MISSÃO...
+            </Text>
+          </View>
+        )}
+
+        {failed && (
+          <View className="absolute inset-0 items-center justify-center bg-[#4a4440] px-8">
+            <Text className="text-4xl mb-3">⚠️</Text>
+            <Text className="text-white font-bold text-base mb-1">
+              Não foi possível carregar a cena 3D
+            </Text>
+            <Text className="text-gray-300 text-sm text-center">
+              Verifique sua conexão e tente novamente.
+            </Text>
+          </View>
+        )}
       </View>
     </View>
   );

@@ -28,7 +28,13 @@ function tierLabel(tier: string): string {
 
 export default function Account() {
   const { t } = useTranslation();
-  const { user, signOut, tier, tierLimits, loading } = useAuth();
+  const { user, isVisitor, signOut, tier, tierLimits, loading } = useAuth();
+  const sessionState = !user
+    ? { label: t("account.disconnected", "Desconectado"), dot: "bg-gray-500", text: "text-gray-400" }
+    : isVisitor
+    ? { label: t("account.visitor", "Visitante"), dot: "bg-brand-amber", text: "text-brand-amber" }
+    : { label: t("account.connected", "Conectado"), dot: "bg-brand-green", text: "text-brand-green" };
+  const { label: statusLabel, dot: statusDot, text: statusText } = sessionState;
   const currentName =
     (user?.user_metadata?.name as string) ?? user?.email?.split("@")[0] ?? "";
   const [name, setName] = useState(currentName);
@@ -225,8 +231,8 @@ export default function Account() {
         <View className="card-elevated p-4 flex-row justify-between items-center">
           <Text className="text-gray-400 text-sm">{t("account.status", "Status")}</Text>
           <View className="flex-row items-center gap-1.5">
-            <View className="w-2 h-2 rounded-full bg-brand-green" />
-            <Text className="text-brand-green text-sm font-medium">{t("account.connected", "Conectado")}</Text>
+            <View className={`w-2 h-2 rounded-full ${statusDot}`} />
+            <Text className={`${statusText} text-sm font-medium`}>{statusLabel}</Text>
           </View>
         </View>
 
