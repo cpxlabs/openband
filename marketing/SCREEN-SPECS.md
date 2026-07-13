@@ -12,26 +12,27 @@
 - STU-1 DAW decomposition started (helpers → `app/studio/parts.tsx`)
 
 **Shipped (P1/P2/P3):**
-- Login: AUTH-1,2,3,5,8,9
-- Library: LIB-1,2,7
-- Settings: SET-1,3,6,8
-- Account: ACC-1,2,6,7
-- Studio: STU-2,3,4,5,6,8,9,10
-- Feed: FEED-1,2 + CC-8 a11y + CC-5 fixtures
-- Moments: MOM-1,2,4 + CC-5 fixtures
+- Login: AUTH-1,2,3,4,5,7,8,9,10,11,12
+- Library: LIB-1,2,3,4,6,7
+- Settings: SET-1,3,4,6,7,8,9
+- Account: ACC-1,2,4,5,6,7,8
+- Studio: STU-2,3,4,5,6,8,9,10,11,14,15
+- Feed: FEED-1,2,3,4,6,7,8,9 + CC-8 a11y + CC-5 fixtures
+- Moments: MOM-1,2,3,4,5,7 + CC-5 fixtures
 - Modes: MOD-1,3
 - Mastering: MAS-1,3
-- 3D screens: 3D-7 (event leaks), 3D-8 (orbit Z bug), 3D-9 (touch tap)
+- Tab layout: TAB-3,4,5
+- 3D screens: 3D-2 (shared loader), 3D-7 (event leaks), 3D-8 (orbit Z bug),
+  3D-9 (touch tap)
 - Cross-cutting: CC-6 (shared MobileDrawer), CC-8 (a11y), CC-9 (ErrorBoundary),
   CC-10 (router.push tab nav)
-- Design system: DS-2 (brand tokens)
+- Design system: DS-1 (Toast), DS-2 (brand tokens), DS-5 (removed TrapScene)
 - VS-2: verified non-issue (all furniture routes exist)
 
-**Remaining (tracked below):** STU-7 (timeline zoom), STU-11 (toolbar overflow),
-STU-13/14/15/16/17, DS-1/3/4/5/6/7, CC-1 (full i18n audit), CC-2/3/4 remaining,
-3D-1 (audio in 3D shells), 3D-2/3/12 (shared ThreeDSScreen wrapper), EXT-4 (drawer —
-now uses shared MobileDrawer), FEED-3/4/6/7/8/9/10/11, MOM-3/5/7, ACC-4/5/8,
-SET-2/4/5/7/9/10, AUTH-4/7/10/11/12, TAB-*, EXPL-2..6, LIB-3/4/5/6/8.
+**Remaining (larger/deferred):** STU-1 (full stateful decomposition), STU-13/16/17,
+DS-3 (light-theme token refactor), DS-4/6/7, CC-1 (full i18n audit), CC-2/3/4 remaining,
+3D-1 (real audio in 3D shells), 3D-3/12 (shared ThreeDSScreen wrapper),
+FEED-5/10/11, ACC-3, SET-2/5/10, TAB-1/2/6, EXPL-2..6, LIB-5/8.
 
 ---
 
