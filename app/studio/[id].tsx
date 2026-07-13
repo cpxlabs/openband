@@ -29,40 +29,23 @@ import { assignTrackToBus } from "../../src/lib/busRouter";
 import { buildAutomationSchedule, interpolateAutomationValue, type ScheduledAutomationPoint } from "../../src/lib/automationEngine";
 import {
   Metronome,
-  RecordOptions,
   PluginRack,
   MasterRack,
-  PluginEditor,
   MixManager,
   WaveformCanvas,
   AutomationLane,
   TrackGroupManager,
   LufsMeter,
-  BounceDialog,
   SampleBrowser,
-  CodeSampler,
-  Tuner,
   PedalRack,
-  PianoRoll,
-  Looper,
-  Sampler,
-  Synth,
-  PromptSampler,
   OneKnobProcessor,
   ONE_KNOB_TYPES,
   VisualEQ,
   ChordTrack,
-  CommandPalette,
-  BranchManager,
-  CommitModal,
-  OutputSelector,
-  Patchbay,
-  LoadingModal,
   VuMeter,
   TrackColorPicker,
   Sidebar,
   LiveWaveformCanvas,
-  MidiLearnPanel,
 } from "../../src/components";
 import {
   applyMidiMessage,
@@ -113,8 +96,10 @@ import {
   GROUP_COLORS,
   TRACK_COLORS,
   TIMELINE_WIDTH,
+  buildProjectData,
   type PluginSource,
 } from "./parts";
+import { StudioModals } from "./StudioModals";
 
 type BottomTab = "mixer" | "fx" | "mastering" | "groups" | "buses" | "mixes" | "chords";
 
@@ -390,12 +375,12 @@ export default function Studio() {
     setEditingTitle(false);
     const trimmed = projectTitle.trim() || "Projeto";
     setProjectTitle(trimmed);
-    saveProject(id, {
+    saveProject(id, buildProjectData({
       title: trimmed,
-      genre: genreParam || "",
-      key: projectKey || "",
+      genre: genreParam,
+      key: projectKey,
       mood: projectMood,
-      bpm: metronome.bpm,
+      metronome,
       tracks,
       groups,
       buses,
@@ -404,11 +389,10 @@ export default function Studio() {
       masteringChain,
       mixSnapshots,
       activeMixId,
-      metronome,
       recordSettings,
       sendBuses,
       trackAmpChains,
-    });
+    }));
   }, [
     projectTitle,
     id,
@@ -454,12 +438,12 @@ export default function Studio() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      saveProject(id, {
+      saveProject(id, buildProjectData({
         title: projectTitle,
-        genre: genreParam || "",
-        key: projectKey || "",
+        genre: genreParam,
+        key: projectKey,
         mood: projectMood,
-        bpm: metronome.bpm,
+        metronome,
         tracks,
         groups,
         buses,
@@ -468,11 +452,10 @@ export default function Studio() {
         masteringChain,
         mixSnapshots,
         activeMixId,
-        metronome,
         recordSettings,
         sendBuses,
         trackAmpChains,
-      });
+      }));
       setLastSavedLabel("Salvo");
       saveLabelTimerRef.current = setTimeout(
         () => setLastSavedLabel(null),
@@ -3292,159 +3275,62 @@ export default function Studio() {
         )}
       </View>
 
-      <RecordOptions
-        settings={recordSettings}
-        onChange={setRecordSettings}
-        visible={showRecordOptions}
-        onClose={() => setShowRecordOptions(false)}
-      />
-      <PluginEditor
-        plugin={editingPlugin}
-        onParamChange={handlePluginParamChange}
-        onToggle={handleTogglePlugin}
-        onClose={() => {
-          setEditingPlugin(null);
-          setEditingPluginSource(null);
-        }}
-        playing={isPlaying}
-        contextTime={currentTime}
-      />
-      <BounceDialog
-        visible={showBounce}
-        onClose={() => setShowBounce(false)}
+      <StudioModals
+        recordSettings={recordSettings}
+        setRecordSettings={setRecordSettings}
+        showRecordOptions={showRecordOptions}
+        setShowRecordOptions={setShowRecordOptions}
+        editingPlugin={editingPlugin}
+        handlePluginParamChange={handlePluginParamChange}
+        handleTogglePlugin={handleTogglePlugin}
+        setEditingPlugin={setEditingPlugin}
+        setEditingPluginSource={setEditingPluginSource}
+        isPlaying={isPlaying}
+        currentTime={currentTime}
+        showBounce={showBounce}
+        setShowBounce={setShowBounce}
         projectTitle={projectTitle}
         duration={duration}
-        tracks={tracks.map((t) => ({
-          id: t.id,
-          name: t.name,
-          muted: t.muted,
-          solo: t.solo,
-          volume: t.volume,
-          pan: t.pan,
-          regions: t.regions,
-        }))}
-      />
-      <CodeSampler
-        visible={showCodeSampler}
-        onClose={() => setShowCodeSampler(false)}
-        onRender={handleCodeRender}
-        bpm={metronome.bpm}
-      />
-      <PromptSampler
-        visible={showPromptSampler}
-        onClose={() => setShowPromptSampler(false)}
-        onRender={handlePromptMidiRender}
-        bpm={metronome.bpm}
-      />
-      <Tuner visible={showTuner} onClose={() => setShowTuner(false)} />
-      <Sampler
-        visible={showSampler}
-        onClose={() => setShowSampler(false)}
-        onAddToTrack={(name, sampleData) => {
-          const trackId = `sampler-${Date.now()}`;
-          const newTrack: TrackDef = {
-            id: trackId,
-            name,
-            color: TRACK_COLORS[tracks.length % TRACK_COLORS.length],
-            muted: false,
-            solo: false,
-            volume: 75,
-            pan: 0,
-            sends: {},
-            sidechainSource: null,
-            regions: [{ id: `s-region-${Date.now()}`, start: 0, duration: 30 }],
-            plugins: [],
-            automation: {},
-            samplerData: sampleData,
-          };
-          setTracks([...tracks, newTrack]);
-          setSelectedTrackId(trackId);
-          setShowSampler(false);
-        }}
-      />
-      <Synth
-        visible={showSynth}
-        onClose={() => setShowSynth(false)}
-        bpm={metronome.bpm}
-      />
-      <Looper
-        visible={showLooper}
-        onClose={() => setShowLooper(false)}
-        bpm={metronome.bpm}
-        onCommitLoop={(slot, bars) => {
-          const safeBpm = Math.max(1, metronome.bpm);
-          const region: TrackRegion = {
-            id: `loop-${Date.now()}-${slot}`,
-            start: 0,
-            duration: bars * 4 * (60 / safeBpm),
-          };
-          const trackId = `loop-${Date.now()}`;
-          const newTrack: TrackDef = {
-            id: trackId,
-            name: `Loop ${slot + 1}`,
-            color: TRACK_COLORS[tracks.length % TRACK_COLORS.length],
-            muted: false,
-            solo: false,
-            volume: 75,
-            pan: 0,
-            sends: {},
-            sidechainSource: null,
-            regions: [region],
-            plugins: [],
-            automation: {},
-          };
-          setTracks([...tracks, newTrack]);
-          setSelectedTrackId(trackId);
-        }}
-      />
-      <PianoRoll
-        notes={currentMidiNotes}
-        onChange={handlePianoRollChange}
-        numBars={8}
-        bpm={metronome.bpm}
-        keySignature={projectKey?.replace(/m$/, "") || "C"}
-        scale={projectKey?.endsWith("m") ? "minor" : "major"}
-        visible={showPianoRoll}
-        onClose={() => {
-          setShowPianoRoll(false);
-          setEditingMidiTrackId(null);
-        }}
-        trackName={selectedMidiTrack?.name}
-      />
-      <CommandPalette
-        visible={showCommandPalette}
-        onClose={() => setShowCommandPalette(false)}
-      />
-      <BranchManager
-        visible={showBranchManager}
-        onClose={() => setShowBranchManager(false)}
-      />
-      <CommitModal
-        visible={showCommitModal}
-        onClose={() => setShowCommitModal(false)}
-      />
-      <OutputSelector
-        visible={showOutputSelector}
-        onClose={() => setShowOutputSelector(false)}
-      />
-      <Patchbay
-        visible={showPatchbay}
-        onClose={() => setShowPatchbay(false)}
-        trackIds={trackIds}
-        onRouteCreated={() => {}}
-        onRouteRemoved={() => {}}
-      />
-      <MidiLearnPanel
-        visible={showMidi}
-        onClose={() => setShowMidi(false)}
         tracks={tracks}
-      />
-      <LoadingModal
-        visible={autoplayBlocked}
-        title="Reprodução bloqueada"
-        message="Toque em Play novamente para ativar o áudio"
-        onCancel={() => setAutoplayBlocked(false)}
-        cancelLabel="Fechar"
+        showCodeSampler={showCodeSampler}
+        setShowCodeSampler={setShowCodeSampler}
+        handleCodeRender={handleCodeRender}
+        showPromptSampler={showPromptSampler}
+        setShowPromptSampler={setShowPromptSampler}
+        handlePromptMidiRender={handlePromptMidiRender}
+        bpm={metronome.bpm}
+        showTuner={showTuner}
+        setShowTuner={setShowTuner}
+        showSampler={showSampler}
+        setShowSampler={setShowSampler}
+        setTracks={setTracks}
+        setSelectedTrackId={setSelectedTrackId}
+        showSynth={showSynth}
+        setShowSynth={setShowSynth}
+        showLooper={showLooper}
+        setShowLooper={setShowLooper}
+        currentMidiNotes={currentMidiNotes}
+        handlePianoRollChange={handlePianoRollChange}
+        projectKey={projectKey}
+        showPianoRoll={showPianoRoll}
+        setShowPianoRoll={setShowPianoRoll}
+        setEditingMidiTrackId={setEditingMidiTrackId}
+        selectedMidiTrack={selectedMidiTrack}
+        showCommandPalette={showCommandPalette}
+        setShowCommandPalette={setShowCommandPalette}
+        showBranchManager={showBranchManager}
+        setShowBranchManager={setShowBranchManager}
+        showCommitModal={showCommitModal}
+        setShowCommitModal={setShowCommitModal}
+        showOutputSelector={showOutputSelector}
+        setShowOutputSelector={setShowOutputSelector}
+        showPatchbay={showPatchbay}
+        setShowPatchbay={setShowPatchbay}
+        trackIds={trackIds}
+        showMidi={showMidi}
+        setShowMidi={setShowMidi}
+        autoplayBlocked={autoplayBlocked}
+        setAutoplayBlocked={setAutoplayBlocked}
       />
       </View>
     </View>

@@ -1,7 +1,63 @@
 import { View, Text } from "react-native";
 import type { PresenceCursor } from "../../src/lib/presence";
+import type { ProjectData } from "../../src/lib/projectStore";
+import type { Mood } from "../../src/lib/projectTemplates";
+import type {
+  Plugin,
+  MixSnapshot,
+  MetronomeSettings,
+  RecordSettings,
+  TrackDef,
+  GroupDef,
+  BusDef,
+  SendBus,
+  TrackAmpChain,
+} from "../../src/lib/types";
 
 export type PluginSource = "mastering" | "masterRack" | "track" | null;
+
+/**
+ * Builds the serializable project snapshot persisted via `saveProject`.
+ * Centralizes the shape so the title-commit and autosave paths stay in sync.
+ */
+export function buildProjectData(fields: {
+  title: string;
+  genre?: string;
+  key?: string;
+  mood?: Mood;
+  metronome: MetronomeSettings;
+  tracks: TrackDef[];
+  groups: GroupDef[];
+  buses: BusDef[];
+  trackAssignments: Record<string, string | null>;
+  masterPlugins: Plugin[];
+  masteringChain: Plugin[];
+  mixSnapshots: MixSnapshot[];
+  activeMixId: string | undefined;
+  recordSettings: RecordSettings;
+  sendBuses: SendBus[];
+  trackAmpChains: Record<string, TrackAmpChain>;
+}): Omit<ProjectData, "id" | "lastSaved"> {
+  return {
+    title: fields.title,
+    genre: fields.genre || "",
+    key: fields.key || "",
+    mood: fields.mood,
+    bpm: fields.metronome.bpm,
+    tracks: fields.tracks,
+    groups: fields.groups,
+    buses: fields.buses,
+    trackAssignments: fields.trackAssignments,
+    masterPlugins: fields.masterPlugins,
+    masteringChain: fields.masteringChain,
+    mixSnapshots: fields.mixSnapshots,
+    activeMixId: fields.activeMixId,
+    metronome: fields.metronome,
+    recordSettings: fields.recordSettings,
+    sendBuses: fields.sendBuses,
+    trackAmpChains: fields.trackAmpChains,
+  };
+}
 
 export const TIMELINE_WIDTH = 1200;
 
