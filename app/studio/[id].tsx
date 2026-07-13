@@ -57,7 +57,7 @@ import { registerCommand, initKeyBindings, disposeKeyBindings } from "../../src/
 import { chordsToMIDINotes } from "../../src/lib/harmonicAssistant";
 import { useHistory } from "../../src/lib/history";
 import { useKeyboardShortcuts } from "../../src/lib/keyboard";
-import { saveProject, loadProject } from "../../src/lib/projectStore";
+import type { ProjectData } from "../../src/lib/projectStore";
 import { useCloudSync } from "../../src/lib/cloudSync";
 import { parseMidi, midiToTrackRegions } from "../../src/lib/midiParser";
 import { getGroupVolume } from "../../src/components/TrackGroup";
@@ -101,7 +101,7 @@ import {
   type PluginSource,
 } from "./parts";
 import { StudioModals } from "./StudioModals";
-import { useProjectParams, type BottomTab } from "./hooks";
+import { useProjectParams, useStudioPersistence, type BottomTab } from "./hooks";
 
 async function applyPitchShift(
   sourceUrl: string,
@@ -274,8 +274,6 @@ export default function Studio() {
   );
   const [mixSnapshots, setMixSnapshots] = useState<MixSnapshot[]>([]);
   const [activeMixId, setActiveMixId] = useState<string | undefined>();
-  const [lastSavedLabel, setLastSavedLabel] = useState<string | null>(null);
-  const saveLabelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const syncState = useCloudSync(id);
 
   const { user, visitorId } = useAuth();
@@ -331,74 +329,9 @@ export default function Studio() {
     else player.playbackRate = playbackRate;
   }, [playbackRate, player, isWeb, webAudio]);
 
-  const commitTitle = useCallback(() => {
-    setEditingTitle(false);
-    const trimmed = projectTitle.trim() || "Projeto";
-    setProjectTitle(trimmed);
-    saveProject(id, buildProjectData({
-      title: trimmed,
-      genre: genreParam,
-      key: projectKey,
-      mood: projectMood,
-      metronome,
-      tracks,
-      groups,
-      buses,
-      trackAssignments,
-      masterPlugins,
-      masteringChain,
-      mixSnapshots,
-      activeMixId,
-      recordSettings,
-      sendBuses,
-      trackAmpChains,
-    }));
-  }, [
-    projectTitle,
-    id,
-    genreParam,
-    projectKey,
-    projectMood,
-    metronome,
-    tracks,
-    groups,
-    buses,
-    trackAssignments,
-    masterPlugins,
-    masteringChain,
-    mixSnapshots,
-    activeMixId,
-    recordSettings,
-    sendBuses,
-    trackAmpChains,
-  ]);
-
-  useEffect(() => {
-    const saved = loadProject(id);
-    if (saved) {
-      setTracks(saved.tracks as TrackDef[]);
-      setGroups(saved.groups);
-      setTrackAssignments(saved.trackAssignments);
-      setMasterPlugins(saved.masterPlugins);
-      setMasteringChain(saved.masteringChain);
-      setMixSnapshots(saved.mixSnapshots);
-      setActiveMixId(saved.activeMixId);
-      setBuses(saved.buses ?? []);
-      setSendBuses(saved.sendBuses ?? []);
-      setTrackAmpChains(saved.trackAmpChains ?? {});
-      if (saved.metronome) setMetronome(saved.metronome);
-      if (saved.recordSettings) setRecordSettings(saved.recordSettings);
-    }
-  }, [id]);
-
-  useEffect(() => {
-    if (rawTool !== "piano" || editingMidiTrackId || !showPianoRoll) return;
-    setEditingMidiTrackId(tracks[0]?.id ?? null);
-  }, [rawTool, editingMidiTrackId, showPianoRoll, tracks]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      saveProject(id, buildProjectData({
+  const projectSnapshot = useMemo(
+    () =>
+      buildProjectData({
         title: projectTitle,
         genre: genreParam,
         key: projectKey,
@@ -415,39 +348,63 @@ export default function Studio() {
         recordSettings,
         sendBuses,
         trackAmpChains,
-      }));
-      setLastSavedLabel("Salvo");
-      saveLabelTimerRef.current = setTimeout(
-        () => setLastSavedLabel(null),
-        2000,
-      );
-    }, 2000);
-    return () => {
-      clearTimeout(timer);
-      if (saveLabelTimerRef.current) {
-        clearTimeout(saveLabelTimerRef.current);
-        saveLabelTimerRef.current = null;
-      }
-    };
-  }, [
-    tracks,
-    groups,
-    trackAssignments,
-    masterPlugins,
-    masteringChain,
-    mixSnapshots,
-    activeMixId,
-    metronome,
-    recordSettings,
-    sendBuses,
-    buses,
-    trackAmpChains,
+      }),
+    [
+      projectTitle,
+      genreParam,
+      projectKey,
+      projectMood,
+      metronome,
+      tracks,
+      groups,
+      buses,
+      trackAssignments,
+      masterPlugins,
+      masteringChain,
+      mixSnapshots,
+      activeMixId,
+      recordSettings,
+      sendBuses,
+      trackAmpChains,
+    ],
+  );
+
+  const hydrateProject = useCallback((saved: ProjectData) => {
+    setTracks(saved.tracks as TrackDef[]);
+    setGroups(saved.groups);
+    setTrackAssignments(saved.trackAssignments);
+    setMasterPlugins(saved.masterPlugins);
+    setMasteringChain(saved.masteringChain);
+    setMixSnapshots(saved.mixSnapshots);
+    setActiveMixId(saved.activeMixId);
+    setBuses(saved.buses ?? []);
+    setSendBuses(saved.sendBuses ?? []);
+    setTrackAmpChains(saved.trackAmpChains ?? {});
+    if (saved.metronome) setMetronome(saved.metronome);
+    if (saved.recordSettings) setRecordSettings(saved.recordSettings);
+  }, [setTracks]);
+
+  const {
+    lastSavedLabel,
+    save: saveProjectNow,
+    handleManualSave,
+  } = useStudioPersistence({
     id,
-    projectTitle,
-    genreParam,
-    projectKey,
-    projectMood,
-  ]);
+    snapshot: projectSnapshot,
+    hydrate: hydrateProject,
+  });
+
+  const commitTitle = useCallback(() => {
+    setEditingTitle(false);
+    const trimmed = projectTitle.trim() || "Projeto";
+    setProjectTitle(trimmed);
+    saveProjectNow(trimmed);
+  }, [projectTitle, saveProjectNow]);
+
+  useEffect(() => {
+    if (rawTool !== "piano" || editingMidiTrackId || !showPianoRoll) return;
+    setEditingMidiTrackId(tracks[0]?.id ?? null);
+  }, [rawTool, editingMidiTrackId, showPianoRoll, tracks]);
 
   const prevRegionUrlsRef = useRef<Set<string>>(new Set());
 
@@ -1229,46 +1186,6 @@ export default function Studio() {
     if (!preset) return;
     setMasteringChain(buildMasteringChain(preset));
   }, []);
-
-  const handleManualSave = useCallback(() => {
-    saveProject(id, {
-      title: projectTitle,
-      genre: genreParam || "",
-      key: projectKey || "",
-      mood: projectMood,
-      bpm: metronome.bpm,
-      tracks: tracks as TrackDef[],
-      groups,
-      buses,
-      trackAssignments,
-      masterPlugins,
-      masteringChain,
-      mixSnapshots,
-      activeMixId,
-      metronome,
-      recordSettings,
-      sendBuses,
-      trackAmpChains,
-    });
-    setLastSavedLabel("Salvo ✓");
-    setTimeout(() => setLastSavedLabel(null), 2000);
-  }, [
-    tracks,
-    groups,
-    trackAssignments,
-    masterPlugins,
-    masteringChain,
-    mixSnapshots,
-    activeMixId,
-    metronome,
-    recordSettings,
-    sendBuses,
-    trackAmpChains,
-    id,
-    projectTitle,
-    genreParam,
-    projectKey,
-  ]);
 
   const handleAddSample = useCallback(
     (sample: {

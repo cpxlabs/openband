@@ -1,5 +1,13 @@
 import { useLocalSearchParams } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Mood } from "../../src/lib/projectTemplates";
+import {
+  saveProject,
+  loadProject,
+  type ProjectData,
+} from "../../src/lib/projectStore";
+
+type Snapshot = Omit<ProjectData, "id" | "lastSaved">;
 
 const ALL_MOODS: Mood[] = [
   "dark",
@@ -103,4 +111,76 @@ export function useProjectParams(): ProjectParams {
     isFromOnboarding,
     initialBottomTab,
   };
+}
+
+/**
+ * Owns project persistence: hydrates from storage on mount, debounce-autosaves
+ * whenever the (memoized) snapshot changes, and exposes save helpers + the
+ * transient "saved" label.
+ */
+export function useStudioPersistence(params: {
+  id: string;
+  snapshot: Snapshot;
+  hydrate: (saved: ProjectData) => void;
+}): {
+  lastSavedLabel: string | null;
+  save: (overrideTitle?: string) => void;
+  handleManualSave: () => void;
+} {
+  const { id, snapshot, hydrate } = params;
+  const [lastSavedLabel, setLastSavedLabel] = useState<string | null>(null);
+  const labelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Keep latest snapshot/hydrate in refs so the imperative save helpers stay
+  // stable and the hydrate effect only runs on `id` change.
+  const snapshotRef = useRef(snapshot);
+  snapshotRef.current = snapshot;
+  const hydrateRef = useRef(hydrate);
+  hydrateRef.current = hydrate;
+
+  const save = useCallback(
+    (overrideTitle?: string) => {
+      const snap = snapshotRef.current;
+      saveProject(
+        id,
+        overrideTitle != null ? { ...snap, title: overrideTitle } : snap,
+      );
+    },
+    [id],
+  );
+
+  const flashLabel = useCallback((text: string) => {
+    setLastSavedLabel(text);
+    if (labelTimerRef.current) clearTimeout(labelTimerRef.current);
+    labelTimerRef.current = setTimeout(() => setLastSavedLabel(null), 2000);
+  }, []);
+
+  const handleManualSave = useCallback(() => {
+    save();
+    flashLabel("Salvo ✓");
+  }, [save, flashLabel]);
+
+  // Hydrate from storage on mount / id change.
+  useEffect(() => {
+    const saved = loadProject(id);
+    if (saved) hydrateRef.current(saved);
+  }, [id]);
+
+  // Debounced autosave whenever the snapshot content changes.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      save();
+      flashLabel("Salvo");
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [snapshot, id, save, flashLabel]);
+
+  useEffect(
+    () => () => {
+      if (labelTimerRef.current) clearTimeout(labelTimerRef.current);
+    },
+    [],
+  );
+
+  return { lastSavedLabel, save, handleManualSave };
 }
