@@ -17,7 +17,7 @@
 - Settings: SET-1,3,4,6,7,8,9
 - Account: ACC-1,2,4,5,6,7,8
 - Studio: STU-2,3,4,5,6,8,9,10,11,14,15
-- Feed: FEED-1,2,3,4,6,7,8,9 + CC-8 a11y + CC-5 fixtures
+- Feed: FEED-1,2,3,4,5,6,7,8,9,10 + CC-8 a11y + CC-5 fixtures
 - Moments: MOM-1,2,3,4,5,7 + CC-5 fixtures
 - Modes: MOD-1,3
 - Mastering: MAS-1,3
@@ -28,11 +28,14 @@
   CC-10 (router.push tab nav)
 - Design system: DS-1 (Toast), DS-2 (brand tokens), DS-5 (removed TrapScene)
 - VS-2: verified non-issue (all furniture routes exist)
+- Batch 11: FEED-5 (Skeleton), FEED-10 (pinned now-playing), ACC-3 (real session status),
+  EXPL-2/3 (iframe loading/error states, shared Screen3DHeader)
+- Batch 12: CC-1 partial (Extractor fully localized en/pt/es), LIB-5 (robust UTF-8 import)
 
 **Remaining (larger/deferred):** STU-1 (full stateful decomposition), STU-13/16/17,
-DS-3 (light-theme token refactor), DS-4/6/7, CC-1 (full i18n audit), CC-2/3/4 remaining,
+DS-3 (light-theme token refactor), DS-4/6/7, CC-1 (remaining screens i18n audit), CC-2/3/4 remaining,
 3D-1 (real audio in 3D shells), 3D-3/12 (shared ThreeDSScreen wrapper),
-FEED-5/10/11, ACC-3, SET-2/5/10, TAB-1/2/6, EXPL-2..6, LIB-5/8.
+FEED-11, SET-2/5/10, TAB-1/2/6, EXPL-4/5/6, LIB-8.
 
 ---
 
