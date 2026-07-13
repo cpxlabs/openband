@@ -9,10 +9,19 @@ interface Screen3DHeaderProps {
 /** Shared header used by all 3D/immersive screens. */
 export function Screen3DHeader({ title, right }: Screen3DHeaderProps) {
   const router = useRouter();
+  const handleBack = () => {
+    // EXPL-5: router.back() is a no-op when there's no history (e.g. deep-linked
+    // or launched directly from a tab). Fall back to a known route.
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace("/tabs");
+    }
+  };
   return (
     <View className="bg-dark-surface border-b border-dark-border flex-row items-center px-4 py-3">
       <Pressable
-        onPress={() => router.back()}
+        onPress={handleBack}
         accessibilityRole="button"
         accessibilityLabel="Voltar"
         className="w-9 h-9 rounded-lg bg-dark-muted/40 items-center justify-center active:opacity-70"
