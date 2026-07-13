@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { View, Text } from "react-native";
+import { View, Text, Pressable } from "react-native";
 import { Card } from "./Card";
 import { Button } from "./Button";
 import { NewProject } from "./NewProject";
@@ -20,6 +20,7 @@ interface OnboardingFlowProps {
   onClose: () => void;
   onCreate: (config: OnboardingProjectConfig) => void;
   onStartFromScratch?: () => void;
+  onDontShowAgain?: () => void;
   testID?: string;
 }
 
@@ -28,9 +29,16 @@ export function OnboardingFlow({
   onClose,
   onCreate,
   onStartFromScratch,
+  onDontShowAgain,
   testID,
 }: OnboardingFlowProps) {
   const [showProject, setShowProject] = useState(false);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
+
+  const handleClose = useCallback(() => {
+    if (dontShowAgain) onDontShowAgain?.();
+    onClose();
+  }, [dontShowAgain, onDontShowAgain, onClose]);
 
   const handleProjectCreate = useCallback(
     (config: OnboardingProjectConfig) => {
@@ -59,8 +67,17 @@ export function OnboardingFlow({
         testID={testID}
         className="absolute inset-0 z-50 bg-black/80 justify-center items-center px-6"
       >
-        <Card className="w-full max-w-md p-7 items-center">
-          <Text className="text-4xl mb-3">🎸</Text>
+        <Card className="relative w-full max-w-md p-7 items-center">
+          <Pressable
+            onPress={handleClose}
+            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-dark-surface items-center justify-center active:opacity-70"
+            accessibilityRole="button"
+            accessibilityLabel="Fechar"
+            testID="onboarding-close"
+          >
+            <Text className="text-gray-400 text-lg">✕</Text>
+          </Pressable>
+          <Text className="text-4xl mb-3 mt-2">🎸</Text>
           <Text className="text-white text-2xl font-bold text-center mb-2">
             Bem-vindo ao OpenBand
           </Text>
@@ -75,6 +92,25 @@ export function OnboardingFlow({
               testID="onboarding-start"
             />
           </View>
+          <Pressable
+            onPress={() => setDontShowAgain((v) => !v)}
+            className="mt-4 flex-row items-center gap-2 self-start"
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: dontShowAgain }}
+            accessibilityLabel="Não mostrar novamente"
+            testID="onboarding-dont-show"
+          >
+            <View
+              className={`w-5 h-5 rounded border items-center justify-center ${
+                dontShowAgain
+                  ? "bg-brand-primary border-brand-primary"
+                  : "border-gray-500"
+              }`}
+            >
+              {dontShowAgain && <Text className="text-white text-xs">✓</Text>}
+            </View>
+            <Text className="text-gray-300 text-sm">Não mostrar novamente</Text>
+          </Pressable>
         </Card>
       </View>
     );

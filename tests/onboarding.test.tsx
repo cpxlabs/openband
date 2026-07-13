@@ -68,6 +68,48 @@ describe("OnboardingFlow", () => {
     expect(screen.getByText("Novo Projeto")).toBeTruthy();
   });
 
+  it("renders a close button and a 'don't show again' toggle", () => {
+    render(
+      <OnboardingFlow visible={true} onClose={vi.fn()} onCreate={vi.fn()} />,
+    );
+    expect(screen.getByTestId("onboarding-close")).toBeTruthy();
+    expect(screen.getByText("Não mostrar novamente")).toBeTruthy();
+  });
+
+  it("closes without persisting when 'don't show again' is unchecked", () => {
+    const onClose = vi.fn();
+    const onDontShowAgain = vi.fn();
+    render(
+      <OnboardingFlow
+        visible={true}
+        onClose={onClose}
+        onCreate={vi.fn()}
+        onDontShowAgain={onDontShowAgain}
+      />,
+    );
+    fireEvent.click(screen.getByTestId("onboarding-close"));
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onDontShowAgain).not.toHaveBeenCalled();
+    expect(getOnboardingState().completed).toBe(false);
+  });
+
+  it("persists 'don't show again' when closing with the toggle checked", () => {
+    const onClose = vi.fn();
+    const onDontShowAgain = vi.fn();
+    render(
+      <OnboardingFlow
+        visible={true}
+        onClose={onClose}
+        onCreate={vi.fn()}
+        onDontShowAgain={onDontShowAgain}
+      />,
+    );
+    fireEvent.click(screen.getByTestId("onboarding-dont-show"));
+    fireEvent.click(screen.getByTestId("onboarding-close"));
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onDontShowAgain).toHaveBeenCalledTimes(1);
+  });
+
   it("forwards onCreate with a /studio/<id> route containing fromOnboarding=1", () => {
     let captured: string | null = null;
     const onCreate = (config: {

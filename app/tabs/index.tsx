@@ -191,7 +191,7 @@ export default function Feed() {
   const { t } = useTranslation();
   const resp = useResponsive();
   const webAudio = useWebAudioPlayer({ trackTime: false });
-  const { tierLimits, hasOnboarded } = useAuth();
+  const { tierLimits, hasOnboarded, completeOnboarding } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState(!hasOnboarded);
   const expoPlayer = useAudioPlayer(null);
   const expoStatus = useAudioPlayerStatus(expoPlayer);
@@ -488,6 +488,7 @@ export default function Feed() {
         onClose={() => setShowOnboarding(false)}
         onCreate={handleOnboardingCreate}
         onStartFromScratch={handleOpenNewProject}
+        onDontShowAgain={completeOnboarding}
       />
       <View style={maxWidthStyle}>
         <View className="pt-4 tablet:pt-12 px-4 tablet:px-6 flex-row items-start justify-between">
