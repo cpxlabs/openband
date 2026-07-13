@@ -97,6 +97,8 @@ import {
   TRACK_COLORS,
   TIMELINE_WIDTH,
   buildProjectData,
+  StudioOnboardingCoachmark,
+  StudioDrawer,
   type PluginSource,
 } from "./parts";
 import { StudioModals } from "./StudioModals";
@@ -1729,73 +1731,18 @@ export default function Studio() {
         />
       )}
       {isFromOnboarding && !tooltipDismissed && (
-        <View
-          testID="onboarding-coachmarks"
-          className="absolute inset-0 z-[60] bg-black/70 justify-end"
-        >
-          <View className="mx-4 mb-28 p-4 rounded-2xl bg-dark-elevated border border-brand-primary/40">
-            <Text className="text-white font-bold text-base mb-1">
-              Transporte
-            </Text>
-            <Text className="text-gray-300 text-xs leading-5 mb-3">
-              Use o botão ▶ para tocar sua música e o botão ● vermelho para
-              gravar um áudio com o microfone.
-            </Text>
-            <Pressable
-              testID="onboarding-coachmark-dismiss"
-              onPress={() => {
-                setTooltipDismissed(true);
-                completeOnboarding();
-              }}
-              className="bg-brand-primary rounded-xl py-3 items-center active:opacity-80"
-            >
-              <Text className="text-white font-bold text-sm">
-                Começar a produzir
-              </Text>
-            </Pressable>
-          </View>
-        </View>
+        <StudioOnboardingCoachmark
+          onDismiss={() => {
+            setTooltipDismissed(true);
+            completeOnboarding();
+          }}
+        />
       )}
       {drawerOpen && (
-        <View className="absolute inset-0 z-50 flex-row">
-          <Pressable
-            className="flex-1 bg-black/60"
-            onPress={() => setDrawerOpen(false)}
-          />
-          <View className="w-64 bg-[#0d0d11] border-l border-dark-border/40 h-full">
-            <View className="flex-row items-center justify-between px-4 py-4 border-b border-dark-border/40">
-              <Text className="text-white font-bold text-base">
-                Open<Text className="text-brand-primary">Band</Text>
-              </Text>
-              <Pressable
-                onPress={() => setDrawerOpen(false)}
-                className="w-7 h-7 rounded-full bg-dark-muted/30 items-center justify-center active:opacity-70"
-              >
-                <Text className="text-gray-400 text-sm">✕</Text>
-              </Pressable>
-            </View>
-            <ScrollView className="flex-1 px-2 pt-2">
-              {[
-                { key: "index", label: "Feed", icon: "♫" },
-                { key: "moments", label: "Momentos", icon: "♡" },
-                { key: "library", label: "Biblioteca", icon: "☰" },
-                { key: "account", label: "Conta", icon: "●" },
-                { key: "settings", label: "Ajustes", icon: "⚙" },
-              ].map((item) => (
-                <Pressable
-                  key={item.key}
-                  onPress={() => handleNavigate(item.key)}
-                  className="flex-row items-center gap-3 px-3 py-3 rounded-xl mb-0.5 border border-transparent"
-                >
-                  <View className="w-8 h-8 rounded-lg bg-dark-muted/20 items-center justify-center">
-                    <Text className="text-base text-gray-400">{item.icon}</Text>
-                  </View>
-                  <Text className="flex-1 text-sm font-semibold text-gray-300">{item.label}</Text>
-                </Pressable>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
+        <StudioDrawer
+          onClose={() => setDrawerOpen(false)}
+          onNavigate={handleNavigate}
+        />
       )}
       <View className="flex-1">
       <View
