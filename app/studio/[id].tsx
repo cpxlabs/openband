@@ -103,20 +103,18 @@ import type { AutomationPoint } from "../../src/lib/types";
 import { pitchShift } from "../../src/lib/timeStretch";
 import { audioBufferToWavBlob } from "../../src/lib/audio";
 import { useWebAudioPlayer } from "../../src/hooks/useWebAudioPlayer";
-import { usePresence, type PresenceCursor } from "../../src/lib/presence";
+import { usePresence } from "../../src/lib/presence";
 import { useAuth } from "../../src/context/AuthContext";
+import {
+  TimeDisplay,
+  CollaboratorCursors,
+  GROUP_COLORS,
+  TRACK_COLORS,
+  TIMELINE_WIDTH,
+  type PluginSource,
+} from "./parts";
 
 type BottomTab = "mixer" | "fx" | "mastering" | "groups" | "buses" | "mixes" | "chords";
-
-function TimeDisplay({ seconds }: { seconds: number }) {
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
-  return (
-    <Text className="text-white font-mono text-base tracking-wider">
-      {String(m).padStart(2, "0")}:{String(s).padStart(2, "0")}
-    </Text>
-  );
-}
 
 async function applyPitchShift(
   sourceUrl: string,
@@ -150,70 +148,6 @@ async function applyPitchShift(
   }
 }
 
-const GROUP_COLORS = [
-  "#ff6482",
-  "#5ac8fa",
-  "#ffcc00",
-  "#34c759",
-  "#bf5af2",
-  "#ff9f0a",
-  "#00d4aa",
-];
-const TRACK_COLORS = [
-  "bg-blue-500",
-  "bg-green-500",
-  "bg-purple-500",
-  "bg-red-500",
-  "bg-amber-500",
-  "bg-cyan-500",
-  "bg-pink-500",
-  "bg-indigo-500",
-  "bg-teal-500",
-  "bg-orange-500",
-  "bg-lime-500",
-  "bg-rose-500",
-];
-
-type PluginSource = "mastering" | "masterRack" | "track" | null;
-
-const TIMELINE_WIDTH = 1200;
-
-function CollaboratorCursors({
-  cursors,
-  timelineWidth,
-}: {
-  cursors: Map<string, PresenceCursor>;
-  timelineWidth: number;
-}) {
-  const list = Array.from(cursors.values());
-  if (list.length === 0) return null;
-  return (
-    <>
-      {list.map((c) => (
-        <View
-          key={c.userId}
-          pointerEvents="none"
-          className="absolute top-0 bottom-0 z-20 items-start"
-          style={{ left: Math.max(0, Math.min(1, c.cursorX)) * timelineWidth }}
-        >
-          <View className="w-0.5 flex-1 bg-brand-accent/70" />
-          <View className="absolute top-0 left-0 px-1.5 py-0.5 rounded bg-brand-accent">
-            <Text className="text-white text-[9px] font-bold">
-              {c.userName ?? c.userId}
-            </Text>
-          </View>
-        </View>
-      ))}
-    </>
-  );
-}
-
-function formatTime(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
-  const ms = Math.floor((seconds % 1) * 100);
-  return `${m}:${String(s).padStart(2, "0")}.${String(ms).padStart(2, "0")}`;
-}
 
 export default function Studio() {
   const {
@@ -745,13 +679,6 @@ export default function Studio() {
     else player.pause();
   }, [player, isWeb, webAudio]);
 
-  // Stop playback when studio unmounts
-  useEffect(() => () => {
-    if (isWeb && engineRef.current) engineRef.current.dispose();
-    else if (isWeb) webAudio.pause();
-    else player.pause();
-  }, [player, isWeb, webAudio]);
-
   const toggleRecording = useCallback(async () => {
     try {
       if (!recordSettings.armed) {
@@ -964,13 +891,31 @@ export default function Studio() {
   const deleteTrack = useCallback(
     (trackId: string) => {
       const removed = tracks.find((t) => t.id === trackId);
-      if (removed) {
-        for (const region of removed.regions) {
-          if (region.url) revokeTrackedBlob(region.url);
+      const confirmDelete = () => {
+        if (removed) {
+          for (const region of removed.regions) {
+            if (region.url) revokeTrackedBlob(region.url);
+          }
         }
+        setTracks(tracks.filter((t) => t.id !== trackId));
+        if (selectedTrackId === trackId) setSelectedTrackId(null);
+      };
+      const label = removed?.name ?? "esta track";
+      if (Platform.OS === "web") {
+        if (typeof window !== "undefined" && !window.confirm(`Excluir "${label}"? Esta ação não pode ser desfeita.`)) {
+          return;
+        }
+        confirmDelete();
+      } else {
+        Alert.alert(
+          "Excluir track",
+          `Excluir "${label}"? Esta ação não pode ser desfeita.`,
+          [
+            { text: "Cancelar", style: "cancel" },
+            { text: "Excluir", style: "destructive", onPress: confirmDelete },
+          ],
+        );
       }
-      setTracks(tracks.filter((t) => t.id !== trackId));
-      if (selectedTrackId === trackId) setSelectedTrackId(null);
     },
     [tracks, setTracks, selectedTrackId],
   );
@@ -1864,17 +1809,6 @@ export default function Studio() {
           </Pressable>
         </View>
 
-        {/* Time display */}
-        <View className="flex-row items-center gap-2">
-          <Text className="text-gray-400 text-xs font-mono">
-            {formatTime(currentTime)}
-          </Text>
-          <Text className="text-gray-600 text-xs">/</Text>
-          <Text className="text-gray-500 text-xs font-mono">
-            {formatTime(duration)}
-          </Text>
-        </View>
-
         <View className="flex-row items-center gap-1.5">
           <Pressable
             onPress={undoHistory}
@@ -2144,7 +2078,7 @@ export default function Studio() {
                     <View className="h-8">
                       <VuMeter
                         level={track.volume / 100}
-                        peakLevel={isAudible(track) ? Math.min(1, track.volume / 100 + Math.random() * 0.05) : 0}
+                        peakLevel={isAudible(track) ? Math.min(1, track.volume / 100) : 0}
                       />
                     </View>
                   </View>
@@ -2534,7 +2468,7 @@ export default function Studio() {
                       <View className="flex-row items-stretch flex-1 w-full gap-1">
                         <VuMeter
                           level={effVol / 100}
-                          peakLevel={isAudible(track) ? Math.min(1, effVol / 100 + Math.random() * 0.05) : 0}
+                          peakLevel={isAudible(track) ? Math.min(1, effVol / 100) : 0}
                         />
                         <Pressable
                           onPress={() =>

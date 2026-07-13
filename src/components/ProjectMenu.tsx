@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react"
 import { View, Text, Pressable, Alert, Platform } from "react-native"
-import { exportProject, loadProject, saveProject } from "../lib/projectStore"
+import { exportProject, loadProject, saveProject, deleteProject } from "../lib/projectStore"
 import { OpenBandNative } from "../bridge"
 import { saveProjectToCloud } from "../lib/cloudSync"
 
@@ -79,17 +79,16 @@ export function ProjectMenu({ projectId, projectTitle, onRefresh }: {
     }
   }, [projectId])
 
-  const handleMoveToTrash = useCallback(() => {
+  const handleDelete = useCallback(() => {
     Alert.alert(
-      "Mover para Lixeira",
-      `O projeto "${projectTitle}" será movido para a lixeira.`,
+      "Excluir Projeto",
+      `O projeto "${projectTitle}" será excluído permanentemente.`,
       [
         { text: "Cancelar", style: "cancel" },
         {
-          text: "Mover", style: "destructive",
+          text: "Excluir", style: "destructive",
           onPress: () => {
-            localStorage.removeItem(`openband_project_${projectId}`)
-            updateProjectIndex(projectId)
+            deleteProject(projectId)
             onRefresh()
             setOpen(false)
           },
@@ -112,7 +111,7 @@ export function ProjectMenu({ projectId, projectTitle, onRefresh }: {
             <MenuOption icon="☁️" label="Salvar na Nuvem" onPress={handleSaveToCloud} />
             <MenuOption icon="⬇️" label="Baixar Áudio (.wav)" onPress={handleDownload} />
             <View className="h-px bg-dark-border mx-3" />
-            <MenuOption icon="🗑️" label="Mover para Lixeira" onPress={handleMoveToTrash} destructive />
+            <MenuOption icon="🗑️" label="Excluir Projeto" onPress={handleDelete} destructive />
           </View>
         </>
       )}
@@ -149,12 +148,4 @@ function createDuplicate(id: string, title: string): string | null {
     localStorage.setItem("openband_project_index", JSON.stringify(index))
     return newId
   } catch { return null }
-}
-
-function updateProjectIndex(id: string) {
-  try {
-    const index = JSON.parse(localStorage.getItem("openband_project_index") || "{}")
-    delete index[id]
-    localStorage.setItem("openband_project_index", JSON.stringify(index))
-  } catch {}
 }

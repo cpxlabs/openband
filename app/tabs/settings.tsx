@@ -3,28 +3,24 @@ import { PageHeader, Avatar, Divider, Badge } from "../../src/components";
 import { useTheme } from "../../src/context/ThemeContext";
 import { useAuth } from "../../src/context/AuthContext";
 import { LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive";
+import { SCREEN_BOTTOM_PADDING } from "../../src/lib/constants";
 import { useTranslation } from "react-i18next";
 import { changeLanguage } from "../../src/lib/i18n";
-
-const MOCK_PROFILE = {
-  name: "João Produtor",
-  email: "joao@openband.app",
-  bio: "Produtor musical independente. Trabalho com gêneros eletrônicos e acústicos. Amante de sintetizadores analógicos.",
-  location: "São Paulo, BR",
-  memberSince: "Março 2026",
-};
 
 export default function Settings() {
   const { theme, setTheme } = useTheme();
   const { t, i18n } = useTranslation();
-  const { tier, tierLimits } = useAuth();
-  const profile = MOCK_PROFILE;
+  const { user, tier, tierLimits } = useAuth();
+  const profileName =
+    (user?.user_metadata?.name as string) ??
+    user?.email?.split("@")[0] ??
+    t("settings.guest", "Visitante");
 
 
   return (
     <ScrollView
       className="flex-1 bg-dark-bg"
-      contentContainerStyle={{ paddingBottom: 100, flexGrow: 1 }}
+      contentContainerStyle={{ paddingBottom: SCREEN_BOTTOM_PADDING, flexGrow: 1 }}
       style={{ maxWidth: LAYOUT_MAX_WIDTHS.settings, alignSelf: "center", width: "100%" }}
     >
       <View className="pt-4 tablet:pt-12 px-4 tablet:px-6">
@@ -33,10 +29,10 @@ export default function Settings() {
 
       <View className="px-4 tablet:px-6 gap-6">
         <View className="items-center py-6 gap-3">
-          <Avatar name={profile.name} size="lg" />
+          <Avatar name={profileName} size="lg" />
           <View className="items-center">
-            <Text className="text-white text-xl font-bold">{profile.name}</Text>
-            <Text className="text-gray-500 text-sm">{profile.email}</Text>
+            <Text className="text-white text-xl font-bold">{profileName}</Text>
+            <Text className="text-gray-500 text-sm">{user?.email ?? ""}</Text>
           </View>
           <View className="card-elevated p-4 w-full">
             <Text className="text-gray-400 text-sm text-center leading-relaxed">

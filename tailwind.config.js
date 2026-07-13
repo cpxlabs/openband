@@ -31,6 +31,11 @@ module.exports = {
           accentDark: "rgb(0 98 204 / <alpha-value>)",
           green: "rgb(52 199 89 / <alpha-value>)",
           yellow: "rgb(255 159 10 / <alpha-value>)",
+          red: "rgb(var(--color-brand-red, 255 59 48) / <alpha-value>)",
+          amber: "rgb(var(--color-brand-amber, 255 159 10) / <alpha-value>)",
+          rose: "rgb(var(--color-brand-rose, 255 45 85) / <alpha-value>)",
+          blue: "rgb(var(--color-brand-blue, 0 122 255) / <alpha-value>)",
+          purple: "rgb(var(--color-brand-purple, 175 82 222) / <alpha-value>)",
         },
         gray: {
           150: "#e5e5ea",

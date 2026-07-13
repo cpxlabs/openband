@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo } from "react"
 import { View, Text, FlatList, Pressable, Alert } from "react-native"
 import { useRouter } from "expo-router"
-import { EmptyState, PageHeader, Button, NewProject, ProjectCard } from "../../src/components"
+import { EmptyState, PageHeader, Button, NewProject, ProjectCard, Loading } from "../../src/components"
 import type { GenreTemplate, Mood } from "../../src/lib/projectTemplates"
 import { useResponsive, LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive"
 import { listProjectIndex, importProject, loadProject, getFavoriteProjects, isProjectFavorite, toggleProjectFavorite, saveProject } from "../../src/lib/projectStore"
@@ -28,6 +28,7 @@ export default function Library() {
   const [refreshKey, setRefreshKey] = useState(0)
   const [filterTab, setFilterTab] = useState<FilterTab>("all")
   const [cloudProjects, setCloudProjects] = useState<any[]>([])
+  const [loadingCloud, setLoadingCloud] = useState(false)
 
   const projectIndex = useMemo(() => listProjectIndex(), [refreshKey])
 
@@ -72,14 +73,22 @@ export default function Library() {
     if (filterTab === "collabs") {
       return projects.filter(p => p.metadata?.parentProjectId);
     }
+    if (filterTab === "trash") {
+      return []
+    }
     return projects
   }, [projects, filterTab, cloudProjects])
 
   const handleTabChange = useCallback(async (tab: FilterTab) => {
     setFilterTab(tab)
     if (tab === "cloud") {
-      const { data } = await fetchCloudProjects()
-      if (data) setCloudProjects(data)
+      setLoadingCloud(true)
+      try {
+        const { data } = await fetchCloudProjects()
+        if (data) setCloudProjects(data)
+      } finally {
+        setLoadingCloud(false)
+      }
     }
   }, [])
 
@@ -175,6 +184,10 @@ export default function Library() {
         />
       </View>
 
+      {loadingCloud && (
+        <Loading message={t("library.loadingCloud", "Carregando projetos da nuvem...")} />
+      )}
+
       <FlatList
         key={resp.numColumns}
         numColumns={resp.numColumns}
@@ -184,7 +197,11 @@ export default function Library() {
         contentContainerStyle={{ paddingBottom: SCREEN_BOTTOM_PADDING, paddingHorizontal: resp.isMobile ? 16 : 24 }}
         style={{ maxWidth: LAYOUT_MAX_WIDTHS.library, alignSelf: "center", width: "100%" }}
         ListEmptyComponent={
-          <EmptyState icon="🎧" title={t("library.emptyTitle", "Nenhum projeto ainda")} subtitle={t("library.emptySubtitle", "Crie seu primeiro projeto acima")} />
+          filterTab === "trash" ? (
+            <EmptyState icon="🗑️" title={t("library.trashEmpty", "Lixeira vazia")} subtitle={t("library.trashEmptySubtitle", "Projetos excluídos aparecerão aqui")} />
+          ) : (
+            <EmptyState icon="🎧" title={t("library.emptyTitle", "Nenhum projeto ainda")} subtitle={t("library.emptySubtitle", "Crie seu primeiro projeto acima")} />
+          )
         }
         renderItem={({ item }) => {
           const isFavorite = isProjectFavorite(item.id)
