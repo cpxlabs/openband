@@ -5,7 +5,12 @@ import { Alert } from "react-native";
 import { AudioModule, setAudioModeAsync } from "expo-audio";
 import type { AudioPlayer, AudioStatus } from "expo-audio";
 import type { Mood } from "../../src/lib/projectTemplates";
-import type { MixSnapshot, TrackDef, BusDef } from "../../src/lib/types";
+import type { MixSnapshot, TrackDef, BusDef, Plugin } from "../../src/lib/types";
+import {
+  MASTERING_CHAIN_PRESETS,
+  buildMasteringChain,
+} from "../../src/lib/mastering";
+import type { PluginSource } from "./parts";
 import {
   saveProject,
   loadProject,
@@ -693,4 +698,82 @@ export function useStudioTransport(params: {
     seekRelative,
     stopPlayback,
   };
+}
+
+/** Plugin/mastering-chain edit handlers (param change, toggle, preset load). */
+export function usePluginChains(params: {
+  editingPluginSource: PluginSource;
+  selectedTrack: TrackDef | null;
+  tracks: TrackDef[];
+  setTracks: (tracks: TrackDef[]) => void;
+  setMasteringChain: Dispatch<SetStateAction<Plugin[]>>;
+  setMasterPlugins: Dispatch<SetStateAction<Plugin[]>>;
+}) {
+  const {
+    editingPluginSource,
+    selectedTrack,
+    tracks,
+    setTracks,
+    setMasteringChain,
+    setMasterPlugins,
+  } = params;
+
+  const handlePluginParamChange = useCallback(
+    (pluginId: string, paramId: string, value: number) => {
+      const updateChain = (chain: Plugin[]) =>
+        chain.map((p) =>
+          p.id === pluginId
+            ? { ...p, params: { ...p.params, [paramId]: value } }
+            : p,
+        );
+      if (editingPluginSource === "mastering") {
+        setMasteringChain((prev) => updateChain(prev));
+      } else if (editingPluginSource === "masterRack") {
+        setMasterPlugins((prev) => updateChain(prev));
+      } else if (editingPluginSource === "track" && selectedTrack) {
+        setTracks(
+          tracks.map((t) =>
+            t.id === selectedTrack.id
+              ? { ...t, plugins: updateChain(t.plugins) }
+              : t,
+          ),
+        );
+      }
+    },
+    [editingPluginSource, selectedTrack, setTracks, tracks, setMasteringChain, setMasterPlugins],
+  );
+
+  const handleTogglePlugin = useCallback(
+    (pluginId: string) => {
+      const toggleChain = (chain: Plugin[]) =>
+        chain.map((p) =>
+          p.id === pluginId ? { ...p, enabled: !p.enabled } : p,
+        );
+      if (editingPluginSource === "mastering") {
+        setMasteringChain((prev) => toggleChain(prev));
+      } else if (editingPluginSource === "masterRack") {
+        setMasterPlugins((prev) => toggleChain(prev));
+      } else if (editingPluginSource === "track" && selectedTrack) {
+        setTracks(
+          tracks.map((t) =>
+            t.id === selectedTrack.id
+              ? { ...t, plugins: toggleChain(t.plugins) }
+              : t,
+          ),
+        );
+      }
+    },
+    [editingPluginSource, selectedTrack, setTracks, tracks, setMasteringChain, setMasterPlugins],
+  );
+
+  const handleLoadMasteringPreset = useCallback(
+    (index: number) => {
+      const preset = MASTERING_CHAIN_PRESETS[index];
+      if (!preset) return;
+      setMasteringChain(buildMasteringChain(preset));
+    },
+    [setMasteringChain],
+  );
+
+  return { handlePluginParamChange, handleTogglePlugin, handleLoadMasteringPreset };
 }

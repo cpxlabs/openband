@@ -94,7 +94,7 @@ import {
   type PluginSource,
 } from "./parts";
 import { StudioModals } from "./StudioModals";
-import { useProjectParams, useStudioPersistence, useMixSnapshots, useStudioModals, useStudioTransport, applyPitchShift, type BottomTab } from "./hooks";
+import { useProjectParams, useStudioPersistence, useMixSnapshots, useStudioModals, useStudioTransport, usePluginChains, applyPitchShift, type BottomTab } from "./hooks";
 
 export default function Studio() {
   const {
@@ -864,59 +864,15 @@ export default function Studio() {
       setActiveMixId,
     });
 
-  const handlePluginParamChange = useCallback(
-    (pluginId: string, paramId: string, value: number) => {
-      const updateChain = (chain: Plugin[]) =>
-        chain.map((p) =>
-          p.id === pluginId
-            ? { ...p, params: { ...p.params, [paramId]: value } }
-            : p,
-        );
-      if (editingPluginSource === "mastering") {
-        setMasteringChain((prev) => updateChain(prev));
-      } else if (editingPluginSource === "masterRack") {
-        setMasterPlugins((prev) => updateChain(prev));
-      } else if (editingPluginSource === "track" && selectedTrack) {
-        setTracks(
-          tracks.map((t) =>
-            t.id === selectedTrack.id
-              ? { ...t, plugins: updateChain(t.plugins) }
-              : t,
-          ),
-        );
-      }
-    },
-    [editingPluginSource, selectedTrack, setTracks, tracks],
-  );
-
-  const handleTogglePlugin = useCallback(
-    (pluginId: string) => {
-      const toggleChain = (chain: Plugin[]) =>
-        chain.map((p) =>
-          p.id === pluginId ? { ...p, enabled: !p.enabled } : p,
-        );
-      if (editingPluginSource === "mastering") {
-        setMasteringChain((prev) => toggleChain(prev));
-      } else if (editingPluginSource === "masterRack") {
-        setMasterPlugins((prev) => toggleChain(prev));
-      } else if (editingPluginSource === "track" && selectedTrack) {
-        setTracks(
-          tracks.map((t) =>
-            t.id === selectedTrack.id
-              ? { ...t, plugins: toggleChain(t.plugins) }
-              : t,
-          ),
-        );
-      }
-    },
-    [editingPluginSource, selectedTrack, setTracks, tracks],
-  );
-
-  const handleLoadMasteringPreset = useCallback((index: number) => {
-    const preset = MASTERING_CHAIN_PRESETS[index];
-    if (!preset) return;
-    setMasteringChain(buildMasteringChain(preset));
-  }, []);
+  const { handlePluginParamChange, handleTogglePlugin, handleLoadMasteringPreset } =
+    usePluginChains({
+      editingPluginSource,
+      selectedTrack,
+      tracks,
+      setTracks,
+      setMasteringChain,
+      setMasterPlugins,
+    });
 
   const handleAddSample = useCallback(
     (sample: {
