@@ -34,6 +34,8 @@
 - STU-1 (incremental): extracted StudioModals (17-modal cluster), buildProjectData helper
   (dedupe autosave/title-commit), StudioOnboardingCoachmark + StudioDrawer. Main studio
   component 3452 → 3285 lines. EXPL-5 (3D header back fallback).
+- STU-1 (hooks): useProjectParams, useStudioPersistence, useMixSnapshots extracted
+  to app/studio/hooks.ts. Main studio component 3285 → 3089 lines.
 
 **Remaining (larger/deferred):** STU-1 (full stateful decomposition), STU-13/16/17,
 DS-3 (light-theme token refactor), DS-4/6/7, CC-1 (remaining screens i18n audit), CC-2/3/4 remaining,
@@ -68,7 +70,9 @@ Risk notes: transport + mixer hooks touch refs shared by many callbacks; verify 
 stale-closure regressions. Keep `tracks`/`useHistory` in the main component (undo/redo
 is cross-cutting). Behavior must be identical.
 
-Status: (1) in progress.
+Status: (1) useStudioPersistence ✅, (2) useProjectParams ✅, (4) partial —
+useMixSnapshots ✅ (mix A/B handlers). Remaining: (3) useStudioModalState,
+(4) rest of mixer state, (5) useStudioTransport. Main studio: 3452 → 3089 lines.
 
 ---
 
