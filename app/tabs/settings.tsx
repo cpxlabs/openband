@@ -1,6 +1,7 @@
-import { View, Text, ScrollView, Pressable } from "react-native";
+import { useState } from "react";
+import { View, Text, ScrollView, Pressable, Alert, Platform } from "react-native";
 import Constants from "expo-constants";
-import { PageHeader, Avatar, Divider, Badge } from "../../src/components";
+import { PageHeader, Avatar, Divider, Badge, Button } from "../../src/components";
 import { useTheme } from "../../src/context/ThemeContext";
 import { useAuth } from "../../src/context/AuthContext";
 import { LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive";
@@ -8,10 +9,44 @@ import { SCREEN_BOTTOM_PADDING } from "../../src/lib/constants";
 import { useTranslation } from "react-i18next";
 import { changeLanguage } from "../../src/lib/i18n";
 
+const DEFAULT_LANGUAGE = "pt-BR";
+const LANGUAGES: { code: string; label: string }[] = [
+  { code: "en", label: "EN" },
+  { code: "pt-BR", label: "PT" },
+  { code: "es", label: "ES" },
+];
+
 export default function Settings() {
   const { theme, setTheme } = useTheme();
   const { t, i18n } = useTranslation();
   const { user, tier, tierLimits } = useAuth();
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [resetMessage, setResetMessage] = useState("");
+
+  const handleReset = () => {
+    const doReset = () => {
+      changeLanguage(DEFAULT_LANGUAGE);
+      setTheme("dark");
+      setNotificationsEnabled(false);
+      setResetMessage(t("settings.resetDone", "Preferências restauradas."));
+      setTimeout(() => setResetMessage(""), 2500);
+    };
+
+    if (Platform.OS === "web" && typeof window !== "undefined" && window.confirm) {
+      if (window.confirm(t("settings.resetConfirm", "Restaurar todas as preferências para o padrão?"))) {
+        doReset();
+      }
+    } else {
+      Alert.alert(
+        t("settings.resetDefaults", "Restaurar padrões"),
+        t("settings.resetConfirm", "Restaurar todas as preferências para o padrão?"),
+        [
+          { text: t("settings.cancel", "Cancelar"), style: "cancel" },
+          { text: t("settings.confirm", "Confirmar"), onPress: doReset },
+        ]
+      );
+    }
+  };
   const profileName =
     (user?.user_metadata?.name as string) ??
     user?.email?.split("@")[0] ??
@@ -58,21 +93,25 @@ export default function Settings() {
         <Divider label={t("settings.language", "Idioma")} />
 
         <View className="flex-row gap-2">
-          {['en', 'pt-BR', 'es'].map((lng) => {
-            const isSelected = i18n.language === lng || (lng === 'pt-BR' && (i18n.language === 'pt' || i18n.language === 'pt-BR'));
-            const labels: any = { en: "English", "pt-BR": "Português", es: "Español" };
+          {LANGUAGES.map(({ code, label }) => {
+            const isSelected =
+              i18n.language === code ||
+              (code === "pt-BR" &&
+                (i18n.language === "pt" || i18n.language === "pt-BR"));
             return (
               <Pressable
-                key={lng}
-                onPress={() => changeLanguage(lng)}
-                className={`flex-1 card-elevated p-3 items-center border-2 ${
+                key={code}
+                onPress={() => changeLanguage(code)}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: isSelected }}
+                className={`flex-1 py-2 px-2 items-center rounded-full border-2 ${
                   isSelected
                     ? "border-brand-primary bg-brand-primary/10"
                     : "border-dark-border"
                 }`}
               >
-                <Text className={`text-sm font-semibold ${isSelected ? "text-brand-primary" : "text-white"}`}>
-                  {labels[lng]}
+                <Text className={`text-xs font-semibold ${isSelected ? "text-brand-primary" : "text-white"}`}>
+                  {label}
                 </Text>
               </Pressable>
             );
@@ -169,6 +208,46 @@ export default function Settings() {
           <View className="p-4 flex-row justify-between items-center">
             <Text className="text-gray-400 text-sm">{t("settings.exportVideo", "Exportar vídeo")}</Text>
             <Text className="text-white text-sm font-medium">{tierLimits.canExportVideo ? t("settings.yes", "Sim") : t("settings.no", "Não")}</Text>
+          </View>
+        </View>
+
+        <Divider label={t("settings.notifications", "Notificações")} />
+
+        <View className="card-elevated">
+          <View className="p-4 flex-row justify-between items-center">
+            <View className="flex-1 pr-4">
+              <Text className="text-white text-sm font-medium">{t("settings.pushNotifications", "Notificações push")}</Text>
+              <Text className="text-gray-500 text-xs mt-1">{t("settings.pushNotificationsHint", "Receba avisos de novidades e atividade")}</Text>
+            </View>
+            <Pressable
+              onPress={() => setNotificationsEnabled((prev) => !prev)}
+              accessibilityRole="switch"
+              accessibilityState={{ checked: notificationsEnabled }}
+              className={`w-12 h-7 rounded-full items-center justify-center ${
+                notificationsEnabled ? "bg-brand-primary" : "bg-dark-border"
+              }`}
+            >
+              <View
+                className={`w-5 h-5 rounded-full bg-white absolute ${
+                  notificationsEnabled ? "right-1" : "left-1"
+                }`}
+              />
+            </Pressable>
+          </View>
+        </View>
+
+        <Divider label={t("settings.actions", "Ações")} />
+
+        <View className="card-elevated">
+          <View className="p-4">
+            <Button
+              title={t("settings.resetDefaults", "Restaurar padrões")}
+              variant="secondary"
+              onPress={handleReset}
+            />
+            {resetMessage ? (
+              <Text className="text-brand-primary text-xs mt-3 text-center">{resetMessage}</Text>
+            ) : null}
           </View>
         </View>
       </View>

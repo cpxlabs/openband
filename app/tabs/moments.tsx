@@ -111,12 +111,22 @@ export default function Moments() {
     <View className="flex-1 bg-dark-bg" style={{ paddingTop: resp.safeTop }}>
       <View
         className="pt-4 tablet:pt-12 px-4 tablet:px-6 flex-row items-center justify-between mb-2"
+        style={{
+          maxWidth: LAYOUT_MAX_WIDTHS.moments,
+          alignSelf: "center",
+          width: "100%",
+        }}
       >
         <PageHeader title={t("moments.title", "Momentos")} subtitle={t("moments.subtitle", "Artistas e criadores")} />
       </View>
 
       <View
         className="flex-row gap-2 px-4 tablet:px-6 mb-3"
+        style={{
+          maxWidth: LAYOUT_MAX_WIDTHS.moments,
+          alignSelf: "center",
+          width: "100%",
+        }}
       >
         <Pressable
           onPress={() => setTab("moments")}
@@ -168,17 +178,33 @@ export default function Moments() {
           }}
         >
           <View className="p-3 rounded-xl bg-brand-primary/10 border border-brand-primary/20">
-            <Text className="text-brand-primary text-[10px] font-bold uppercase tracking-wider">
-               {t("moments.credits", "Créditos")}
-             </Text>
-             {credits.map((c, i) => (
-               <Text key={i} className="text-gray-300 text-[10px] mt-0.5">
-                 • {c.sample} por {c.artist}
-               </Text>
-             ))}
-             <Text className="text-gray-500 text-[8px] mt-1">
-               {t("moments.creditNote", "Lembre-se de creditar os artistas ao publicar!")}
-             </Text>
+            <View className="flex-row items-center justify-between mb-1">
+              <Text className="text-brand-primary text-[10px] font-bold uppercase tracking-wider">
+                {t("moments.credits", "Créditos")}
+              </Text>
+              <Pressable
+                onPress={() => setCredits([])}
+                className="px-2 py-0.5 rounded-md bg-dark-surface border border-dark-border active:opacity-70"
+                accessibilityRole="button"
+              >
+                <Text className="text-gray-300 text-[10px]">
+                  {t("moments.clearCredits", "Limpar")}
+                </Text>
+              </Pressable>
+            </View>
+            <ScrollView
+              style={{ maxHeight: 200 }}
+              showsVerticalScrollIndicator={true}
+            >
+              {credits.map((c, i) => (
+                <Text key={i} className="text-gray-300 text-[10px] mt-0.5">
+                  • {c.sample} por {c.artist}
+                </Text>
+              ))}
+            </ScrollView>
+            <Text className="text-gray-500 text-[8px] mt-1">
+              {t("moments.creditNote", "Lembre-se de creditar os artistas ao publicar!")}
+            </Text>
           </View>
         </View>
       )}
@@ -239,7 +265,6 @@ export default function Moments() {
       </ScrollView>
 
       <NewProject
-        key={`np-${showNewProject}`}
         visible={showNewProject}
         onClose={() => setShowNewProject(false)}
         onCreate={handleCreateProject}

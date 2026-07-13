@@ -72,3 +72,4 @@ export { MidiLearnPanel } from "./MidiLearnPanel";
 export { TunePanel } from "./TunePanel";
 export { ErrorBoundary } from "./ErrorBoundary";
 export { MobileDrawer } from "./MobileDrawer";
+export { ToastProvider, useToast } from "./Toast";

@@ -23,6 +23,7 @@ import {
   OnboardingFlow,
   FeedPostCard,
   Loading,
+  useToast,
 } from "../../src/components";
 import type { FeedPost } from "../../src/components/FeedPostCard";
 import { fetchFeed, toggleLike, createRemix } from "../../src/lib/feedApi";
@@ -54,6 +55,7 @@ export default function Feed() {
   const resp = useResponsive();
   const webAudio = useWebAudioPlayer({ trackTime: false });
   const { tierLimits, hasOnboarded, completeOnboarding } = useAuth();
+  const toast = useToast();
   const [showOnboarding, setShowOnboarding] = useState(!hasOnboarded);
   const expoPlayer = useAudioPlayer(null);
   const expoStatus = useAudioPlayerStatus(expoPlayer);
@@ -236,6 +238,7 @@ export default function Feed() {
               : p,
           ),
         );
+        toast.show("Não foi possível curtir", "error");
       });
   }, []);
 
@@ -249,7 +252,9 @@ export default function Feed() {
         return;
       }
       const projectId = `remix-${post.id}-${Date.now()}`;
-      createRemix(post.id, projectId).catch(() => {});
+      createRemix(post.id, projectId).catch(() => {
+        toast.show(t("feed.remixError", "Não foi possível criar o remix"), "error");
+      });
       router.push(
         `/studio/${projectId}?title=${encodeURIComponent(`Remix: ${post.title}`)}&genre=${post.genre}&key=${post.key}&bpm=${post.bpm}`,
       );
@@ -312,18 +317,33 @@ export default function Feed() {
   );
 
   const handleShare = useCallback(async (post: FeedPost) => {
+    const link = `https://openband.app/track/${post.id}`;
     if (Platform.OS === "web") {
-      await navigator.clipboard.writeText(
-        `https://openband.app/track/${post.id}`,
-      );
-      Alert.alert(t("feed.shareTitle", "Compartilhar"), t("feed.shareCopied", "Link copiado para a área de transferência!"));
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(link);
+        } else {
+          const textarea = document.createElement("textarea");
+          textarea.value = link;
+          textarea.style.position = "fixed";
+          textarea.style.opacity = "0";
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          document.body.removeChild(textarea);
+        }
+        toast.show("Link copiado", "success");
+      } catch {
+        toast.show(t("feed.shareError", "Não foi possível copiar o link"), "error");
+      }
     } else {
-      await Share.share({
-        title: post.title,
-        url: `https://openband.app/track/${post.id}`,
-      });
+      try {
+        await Share.share({ title: post.title, url: link });
+      } catch {
+        toast.show(t("feed.shareError", "Não foi possível compartilhar"), "error");
+      }
     }
-  }, []);
+  }, [t, toast]);
 
   const handlePlayed = useCallback((postId: string) => {
     setPosts((prev) =>

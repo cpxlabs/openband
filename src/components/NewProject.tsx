@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { View, Text, Pressable, ScrollView, TextInput } from "react-native";
 import { useTranslation } from "react-i18next";
 import { GENRES, MUSICAL_KEYS, keyLabel, MOODS, TIME_SIGNATURES } from "../lib/projectTemplates";
@@ -40,6 +40,19 @@ export function NewProject({
   testID,
 }: NewProjectProps) {
   const { t } = useTranslation();
+
+  useEffect(() => {
+    if (!visible) return;
+    setName(initialTitle ?? "");
+    setSelectedGenre(initialGenre ?? GENRES[0]);
+    setBpm(initialBpm ?? initialGenre?.defaultBpm ?? GENRES[0].defaultBpm);
+    setSelectedKey(initialKey ?? initialGenre?.defaultKey ?? GENRES[0].defaultKey);
+    setSelectedMood(initialMood);
+    setNumBars(8);
+    setTimeSignature(initialTimeSignature ?? "4/4");
+    setStep(initialMood ? "details" : initialGenre ? "mood" : "genre");
+  }, [visible]);
+
   const [name, setName] = useState(initialTitle ?? "");
   const [selectedGenre, setSelectedGenre] = useState<GenreTemplate>(
     initialGenre ?? GENRES[0],

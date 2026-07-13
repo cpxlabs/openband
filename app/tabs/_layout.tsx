@@ -1,9 +1,21 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Tabs, useRouter, useSegments, type Href } from "expo-router";
-import { Text, View, Pressable, ScrollView } from "react-native";
+import { Text, View, Pressable, ScrollView, Animated } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useResponsive } from "../../src/lib/responsive";
+import { useAuth } from "../../src/context/AuthContext";
 import { MiniPlayer, Sidebar, ErrorBoundary } from "../../src/components";
+
+const TIER_LABELS: Record<string, string> = {
+  free: "Gratuito",
+  tier1_live: "Live",
+  tier2_studio: "Studio",
+};
+
+function tierLabel(tier: string): string {
+  if (!tier) return "Gratuito";
+  return TIER_LABELS[tier.toLowerCase()] ?? tier.charAt(0).toUpperCase() + tier.slice(1);
+}
 
 const NAV_ITEMS = [
   { key: "index", label: "Feed", icon: "♫" },
@@ -20,8 +32,28 @@ export default function TabLayout() {
   const router = useRouter();
   const segments = useSegments();
   const { isDesktop, headerHeight } = useResponsive();
+  const { tier } = useAuth();
   const insets = useSafeAreaInsets();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const backdropOpacity = useRef(new Animated.Value(0)).current;
+  const panelTranslate = useRef(new Animated.Value(256)).current;
+
+  useEffect(() => {
+    if (drawerOpen) {
+      Animated.parallel([
+        Animated.timing(backdropOpacity, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(panelTranslate, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [drawerOpen, backdropOpacity, panelTranslate]);
 
   const lastSegment = segments[segments.length - 1] || "index";
   const currentSegment = lastSegment === "tabs" ? "index" : lastSegment;
@@ -85,16 +117,26 @@ export default function TabLayout() {
 
             {drawerOpen && (
               <View className="absolute inset-0 z-50 flex-row" style={{ paddingTop: insets.top }}>
-                <Pressable
+                <Animated.View
                   className="flex-1 bg-black/60"
-                  onPress={() => setDrawerOpen(false)}
-                />
-                <View className="w-64 bg-[#0d0d11] border-l border-dark-border/40 h-full">
+                  style={{ opacity: backdropOpacity }}
+                >
+                  <Pressable
+                    className="flex-1"
+                    onPress={() => setDrawerOpen(false)}
+                  />
+                </Animated.View>
+                <Animated.View
+                  className="w-64 bg-[#0d0d11] border-l border-dark-border/40 h-full"
+                  style={{ transform: [{ translateX: panelTranslate }] }}
+                >
                   <View className="flex-row items-center justify-between px-4 py-4 border-b border-dark-border/40">
                     <Text className="text-white font-bold text-base">
                       Open<Text className="text-brand-primary">Band</Text>
                     </Text>
                     <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Fechar menu"
                       onPress={() => setDrawerOpen(false)}
                       className="w-7 h-7 rounded-full bg-dark-muted/30 items-center justify-center active:opacity-70"
                     >
@@ -141,11 +183,11 @@ export default function TabLayout() {
                       </View>
                       <View className="flex-1">
                         <Text className="text-gray-400 text-2xs font-medium">Conta</Text>
-                        <Text className="text-brand-primary/50 text-3xs">Premium</Text>
+                        <Text className="text-brand-primary/50 text-3xs">{tierLabel(tier)}</Text>
                       </View>
                     </View>
                   </View>
-                </View>
+                </Animated.View>
               </View>
             )}
           </>
