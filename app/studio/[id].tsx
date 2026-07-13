@@ -2226,6 +2226,14 @@ export default function Studio() {
         </View>
 
         <ScrollView horizontal className="flex-1 bg-dark-bg">
+          {tracks.length === 0 ? (
+            <View className="flex-1 items-center justify-center px-6" style={{ width: TIMELINE_WIDTH }}>
+              <Text className="text-gray-400 text-base font-semibold">Nenhuma track ainda</Text>
+              <Text className="text-gray-500 text-xs mt-1 text-center">
+                Adicione uma track para começar
+              </Text>
+            </View>
+          ) : (
           <View style={{ width: TIMELINE_WIDTH }}>
             <View
               className="relative"
@@ -2334,6 +2342,7 @@ export default function Studio() {
               <CollaboratorCursors cursors={cursors} timelineWidth={TIMELINE_WIDTH} />
             </View>
           </View>
+          )}
         </ScrollView>
       </View>
 

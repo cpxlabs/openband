@@ -18,6 +18,10 @@ export function setMasteringInput(data: PendingMasteringData) {
   _pending = data;
 }
 
+export function getMasteringInput(): PendingMasteringData | null {
+  return _pending;
+}
+
 export function takeMasteringInput(): PendingMasteringData | null {
   const val = _pending;
   _pending = null;

@@ -1,4 +1,5 @@
 import { View, Text, ScrollView, Pressable } from "react-native";
+import Constants from "expo-constants";
 import { PageHeader, Avatar, Divider, Badge } from "../../src/components";
 import { useTheme } from "../../src/context/ThemeContext";
 import { useAuth } from "../../src/context/AuthContext";
@@ -15,6 +16,8 @@ export default function Settings() {
     (user?.user_metadata?.name as string) ??
     user?.email?.split("@")[0] ??
     t("settings.guest", "Visitante");
+
+  const appVersion = Constants.expoConfig?.version ?? "1.0.0";
 
 
   return (
@@ -117,7 +120,7 @@ export default function Settings() {
         <View className="card-elevated">
           <View className="p-4 flex-row justify-between items-center">
             <Text className="text-gray-400 text-sm">{t("settings.appVersion", "Versão do App")}</Text>
-            <Text className="text-white text-sm font-medium">1.0.0</Text>
+            <Text className="text-white text-sm font-medium">{appVersion}</Text>
           </View>
           <View className="h-px bg-dark-border" />
           <View className="p-4 flex-row justify-between items-center">
@@ -128,6 +131,20 @@ export default function Settings() {
           <View className="p-4 flex-row justify-between items-center">
             <Text className="text-gray-400 text-sm">{t("settings.engine", "Engine")}</Text>
             <Text className="text-white text-sm font-medium">React Native 0.85</Text>
+          </View>
+        </View>
+
+        <Divider label={t("settings.audio", "Áudio")} />
+
+        <View className="card-elevated">
+          <View className="p-4 flex-row justify-between items-center">
+            <Text className="text-gray-400 text-sm">{t("settings.sampleRate", "Sample Rate")}</Text>
+            <Text className="text-white text-sm font-medium">44100 Hz</Text>
+          </View>
+          <View className="h-px bg-dark-border" />
+          <View className="p-4 flex-row justify-between items-center">
+            <Text className="text-gray-400 text-sm">{t("settings.audioDetails", "Detalhes")}</Text>
+            <Text className="text-white text-sm font-medium">{t("settings.soon", "Em breve")}</Text>
           </View>
         </View>
 
