@@ -101,7 +101,7 @@ import {
   type PluginSource,
 } from "./parts";
 import { StudioModals } from "./StudioModals";
-import { useProjectParams, useStudioPersistence, type BottomTab } from "./hooks";
+import { useProjectParams, useStudioPersistence, useMixSnapshots, type BottomTab } from "./hooks";
 
 async function applyPitchShift(
   sourceUrl: string,
@@ -1052,86 +1052,15 @@ export default function Studio() {
     [tracks, setTracks],
   );
 
-  const handleSaveMix = useCallback(
-    (name: string) => {
-      const snapshot: MixSnapshot = {
-        id: `mix-${Date.now()}`,
-        name,
-        created: Date.now(),
-        trackVolumes: Object.fromEntries(tracks.map((t) => [t.id, t.volume])),
-        trackPans: Object.fromEntries(tracks.map((t) => [t.id, t.pan])),
-        trackSends: Object.fromEntries(tracks.map((t) => [t.id, t.sends])),
-        trackMutes: Object.fromEntries(tracks.map((t) => [t.id, t.muted])),
-        trackSolos: Object.fromEntries(tracks.map((t) => [t.id, t.solo])),
-        plugins: Object.fromEntries(tracks.map((t) => [t.id, t.plugins])),
-      };
-      setMixSnapshots((prev) => [...prev, snapshot]);
-      setActiveMixId(snapshot.id);
-    },
-    [tracks],
-  );
-
-  const handleLoadMix = useCallback(
-    (snapId: string) => {
-      const snap = mixSnapshots.find((s) => s.id === snapId);
-      if (!snap) return;
-      setTracks(
-        tracks.map((t) => ({
-          ...t,
-          volume: snap.trackVolumes[t.id] ?? t.volume,
-          pan: snap.trackPans[t.id] ?? t.pan,
-          sends: snap.trackSends[t.id] ?? t.sends,
-          muted: snap.trackMutes[t.id] ?? t.muted,
-          solo: snap.trackSolos[t.id] ?? t.solo,
-          plugins: snap.plugins[t.id] ?? t.plugins,
-        })),
-      );
-      setActiveMixId(snapId);
-    },
-    [mixSnapshots, setTracks, tracks],
-  );
-
-  const handleDeleteMix = useCallback(
-    (snapId: string) => {
-      setMixSnapshots((prev) => prev.filter((s) => s.id !== snapId));
-      if (activeMixId === snapId) setActiveMixId(undefined);
-    },
-    [activeMixId],
-  );
-
-  const handleCompareMix = useCallback(
-    (idA: string, idB: string) => {
-      const snapA = mixSnapshots.find((s) => s.id === idA);
-      const snapB = mixSnapshots.find((s) => s.id === idB);
-      if (!snapA || !snapB) return;
-      const diffTracks = tracks.filter((t) => {
-        const vA = snapA.trackVolumes[t.id];
-        const vB = snapB.trackVolumes[t.id];
-        return (
-          vA !== vB ||
-          snapA.trackMutes[t.id] !== snapB.trackMutes[t.id] ||
-          snapA.trackPans[t.id] !== snapB.trackPans[t.id] ||
-          snapA.trackSends[t.id] !== snapB.trackSends[t.id]
-        );
-      });
-      const msg = diffTracks
-        .map((t) => {
-          const vA = snapA.trackVolumes[t.id] ?? 0;
-          const vB = snapB.trackVolumes[t.id] ?? 0;
-          const pA = snapA.trackPans[t.id] ?? 0;
-          const pB = snapB.trackPans[t.id] ?? 0;
-          const sA = JSON.stringify(snapA.trackSends[t.id] ?? {});
-          const sB = JSON.stringify(snapB.trackSends[t.id] ?? {});
-          return `${t.name}: vol ${vA}%→${vB}% | pan ${pA}→${pB} | send ${sA}→${sB}`;
-        })
-        .join("\n");
-      Alert.alert(
-        `A/B — ${snapA.name} vs ${snapB.name}`,
-        `${msg || "Nenhuma diferença"} (vol/mute/pan/send)`,
-      );
-    },
-    [tracks, mixSnapshots],
-  );
+  const { handleSaveMix, handleLoadMix, handleDeleteMix, handleCompareMix } =
+    useMixSnapshots({
+      tracks,
+      setTracks,
+      mixSnapshots,
+      setMixSnapshots,
+      activeMixId,
+      setActiveMixId,
+    });
 
   const handlePluginParamChange = useCallback(
     (pluginId: string, paramId: string, value: number) => {
