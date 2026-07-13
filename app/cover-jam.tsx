@@ -184,8 +184,7 @@ export default function CoverJamStudio() {
       // State refs for animation loop
       let speedIdx = 2;
 
-      // Click handling via raycaster
-      renderer.domElement.addEventListener("click", (e: MouseEvent) => {
+      const handleClick = (e: MouseEvent) => {
         const rect = renderer.domElement.getBoundingClientRect();
         const mouse = new THREE.Vector2(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
         const raycaster = new THREE.Raycaster();
@@ -218,7 +217,8 @@ export default function CoverJamStudio() {
             }
           }
         }
-      });
+      };
+      renderer.domElement.addEventListener("click", handleClick);
 
       // Orbit controls
       let sphericalTheta = 0.3;
@@ -238,31 +238,31 @@ export default function CoverJamStudio() {
       };
       updateCamera();
 
-      renderer.domElement.addEventListener("mousedown", (e: MouseEvent) => { isDragging = true; lastMX = e.clientX; lastMY = e.clientY; });
-      window.addEventListener("mousemove", (e: MouseEvent) => {
+      const handleMouseDown = (e: MouseEvent) => { isDragging = true; lastMX = e.clientX; lastMY = e.clientY; };
+      const handleMouseMove = (e: MouseEvent) => {
         if (!isDragging) return;
         sphericalTheta -= (e.clientX - lastMX) * 0.005;
         sphericalPhi = Math.max(0.2, Math.min(Math.PI / 2 - 0.05, sphericalPhi - (e.clientY - lastMY) * 0.005));
         lastMX = e.clientX; lastMY = e.clientY;
         updateCamera();
-      });
-      window.addEventListener("mouseup", () => { isDragging = false; });
-      renderer.domElement.addEventListener("wheel", (e: WheelEvent) => {
+      };
+      const handleMouseUp = () => { isDragging = false; };
+      const handleWheel = (e: WheelEvent) => {
         sphericalRadius = Math.max(4, Math.min(15, sphericalRadius + e.deltaY * 0.01));
         updateCamera();
-      });
+      };
 
       // Touch support
       let lastTouchDist = 0;
-      renderer.domElement.addEventListener("touchstart", (e: TouchEvent) => {
+      const handleTouchStart = (e: TouchEvent) => {
         if (e.touches.length === 1) { isDragging = true; lastMX = e.touches[0].clientX; lastMY = e.touches[0].clientY; }
         if (e.touches.length === 2) {
           const dx = e.touches[0].clientX - e.touches[1].clientX;
           const dy = e.touches[0].clientY - e.touches[1].clientY;
           lastTouchDist = Math.sqrt(dx * dx + dy * dy);
         }
-      });
-      renderer.domElement.addEventListener("touchmove", (e: TouchEvent) => {
+      };
+      const handleTouchMove = (e: TouchEvent) => {
         e.preventDefault();
         if (e.touches.length === 1 && isDragging) {
           const dx = e.touches[0].clientX - lastMX;
@@ -280,8 +280,16 @@ export default function CoverJamStudio() {
           lastTouchDist = dist;
           updateCamera();
         }
-      }, { passive: false });
-      renderer.domElement.addEventListener("touchend", () => { isDragging = false; });
+      };
+      const handleTouchEnd = () => { isDragging = false; };
+
+      renderer.domElement.addEventListener("mousedown", handleMouseDown);
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+      renderer.domElement.addEventListener("wheel", handleWheel);
+      renderer.domElement.addEventListener("touchstart", handleTouchStart);
+      renderer.domElement.addEventListener("touchmove", handleTouchMove, { passive: false });
+      renderer.domElement.addEventListener("touchend", handleTouchEnd);
 
       // Animation
       let beatCount = 0;
@@ -325,6 +333,14 @@ export default function CoverJamStudio() {
       return () => {
         cancelled = true;
         cancelAnimationFrame(animationId);
+        renderer.domElement.removeEventListener("click", handleClick);
+        renderer.domElement.removeEventListener("mousedown", handleMouseDown);
+        window.removeEventListener("mousemove", handleMouseMove);
+        window.removeEventListener("mouseup", handleMouseUp);
+        renderer.domElement.removeEventListener("wheel", handleWheel);
+        renderer.domElement.removeEventListener("touchstart", handleTouchStart);
+        renderer.domElement.removeEventListener("touchmove", handleTouchMove);
+        renderer.domElement.removeEventListener("touchend", handleTouchEnd);
         window.removeEventListener("resize", handleResize);
         if (container.contains(renderer.domElement)) container.removeChild(renderer.domElement);
         renderer.dispose();

@@ -207,14 +207,14 @@ export default function DJStudio() {
       const updateCamera = () => {
         const x = sphericalRadius * Math.sin(sphericalPhi) * Math.sin(sphericalTheta);
         const y = sphericalRadius * Math.cos(sphericalPhi);
-        const z = sphericalRadius * Math.sin(sphericalPhi) * Math.cos(sphericalPhi);
+        const z = sphericalRadius * Math.sin(sphericalPhi) * Math.cos(sphericalTheta);
         camera.position.set(TARGET[0] + x, TARGET[1] + y, TARGET[2] + z);
         camera.lookAt(TARGET[0], TARGET[1], TARGET[2]);
       };
       updateCamera();
 
-      renderer.domElement.addEventListener("mousedown", (e: MouseEvent) => { isDragging = true; lastMX = e.clientX; lastMY = e.clientY; });
-      window.addEventListener("mousemove", (e: MouseEvent) => {
+      const handleMouseDown = (e: MouseEvent) => { isDragging = true; lastMX = e.clientX; lastMY = e.clientY; };
+      const handleMouseMove = (e: MouseEvent) => {
         if (!isDragging) return;
         const dx = e.clientX - lastMX;
         const dy = e.clientY - lastMY;
@@ -223,24 +223,24 @@ export default function DJStudio() {
         lastMX = e.clientX;
         lastMY = e.clientY;
         updateCamera();
-      });
-      window.addEventListener("mouseup", () => { isDragging = false; });
-      renderer.domElement.addEventListener("wheel", (e: WheelEvent) => {
+      };
+      const handleMouseUp = () => { isDragging = false; };
+      const handleWheel = (e: WheelEvent) => {
         sphericalRadius = Math.max(4, Math.min(15, sphericalRadius + e.deltaY * 0.01));
         updateCamera();
-      });
+      };
 
       // Touch support
       let lastTouchDist = 0;
-      renderer.domElement.addEventListener("touchstart", (e: TouchEvent) => {
+      const handleTouchStart = (e: TouchEvent) => {
         if (e.touches.length === 1) { isDragging = true; lastMX = e.touches[0].clientX; lastMY = e.touches[0].clientY; }
         if (e.touches.length === 2) {
           const dx = e.touches[0].clientX - e.touches[1].clientX;
           const dy = e.touches[0].clientY - e.touches[1].clientY;
           lastTouchDist = Math.sqrt(dx * dx + dy * dy);
         }
-      });
-      renderer.domElement.addEventListener("touchmove", (e: TouchEvent) => {
+      };
+      const handleTouchMove = (e: TouchEvent) => {
         e.preventDefault();
         if (e.touches.length === 1 && isDragging) {
           const dx = e.touches[0].clientX - lastMX;
@@ -259,8 +259,16 @@ export default function DJStudio() {
           lastTouchDist = dist;
           updateCamera();
         }
-      }, { passive: false });
-      renderer.domElement.addEventListener("touchend", () => { isDragging = false; });
+      };
+      const handleTouchEnd = () => { isDragging = false; };
+
+      renderer.domElement.addEventListener("mousedown", handleMouseDown);
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+      renderer.domElement.addEventListener("wheel", handleWheel);
+      renderer.domElement.addEventListener("touchstart", handleTouchStart);
+      renderer.domElement.addEventListener("touchmove", handleTouchMove, { passive: false });
+      renderer.domElement.addEventListener("touchend", handleTouchEnd);
 
       // Animation loop
       let lastTime = performance.now();
@@ -307,6 +315,13 @@ export default function DJStudio() {
       return () => {
         cancelled = true;
         cancelAnimationFrame(animationId);
+        window.removeEventListener("mousemove", handleMouseMove);
+        window.removeEventListener("mouseup", handleMouseUp);
+        renderer.domElement.removeEventListener("mousedown", handleMouseDown);
+        renderer.domElement.removeEventListener("wheel", handleWheel);
+        renderer.domElement.removeEventListener("touchstart", handleTouchStart);
+        renderer.domElement.removeEventListener("touchmove", handleTouchMove);
+        renderer.domElement.removeEventListener("touchend", handleTouchEnd);
         window.removeEventListener("resize", handleResize);
         if (container.contains(renderer.domElement)) container.removeChild(renderer.domElement);
         renderer.dispose();

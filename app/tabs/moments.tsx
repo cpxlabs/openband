@@ -1,8 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
-import { View, Text, Pressable, ScrollView } from "react-native";
+import { View, Text, Pressable, ScrollView, RefreshControl } from "react-native";
 import { useRouter } from "expo-router";
-import { PageHeader, NewProject, SamplePackCard } from "../../src/components";
-import { MomentCard } from "../../src/components";
+import { PageHeader, NewProject, SamplePackCard, MomentCard, Loading, EmptyState } from "../../src/components";
 import type { MomentData } from "../../src/components/MomentCard";
 import { fetchFeed } from "../../src/lib/feedApi";
 import { GENRES } from "../../src/lib/projectTemplates";
@@ -174,6 +173,8 @@ export default function Moments() {
   const { t } = useTranslation();
   const [tab, setTab] = useState<"moments" | "packs">("moments");
   const [moments, setMoments] = useState<MomentData[]>(MOCK_MOMENTS);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [credits, setCredits] = useState<{ artist: string; sample: string }[]>(
     [],
   );
@@ -183,21 +184,30 @@ export default function Moments() {
     genre?: GenreTemplate;
   }>({});
 
-  useEffect(() => {
-    let cancelled = false;
-    fetchFeed({ type: "moment" })
+  const loadMoments = useCallback(() => {
+    setLoading(true);
+    return fetchFeed({ type: "moment" })
       .then((res) => {
-        if (!cancelled && Array.isArray(res.posts) && res.posts.length > 0) {
+        if (Array.isArray(res.posts) && res.posts.length > 0) {
           setMoments(res.posts as MomentData[]);
+        } else {
+          setMoments(MOCK_MOMENTS);
         }
       })
       .catch(() => {
-        if (!cancelled) setMoments(MOCK_MOMENTS);
-      });
-    return () => {
-      cancelled = true;
-    };
+        setMoments(MOCK_MOMENTS);
+      })
+      .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    loadMoments();
+  }, [loadMoments]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    loadMoments().finally(() => setRefreshing(false));
+  }, [loadMoments]);
 
   const handleUsePack = useCallback(
     (pack: (typeof FREE_SAMPLE_PACKS)[0], sampleName: string) => {
@@ -318,6 +328,14 @@ export default function Moments() {
         className="flex-1"
         contentContainerStyle={{ paddingBottom: SCREEN_BOTTOM_PADDING, flexGrow: 1 }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#ffffff"
+            colors={["#ffffff"]}
+          />
+        }
         style={{
           maxWidth: LAYOUT_MAX_WIDTHS.moments,
           alignSelf: "center",
@@ -325,11 +343,21 @@ export default function Moments() {
         }}
       >
         {tab === "moments" ? (
-          <View className="px-4 tablet:px-6">
-            {moments.map((moment) => (
-              <MomentCard key={moment.id} moment={moment} />
-            ))}
-          </View>
+          loading ? (
+            <Loading message={t("moments.loading", "Carregando momentos...")} />
+          ) : moments.length === 0 ? (
+            <EmptyState
+              icon="🎵"
+              title={t("moments.emptyTitle", "Nenhum momento ainda")}
+              subtitle={t("moments.emptySubtitle", "Os artistas ainda não publicaram momentos.")}
+            />
+          ) : (
+            <View className="px-4 tablet:px-6">
+              {moments.map((moment) => (
+                <MomentCard key={moment.id} moment={moment} />
+              ))}
+            </View>
+          )
         ) : (
           <View
             className="px-4 tablet:px-6 gap-3 tablet:flex-row tablet:flex-wrap tablet:gap-4"

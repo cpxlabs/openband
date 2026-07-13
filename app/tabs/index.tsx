@@ -8,6 +8,7 @@ import {
   ScrollView,
   Share,
   Platform,
+  RefreshControl,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../src/context/AuthContext";
@@ -182,6 +183,8 @@ const MOCK_POSTS: FeedPost[] = [
     ...GENRES.map((g) => ({ id: g.id, label: g.name, icon: g.icon })),
   ];
 
+const FEED_PAGE_SIZE = 6;
+
 type SortMode = "recent" | "popular" | "genre";
 
 
@@ -236,25 +239,34 @@ export default function Feed() {
   const [sortMode, setSortMode] = useState<SortMode>("recent");
   const [posts, setPosts] = useState(MOCK_POSTS);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(FEED_PAGE_SIZE);
   const currentPostRef = useRef<FeedPost | undefined>(undefined);
 
-  useEffect(() => {
-    let cancelled = false;
+  const loadFeed = useCallback(() => {
     setLoading(true);
-    fetchFeed({})
+    return fetchFeed({})
       .then((res) => {
-        if (!cancelled && Array.isArray(res.posts) && res.posts.length > 0) {
+        if (Array.isArray(res.posts) && res.posts.length > 0) {
           setPosts(res.posts as FeedPost[]);
         }
       })
       .catch(() => {})
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
+      .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    loadFeed();
+  }, [loadFeed]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    loadFeed().finally(() => setRefreshing(false));
+  }, [loadFeed]);
+
+  useEffect(() => {
+    setVisibleCount(FEED_PAGE_SIZE);
+  }, [genreFilter, sortMode]);
 
   const filteredPosts = useMemo(() => {
     let result =
@@ -268,6 +280,15 @@ export default function Feed() {
     }
     return result;
   }, [posts, genreFilter, sortMode]);
+
+  const visiblePosts = useMemo(
+    () => filteredPosts.slice(0, visibleCount),
+    [filteredPosts, visibleCount],
+  );
+
+  const handleEndReached = useCallback(() => {
+    setVisibleCount((c) => Math.min(c + FEED_PAGE_SIZE, filteredPosts.length));
+  }, [filteredPosts.length]);
 
   const playingRef = useRef(playing);
   playingRef.current = playing;
@@ -577,12 +598,23 @@ export default function Feed() {
             key={resp.numColumns}
             numColumns={resp.numColumns}
             columnWrapperStyle={resp.numColumns > 1 ? { gap: 12 } : undefined}
-            data={filteredPosts}
+            data={visiblePosts}
             keyExtractor={(item) => item.id}
             contentContainerStyle={{
               paddingBottom: SCREEN_BOTTOM_PADDING,
               paddingHorizontal: resp.isDesktop ? 16 : 0,
             }}
+            onEndReached={handleEndReached}
+            onEndReachedThreshold={0.5}
+            refreshing={refreshing}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor="#ffffff"
+                colors={["#ffffff"]}
+              />
+            }
             ListEmptyComponent={
               loading ? (
                 <Loading message={t("feed.loadingFeed", "Carregando feed...")} />

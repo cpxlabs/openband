@@ -183,8 +183,7 @@ export default function AutoTuneStudio() {
       // Retune mode state
       let retuneMode = 0;
 
-      // Click handling for dial and pads
-      renderer.domElement.addEventListener("click", (e: MouseEvent) => {
+      const handleClick = (e: MouseEvent) => {
         const rect = renderer.domElement.getBoundingClientRect();
         const mouse = new THREE.Vector2(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
         const raycaster = new THREE.Raycaster();
@@ -217,7 +216,7 @@ export default function AutoTuneStudio() {
             return;
           }
         }
-      });
+      };
 
       // Orbit controls
       let sphericalTheta = 0.3;
@@ -237,19 +236,24 @@ export default function AutoTuneStudio() {
       };
       updateCamera();
 
-      renderer.domElement.addEventListener("mousedown", (e: MouseEvent) => { isDragging = true; lastMX = e.clientX; lastMY = e.clientY; });
-      window.addEventListener("mousemove", (e: MouseEvent) => {
+      const handleMouseDown = (e: MouseEvent) => { isDragging = true; lastMX = e.clientX; lastMY = e.clientY; };
+      const handleMouseMove = (e: MouseEvent) => {
         if (!isDragging) return;
         sphericalTheta -= (e.clientX - lastMX) * 0.005;
         sphericalPhi = Math.max(0.2, Math.min(Math.PI / 2 - 0.05, sphericalPhi - (e.clientY - lastMY) * 0.005));
         lastMX = e.clientX; lastMY = e.clientY;
         updateCamera();
-      });
-      window.addEventListener("mouseup", () => { isDragging = false; });
-      renderer.domElement.addEventListener("wheel", (e: WheelEvent) => {
+      };
+      const handleMouseUp = () => { isDragging = false; };
+      const handleWheel = (e: WheelEvent) => {
         sphericalRadius = Math.max(4, Math.min(15, sphericalRadius + e.deltaY * 0.01));
         updateCamera();
-      });
+      };
+      renderer.domElement.addEventListener("click", handleClick);
+      renderer.domElement.addEventListener("mousedown", handleMouseDown);
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+      renderer.domElement.addEventListener("wheel", handleWheel);
 
       // Animation
       function animate(time: number) {
@@ -285,6 +289,11 @@ export default function AutoTuneStudio() {
       return () => {
         cancelled = true;
         cancelAnimationFrame(animationId);
+        renderer.domElement.removeEventListener("click", handleClick);
+        renderer.domElement.removeEventListener("mousedown", handleMouseDown);
+        window.removeEventListener("mousemove", handleMouseMove);
+        window.removeEventListener("mouseup", handleMouseUp);
+        renderer.domElement.removeEventListener("wheel", handleWheel);
         window.removeEventListener("resize", handleResize);
         if (container.contains(renderer.domElement)) container.removeChild(renderer.domElement);
         renderer.dispose();
