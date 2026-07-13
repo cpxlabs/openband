@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { addSceneBulb, addRGBStrip } from "../src/lib/sceneLighting";
 import LightControls from "../src/components/LightControls";
 import { Screen3DFallback } from "../src/components";
+import { loadThree } from "../src/lib/loadThree";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ThreeAny = any;
@@ -37,11 +38,6 @@ const FURNITURE: FurnitureDef[] = [
   { id: "coverjam", name: "Cover Jam", icon: "🎬", x: 2, y: 0, z: 3.5, w: 1.5, h: 0.3, d: 1, color: "#00e5ff", route: "/cover-jam" },
 ];
 
-const THREE_CDNS = [
-  "https://unpkg.com/three@0.160.0/build/three.module.js",
-  "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.js",
-  "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-];
 const GRID_SIZE = 16;
 const FLOOR_COLOR = 0x1e293b;
 const GRID_COLOR_MAIN = 0x334155;
@@ -82,19 +78,6 @@ export default function VirtualStudio() {
 
     let cancelled = false;
     let animationId = 0;
-
-    async function loadThree(): Promise<ThreeAny> {
-
-      for (const url of THREE_CDNS) {
-        try {
-          const mod = await new Function('url', 'return import(url)')(url);
-          return mod;
-        } catch {
-          continue;
-        }
-      }
-      throw new Error("Failed to load Three.js from all CDN sources");
-    }
 
     async function init() {
       const container = containerRef.current!;

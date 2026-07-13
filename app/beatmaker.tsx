@@ -4,15 +4,10 @@ import { useRouter } from "expo-router";
 import { addSceneBulb, addRGBStrip } from "../src/lib/sceneLighting";
 import LightControls from "../src/components/LightControls";
 import { Screen3DFallback } from "../src/components";
+import { loadThree } from "../src/lib/loadThree";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ThreeAny = any;
-
-const THREE_CDNS = [
-  "https://unpkg.com/three@0.160.0/build/three.module.js",
-  "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.js",
-  "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-];
 
 const ACCENT = 0xff0055;
 const ROOM_W = 12;
@@ -31,19 +26,6 @@ export default function BeatmakerStudio() {
 
     let cancelled = false;
     let animationId = 0;
-
-    async function loadThree(): Promise<ThreeAny> {
-
-      for (const url of THREE_CDNS) {
-        try {
-          const mod = await new Function('url', 'return import(url)')(url);
-          return mod;
-        } catch {
-          continue;
-        }
-      }
-      throw new Error("Failed to load Three.js from all CDN sources");
-    }
 
     async function init() {
       const container = containerRef.current!;
