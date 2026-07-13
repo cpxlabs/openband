@@ -1,6 +1,6 @@
 import { chromium } from "playwright";
 import { createServer } from "http";
-import { readFileSync, existsSync } from "fs";
+import { readFileSync, existsSync, mkdirSync } from "fs";
 import { join, extname } from "path";
 import { fileURLToPath } from "url";
 
@@ -10,8 +10,6 @@ const DIST = join(ROOT, "dist");
 const OUT = join(ROOT, "marketing", "screenshots");
 const PORT = 4173;
 const BASE = `http://localhost:${PORT}`;
-
-const CAPTURE_MODES = ["fullpage", "viewport", "sections"];
 
 const MIME_TYPES = {
   ".html": "text/html",
@@ -56,177 +54,88 @@ function startServer() {
   });
 }
 
-function routeToFilename(route) {
-  const path = route.split("?")[0].split("#")[0];
-  return path.replace(/^\//, "").replace(/\//g, "-") || "index";
-}
+const VISITOR_SESSION = JSON.stringify({
+  id: "00000000-0000-4000-8000-000000000001",
+  createdAt: new Date().toISOString(),
+});
 
-function parseArgs() {
-  const args = process.argv.slice(2);
-  let mode = "fullpage";
-  let maxHeight = 10000;
-  const routes = [];
+const MOBILE = { width: 390, height: 844 };
+const DESKTOP = { width: 1280, height: 800 };
 
-  for (const a of args) {
-    if (a.startsWith("--mode=")) {
-      const m = a.split("=")[1];
-      if (CAPTURE_MODES.includes(m)) mode = m;
-    } else if (a.startsWith("--max-height=")) {
-      maxHeight = parseInt(a.split("=")[1], 10) || 10000;
-    } else if (a === "--viewport") {
-      mode = "viewport";
-    } else if (a === "--sections") {
-      mode = "sections";
-    } else if (a === "--fullpage") {
-      mode = "fullpage";
-    } else if (!a.startsWith("--")) {
-      routes.push(a);
-    }
-  }
+const SCREENS = [
+  { folder: "auth", name: "login.png", route: "/login", viewport: MOBILE, visitor: false },
+  { folder: "tabs", name: "feed.png", route: "/tabs/feed", viewport: MOBILE },
+  { folder: "tabs", name: "momentos.png", route: "/tabs/moments", viewport: MOBILE },
+  { folder: "tabs", name: "biblioteca.png", route: "/tabs/library", viewport: MOBILE },
+  { folder: "tabs", name: "conta.png", route: "/tabs/account", viewport: MOBILE },
+  { folder: "tabs", name: "ajustes.png", route: "/tabs/settings", viewport: MOBILE },
+  { folder: "tabs", name: "modos.png", route: "/tabs/modes", viewport: MOBILE },
+  { folder: "tabs", name: "explorer-tab.png", route: "/tabs/explorer", viewport: DESKTOP },
+  { folder: "tabs", name: "3d-studio-tab.png", route: "/tabs/virtual-studio", viewport: DESKTOP },
+  { folder: "stack", name: "stem-extractor.png", route: "/extractor", viewport: MOBILE },
+  { folder: "stack", name: "daw-studio.png", route: "/studio/1", viewport: DESKTOP },
+  { folder: "stack", name: "mastering-suite.png", route: "/mastering", viewport: DESKTOP },
+  { folder: "creative", name: "beatmaker.png", route: "/beatmaker", viewport: DESKTOP },
+  { folder: "creative", name: "synth-lab.png", route: "/synth-lab", viewport: DESKTOP },
+  { folder: "creative", name: "mixing-console.png", route: "/mixing-console", viewport: DESKTOP },
+  { folder: "creative", name: "dj-stage.png", route: "/dj-stage", viewport: DESKTOP },
+  { folder: "creative", name: "autotune.png", route: "/autotune", viewport: DESKTOP },
+  { folder: "creative", name: "live-room.png", route: "/live-room", viewport: DESKTOP },
+  { folder: "creative", name: "spatial-audio.png", route: "/spatial-audio", viewport: DESKTOP },
+  { folder: "creative", name: "stem-collider.png", route: "/stem-collider", viewport: DESKTOP },
+  { folder: "creative", name: "lofi-tape.png", route: "/lofi-tape", viewport: DESKTOP },
+  { folder: "creative", name: "acoustics-lab.png", route: "/acoustics", viewport: DESKTOP },
+  { folder: "creative", name: "cover-jam.png", route: "/cover-jam", viewport: DESKTOP },
+  { folder: "creative", name: "vocal-booth.png", route: "/vocal-booth", viewport: DESKTOP },
+  { folder: "creative", name: "explorer-missao.png", route: "/explorer", viewport: DESKTOP },
+];
 
-  return { mode, maxHeight, routes: routes.length > 0 ? routes : ["/tabs", "/mastering"] };
-}
+async function captureScreen(browser, screen) {
+  const page = await browser.newPage({ viewport: screen.viewport });
+  page.on("pageerror", (err) => console.log(`  [page error @ ${screen.route}]`, err.message));
 
-async function getContentHeight(page, maxHeight) {
-  return page.evaluate((h) => {
-    document.documentElement.style.overflow = "visible";
-    document.documentElement.style.height = "auto";
-    document.body.style.overflow = "visible";
-    document.body.style.height = "auto";
-    const root = document.getElementById("root");
-    if (root) {
-      root.style.height = "auto";
-      root.style.flex = "none";
-      root.style.minHeight = "auto";
-    }
-
-    // 1. Measure the bottom-most element bounding rect
-    let maxBottom = 0;
-    const all = document.querySelectorAll("*");
-    for (let i = 0; i < all.length; i++) {
-      const el = all[i];
-      if (!(el instanceof HTMLElement)) continue;
-      const r = el.getBoundingClientRect();
-      const b = r.top + r.height;
-      if (b > maxBottom) maxBottom = b;
-    }
-
-    // 2. Account for scroll containers whose content is clipped
-    //    (RNW ScrollViews have fixed height + overflow — getBoundingClientRect
-    //     only measures the visible rect, not the scrollable content underneath)
-    let maxContentBottom = maxBottom;
-    for (let i = 0; i < all.length; i++) {
-      const el = all[i];
-      if (!(el instanceof HTMLElement)) continue;
-      if (el.scrollHeight > el.clientHeight + 2) {
-        const rect = el.getBoundingClientRect();
-        const containerBottom = rect.top + el.clientHeight;
-        const hiddenOverflow = el.scrollHeight - el.clientHeight;
-        const contentBottom = containerBottom + hiddenOverflow;
-        if (contentBottom > maxContentBottom) maxContentBottom = contentBottom;
+  await page.addInitScript((session) => {
+    try {
+      if (session) {
+        localStorage.setItem("openband_visitor_session", session);
+      } else {
+        localStorage.removeItem("openband_visitor_session");
       }
-    }
+    } catch {}
+  }, screen.visitor === false ? null : VISITOR_SESSION);
 
-    return Math.min(Math.ceil(maxContentBottom), h);
-  }, maxHeight);
-}
-
-async function captureFullPage(page, route, maxHeight = 10000) {
-  const filename = routeToFilename(route);
-
-  await page.goto(`${BASE}${route}`, { waitUntil: "networkidle", timeout: 30000 });
-  await page.waitForTimeout(3000);
-
-  // Wait for actual UI content to render — not just spinners
   try {
-    await page.waitForSelector("text=Mastering Suite", { timeout: 5000 }).catch(() => {});
-    await page.waitForSelector("text=OpenBand", { timeout: 5000 }).catch(() => {});
-  } catch {}
-
-  // Measure actual content height and resize viewport to fit
-  const contentHeight = await getContentHeight(page, maxHeight);
-  await page.setViewportSize({ width: 1440, height: contentHeight });
-  await page.waitForTimeout(500);
-
-  await page.screenshot({
-    path: join(OUT, `${filename}.png`),
-    fullPage: false,
-  });
-  console.log(`  ✓ ${filename}.png (${1440}x${contentHeight}, max ${maxHeight}px)`);
-}
-
-async function captureViewport(page, route) {
-  const filename = routeToFilename(route);
-  await page.screenshot({
-    path: join(OUT, `${filename}.png`),
-    fullPage: false,
-  });
-  console.log(`  ✓ ${filename}.png (viewport)`);
-}
-
-async function captureSections(page, route) {
-  const filename = routeToFilename(route);
-  const { scrollHeight } = await page.evaluate(() => ({
-    scrollHeight: document.documentElement.scrollHeight,
-  }));
-  const viewportHeight = 900;
-  const sections = Math.ceil(scrollHeight / viewportHeight);
-
-  for (let i = 0; i < sections; i++) {
-    await page.evaluate((y) => window.scrollTo(0, y), i * viewportHeight);
-    await page.waitForTimeout(500);
-    await page.screenshot({
-      path: join(OUT, `${filename}-section-${i + 1}.png`),
-      fullPage: false,
-    });
-    console.log(`  ✓ ${filename}-section-${i + 1}.png (section ${i + 1}/${sections})`);
+    await page.goto(`${BASE}${screen.route}`, { waitUntil: "networkidle", timeout: 30000 });
+  } catch (e) {
+    console.log(`  [goto timeout @ ${screen.route}] continuing`);
   }
-}
 
-async function captureRoutes(browser, mode, maxHeight, routes) {
-  const page = await browser.newPage({
-    viewport: { width: 1440, height: 900 },
-  });
-
-  page.on("console", (msg) => {
-    if (msg.type() === "error") console.log("  [console.error]", msg.text());
-  });
-  page.on("pageerror", (err) => console.log("  [page error]", err.message));
-
-  // Set visitor session before any SPA JavaScript runs
-  await page.addInitScript(() => {
-    localStorage.setItem(
-      "openband_visitor_session",
-      JSON.stringify({
-        id: "00000000-0000-4000-8000-000000000001",
-        createdAt: new Date().toISOString(),
-      }),
+  try {
+    await page.waitForFunction(
+      () => (document.getElementById("root")?.childElementCount ?? 0) > 0,
+      { timeout: 20000 },
     );
-  });
-
-  const capturers = {
-    fullpage: (p, r) => captureFullPage(p, r, maxHeight),
-    viewport: captureViewport,
-    sections: captureSections,
-  };
-  const capture = capturers[mode];
-
-  for (const route of routes) {
-    console.log(`\nNavigating to ${route}...`);
-    await page.goto(`${BASE}${route}`, { waitUntil: "networkidle", timeout: 30000 });
-    await page.waitForTimeout(3000);
-    await capture(page, route);
+  } catch {
+    console.log(`  [root empty @ ${screen.route}]`);
   }
+  await page.waitForTimeout(2000);
+
+  const outPath = join(OUT, screen.folder, screen.name);
+  mkdirSync(join(OUT, screen.folder), { recursive: true });
+  await page.screenshot({ path: outPath, fullPage: false });
+  await page.close();
+  console.log(`  ✓ ${screen.folder}/${screen.name} (${screen.viewport.width}x${screen.viewport.height})`);
 }
 
 async function takeScreenshots() {
   const server = await startServer();
   const browser = await chromium.launch({ headless: true });
 
-  const { mode, maxHeight, routes } = parseArgs();
-
   try {
-    await captureRoutes(browser, mode, maxHeight, routes);
+    for (const screen of SCREENS) {
+      console.log(`\nNavigating to ${screen.route}...`);
+      await captureScreen(browser, screen);
+    }
   } finally {
     await browser.close();
     server.close();
