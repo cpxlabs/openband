@@ -137,25 +137,10 @@ export default function Studio() {
   const liveRecordingDataRef = useRef<Float32Array[]>([]);
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
   const [bottomTab, setBottomTab] = useState<BottomTab>(initialBottomTab);
-  const {
-    showRecordOptions, setShowRecordOptions,
-    showBounce, setShowBounce,
-    showSampleBrowser, setShowSampleBrowser,
-    showCodeSampler, setShowCodeSampler,
-    showTuner, setShowTuner,
-    showLooper, setShowLooper,
-    showSampler, setShowSampler,
-    showSynth, setShowSynth,
-    showPromptSampler, setShowPromptSampler,
-    showCommandPalette, setShowCommandPalette,
-    showBranchManager, setShowBranchManager,
-    showCommitModal, setShowCommitModal,
-    showOutputSelector, setShowOutputSelector,
-    showPatchbay, setShowPatchbay,
-    showMidi, setShowMidi,
-    showToolbarOverflow, setShowToolbarOverflow,
-    showPianoRoll, setShowPianoRoll,
-  } = useStudioModals({ synth: rawTool === "synth", pianoRoll: rawTool === "piano" });
+  const { modals, openModal, closeModal, toggleModal } = useStudioModals({
+    synth: rawTool === "synth",
+    pianoRoll: rawTool === "piano",
+  });
   const [colorPickerTrackId, setColorPickerTrackId] = useState<string | null>(null);
   const [oneKnobValues, setOneKnobValues] = useState<
     Record<string, Record<string, number>>
@@ -319,9 +304,9 @@ export default function Studio() {
   }, [projectTitle, saveProjectNow]);
 
   useEffect(() => {
-    if (rawTool !== "piano" || editingMidiTrackId || !showPianoRoll) return;
+    if (rawTool !== "piano" || editingMidiTrackId || !modals.pianoRoll) return;
     setEditingMidiTrackId(tracks[0]?.id ?? null);
-  }, [rawTool, editingMidiTrackId, showPianoRoll, tracks]);
+  }, [rawTool, editingMidiTrackId, modals.pianoRoll, tracks]);
 
   const prevRegionUrlsRef = useRef<Set<string>>(new Set());
 
@@ -447,7 +432,7 @@ export default function Studio() {
   const toggleRecording = useCallback(async () => {
     try {
       if (!recordSettings.armed) {
-        setShowRecordOptions(true);
+        openModal("recordOptions");
         return;
       }
 
@@ -1176,7 +1161,7 @@ export default function Studio() {
 
   const handleOpenPianoRoll = useCallback((trackId: string) => {
     setEditingMidiTrackId(trackId);
-    setShowPianoRoll(true);
+    openModal("pianoRoll");
   }, []);
 
   const handlePianoRollChange = useCallback(
@@ -1203,21 +1188,21 @@ export default function Studio() {
       undo: undoHistory,
       redo: redoHistory,
       save: handleManualSave,
-      bounce: () => setShowBounce(true),
+      bounce: () => openModal("bounce"),
       escape: () => {
         setEditingPlugin(null);
-        setShowRecordOptions(false);
-        setShowBounce(false);
-        setShowSampleBrowser(false);
-        setShowCodeSampler(false);
-        setShowTuner(false);
-        setShowLooper(false);
-        setShowSampler(false);
-        setShowSynth(false);
-        setShowPianoRoll(false);
-        setShowCommandPalette(false);
-        setShowBranchManager(false);
-        setShowCommitModal(false);
+        closeModal("recordOptions");
+        closeModal("bounce");
+        closeModal("sampleBrowser");
+        closeModal("codeSampler");
+        closeModal("tuner");
+        closeModal("looper");
+        closeModal("sampler");
+        closeModal("synth");
+        closeModal("pianoRoll");
+        closeModal("commandPalette");
+        closeModal("branchManager");
+        closeModal("commitModal");
         setEditingMidiTrackId(null);
       },
       toggleMute: selectedTrack
@@ -1254,16 +1239,16 @@ export default function Studio() {
     registerCommand("track.solo", "Solo Track", "Toggle solo on selected track", "Track", () => selectedTrack && toggleSolo(selectedTrack.id));
     registerCommand("mixer.open", "Open Mixer", "Switch to mixer view", "View", () => setBottomTab("mixer"), "Ctrl+M");
     registerCommand("file.save", "Save", "Save current project", "File", handleManualSave, "Ctrl+S");
-    registerCommand("file.export", "Export", "Open export/bounce dialog", "File", () => setShowBounce(true), "Ctrl+Shift+E");
-    registerCommand("file.branch", "Branch Manager", "Open project branching", "File", () => setShowBranchManager(true), "Ctrl+B");
-    registerCommand("file.commit", "Commit Changes", "Open commit modal", "File", () => setShowCommitModal(true), "Ctrl+Shift+C");
-    registerCommand("view.browser", "Sample Browser", "Toggle sample browser", "View", () => setShowSampleBrowser((p) => !p), "Ctrl+I");
-    registerCommand("palette.toggle", "Command Palette", "Open command palette", "System", () => setShowCommandPalette(true), "Ctrl+K");
+    registerCommand("file.export", "Export", "Open export/bounce dialog", "File", () => openModal("bounce"), "Ctrl+Shift+E");
+    registerCommand("file.branch", "Branch Manager", "Open project branching", "File", () => openModal("branchManager"), "Ctrl+B");
+    registerCommand("file.commit", "Commit Changes", "Open commit modal", "File", () => openModal("commitModal"), "Ctrl+Shift+C");
+    registerCommand("view.browser", "Sample Browser", "Toggle sample browser", "View", () => toggleModal("sampleBrowser"), "Ctrl+I");
+    registerCommand("palette.toggle", "Command Palette", "Open command palette", "System", () => openModal("commandPalette"), "Ctrl+K");
     initKeyBindings();
     return () => {
       disposeKeyBindings();
     };
-  }, [togglePlay, toggleRecording, undoHistory, redoHistory, handleManualSave, selectedTrack, toggleMute, toggleSolo, deleteTrack, handleAddTrack, setBottomTab, setShowBounce, setShowBranchManager, setShowCommitModal, setShowSampleBrowser, setShowCommandPalette]);
+  }, [togglePlay, toggleRecording, undoHistory, redoHistory, handleManualSave, selectedTrack, toggleMute, toggleSolo, deleteTrack, handleAddTrack, setBottomTab, openModal, toggleModal, closeModal]);
 
   const getEffectiveVolume = useCallback((trackId: string): number => {
     const gv = getGroupVolume(groups, trackId);
@@ -1429,13 +1414,13 @@ export default function Studio() {
             onCompare={handleCompareMix}
           />
           <Pressable
-            onPress={() => setShowTuner(true)}
+            onPress={() => openModal("tuner")}
             className="h-8 rounded-lg items-center justify-center px-2 bg-dark-muted"
           >
             <Text className="text-gray-300 text-xs">🎵</Text>
           </Pressable>
           <Pressable
-            onPress={() => setShowCommandPalette(true)}
+            onPress={() => openModal("commandPalette")}
             accessibilityRole="button"
             accessibilityLabel="Abrir paleta de comandos"
             className="h-8 rounded-lg items-center justify-center px-2 bg-dark-muted active:opacity-70 focus-ring"
@@ -1443,71 +1428,71 @@ export default function Studio() {
             <Text className="text-gray-300 text-xs font-bold">⌘K</Text>
           </Pressable>
           <Pressable
-            onPress={() => setShowBranchManager(true)}
+            onPress={() => openModal("branchManager")}
             className="h-8 rounded-lg items-center justify-center px-2 bg-dark-muted active:opacity-70"
           >
             <Text className="text-gray-300 text-xs">⎇</Text>
           </Pressable>
           <Pressable
-            onPress={() => setShowCommitModal(true)}
+            onPress={() => openModal("commitModal")}
             className="h-8 rounded-lg items-center justify-center px-2 bg-dark-muted active:opacity-70"
           >
             <Text className="text-gray-300 text-xs">✓</Text>
           </Pressable>
           <Pressable
-            onPress={() => setShowSampler(true)}
+            onPress={() => openModal("sampler")}
             className="h-8 rounded-lg items-center justify-center px-2 bg-dark-muted active:opacity-70"
           >
             <Text className="text-gray-300 text-xs">🎛️</Text>
           </Pressable>
           <Pressable
-            onPress={() => setShowSynth(true)}
+            onPress={() => openModal("synth")}
             className="h-8 rounded-lg items-center justify-center px-2 bg-dark-muted active:opacity-70"
           >
             <Text className="text-gray-300 text-xs">🎹</Text>
           </Pressable>
             <Pressable
-              onPress={() => setShowOutputSelector(true)}
+              onPress={() => openModal("outputSelector")}
               className="h-8 rounded-lg items-center justify-center px-2 bg-dark-muted active:opacity-70"
             >
               <Text className="text-gray-300 text-xs">🔊</Text>
             </Pressable>
             <Pressable
-              onPress={() => setShowPatchbay(true)}
+              onPress={() => openModal("patchbay")}
               className="h-8 rounded-lg items-center justify-center px-2 bg-dark-muted active:opacity-70"
             >
               <Text className="text-gray-300 text-xs">🔌</Text>
             </Pressable>
             <Pressable
-              onPress={() => setShowMidi(true)}
+              onPress={() => openModal("midi")}
               className="h-8 rounded-lg items-center justify-center px-2 bg-dark-muted active:opacity-70"
             >
               <Text className="text-gray-300 text-xs">🎹</Text>
             </Pressable>
           <Pressable
-            onPress={() => setShowLooper(true)}
+            onPress={() => openModal("looper")}
             className="h-8 rounded-lg items-center justify-center px-2 bg-dark-muted active:opacity-70"
           >
             <Text className="text-gray-300 text-xs">🔁</Text>
           </Pressable>
           <Pressable
-            onPress={() => setShowCodeSampler(true)}
+            onPress={() => openModal("codeSampler")}
             className="w-8 h-8 rounded-lg bg-dark-muted items-center justify-center active:opacity-70"
           >
             <Text className="text-gray-400 text-xs">⌨</Text>
           </Pressable>
           <Pressable
-            onPress={() => setShowPromptSampler(true)}
+            onPress={() => openModal("promptSampler")}
             className="w-8 h-8 rounded-lg bg-brand-accent/20 items-center justify-center active:opacity-70"
           >
             <Text className="text-brand-accent text-xs">✨</Text>
           </Pressable>
           <Pressable
-            onPress={() => setShowSampleBrowser((prev) => !prev)}
-            className={`w-8 h-8 rounded-lg items-center justify-center ${showSampleBrowser ? "bg-brand-accent/30 border border-brand-accent" : "bg-dark-muted active:opacity-70"}`}
+            onPress={() => toggleModal("sampleBrowser")}
+            className={`w-8 h-8 rounded-lg items-center justify-center ${modals.sampleBrowser ? "bg-brand-accent/30 border border-brand-accent" : "bg-dark-muted active:opacity-70"}`}
           >
             <Text
-              className={`text-xs ${showSampleBrowser ? "text-brand-accent" : "text-gray-400"}`}
+              className={`text-xs ${modals.sampleBrowser ? "text-brand-accent" : "text-gray-400"}`}
             >
               📂
             </Text>
@@ -1516,7 +1501,7 @@ export default function Studio() {
 
         {!resp.isDesktop && (
           <Pressable
-            onPress={() => setShowToolbarOverflow(true)}
+            onPress={() => openModal("toolbarOverflow")}
             accessibilityRole="button"
             accessibilityLabel="Mais ferramentas"
             className="h-8 rounded-lg flex-row items-center justify-center px-2 bg-dark-muted active:opacity-70 focus-ring"
@@ -1526,35 +1511,35 @@ export default function Studio() {
         )}
 
         <Modal
-          visible={showToolbarOverflow}
+          visible={modals.toolbarOverflow}
           transparent
           animationType="fade"
-          onRequestClose={() => setShowToolbarOverflow(false)}
+          onRequestClose={() => closeModal("toolbarOverflow")}
         >
           <Pressable
             className="flex-1 bg-black/50"
-            onPress={() => setShowToolbarOverflow(false)}
+            onPress={() => closeModal("toolbarOverflow")}
           >
             <View className="mt-14 mr-2 ml-auto w-56 bg-dark-muted rounded-lg p-2 gap-1">
               {[
-                { label: "🎵  Afinador", action: () => setShowTuner(true) },
-                { label: "⌘K  Comandos", action: () => setShowCommandPalette(true) },
-                { label: "⎇  Branches", action: () => setShowBranchManager(true) },
-                { label: "✓  Commit", action: () => setShowCommitModal(true) },
-                { label: "🎛️  Sampler", action: () => setShowSampler(true) },
-                { label: "🎹  Synth", action: () => setShowSynth(true) },
-                { label: "🔊  Saída de áudio", action: () => setShowOutputSelector(true) },
-                { label: "🔌  Patchbay", action: () => setShowPatchbay(true) },
-                { label: "🎹  MIDI", action: () => setShowMidi(true) },
-                { label: "🔁  Looper", action: () => setShowLooper(true) },
-                { label: "⌨  Code Sampler", action: () => setShowCodeSampler(true) },
-                { label: "✨  Prompt Sampler", action: () => setShowPromptSampler(true) },
-                { label: "📂  Samples", action: () => setShowSampleBrowser((prev) => !prev) },
+                { label: "🎵  Afinador", action: () => openModal("tuner") },
+                { label: "⌘K  Comandos", action: () => openModal("commandPalette") },
+                { label: "⎇  Branches", action: () => openModal("branchManager") },
+                { label: "✓  Commit", action: () => openModal("commitModal") },
+                { label: "🎛️  Sampler", action: () => openModal("sampler") },
+                { label: "🎹  Synth", action: () => openModal("synth") },
+                { label: "🔊  Saída de áudio", action: () => openModal("outputSelector") },
+                { label: "🔌  Patchbay", action: () => openModal("patchbay") },
+                { label: "🎹  MIDI", action: () => openModal("midi") },
+                { label: "🔁  Looper", action: () => openModal("looper") },
+                { label: "⌨  Code Sampler", action: () => openModal("codeSampler") },
+                { label: "✨  Prompt Sampler", action: () => openModal("promptSampler") },
+                { label: "📂  Samples", action: () => toggleModal("sampleBrowser") },
               ].map((item) => (
                 <Pressable
                   key={item.label}
                   onPress={() => {
-                    setShowToolbarOverflow(false);
+                    closeModal("toolbarOverflow");
                     item.action();
                   }}
                   className="h-9 rounded-md px-3 justify-center active:opacity-70"
@@ -1633,7 +1618,7 @@ export default function Studio() {
 
         <View className="flex-row items-center gap-2">
           <Pressable
-            onPress={() => setShowBounce(true)}
+            onPress={() => openModal("bounce")}
             className="w-8 h-8 rounded-lg bg-dark-muted items-center justify-center active:opacity-70"
           >
             <Text className="text-gray-400 text-xs">📦</Text>
@@ -2011,14 +1996,14 @@ export default function Studio() {
         </ScrollView>
       </View>
 
-      {showSampleBrowser && (
+      {modals.sampleBrowser && (
         <View className="h-64 border-t border-dark-border bg-dark-bg">
           <View className="flex-row items-center justify-between px-4 py-1.5 border-b border-dark-border/50">
             <Text className="text-gray-500 text-[10px] font-bold uppercase tracking-wider">
               Sample Browser
             </Text>
             <Pressable
-              onPress={() => setShowSampleBrowser(false)}
+              onPress={() => closeModal("sampleBrowser")}
               className="w-6 h-6 items-center justify-center active:opacity-60"
             >
               <Text className="text-gray-500 text-xs">✕</Text>
@@ -2634,8 +2619,7 @@ export default function Studio() {
       <StudioModals
         recordSettings={recordSettings}
         setRecordSettings={setRecordSettings}
-        showRecordOptions={showRecordOptions}
-        setShowRecordOptions={setShowRecordOptions}
+        showRecordOptions={modals.recordOptions}
         editingPlugin={editingPlugin}
         handlePluginParamChange={handlePluginParamChange}
         handleTogglePlugin={handleTogglePlugin}
@@ -2643,50 +2627,37 @@ export default function Studio() {
         setEditingPluginSource={setEditingPluginSource}
         isPlaying={isPlaying}
         currentTime={currentTime}
-        showBounce={showBounce}
-        setShowBounce={setShowBounce}
+        showBounce={modals.bounce}
         projectTitle={projectTitle}
         duration={duration}
         tracks={tracks}
-        showCodeSampler={showCodeSampler}
-        setShowCodeSampler={setShowCodeSampler}
+        showCodeSampler={modals.codeSampler}
         handleCodeRender={handleCodeRender}
-        showPromptSampler={showPromptSampler}
-        setShowPromptSampler={setShowPromptSampler}
+        showPromptSampler={modals.promptSampler}
         handlePromptMidiRender={handlePromptMidiRender}
         bpm={metronome.bpm}
-        showTuner={showTuner}
-        setShowTuner={setShowTuner}
-        showSampler={showSampler}
-        setShowSampler={setShowSampler}
+        showTuner={modals.tuner}
+        showSampler={modals.sampler}
         setTracks={setTracks}
         setSelectedTrackId={setSelectedTrackId}
-        showSynth={showSynth}
-        setShowSynth={setShowSynth}
-        showLooper={showLooper}
-        setShowLooper={setShowLooper}
+        showSynth={modals.synth}
+        showLooper={modals.looper}
         currentMidiNotes={currentMidiNotes}
         handlePianoRollChange={handlePianoRollChange}
         projectKey={projectKey}
-        showPianoRoll={showPianoRoll}
-        setShowPianoRoll={setShowPianoRoll}
+        showPianoRoll={modals.pianoRoll}
         setEditingMidiTrackId={setEditingMidiTrackId}
         selectedMidiTrack={selectedMidiTrack}
-        showCommandPalette={showCommandPalette}
-        setShowCommandPalette={setShowCommandPalette}
-        showBranchManager={showBranchManager}
-        setShowBranchManager={setShowBranchManager}
-        showCommitModal={showCommitModal}
-        setShowCommitModal={setShowCommitModal}
-        showOutputSelector={showOutputSelector}
-        setShowOutputSelector={setShowOutputSelector}
-        showPatchbay={showPatchbay}
-        setShowPatchbay={setShowPatchbay}
+        showCommandPalette={modals.commandPalette}
+        showBranchManager={modals.branchManager}
+        showCommitModal={modals.commitModal}
+        showOutputSelector={modals.outputSelector}
+        showPatchbay={modals.patchbay}
         trackIds={trackIds}
-        showMidi={showMidi}
-        setShowMidi={setShowMidi}
+        showMidi={modals.midi}
         autoplayBlocked={autoplayBlocked}
         setAutoplayBlocked={setAutoplayBlocked}
+        closeModal={closeModal}
       />
       </View>
     </View>

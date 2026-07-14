@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useReducer } from "react";
 import type { Dispatch, SetStateAction, MutableRefObject } from "react";
 import { Alert } from "react-native";
 import { AudioModule, setAudioModeAsync } from "expo-audio";
@@ -364,66 +364,75 @@ export function useMixSnapshots(params: {
   return { handleSaveMix, handleLoadMix, handleDeleteMix, handleCompareMix };
 }
 
+export type ModalId =
+  | "recordOptions"
+  | "bounce"
+  | "sampleBrowser"
+  | "codeSampler"
+  | "tuner"
+  | "looper"
+  | "sampler"
+  | "synth"
+  | "promptSampler"
+  | "commandPalette"
+  | "branchManager"
+  | "commitModal"
+  | "outputSelector"
+  | "patchbay"
+  | "midi"
+  | "toolbarOverflow"
+  | "pianoRoll";
+
+type ModalState = Record<ModalId, boolean>;
+
+function modalReducer(
+  state: ModalState,
+  action: { type: "open" | "close" | "toggle"; id: ModalId },
+): ModalState {
+  switch (action.type) {
+    case "open":
+      return { ...state, [action.id]: true };
+    case "close":
+      return { ...state, [action.id]: false };
+    case "toggle":
+      return { ...state, [action.id]: !state[action.id] };
+  }
+}
+
 /**
- * Extracted modal/overlay boolean state for the Studio screen. All 17 modal
- * flags live here so call sites in `[id].tsx` stay unchanged. Setters from
- * `useState` are stable, so returning them directly preserves identity.
+ * Owns the 17 Studio modal/overlay open/closed flags in a single `useReducer`
+ * record. Exposes `modals` (read state), `openModal`, `closeModal`, `toggleModal`.
  */
 export function useStudioModals(init: { synth: boolean; pianoRoll: boolean }) {
-  const [showRecordOptions, setShowRecordOptions] = useState(false);
-  const [showBounce, setShowBounce] = useState(false);
-  const [showSampleBrowser, setShowSampleBrowser] = useState(false);
-  const [showCodeSampler, setShowCodeSampler] = useState(false);
-  const [showTuner, setShowTuner] = useState(false);
-  const [showLooper, setShowLooper] = useState(false);
-  const [showSampler, setShowSampler] = useState(false);
-  const [showSynth, setShowSynth] = useState(init.synth);
-  const [showPromptSampler, setShowPromptSampler] = useState(false);
-  const [showCommandPalette, setShowCommandPalette] = useState(false);
-  const [showBranchManager, setShowBranchManager] = useState(false);
-  const [showCommitModal, setShowCommitModal] = useState(false);
-  const [showOutputSelector, setShowOutputSelector] = useState(false);
-  const [showPatchbay, setShowPatchbay] = useState(false);
-  const [showMidi, setShowMidi] = useState(false);
-  const [showToolbarOverflow, setShowToolbarOverflow] = useState(false);
-  const [showPianoRoll, setShowPianoRoll] = useState(init.pianoRoll);
-
-  return {
-    showRecordOptions,
-    setShowRecordOptions,
-    showBounce,
-    setShowBounce,
-    showSampleBrowser,
-    setShowSampleBrowser,
-    showCodeSampler,
-    setShowCodeSampler,
-    showTuner,
-    setShowTuner,
-    showLooper,
-    setShowLooper,
-    showSampler,
-    setShowSampler,
-    showSynth,
-    setShowSynth,
-    showPromptSampler,
-    setShowPromptSampler,
-    showCommandPalette,
-    setShowCommandPalette,
-    showBranchManager,
-    setShowBranchManager,
-    showCommitModal,
-    setShowCommitModal,
-    showOutputSelector,
-    setShowOutputSelector,
-    showPatchbay,
-    setShowPatchbay,
-    showMidi,
-    setShowMidi,
-    showToolbarOverflow,
-    setShowToolbarOverflow,
-    showPianoRoll,
-    setShowPianoRoll,
-  };
+  const [modals, dispatch] = useReducer(modalReducer, undefined, () => ({
+    recordOptions: false,
+    bounce: false,
+    sampleBrowser: false,
+    codeSampler: false,
+    tuner: false,
+    looper: false,
+    sampler: false,
+    synth: init.synth,
+    promptSampler: false,
+    commandPalette: false,
+    branchManager: false,
+    commitModal: false,
+    outputSelector: false,
+    patchbay: false,
+    midi: false,
+    toolbarOverflow: false,
+    pianoRoll: init.pianoRoll,
+  }));
+  const openModal = useCallback((id: ModalId) => dispatch({ type: "open", id }), []);
+  const closeModal = useCallback(
+    (id: ModalId) => dispatch({ type: "close", id }),
+    [],
+  );
+  const toggleModal = useCallback(
+    (id: ModalId) => dispatch({ type: "toggle", id }),
+    [],
+  );
+  return { modals, openModal, closeModal, toggleModal };
 }
 
 /**

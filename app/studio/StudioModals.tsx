@@ -26,13 +26,13 @@ import type {
   MIDINote,
 } from "../../src/lib/types";
 import { TRACK_COLORS, type PluginSource } from "./parts";
+import type { ModalId } from "./hooks";
 
 interface StudioModalsProps {
   // RecordOptions
   recordSettings: RecordSettings;
   setRecordSettings: (v: RecordSettings) => void;
-  showRecordOptions: boolean;
-  setShowRecordOptions: (v: boolean) => void;
+   showRecordOptions: boolean;
   // PluginEditor
   editingPlugin: Plugin | null;
   handlePluginParamChange: (pluginId: string, paramId: string, value: number) => void;
@@ -43,55 +43,43 @@ interface StudioModalsProps {
   currentTime: number;
   // BounceDialog
   showBounce: boolean;
-  setShowBounce: (v: boolean) => void;
   projectTitle: string;
   duration: number;
   tracks: TrackDef[];
   // CodeSampler / PromptSampler
   showCodeSampler: boolean;
-  setShowCodeSampler: (v: boolean) => void;
   handleCodeRender: ComponentProps<typeof CodeSampler>["onRender"];
   showPromptSampler: boolean;
-  setShowPromptSampler: (v: boolean) => void;
   handlePromptMidiRender: ComponentProps<typeof PromptSampler>["onRender"];
   bpm: number;
   // Tuner
   showTuner: boolean;
-  setShowTuner: (v: boolean) => void;
   // Sampler / Synth / Looper
   showSampler: boolean;
-  setShowSampler: (v: boolean) => void;
   setTracks: (v: TrackDef[]) => void;
   setSelectedTrackId: (v: string | null) => void;
   showSynth: boolean;
-  setShowSynth: (v: boolean) => void;
   showLooper: boolean;
-  setShowLooper: (v: boolean) => void;
   // PianoRoll
   currentMidiNotes: MIDINote[];
   handlePianoRollChange: (notes: MIDINote[]) => void;
   projectKey?: string;
   showPianoRoll: boolean;
-  setShowPianoRoll: (v: boolean) => void;
   setEditingMidiTrackId: (v: string | null) => void;
   selectedMidiTrack?: TrackDef | null;
   // Palette / Branch / Commit / Output / Patchbay / Midi
   showCommandPalette: boolean;
-  setShowCommandPalette: (v: boolean) => void;
   showBranchManager: boolean;
-  setShowBranchManager: (v: boolean) => void;
   showCommitModal: boolean;
-  setShowCommitModal: (v: boolean) => void;
   showOutputSelector: boolean;
-  setShowOutputSelector: (v: boolean) => void;
   showPatchbay: boolean;
-  setShowPatchbay: (v: boolean) => void;
   trackIds: string[];
   showMidi: boolean;
-  setShowMidi: (v: boolean) => void;
   // LoadingModal (autoplay blocked)
   autoplayBlocked: boolean;
   setAutoplayBlocked: (v: boolean) => void;
+  /** Single close dispatcher for every modal (id matches the `modals` record key). */
+  closeModal: (id: ModalId) => void;
 }
 
 /** All overlay/modal surfaces rendered by the Studio screen. */
@@ -100,7 +88,6 @@ export function StudioModals(props: StudioModalsProps) {
     recordSettings,
     setRecordSettings,
     showRecordOptions,
-    setShowRecordOptions,
     editingPlugin,
     handlePluginParamChange,
     handleTogglePlugin,
@@ -109,49 +96,36 @@ export function StudioModals(props: StudioModalsProps) {
     isPlaying,
     currentTime,
     showBounce,
-    setShowBounce,
     projectTitle,
     duration,
     tracks,
     showCodeSampler,
-    setShowCodeSampler,
     handleCodeRender,
     showPromptSampler,
-    setShowPromptSampler,
     handlePromptMidiRender,
     bpm,
     showTuner,
-    setShowTuner,
     showSampler,
-    setShowSampler,
     setTracks,
     setSelectedTrackId,
     showSynth,
-    setShowSynth,
     showLooper,
-    setShowLooper,
     currentMidiNotes,
     handlePianoRollChange,
     projectKey,
     showPianoRoll,
-    setShowPianoRoll,
     setEditingMidiTrackId,
     selectedMidiTrack,
     showCommandPalette,
-    setShowCommandPalette,
     showBranchManager,
-    setShowBranchManager,
     showCommitModal,
-    setShowCommitModal,
     showOutputSelector,
-    setShowOutputSelector,
     showPatchbay,
-    setShowPatchbay,
     trackIds,
     showMidi,
-    setShowMidi,
     autoplayBlocked,
     setAutoplayBlocked,
+    closeModal,
   } = props;
 
   return (
@@ -160,7 +134,7 @@ export function StudioModals(props: StudioModalsProps) {
         settings={recordSettings}
         onChange={setRecordSettings}
         visible={showRecordOptions}
-        onClose={() => setShowRecordOptions(false)}
+        onClose={() => closeModal("recordOptions")}
       />
       <PluginEditor
         plugin={editingPlugin}
@@ -175,7 +149,7 @@ export function StudioModals(props: StudioModalsProps) {
       />
       <BounceDialog
         visible={showBounce}
-        onClose={() => setShowBounce(false)}
+        onClose={() => closeModal("bounce")}
         projectTitle={projectTitle}
         duration={duration}
         tracks={tracks.map((t) => ({
@@ -190,20 +164,20 @@ export function StudioModals(props: StudioModalsProps) {
       />
       <CodeSampler
         visible={showCodeSampler}
-        onClose={() => setShowCodeSampler(false)}
+        onClose={() => closeModal("codeSampler")}
         onRender={handleCodeRender}
         bpm={bpm}
       />
       <PromptSampler
         visible={showPromptSampler}
-        onClose={() => setShowPromptSampler(false)}
+        onClose={() => closeModal("promptSampler")}
         onRender={handlePromptMidiRender}
         bpm={bpm}
       />
-      <Tuner visible={showTuner} onClose={() => setShowTuner(false)} />
+      <Tuner visible={showTuner} onClose={() => closeModal("tuner")} />
       <Sampler
         visible={showSampler}
-        onClose={() => setShowSampler(false)}
+        onClose={() => closeModal("sampler")}
         onAddToTrack={(name, sampleData) => {
           const trackId = `sampler-${Date.now()}`;
           const newTrack: TrackDef = {
@@ -223,17 +197,17 @@ export function StudioModals(props: StudioModalsProps) {
           };
           setTracks([...tracks, newTrack]);
           setSelectedTrackId(trackId);
-          setShowSampler(false);
+          closeModal("sampler");
         }}
       />
       <Synth
         visible={showSynth}
-        onClose={() => setShowSynth(false)}
+        onClose={() => closeModal("synth")}
         bpm={bpm}
       />
       <Looper
         visible={showLooper}
-        onClose={() => setShowLooper(false)}
+        onClose={() => closeModal("looper")}
         bpm={bpm}
         onCommitLoop={(slot, bars) => {
           const safeBpm = Math.max(1, bpm);
@@ -270,37 +244,37 @@ export function StudioModals(props: StudioModalsProps) {
         scale={projectKey?.endsWith("m") ? "minor" : "major"}
         visible={showPianoRoll}
         onClose={() => {
-          setShowPianoRoll(false);
+          closeModal("pianoRoll");
           setEditingMidiTrackId(null);
         }}
         trackName={selectedMidiTrack?.name}
       />
       <CommandPalette
         visible={showCommandPalette}
-        onClose={() => setShowCommandPalette(false)}
+        onClose={() => closeModal("commandPalette")}
       />
       <BranchManager
         visible={showBranchManager}
-        onClose={() => setShowBranchManager(false)}
+        onClose={() => closeModal("branchManager")}
       />
       <CommitModal
         visible={showCommitModal}
-        onClose={() => setShowCommitModal(false)}
+        onClose={() => closeModal("commitModal")}
       />
       <OutputSelector
         visible={showOutputSelector}
-        onClose={() => setShowOutputSelector(false)}
+        onClose={() => closeModal("outputSelector")}
       />
       <Patchbay
         visible={showPatchbay}
-        onClose={() => setShowPatchbay(false)}
+        onClose={() => closeModal("patchbay")}
         trackIds={trackIds}
         onRouteCreated={() => {}}
         onRouteRemoved={() => {}}
       />
       <MidiLearnPanel
         visible={showMidi}
-        onClose={() => setShowMidi(false)}
+        onClose={() => closeModal("midi")}
         tracks={tracks}
       />
       <LoadingModal
