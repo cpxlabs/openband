@@ -40,46 +40,73 @@
   (playback engine + transport controls + effects), usePluginChains (plugin/mastering
   edit handlers), useMixerState (9 mixer/mix state atoms). Main studio component
   3089 → 2847 lines. STU-1 hook decomposition complete. Verified against studio
-  test suite (39 pass; 2 pre-existing failures unrelated to refactor).
+   test suite (39 pass; 2 pre-existing failures unrelated to refactor).
 
-**Remaining (larger/deferred):** STU-1 (full stateful decomposition), STU-13/16/17,
-DS-3 (light-theme token refactor), DS-4/6/7, CC-1 (remaining screens i18n audit), CC-2/3/4 remaining,
-3D-1 (real audio in 3D shells), 3D-3/12 (shared ThreeDSScreen wrapper),
-FEED-11, SET-2/5/10, TAB-1/2/6, EXPL-4/5/6, LIB-8.
+**Remaining (larger/deferred):** STU-13/16/17 (see audit rows — distinct from the
+hook decomposition, which is COMPLETE: see "STU-1 Studio God-Component Decomposition —
+Progress Tracker" below), DS-3 (light-theme token refactor), DS-4/6/7, CC-1 (remaining
+screens i18n audit), CC-2/3/4 remaining, 3D-1 (real audio in 3D shells), 3D-3/12
+(shared ThreeDSScreen wrapper), FEED-11, SET-2/5/10, TAB-1/2/6, EXPL-4/5/6, LIB-8.
 
 ---
 
-## STU-1 Hook Decomposition Spec
+## STU-1 Studio God-Component Decomposition — Progress Tracker
 
-Goal: shrink `app/studio/[id].tsx` by extracting cohesive state slices into custom
-hooks in `app/studio/hooks/` (or `parts.tsx`), without a Context rewrite. Each hook
-owns its state + effects + handlers and returns a typed API. Extract one at a time,
-`tsc` clean + commit between each. Order chosen low→high coupling:
+**Objective:** Break down `app/studio/[id].tsx` (originally **3452 lines**) — the
+DAW-style multi-track mixer — into focused, single-responsibility hooks/components,
+with **no Context rewrite** and **identical runtime behavior**. Strategy: extract one
+slice at a time, keep `tsc` clean (ignoring 2 pre-existing errors in
+`tests/accessibility.test.tsx` / `vitest.config.ts`), run the Studio test suite, and
+commit + push after each slice.
 
-1. **`useStudioPersistence(id, snapshotInputs)`** — owns autosave debounce effect,
-   `lastSavedLabel` + timer, `loadProject` hydrate effect, `commitTitle`, and the
-   manual-save handler. Returns `{ lastSavedLabel, commitTitle, handleManualSave,
-   hydrated }`. Consumes `buildProjectData`. Lowest coupling — reads state, writes storage.
-2. **`useProjectParams()`** — parses `useLocalSearchParams` into typed project config
-   (title, bpm, key, mood, numBars, timeSig, scratch, tab, tool, fromOnboarding).
-   Pure derivation, zero state. Very safe.
-3. **`useStudioModalState()`** — consolidates the ~22 `show*` boolean toggles into a
-   single reducer/record + `openModal/closeModal` helpers. Reduces ~22 useState lines.
-4. **`useStudioMixerState()`** — groups, buses, sendBuses, trackAmpChains,
-   trackAssignments, masterPlugins, masteringChain, mixSnapshots, activeMixId, and
-   their mix save/load/delete/compare handlers. Higher coupling (playback reads these).
-5. **`useStudioTransport()`** — play/record/seek, engine refs, clock/telemetry effects.
-   Highest coupling with audio libs — do LAST, most careful testing.
+**Current state:** `app/studio/[id].tsx` = **2847 lines** (−605, −17.5%).
 
-Risk notes: transport + mixer hooks touch refs shared by many callbacks; verify no
-stale-closure regressions. Keep `tracks`/`useHistory` in the main component (undo/redo
-is cross-cutting). Behavior must be identical.
+### ✅ Completed (all committed + pushed to `master`)
 
-Status: (1) useStudioPersistence ✅, (2) useProjectParams ✅, (3) useStudioModals ✅,
-(4) useMixSnapshots ✅ + usePluginChains ✅ + useMixerState ✅ (mixer state atoms),
-(5) useStudioTransport ✅. STU-1 hook decomposition COMPLETE — all 5 planned slices
-extracted. Main studio: 3452 → 2847 lines; tracks/undo-redo state intentionally kept
-in the component (cross-cutting).
+| # | Slice | Hook / Component | File | What it owns | Behavior-checked |
+|---|-------|------------------|------|--------------|------------------|
+| P1 | Persistence | `useStudioPersistence` | `app/studio/hooks.ts` | autosave debounce, load/hydrate effect, save-label lifecycle, `handleManualSave`, `commitTitle` | ✅ tsc + tests |
+| P2 | Route params | `useProjectParams` + `BottomTab` type | `app/studio/hooks.ts` | typed parse of `useLocalSearchParams` (title/bpm/key/mood/numBars/timeSig/scratch/tab/tool/onboarding) | ✅ tsc |
+| P3 | Modal state | `useStudioModals` | `app/studio/hooks.ts` | 17 modal/overlay booleans (back-compat destructured names) | ✅ tsc + tests |
+| P4a | Mix A/B | `useMixSnapshots` | `app/studio/hooks.ts` | `handleSaveMix` / `handleLoadMix` / `handleDeleteMix` / `handleCompareMix` | ✅ tsc + tests |
+| P4b | Plugin chains | `usePluginChains` | `app/studio/hooks.ts` | `handlePluginParamChange` / `handleTogglePlugin` / `handleLoadMasteringPreset` | ✅ tsc + tests |
+| P4c | Mixer state | `useMixerState` | `app/studio/hooks.ts` | 9 state atoms: groups, buses, sendBuses, trackAmpChains, trackAssignments, masterPlugins, masteringChain, mixSnapshots, activeMixId | ✅ tsc + tests |
+| P5 | Transport | `useStudioTransport` | `app/studio/hooks.ts` | playback engine refs/state (`engineRef`, `engineActive`, `currentSeekRef`, `currentUrlRef`, `getEngine`), derived `isPlaying`/`currentTime`/`duration`, `togglePlay`/`seekRelative`/`stopPlayback`, `applyPitchShift`, 5 effects (permissions, playbackRate, clock/telemetry, clock-tick, unmount) | ✅ tsc + tests |
+| — | Modals UI | `StudioModals` | `app/studio/StudioModals.tsx` | 17 modal overlay components (RecordOptions, PluginEditor, BounceDialog, …) | ✅ tsc |
+| — | Drawer | `StudioDrawer` + `StudioOnboardingCoachmark` | `app/studio/parts.tsx` | mobile nav drawer + onboarding coachmark overlays | ✅ tsc |
+| — | Helpers | `buildProjectData` | `app/studio/parts.tsx` | dedupe of the `ProjectData` snapshot built in title-commit + autosave | ✅ tsc |
+
+### ✅ Test fixes (separate commit)
+- `tests/studio.test.tsx`: 2 stale assertions corrected (CommandPalette trigger is `⌘K`
+  not `⌘`; `TimeDisplay` renders `00:00` not `0:00.00`). **Studio suite now 41/41 green.**
+
+### ⏸️ Deliberately NOT extracted (by design)
+- **`tracks` + `useHistory` (undo/redo)** stays in the component. It is cross-cutting:
+  nearly every handler reads/writes `tracks`, and undo/redo is global. Extracting it
+  would require a Context or heavy prop-drilling for little gain. This is an accepted
+  boundary, not leftover work.
+
+### 📁 File map
+```
+app/studio/
+  [id].tsx         2847 lines  (container: tracks/history + wires all hooks)
+  hooks.ts         ~900 lines  (all 7 extracted hooks + helpers)
+  StudioModals.tsx 315 lines   (modal overlay cluster)
+  parts.tsx        ~200 lines  (presentational components + buildProjectData)
+```
+
+### 🧪 Verification checklist (run after any future STU-1 change)
+```
+npx tsc --noEmit | grep "error TS" | grep -v "tests/accessibility\|vitest.config"
+npx vitest run tests/studio.test.tsx     # expect 41 passed, 0 failed
+```
+
+### Next actions (when resuming STU-1)
+- [ ] Optional polish: replace `useStudioModals` back-compat object with a `useReducer`
+      record + `openModal(id)`/`closeModal(id)` API (requires touching ~110 call sites).
+- [ ] Optional: extract remaining pure presentational JSX (transport toolbar, track
+      row) into components — lower value, more churn.
+- [ ] STU-13 / STU-16 / STU-17 (other Studio issues from the audit) — see audit rows.
 
 ---
 
