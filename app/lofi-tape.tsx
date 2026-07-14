@@ -584,7 +584,7 @@ export default function LofiTape() {
   return (
     <View className="flex-1 bg-dark-bg">
       <View className="bg-dark-surface border-b border-dark-border flex-row items-center px-4 py-3">
-        <Pressable onPress={() => router.back()} className="w-9 h-9 rounded-lg bg-dark-muted/40 items-center justify-center active:opacity-70">
+        <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Voltar" className="w-9 h-9 rounded-lg bg-dark-muted/40 items-center justify-center active:opacity-70">
           <Text className="text-gray-300 text-lg">←</Text>
         </Pressable>
         <View className="flex-1 items-center">
