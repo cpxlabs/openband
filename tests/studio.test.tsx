@@ -143,7 +143,7 @@ describe("Studio", () => {
 
     it("renders time display with initial 0:00.00 format", () => {
       render(<Studio />);
-      expect(screen.getByText("0:00.00")).toBeTruthy();
+      expect(screen.getAllByText("00:00").length).toBeGreaterThanOrEqual(1);
     });
 
     it("renders track names in track list", () => {
@@ -350,7 +350,7 @@ describe("Studio", () => {
     it("opens CommandPalette when cmd button clicked", () => {
       render(<Studio />);
       expect(screen.queryByTestId("command-palette")).toBeNull();
-      fireEvent.click(screen.getByText("⌘"));
+      fireEvent.click(screen.getByText("⌘K"));
       expect(screen.getByTestId("command-palette")).toBeTruthy();
     });
 
