@@ -98,45 +98,44 @@ app/studio/
 ### 🧪 Verification checklist (run after any future STU-1 change)
 ```
 npx tsc --noEmit | grep "error TS" | grep -v "tests/accessibility\|vitest.config"
-npx vitest run tests/studio.test.tsx     # expect 41 passed, 0 failed
+npx vitest run tests/studio.test.tsx     # expect 42 passed, 0 failed
 ```
 
-### Next actions (when resuming STU-1 / Studio work)
+### Next actions — STATUS (batch completed)
 
-**A. Optional polish — modal-state reducer refactor** (lower value, ~110 call-site churn)
-- [ ] Replace the `useStudioModals` back-compat object with a `useReducer` record keyed
-      by modal id: `modalState: Record<ModalId, boolean>` + `openModal(id)` /
-      `closeModal(id)` / `toggleModal(id)`.
-- [ ] Provide a small adapter (`showX` getters / `setShowX` setters) OR migrate the
-      ~110 call sites in `[id].tsx` + `StudioModals.tsx` to `openModal`/`closeModal`.
-- [ ] Wire `closeModal` into every `<X onClose={() => setShowX(false)} />` currently in
-      `StudioModals.tsx`.
-- [ ] Verify: `tsc` clean + `npx vitest run tests/studio.test.tsx` (41 pass).
+**A. Modal-state reducer refactor** ✅ DONE
+- `useStudioModals` now uses `useReducer` (record keyed by `ModalId`) exposing
+  `modals`, `openModal`, `closeModal`, `toggleModal`. StudioModals takes a single
+  `closeModal` prop (was 17 `setShowX` props). All ~110 call sites migrated.
+  Committed `d427ca2`. 42/42 studio tests pass.
 
-**B. Optional polish — presentational JSX extraction** (lower value, more churn)
-- [ ] Extract the transport toolbar (play/stop/record/seek row) into
-      `StudioTransportBar.tsx` (props: `isPlaying`, `currentTime`, `duration`,
-      `currentBeat`, `onTogglePlay`, `onStop`, `onSeekRelative`, `onRecord`, …).
-- [ ] Extract a `StudioTrackRow.tsx` for the per-track mixer row (fader/pan/mute/solo/
-      color) — confirm it doesn't re-introduce coupling to `tracks` state.
-- [ ] Verify each extraction with `tsc` + Studio tests.
+**B. Presentational JSX extraction** ⏸️ DEFERRED (by design)
+- Lower value, high churn: the transport toolbar is bound to ~12 header props/
+  callbacks (title edit, drawer, `togglePlay`/`stopPlayback`/`toggleRecording`/
+  `seekRelative`, `isPlaying`/`isRecording`/`recordSettings.armed`, `currentBeat`,
+  `currentTime`/`duration`, `resp.isMobile`). Extracting it buys little and risks
+  regressions. Left as a future optional refactor. The per-track `StudioTrackRow`
+  is similarly entangled with `tracks` state. Skipped.
 
-**C. STU-13 / STU-16 / STU-17 audit items** (real functionality, medium severity)
+**C. STU-13 / STU-16 / STU-17 audit items** ✅ DONE
+- **STU-13** (undo for recording): recordings were already history-tracked; fixed
+  the real bug — stale `selectedTrackId` after undoing a freshly-recorded track
+  (clear it when it no longer exists). Added undo/redo test. Committed `8163eb9`.
+- **STU-16** (cache `renderTracksToUrl`): added `renderTracksCached` (signature-
+  keyed module cache; owns blob revocation). Moved into `hooks.ts` to avoid a
+  `[id].tsx`↔`hooks.ts` circular import. Committed `fd0cf3f`. 55/55 audio/playback/
+  studio tests pass.
+- **STU-17** (mastering tab reuses `MasteringSuite`): replaced the inline
+  duplication (LUFS/VisualEQ/chain list/preset chips) with `<MasteringSuite
+  onBack={() => setBottomTab("mixer")} />`. Removed now-unused imports. Committed
+  `b26b095`.
 
-- [ ] **STU-13 — Undo for recording** (Medium)
-  - Symptom: `toggleRecording` (app/studio/[id].tsx) appends a region/track but a user
-    mis-recording can't be reverted via the existing `useHistory` undo.
-  - Steps:
-    1. In `toggleRecording` success path, capture the *previous* `tracks` snapshot and
-       push it through `useHistory` (same `setTracks`-based history already used for
-       track edits) so `undoHistory` reverts the recording.
-    2. Alternatively, expose a "discard last recording" affordance. Prefer the history
-       route for consistency with Cmd+Z.
-    3. Add a test in `tests/studio.test.tsx` (web recording) asserting undo removes the
-       recorded region.
+**Net STU-1 result:** `app/studio/[id].tsx` 3452 → **2665 lines** (−787, −22.8%).
 
-- [ ] **STU-16 — Cache `renderTracksToUrl`** (Medium)
-  - Symptom: same offline render is recomputed in `togglePlay`, `rerenderAfterMuteSolo`,
+**Verification gate used:** `tsc` (minus 2 pre-existing errors) + `npx vitest run
+tests/studio.test.tsx` (42 pass). Each item committed + pushed separately.
+
+---
     and anywhere else `renderTracksToUrl(tracks, bpm, mood, buses)` is called.
   - Steps:
     1. Add a small memo/invalidation cache keyed by a stable signature of
