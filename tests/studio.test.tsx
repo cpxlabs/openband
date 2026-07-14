@@ -178,12 +178,14 @@ vi.mock("../src/components", () => {
   const VuMeter = () => <div data-testid="vu-meter" />;
   const TrackColorPicker = ({ visible }: any) => visible ? <div data-testid="track-color-picker" /> : null;
   const LoadingModal = ({ visible }: any) => visible ? <div data-testid="loading-modal" /> : null;
+  const MasteringSuite = ({ testID }: any) => <div data-testid={testID} />;
   return {
     Metronome, MixManager, Sidebar, PluginRack, MasterRack, PluginEditor, RecordOptions,
     WaveformCanvas, AutomationLane, TrackGroupManager, LufsMeter, BounceDialog,
     SampleBrowser, CodeSampler, Tuner, PedalRack, PianoRoll, Looper, Sampler,
     Synth, PromptSampler, VisualEQ, ChordTrack, CommandPalette, BranchManager,
     CommitModal, OutputSelector, Patchbay, VuMeter, TrackColorPicker, LoadingModal, MidiLearnPanel,
+    MasteringSuite,
     OneKnob, ONE_KNOB_TYPES: ["volume"],
   };
 });
@@ -381,10 +383,10 @@ describe("Studio", () => {
       expect(screen.getByText("Selecione uma track para ver os plugins")).toBeTruthy();
     });
 
-    it("switches to Master tab with LufsMeter", () => {
+    it("switches to Master tab with MasteringSuite", () => {
       render(<Studio />);
       fireEvent.click(screen.getByText("Master"));
-      expect(screen.getByTestId("lufs-meter")).toBeTruthy();
+      expect(screen.getByTestId("mastering-suite")).toBeTruthy();
     });
 
     it("switches to Grupos tab content", () => {

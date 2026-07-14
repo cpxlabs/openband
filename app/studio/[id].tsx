@@ -30,17 +30,16 @@ import {
   WaveformCanvas,
   AutomationLane,
   TrackGroupManager,
-  LufsMeter,
   SampleBrowser,
   PedalRack,
   OneKnobProcessor,
   ONE_KNOB_TYPES,
-  VisualEQ,
   ChordTrack,
   VuMeter,
   TrackColorPicker,
   Sidebar,
   LiveWaveformCanvas,
+  MasteringSuite,
 } from "../../src/components";
 import {
   applyMidiMessage,
@@ -65,14 +64,10 @@ import type {
   TrackRegion,
   MIDINote,
 } from "../../src/lib/types";
-import { EQ_DEFAULT_BANDS, PLUGIN_SPECS, clampParam } from "../../src/lib/types";
+import { PLUGIN_SPECS, clampParam } from "../../src/lib/types";
 import { useResponsive } from "../../src/lib/responsive";
-import {
-  MASTERING_CHAIN_PRESETS,
-} from "../../src/lib/mastering";
 import { autoMix, AUTOMIX_GENRES } from "../../src/lib/automix";
 import { generateTracksForGenre } from "../../src/lib/projectTemplates";
-import { setMasteringInput } from "../../src/lib/masteringBridge";
 import type { AutomationPoint } from "../../src/lib/types";
 import { useWebAudioPlayer } from "../../src/hooks/useWebAudioPlayer";
 import { usePresence } from "../../src/lib/presence";
@@ -870,7 +865,7 @@ export default function Studio() {
       setActiveMixId,
     });
 
-  const { handlePluginParamChange, handleTogglePlugin, handleLoadMasteringPreset } =
+  const { handlePluginParamChange, handleTogglePlugin } =
     usePluginChains({
       editingPluginSource,
       selectedTrack,
@@ -2502,166 +2497,12 @@ export default function Studio() {
           </ScrollView>
         )}
 
-        {bottomTab === "mastering" && (
-          <ScrollView
-            className={`flex-1 ${resp.isMobile ? "px-2 py-2" : "px-4 py-3"}`}
-            style={{ maxHeight: 340 }}
-          >
-            <LufsMeter isPlaying={isPlaying} />
-            <View className="mt-3 mb-3">
-              <VisualEQ
-                bands={(() => {
-                  const eq = masterPlugins.find((p) => p.type === "eq");
-                  if (!eq) return EQ_DEFAULT_BANDS;
-                  return Array.from({ length: 8 }, (_, i) => ({
-                    freq: eq.params[`b${i}_freq`] ?? EQ_DEFAULT_BANDS[i].freq,
-                    gain: eq.params[`b${i}_gain`] ?? EQ_DEFAULT_BANDS[i].gain,
-                    q: eq.params[`b${i}_q`] ?? EQ_DEFAULT_BANDS[i].q,
-                    type: eq.params[`b${i}_type`] ?? EQ_DEFAULT_BANDS[i].type,
-                    enabled: eq.params[`b${i}_enabled`] ?? EQ_DEFAULT_BANDS[i].enabled,
-                  }));
-                })()}
-                onChange={(index, params) => {
-                  const eqIdx = masterPlugins.findIndex(
-                    (p) => p.type === "eq",
-                  );
-                  if (eqIdx === -1) return;
-                  const updated = [...masterPlugins];
-                  const newParams = { ...updated[eqIdx].params };
-                  if (params.freq !== undefined) newParams[`b${index}_freq`] = params.freq;
-                  if (params.gain !== undefined) newParams[`b${index}_gain`] = params.gain;
-                  if (params.q !== undefined) newParams[`b${index}_q`] = params.q;
-                  if (params.type !== undefined) newParams[`b${index}_type`] = params.type;
-                  if (params.enabled !== undefined) newParams[`b${index}_enabled`] = params.enabled;
-                  updated[eqIdx] = {
-                    ...updated[eqIdx],
-                    params: newParams,
-                  };
-                  setMasterPlugins(updated);
-                }}
-              />
-            </View>
-            <View className="flex-row items-center justify-between mb-2">
-              <View className="flex-row items-center gap-2">
-                <View className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                <Text className="label text-rose-400/70 uppercase">
-                  Mastering Chain
-                </Text>
-              </View>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                className="max-w-[200px]"
-              >
-                <View className="flex-row gap-1">
-                  {MASTERING_CHAIN_PRESETS.map((preset, i) => (
-                    <Pressable
-                      key={preset.name}
-                      onPress={() => handleLoadMasteringPreset(i)}
-                      className="px-2 py-1 rounded-md border border-dark-border bg-dark-surface"
-                    >
-                      <Text className="text-gray-400 text-[9px] font-medium">
-                        {preset.name}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </ScrollView>
-            </View>
-            {masteringChain.map((plugin, i) => {
-              const isTruePeak = plugin.type === "truePeakLimiter";
-              return (
-                <Pressable
-                  key={plugin.id}
-                  onPress={() => {
-                    setEditingPlugin(plugin);
-                    setEditingPluginSource("mastering");
-                  }}
-                  className={`flex-row items-center gap-3 px-3 py-2.5 rounded-xl mb-1.5 border ${isTruePeak ? "bg-red-500/10 border-red-500/30" : "bg-dark-surface/80 border-dark-border"}`}
-                >
-                  <View className="flex-row items-center gap-2 flex-1">
-                    <View
-                      className="w-1 h-8 rounded-full"
-                      style={{ backgroundColor: plugin.color }}
-                    />
-                    <View>
-                      <Text className="text-white text-xs font-semibold">
-                        {plugin.name}
-                      </Text>
-                      <Text className="text-gray-500 text-[9px]">
-                        {isTruePeak
-                          ? "TRUE PEAK — Final Safety"
-                          : `#${i + 1} in chain`}
-                      </Text>
-                    </View>
-                  </View>
-                  <Pressable
-                    onPress={() => handleTogglePlugin(plugin.id)}
-                    className={`w-8 h-6 rounded-md border items-center justify-center ${plugin.enabled ? (isTruePeak ? "bg-red-500/30 border-red-500/50" : "bg-dark-elevated border-dark-border") : "bg-dark-surface border-dark-border/30"}`}
-                  >
-                    <Text
-                      className={`text-[9px] font-bold ${plugin.enabled ? (isTruePeak ? "text-red-400" : "text-white") : "text-gray-600"}`}
-                    >
-                      {plugin.enabled ? "ON" : "OFF"}
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={() => {
-                      setEditingPlugin(plugin);
-                      setEditingPluginSource("mastering");
-                    }}
-                    className="w-6 h-6 items-center justify-center"
-                  >
-                    <Text className="text-gray-500 text-xs">▸</Text>
-                  </Pressable>
-                </Pressable>
-              );
-            })}
-            <Pressable
-              onPress={async () => {
-                const urls = tracks.flatMap((t) =>
-                  t.regions
-                    .filter((r) => r.url)
-                    .map((r) => ({ name: t.name, url: r.url! })),
-                );
-                if (urls.length > 0) {
-                  setMasteringInput({
-                    url: urls[0].url,
-                    filename: `${projectTitle}-stems`,
-                    stems: urls,
-                    bpm: initialBpm,
-                    key: projectKey,
-                    timeSignature: projectTimeSig,
-                  });
-                } else {
-                  try {
-                    const url = await renderTracksCached(tracks, initialBpm, projectMood, buses);
-                    if (url) {
-                      setMasteringInput({
-                        url,
-                        filename: projectTitle,
-                        stems: tracks.map((t) => ({ name: t.name, url })),
-                        bpm: initialBpm,
-                        key: projectKey,
-                        timeSignature: projectTimeSig,
-                      });
-                    }
-                  } catch (e) {
-                    console.warn("Mastering render failed:", e);
-                    Alert.alert("Erro", "Falha ao preparar áudio para masterização.");
-                  }
-                }
-                router.push("/mastering");
-              }}
-              className="mt-3 flex-row items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-rose-600/20 to-brand-accent/20 border border-rose-500/30 active:opacity-80"
-            >
-              <Text className="text-rose-400 text-sm font-bold">
-                Enviar para Mastering Suite
-              </Text>
-              <Text className="text-rose-400/70 text-lg">→</Text>
-            </Pressable>
-          </ScrollView>
-        )}
+{bottomTab === "mastering" && (
+  <MasteringSuite
+    onBack={() => setBottomTab("mixer")}
+    testID="mastering-suite"
+  />
+)}
 
         {bottomTab === "groups" && (
           <ScrollView className="flex-1" style={{ maxHeight: 260 }}>
