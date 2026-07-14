@@ -12,12 +12,6 @@ import {
 } from "../../src/lib/mastering";
 import type { PluginSource } from "./parts";
 import {
-  saveProject,
-  loadProject,
-  type ProjectData,
-} from "../../src/lib/projectStore";
-import { PlaybackEngine } from "../../src/lib/playbackEngine";
-import {
   renderTracksToUrl,
   disposeAudioContext,
   getProjectDurationSeconds,
@@ -28,6 +22,12 @@ import {
   markBlobActive,
   revokeTrackedBlob,
 } from "../../src/lib/universalAudio";
+import {
+  saveProject,
+  loadProject,
+  type ProjectData,
+} from "../../src/lib/projectStore";
+import { PlaybackEngine } from "../../src/lib/playbackEngine";
 import {
   startClock,
   stopClock,
@@ -44,6 +44,45 @@ import {
 import type { useWebAudioPlayer } from "../../src/hooks/useWebAudioPlayer";
 import { pitchShift } from "../../src/lib/timeStretch";
 import { audioBufferToWavBlob } from "../../src/lib/audio";
+
+let cachedRenderKey: string | null = null;
+let cachedRenderUrl: string | null = null;
+
+/** Caches the expensive offline render so repeated unchanged calls reuse the blob. */
+export function renderTracksCached(
+  tracks: TrackDef[],
+  bpm: number,
+  mood: Mood | undefined,
+  buses: BusDef[],
+): Promise<string | null> {
+  const key = JSON.stringify({
+    t: tracks.map((t) => ({
+      id: t.id,
+      r: t.regions,
+      v: t.volume,
+      p: t.pan,
+      pl: t.plugins,
+      m: t.muted,
+      s: t.solo,
+    })),
+    bpm,
+    mood,
+    buses,
+  });
+  if (cachedRenderKey === key && cachedRenderUrl) {
+    return Promise.resolve(cachedRenderUrl);
+  }
+  return renderTracksToUrl(tracks, bpm, mood, buses).then((url) => {
+    if (url) {
+      if (cachedRenderUrl && cachedRenderUrl !== url) {
+        revokeTrackedBlob(cachedRenderUrl);
+      }
+      cachedRenderKey = key;
+      cachedRenderUrl = url;
+    }
+    return url;
+  });
+}
 
 type Snapshot = Omit<ProjectData, "id" | "lastSaved">;
 
@@ -621,8 +660,7 @@ export function useStudioTransport(params: {
       console.warn("PlaybackEngine unavailable, falling back to blob playback:", e);
     }
 
-    if (currentUrlRef.current) revokeTrackedBlob(currentUrlRef.current);
-    let url = await renderTracksToUrl(tracks, initialBpm, projectMood, buses);
+    let url = await renderTracksCached(tracks, initialBpm, projectMood, buses);
     const totalSemitones =
       pitchShiftSemitones + (pitchCorrected ? -Math.log2(playbackRate) * 12 : 0);
     if (url && totalSemitones !== 0) {

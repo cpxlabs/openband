@@ -17,7 +17,7 @@ import {
   useAudioRecorderState,
   RecordingPresets,
 } from "expo-audio";
-import { renderTracksToUrl, getProjectDurationSeconds } from "../../src/lib/midiSynth";
+import { getProjectDurationSeconds } from "../../src/lib/midiSynth";
 import { audioSystem, createTrackedBlob, markBlobActive, revokeTrackedBlob } from "../../src/lib/universalAudio";
 import { API_BASE_URL } from "../../src/lib/apiUrl";
 import { assignTrackToBus } from "../../src/lib/busRouter";
@@ -89,7 +89,7 @@ import {
   type PluginSource,
 } from "./parts";
 import { StudioModals } from "./StudioModals";
-import { useProjectParams, useStudioPersistence, useMixSnapshots, useStudioModals, useStudioTransport, usePluginChains, useMixerState, applyPitchShift, type BottomTab } from "./hooks";
+import { useProjectParams, useStudioPersistence, useMixSnapshots, useStudioModals, useStudioTransport, usePluginChains, useMixerState, applyPitchShift, renderTracksCached, type BottomTab } from "./hooks";
 
 export default function Studio() {
   const {
@@ -586,7 +586,7 @@ export default function Studio() {
       try {
         await audioSystem.ensureContext();
         if (currentUrlRef.current) revokeTrackedBlob(currentUrlRef.current);
-        let url = await renderTracksToUrl(updatedTracks, initialBpm, projectMood, buses);
+        let url = await renderTracksCached(updatedTracks, initialBpm, projectMood, buses);
         const totalSemitones =
           pitchShiftSemitones + (pitchCorrected ? -Math.log2(playbackRate) * 12 : 0);
         if (url && totalSemitones !== 0) {
@@ -2629,7 +2629,7 @@ export default function Studio() {
                   });
                 } else {
                   try {
-                    const url = await renderTracksToUrl(tracks, initialBpm, projectMood, buses);
+                    const url = await renderTracksCached(tracks, initialBpm, projectMood, buses);
                     if (url) {
                       setMasteringInput({
                         url,
