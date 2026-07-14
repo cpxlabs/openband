@@ -330,6 +330,8 @@ export default function VirtualStudio() {
       <View className="bg-dark-surface border-b border-dark-border flex-row items-center px-4 py-3">
         <Pressable
           onPress={() => router.back()}
+          accessibilityRole="button"
+          accessibilityLabel="Voltar"
           className="w-9 h-9 rounded-lg bg-dark-muted/40 items-center justify-center active:opacity-70"
         >
           <Text className="text-gray-300 text-lg">←</Text>
@@ -370,12 +372,16 @@ export default function VirtualStudio() {
             <View className="flex-row gap-2 mt-3">
               <Pressable
                 onPress={() => router.push(selectedFurniture.route)}
+                accessibilityRole="button"
+                accessibilityLabel={`Abrir ${selectedFurniture.name}`}
                 className="bg-brand-primary rounded-lg px-4 py-2"
               >
                 <Text className="text-white font-bold text-sm">Open</Text>
               </Pressable>
               <Pressable
                 onPress={() => setSelectedFurniture(null)}
+                accessibilityRole="button"
+                accessibilityLabel="Fechar"
                 className="bg-dark-muted rounded-lg px-4 py-2"
               >
                 <Text className="text-gray-300 font-bold text-sm">Close</Text>
