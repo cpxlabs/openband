@@ -101,12 +101,70 @@ npx tsc --noEmit | grep "error TS" | grep -v "tests/accessibility\|vitest.config
 npx vitest run tests/studio.test.tsx     # expect 41 passed, 0 failed
 ```
 
-### Next actions (when resuming STU-1)
-- [ ] Optional polish: replace `useStudioModals` back-compat object with a `useReducer`
-      record + `openModal(id)`/`closeModal(id)` API (requires touching ~110 call sites).
-- [ ] Optional: extract remaining pure presentational JSX (transport toolbar, track
-      row) into components — lower value, more churn.
-- [ ] STU-13 / STU-16 / STU-17 (other Studio issues from the audit) — see audit rows.
+### Next actions (when resuming STU-1 / Studio work)
+
+**A. Optional polish — modal-state reducer refactor** (lower value, ~110 call-site churn)
+- [ ] Replace the `useStudioModals` back-compat object with a `useReducer` record keyed
+      by modal id: `modalState: Record<ModalId, boolean>` + `openModal(id)` /
+      `closeModal(id)` / `toggleModal(id)`.
+- [ ] Provide a small adapter (`showX` getters / `setShowX` setters) OR migrate the
+      ~110 call sites in `[id].tsx` + `StudioModals.tsx` to `openModal`/`closeModal`.
+- [ ] Wire `closeModal` into every `<X onClose={() => setShowX(false)} />` currently in
+      `StudioModals.tsx`.
+- [ ] Verify: `tsc` clean + `npx vitest run tests/studio.test.tsx` (41 pass).
+
+**B. Optional polish — presentational JSX extraction** (lower value, more churn)
+- [ ] Extract the transport toolbar (play/stop/record/seek row) into
+      `StudioTransportBar.tsx` (props: `isPlaying`, `currentTime`, `duration`,
+      `currentBeat`, `onTogglePlay`, `onStop`, `onSeekRelative`, `onRecord`, …).
+- [ ] Extract a `StudioTrackRow.tsx` for the per-track mixer row (fader/pan/mute/solo/
+      color) — confirm it doesn't re-introduce coupling to `tracks` state.
+- [ ] Verify each extraction with `tsc` + Studio tests.
+
+**C. STU-13 / STU-16 / STU-17 audit items** (real functionality, medium severity)
+
+- [ ] **STU-13 — Undo for recording** (Medium)
+  - Symptom: `toggleRecording` (app/studio/[id].tsx) appends a region/track but a user
+    mis-recording can't be reverted via the existing `useHistory` undo.
+  - Steps:
+    1. In `toggleRecording` success path, capture the *previous* `tracks` snapshot and
+       push it through `useHistory` (same `setTracks`-based history already used for
+       track edits) so `undoHistory` reverts the recording.
+    2. Alternatively, expose a "discard last recording" affordance. Prefer the history
+       route for consistency with Cmd+Z.
+    3. Add a test in `tests/studio.test.tsx` (web recording) asserting undo removes the
+       recorded region.
+
+- [ ] **STU-16 — Cache `renderTracksToUrl`** (Medium)
+  - Symptom: same offline render is recomputed in `togglePlay`, `rerenderAfterMuteSolo`,
+    and anywhere else `renderTracksToUrl(tracks, bpm, mood, buses)` is called.
+  - Steps:
+    1. Add a small memo/invalidation cache keyed by a stable signature of
+       `(tracks, initialBpm, projectMood, buses)` (hash or `JSON.stringify` of a minimal
+       projection). Store the resulting URL + revoke on invalidation.
+    2. Route `togglePlay` / `rerenderAfterMuteSolo` through the cache; only recompute
+       on signature change.
+    3. Guard blob lifecycle: revoke previous URL when a new one is produced.
+    4. Verify playback path with `npx vitest run tests/audioPlayback.test.ts
+       tests/playbackEngine.test.ts tests/studio.test.tsx`.
+
+- [ ] **STU-17 — Mastering tab reuses `MasteringSuite`** (Medium)
+  - Symptom: the studio "mastering" bottom tab renders inline EQ/comp/limiter instead
+    of using the shared `MasteringSuite` component (`src/components/MasteringSuite.tsx`).
+  - Steps:
+    1. Locate the inline mastering UI in `app/studio/[id].tsx` (the `bottomTab ===
+       "mastering"` branch).
+    2. Replace it with `<MasteringSuite audioUri={…} onExport={…} onClose={…}
+       visible={bottomTab === "mastering"} />`, wiring the existing `masteringChain`
+       state into the component's props/callbacks (may need a small prop adapter).
+    3. Keep `useMixerState`'s `masteringChain` as the source of truth; ensure
+       `handleLoadMasteringPreset` / `handleTogglePlugin` still drive it.
+    4. Verify the mastering tab still renders + preset load/toggle works in tests.
+
+**D. Verification gate (before marking any of A–C done)**
+- [ ] `npx tsc --noEmit | grep "error TS" | grep -v "tests/accessibility\|vitest.config"` → empty
+- [ ] `npx vitest run tests/studio.test.tsx` → 41 passed, 0 failed
+- [ ] Commit + push each item separately (one refactor/feature per commit).
 
 ---
 
