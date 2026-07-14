@@ -1,7 +1,72 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
+import { useReducer, useCallback } from "react";
 
-const { mockUseResponsive, mockPlay, mockPause, mockSeekTo, mockReplace, mockUseWebAudioPlayer, mockHistory, mockCloudSync, mockSaveProject, mockLoadProject, mockGenerateTracksForGenre, mockStartRecording, mockStopRecording, mockCreateTrackedBlob, mockMarkBlobActive, mockRevokeTrackedBlob } = vi.hoisted(() => ({
+interface RealHistoryState<T> {
+  present: T;
+  undoStack: T[];
+  redoStack: T[];
+}
+type RealHistoryAction<T> =
+  | { type: "SET"; payload: T }
+  | { type: "UNDO" }
+  | { type: "REDO" };
+
+function realHistoryReducer<T>(state: RealHistoryState<T>, action: RealHistoryAction<T>): RealHistoryState<T> {
+  switch (action.type) {
+    case "SET":
+      return {
+        present: action.payload,
+        undoStack: [...state.undoStack.slice(-(100 - 1)), state.present],
+        redoStack: [],
+      };
+    case "UNDO": {
+      if (state.undoStack.length === 0) return state;
+      const prev = state.undoStack[state.undoStack.length - 1];
+      return {
+        present: prev,
+        undoStack: state.undoStack.slice(0, -1),
+        redoStack: [...state.redoStack, state.present],
+      };
+    }
+    case "REDO": {
+      if (state.redoStack.length === 0) return state;
+      const next = state.redoStack[state.redoStack.length - 1];
+      return {
+        present: next,
+        undoStack: [...state.undoStack, state.present],
+        redoStack: state.redoStack.slice(0, -1),
+      };
+    }
+  }
+}
+
+function realUseHistory<T>(initialValue: T) {
+  const [history, dispatch] = useReducer(
+    realHistoryReducer as React.Reducer<RealHistoryState<T>, RealHistoryAction<T>>,
+    { present: initialValue, undoStack: [], redoStack: [] },
+  );
+  const setState = useCallback(
+    (updater: T | ((prev: T) => T)) => {
+      const payload = typeof updater === "function" ? (updater as (prev: T) => T)(history.present) : updater;
+      dispatch({ type: "SET", payload });
+    },
+    [history.present],
+  );
+  const undo = useCallback(() => dispatch({ type: "UNDO" }), []);
+  const redo = useCallback(() => dispatch({ type: "REDO" }), []);
+  return {
+    state: history.present,
+    setState,
+    undo,
+    redo,
+    canUndo: history.undoStack.length > 0,
+    canRedo: history.redoStack.length > 0,
+  };
+}
+
+
+const { mockUseResponsive, mockPlay, mockPause, mockSeekTo, mockReplace, mockUseWebAudioPlayer, mockHistory, mockCloudSync, mockSaveProject, mockLoadProject, mockGenerateTracksForGenre, mockStartRecording, mockStopRecording, mockCreateTrackedBlob, mockMarkBlobActive, mockRevokeTrackedBlob, historyMode } = vi.hoisted(() => ({
   mockUseResponsive: vi.fn(() => ({ isMobile: true, isDesktop: false, isTablet: false, width: 390, height: 844, tracksSidebarWidth: 100, channelWidth: 96 })),
   mockPlay: vi.fn(),
   mockPause: vi.fn(),
@@ -12,6 +77,7 @@ const { mockUseResponsive, mockPlay, mockPause, mockSeekTo, mockReplace, mockUse
   mockClockManager: vi.fn(),
   mockKeyBindings: vi.fn(),
   mockHistory: vi.fn((): any => ({ state: [], setState: vi.fn(), undo: vi.fn(), redo: vi.fn(), canUndo: false, canRedo: false })),
+  historyMode: { real: false },
   mockCloudSync: vi.fn(() => ({ syncState: "idle", pushProject: vi.fn(), pullProject: vi.fn() })),
   mockSaveProject: vi.fn(),
   mockLoadProject: vi.fn(() => null),
@@ -41,7 +107,10 @@ vi.mock("../src/lib/clockManager", () => ({ startClock: vi.fn(), stopClock: vi.f
 vi.mock("../src/lib/busRouter", () => ({ assignTrackToBus: vi.fn() }));
 vi.mock("../src/lib/automationEngine", () => ({ buildAutomationSchedule: vi.fn(() => []), interpolateAutomationValue: vi.fn(() => 70) }));
 vi.mock("../src/lib/commandRegistry", () => ({ registerCommand: vi.fn(), initKeyBindings: vi.fn(), disposeKeyBindings: vi.fn() }));
-vi.mock("../src/lib/history", () => ({ useHistory: mockHistory }));
+vi.mock("../src/lib/history", () => ({
+  useHistory: (...args: any[]) =>
+    historyMode.real ? realUseHistory(args[0]) : (mockHistory as any)(...args),
+}));
 vi.mock("../src/lib/keyboard", () => ({ useKeyboardShortcuts: vi.fn() }));
 vi.mock("../src/lib/projectStore", () => ({ saveProject: mockSaveProject, loadProject: mockLoadProject }));
 vi.mock("../src/lib/cloudSync", () => ({ useCloudSync: mockCloudSync }));
@@ -126,6 +195,7 @@ import Studio from "../app/studio/[id]";
 describe("Studio", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    historyMode.real = false;
     mockUseResponsive.mockReturnValue({ isMobile: true, isDesktop: false, isTablet: false, width: 390, height: 844, tracksSidebarWidth: 100, channelWidth: 96 });
     mockHistory.mockReturnValue({ state: [{ id: "track-1", name: "Guitar", color: "bg-blue-500", muted: false, solo: false, volume: 70, pan: 0, sends: {}, sidechainSource: null, regions: [], plugins: [], automation: {} }], setState: vi.fn(), undo: vi.fn(), redo: vi.fn(), canUndo: false, canRedo: false });
     mockStartRecording.mockImplementation(() => Promise.resolve());
@@ -482,6 +552,32 @@ describe("Studio", () => {
 
       expect(mockStartRecording).toHaveBeenCalled();
       expect(setTracks).not.toHaveBeenCalled();
+    });
+
+    it("recording that creates a new track is undoable and clears stale selection", async () => {
+      historyMode.real = true;
+      const recordedBlob = new Blob([new Uint8Array([82, 73, 70, 70])], { type: "audio/wav" });
+      mockStopRecording.mockReturnValue(Promise.resolve(recordedBlob));
+
+      render(<Studio />);
+      await record("Gravar");
+      await act(async () => { fireEvent.click(screen.getByText("ARM")); });
+      await record("Gravar");
+      await record("Parar gravação");
+
+      expect(screen.getAllByText("Recording 2").length).toBeGreaterThan(0);
+
+      await act(async () => {
+        fireEvent.click(screen.getByLabelText("Desfazer"));
+      });
+
+      expect(screen.queryByText("Recording 2")).toBeNull();
+
+      await act(async () => {
+        fireEvent.click(screen.getByLabelText("Refazer"));
+      });
+
+      expect(screen.getAllByText("Recording 2").length).toBeGreaterThan(0);
     });
   });
 });

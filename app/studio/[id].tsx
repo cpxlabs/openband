@@ -345,6 +345,12 @@ export default function Studio() {
 
   const anySolo = useMemo(() => tracks.some((t) => t.solo), [tracks]);
 
+  useEffect(() => {
+    if (selectedTrackId && !tracks.some((t) => t.id === selectedTrackId)) {
+      setSelectedTrackId(null);
+    }
+  }, [selectedTrackId, tracks]);
+
   const sendCursorRef = useRef(sendCursor);
   sendCursorRef.current = sendCursor;
   const selectedTrackIdRef = useRef(selectedTrackId);
