@@ -3,23 +3,13 @@ import { View, Text, Pressable } from "react-native";
 import { Card } from "./Card";
 import { Button } from "./Button";
 import { NewProject } from "./NewProject";
-import type { GenreTemplate, Mood } from "../lib/projectTemplates";
-
-export interface OnboardingProjectConfig {
-  name: string;
-  genre: GenreTemplate;
-  key: string;
-  bpm: number;
-  mood?: Mood;
-  numBars?: number;
-  timeSignature?: string;
-}
+import type { ProjectStarterResult } from "../lib/projectStarter";
 
 interface OnboardingFlowProps {
   visible: boolean;
   onClose: () => void;
-  onCreate: (config: OnboardingProjectConfig) => void;
-  onStartFromScratch?: () => void;
+  onCreate: (config: ProjectStarterResult) => void;
+  onStartFromScratch?: (result: ProjectStarterResult) => void;
   onDontShowAgain?: () => void;
   testID?: string;
 }
@@ -41,9 +31,9 @@ export function OnboardingFlow({
   }, [dontShowAgain, onDontShowAgain, onClose]);
 
   const handleProjectCreate = useCallback(
-    (config: OnboardingProjectConfig) => {
+    (result: ProjectStarterResult) => {
       setShowProject(false);
-      onCreate(config);
+      onCreate(result);
     },
     [onCreate],
   );
@@ -53,11 +43,14 @@ export function OnboardingFlow({
     onClose();
   }, [onClose]);
 
-  const handleStartFromScratch = useCallback(() => {
-    setShowProject(false);
-    onStartFromScratch?.();
-    onClose();
-  }, [onStartFromScratch, onClose]);
+  const handleStartFromScratch = useCallback(
+    (result: ProjectStarterResult) => {
+      setShowProject(false);
+      onStartFromScratch?.(result);
+      onClose();
+    },
+    [onStartFromScratch, onClose],
+  );
 
   if (!visible) return null;
 

@@ -6,6 +6,8 @@ OpenBand's mastering stage is a dedicated post-mix bus applying chain-ordered pr
 ## Implementation Notes
 The 10 mastering chains, their preset params, and the offline-render DSP live in `src/lib/mastering.ts` (`MASTERING_CHAIN_PRESETS` at `src/lib/mastering.ts:10`, `buildMasteringChain(preset)` at `:114`, `applyMasteringChain(...)` at `:130`). The UI-facing builder/defs are in `src/lib/masteringSuite.ts` (`buildMasteringChain()` at `:83`, `MASTERING_PLUGIN_DEFS` at `:33`). Components: `src/components/LufsMeter.tsx`, `src/components/VisualEQ.tsx`, `src/components/MixManager.tsx`, `src/components/MasteringSuite.tsx`. The real K-weighting + true-peak DSP lives in `src/lib/lufs.ts` (`measureLUFS`, `kWeight`, `truePeak`, gated loudness). `LufsMeter` consumes `measureLUFS` from a real master `AnalyserNode` (wired in `MasteringSuite.tsx` via `audioSystem`), with the `Math.random()`/`Math.sin()` simulation retained only as a fallback when no analyser is supplied. This satisfies the silence `−70` floor and the `−14 dBFS` 1 kHz tone `−14.0 ± 0.5 LUFS` scenarios (verified by `tests/lufs.test.ts`).
 
+- `validateMasteringChain` (`src/lib/mastering.ts:111`) rejects any chain whose last two nodes are both limiter-type; single trailing `truePeakLimiter` is valid. Preset descriptions #4/#6/#9 corrected to reflect single `truePeakLimiter` ending.
+
 ## Requirements
 
 ### Requirement: Master Chain Architecture
@@ -85,7 +87,7 @@ The system MUST include a true-peak aware limiter as the final node in the defau
 ### Requirement: Chain Validation (no duplicate terminal limiter)
 The system MUST reject any mastering chain whose final node ordering contains more than one limiter-type node (`type === 'limiter' || type === 'truePeakLimiter'`) terminating the chain. The system MUST provide `validateMasteringChain(chain: Plugin[]): { valid: boolean; error?: string }` returning `valid: false` with a descriptive `error` when the chain ends with a trailing `limiter` followed by `truePeakLimiter` (or any pairing of two terminal limiters).
 
-> NOTE: Current `MASTERING_CHAIN_PRESETS` #4 (`Loudness Maximizer`), #6 (`EDM Club`), and #9 (`Lo-Fi Vibe`) DO end with `limiter` → `truePeakLimiter`. The spec rejects such chains, so these three presets MUST be updated to end with a single `truePeakLimiter` only (drop the trailing `limiter` node). This is an implementation target, not current behavior.
+> NOTE: `MASTERING_CHAIN_PRESETS` #4 (`Loudness Maximizer`), #6 (`EDM Club`), and #9 (`Lo-Fi Vibe`) already end with a single `truePeakLimiter` (their descriptions were corrected to read `True Peak`, dropping the stale `Limiter → True Peak` wording). A single trailing `truePeakLimiter` is valid; only two consecutive limiter-type nodes are rejected.
 
 #### Scenario: Reject double terminal limiter
 - **Given** a chain `[EQ, Limiter, TruePeakLimiter]`
@@ -98,11 +100,11 @@ The system MUST reject any mastering chain whose final node ordering contains mo
 - **Then** `{ valid: true }` is returned
 
 ## Test Requirements (Vitest)
-- [ ] All 10 mastering presets produce a valid `Plugin[]` via `buildMasteringChain`
-- [ ] `validateMasteringChain` rejects chains with >1 terminal limiter (`limiter`+`truePeakLimiter`)
-- [ ] The 3 affected presets (`Loudness Maximizer`, `EDM Club`, `Lo-Fi Vibe`) now end with a single `truePeakLimiter`
-- [ ] LUFS meter returns `−70` floor on silence
-- [ ] LUFS on −14 dBFS tone within ±0.5 LUFS
-- [ ] MixManager stores/recalls 4 snapshots identically (deep equal)
-- [ ] VisualEQ band drag updates underlying EQ param
-- [ ] Bounce through master chain never exceeds ceiling
+- [x] All 10 mastering presets produce a valid `Plugin[]` via `buildMasteringChain`
+- [x] `validateMasteringChain` rejects chains with >1 terminal limiter (`limiter`+`truePeakLimiter`)
+- [x] The 3 affected presets (`Loudness Maximizer`, `EDM Club`, `Lo-Fi Vibe`) now end with a single `truePeakLimiter`
+- [x] LUFS meter returns `−70` floor on silence
+- [x] LUFS on −14 dBFS tone within ±0.5 LUFS
+- [x] MixManager stores/recalls 4 snapshots identically (deep equal)
+- [x] VisualEQ band drag updates underlying EQ param
+- [x] Bounce through master chain never exceeds ceiling

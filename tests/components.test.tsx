@@ -707,7 +707,7 @@ describe("NewProject", () => {
     expect(fn).toHaveBeenCalledWith(
       expect.objectContaining({
         name: expect.any(String),
-        genre: expect.any(Object),
+        genreId: expect.any(String),
         mood: "warm",
       }),
     );

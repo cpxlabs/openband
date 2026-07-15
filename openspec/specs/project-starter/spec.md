@@ -4,7 +4,7 @@
 The New Project flow (`src/components/NewProject.tsx`) is a 3-step wizard (genre → mood → details) that collects `name`, `bpm`, `numBars`, `timeSignature`, `key`, and `mood`, then produces an initial project via `src/lib/projectTemplates.ts` `generateTracksForGenre`. It also supports a "Start From Scratch" path that yields an empty starter with no tracks.
 
 ## Implementation Notes
-The wizard UI lives in `src/components/NewProject.tsx` (3-step genre→mood→details; exposes `onStartFromScratch?` and `onCreate`). Track generation and all template data live in `src/lib/projectTemplates.ts`: `GENRES` (`projectTemplates.ts:139`), `MOODS` (`projectTemplates.ts:23`), `MUSICAL_KEYS` (`projectTemplates.ts:330`), `TIME_SIGNATURES` (`projectTemplates.ts:76`), and `generateTracksForGenre(genreId, bpm?, key?, mood?, numBars?, timeSignature?)` (`projectTemplates.ts:340`). The new orchestration point `setupProjectStarter(config)` is added to a new module `src/lib/projectStarter.ts` (spec'd below) and delegates to `generateTracksForGenre`.
+The wizard UI lives in `src/components/NewProject.tsx` (3-step genre→mood→details; exposes `onStartFromScratch?` and `onCreate`). Track generation and all template data live in `src/lib/projectTemplates.ts`: `GENRES` (`projectTemplates.ts:139`), `MOODS` (`projectTemplates.ts:23`), `MUSICAL_KEYS` (`projectTemplates.ts:330`), `TIME_SIGNATURES` (`projectTemplates.ts:76`), and `generateTracksForGenre(genreId, bpm?, key?, mood?, numBars?, timeSignature?)` (`projectTemplates.ts:340`). The new orchestration point `setupProjectStarter(config)` is added to a new module `src/lib/projectStarter.ts` (spec'd below) and delegates to `generateTracksForGenre`. The New Project wizard `src/components/NewProject.tsx` builds the config and delegates to `setupProjectStarter` (src/lib/projectStarter.ts:47); `onCreate`/`onStartFromScratch` receive the `ProjectStarterResult`.
 
 ## Requirements
 
@@ -59,8 +59,8 @@ Given the same config, generation MUST be deterministic:
 - **Then** `bpm` is clamped to `110` before `generateTracksForGenre` is called
 
 ## Test Requirements (Vitest)
-- [ ] `setupProjectStarter` returns `tracks.length === selectedGenre.suggestedTracks.length`
-- [ ] Region duration matches `(numBars * beatsPerBar * 60) / bpm`
-- [ ] `startFromScratch` returns empty `tracks`
-- [ ] Invalid `bpm` is clamped to `genre.bpmRange`
-- [ ] `numBars` outside `1..64` is clamped to range
+- [x] `setupProjectStarter` returns `tracks.length === selectedGenre.suggestedTracks.length`
+- [x] Region duration matches `(numBars * beatsPerBar * 60) / bpm`
+- [x] `startFromScratch` returns empty `tracks`
+- [x] Invalid `bpm` is clamped to `genre.bpmRange`
+- [x] `numBars` outside `1..64` is clamped to range

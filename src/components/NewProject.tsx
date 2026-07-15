@@ -3,20 +3,13 @@ import { View, Text, Pressable, ScrollView, TextInput } from "react-native";
 import { useTranslation } from "react-i18next";
 import { GENRES, MUSICAL_KEYS, keyLabel, MOODS, TIME_SIGNATURES } from "../lib/projectTemplates";
 import type { GenreTemplate, Mood } from "../lib/projectTemplates";
+import { setupProjectStarter, type ProjectStarterResult } from "../lib/projectStarter";
 
 interface NewProjectProps {
   visible: boolean;
   onClose: () => void;
-  onCreate: (config: {
-    name: string;
-    genre: GenreTemplate;
-    key: string;
-    bpm: number;
-    mood?: Mood;
-    numBars?: number;
-    timeSignature?: string;
-  }) => void;
-  onStartFromScratch?: () => void;
+  onCreate: (result: ProjectStarterResult) => void;
+  onStartFromScratch?: (result: ProjectStarterResult) => void;
   initialGenre?: GenreTemplate;
   initialKey?: string;
   initialBpm?: number;
@@ -91,7 +84,15 @@ export function NewProject({
 
   const handleCreate = useCallback(() => {
     const finalName = name.trim() || `${selectedGenre.name} - ${t("newProject.defaultName", "Novo Projeto")}`;
-    const config = { name: finalName, genre: selectedGenre, key: selectedKey, bpm, mood: selectedMood, numBars, timeSignature };
+    const result = setupProjectStarter({
+      name: finalName,
+      genreId: selectedGenre.id,
+      mood: selectedMood,
+      bpm,
+      numBars,
+      timeSignature,
+      key: selectedKey,
+    });
     setName("");
     setSelectedGenre(GENRES[0]);
     setBpm(GENRES[0].defaultBpm);
@@ -100,7 +101,7 @@ export function NewProject({
     setNumBars(8);
     setTimeSignature("4/4");
     setStep("genre");
-    onCreate(config);
+    onCreate(result);
   }, [name, selectedGenre, selectedKey, bpm, selectedMood, numBars, timeSignature, onCreate]);
 
   const handleClose = useCallback(() => {
@@ -116,6 +117,17 @@ export function NewProject({
   }, [onClose]);
 
   const handleScratch = useCallback(() => {
+    const finalName = name.trim() || `${selectedGenre.name} - ${t("newProject.defaultName", "Novo Projeto")}`;
+    const result = setupProjectStarter({
+      name: finalName,
+      genreId: selectedGenre.id,
+      mood: selectedMood,
+      bpm,
+      numBars,
+      timeSignature,
+      key: selectedKey,
+      startFromScratch: true,
+    });
     setName("");
     setSelectedGenre(GENRES[0]);
     setBpm(GENRES[0].defaultBpm);
@@ -124,9 +136,9 @@ export function NewProject({
     setNumBars(8);
     setTimeSignature("4/4");
     setStep("genre");
-    onStartFromScratch?.();
+    onStartFromScratch?.(result);
     onClose();
-  }, [onStartFromScratch, onClose]);
+  }, [name, selectedGenre, selectedKey, bpm, selectedMood, numBars, timeSignature, onStartFromScratch, onClose]);
 
   if (!visible) return null;
 

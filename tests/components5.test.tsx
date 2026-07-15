@@ -624,3 +624,89 @@ describe("PluginEditor deep", () => {
     expect(screen.getByText("tapeSaturator")).toBeTruthy();
   });
 });
+
+describe("MixManager snapshot recall deep equal", () => {
+  const buildSnapshots = (): MixSnapshot[] => [
+    {
+      id: "a", name: "Mix A", created: 1000,
+      trackVolumes: { t1: 0.5 }, trackPans: {}, trackSends: {},
+      trackMutes: {}, trackSolos: {}, plugins: {},
+    },
+    {
+      id: "b", name: "Mix B", created: 2000,
+      trackVolumes: { t1: 0.8 }, trackPans: {}, trackSends: {},
+      trackMutes: {}, trackSolos: {}, plugins: {},
+    },
+    {
+      id: "c", name: "Mix C", created: 3000,
+      trackVolumes: { t1: 0.2 }, trackPans: {}, trackSends: {},
+      trackMutes: {}, trackSolos: {}, plugins: {},
+    },
+    {
+      id: "d", name: "Mix D", created: 4000,
+      trackVolumes: { t1: 1 }, trackPans: {}, trackSends: {},
+      trackMutes: {}, trackSolos: {}, plugins: {},
+    },
+  ];
+
+  it("stores and recalls 4 snapshots identically (deep equal)", () => {
+    const snapshots = buildSnapshots();
+    const loaded: string[] = [];
+    render(
+      <MixManager
+        snapshots={snapshots}
+        onSave={() => {}}
+        onLoad={(id) => loaded.push(id)}
+        onDelete={() => {}}
+        onCompare={() => {}}
+      />,
+    );
+    fireEvent.click(screen.getByText("MIX"));
+    const loadButtons = screen.getAllByText("Carregar");
+    expect(loadButtons.length).toBe(4);
+    loadButtons.forEach((b) => fireEvent.click(b));
+    expect(loaded).toEqual(snapshots.map((s) => s.id));
+    const recalled = loaded.map((id) => snapshots.find((s) => s.id === id)!);
+    expect(recalled).toEqual(snapshots);
+  });
+});
+
+describe("VisualEQ band drag", () => {
+  const bands = [
+    { freq: 30, gain: 0, q: 0.71, type: 3, enabled: 0 },
+    { freq: 120, gain: 0, q: 0.71, type: 1, enabled: 1 },
+    { freq: 500, gain: 0, q: 0.71, type: 2, enabled: 1 },
+    { freq: 1500, gain: 0, q: 0.71, type: 2, enabled: 1 },
+    { freq: 5000, gain: 0, q: 0.71, type: 2, enabled: 0 },
+    { freq: 10000, gain: 0, q: 0.71, type: 4, enabled: 0 },
+    { freq: 40, gain: 0, q: 0.71, type: 0, enabled: 0 },
+    { freq: 18000, gain: 0, q: 0.71, type: 5, enabled: 0 },
+  ];
+
+  it("drag updates the underlying EQ param via onChange", () => {
+    const fn = vi.fn();
+    const { container } = render(<VisualEQ bands={bands} onChange={fn} />);
+    const area = container.querySelector(
+      "div[style*='width: 320']",
+    ) as HTMLElement;
+    expect(area).toBeTruthy();
+    area.getBoundingClientRect = () =>
+      ({
+        left: 0, top: 0, width: 320, height: 180,
+        right: 320, bottom: 180, x: 0, y: 0, toJSON() {},
+      } as any);
+    fireEvent.touchStart(area, {
+      touches: [{ clientX: 83, clientY: 100 }],
+      changedTouches: [{ clientX: 83, clientY: 100 }],
+    });
+    fireEvent.touchMove(area, {
+      touches: [{ clientX: 83, clientY: 60 }],
+      changedTouches: [{ clientX: 83, clientY: 60 }],
+    });
+    expect(fn).toHaveBeenCalled();
+    const [index, params] = fn.mock.calls[0];
+    expect(index).toBe(1);
+    expect(params.gain).not.toBe(0);
+    expect(params.freq).toBeGreaterThanOrEqual(20);
+  });
+});

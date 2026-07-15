@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo, useRef, useEffect } from "react"
 import { View, Text, FlatList, Pressable, Alert } from "react-native"
 import { useRouter } from "expo-router"
 import { EmptyState, PageHeader, Button, NewProject, ProjectCard, Loading } from "../../src/components"
-import type { GenreTemplate, Mood } from "../../src/lib/projectTemplates"
+import type { ProjectStarterResult } from "../../src/lib/projectStarter"
 import { useResponsive, LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive"
 import { listProjectIndex, importProject, loadProject, getFavoriteProjects, toggleProjectFavorite, saveProject, type ProjectData } from "../../src/lib/projectStore"
 import { SCREEN_BOTTOM_PADDING } from "../../src/lib/constants"
@@ -144,12 +144,10 @@ export default function Library() {
     }
   }, [])
 
-  const handleCreate = useCallback((config: {
-    name: string; genre: GenreTemplate; key: string; bpm: number; mood?: Mood; numBars?: number; timeSignature?: string
-  }) => {
+  const handleCreate = useCallback((config: ProjectStarterResult) => {
     const projectId = `proj-${Date.now()}`
     const params = new URLSearchParams({
-      title: config.name, genre: config.genre.id, key: config.key, bpm: String(config.bpm),
+      title: config.name, genre: config.genreId, key: config.key, bpm: String(config.bpm),
       numBars: String(config.numBars ?? 8), timeSignature: config.timeSignature ?? "4/4",
     })
     if (config.mood) params.set("mood", config.mood)

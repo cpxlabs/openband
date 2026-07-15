@@ -7,6 +7,7 @@ import {
 } from "../src/lib/projectStore";
 import { OnboardingFlow } from "../src/components/OnboardingFlow";
 import { AuthProvider, useAuth } from "../src/context/AuthContext";
+import type { ProjectStarterResult } from "../src/lib/projectStarter";
 
 const ONBOARDING_KEY = "openband_onboarding";
 
@@ -112,16 +113,11 @@ describe("OnboardingFlow", () => {
 
   it("forwards onCreate with a /studio/<id> route containing fromOnboarding=1", () => {
     let captured: string | null = null;
-    const onCreate = (config: {
-      name: string;
-      genre: { id: string; name: string; defaultBpm: number; defaultKey: string };
-      key: string;
-      bpm: number;
-    }) => {
+    const onCreate = (config: ProjectStarterResult) => {
       const projectId = `proj-test`;
       const params = new URLSearchParams({
         title: config.name,
-        genre: config.genre.id,
+        genre: config.genreId,
         key: config.key,
         bpm: String(config.bpm),
         numBars: "8",

@@ -40,7 +40,7 @@ export const MASTERING_CHAIN_PRESETS: MasteringChainPreset[] = [
   },
   {
     name: "Loudness Maximizer",
-    description: "EQ → Multiband → Limiter → True Peak",
+    description: "EQ → Multiband → True Peak",
     plugins: [
       { name: "EQ Eight", type: "eq", color: "#5ac8fa" },
       { name: "Multiband Comp", type: "multibandCompressor", color: "#bf5af2" },
@@ -58,7 +58,7 @@ export const MASTERING_CHAIN_PRESETS: MasteringChainPreset[] = [
   },
   {
     name: "EDM Club",
-    description: "EQ → Multiband → Imager → Limiter → True Peak",
+    description: "EQ → Multiband → Imager → True Peak",
     plugins: [
       { name: "EQ Eight", type: "eq", color: "#5ac8fa" },
       { name: "Multiband Comp", type: "multibandCompressor", color: "#bf5af2" },
@@ -88,7 +88,7 @@ export const MASTERING_CHAIN_PRESETS: MasteringChainPreset[] = [
   },
   {
     name: "Lo-Fi Vibe",
-    description: "Tape → EQ → Limiter → True Peak",
+    description: "Tape → EQ → True Peak",
     plugins: [
       { name: "Tape Saturator", type: "tapeSaturator", color: "#ff453a" },
       { name: "EQ Eight", type: "eq", color: "#5ac8fa" },
@@ -114,12 +114,17 @@ export function validateMasteringChain(
   const types = Array.isArray(chain)
     ? chain.map((p) => p.type)
     : chain.plugins.map((p) => p.type);
+  if (types.length < 2) return { valid: true };
   const last = types[types.length - 1];
   const secondLast = types[types.length - 2];
   const isLimiter = (t: string | undefined) =>
     t === "limiter" || t === "truePeakLimiter";
   if (isLimiter(last) && isLimiter(secondLast)) {
-    return { valid: false, error: "Chain ends with duplicate limiter nodes" };
+    return {
+      valid: false,
+      error:
+        "Chain ends with more than one limiter node (limiter/truePeakLimiter)",
+    };
   }
   return { valid: true };
 }

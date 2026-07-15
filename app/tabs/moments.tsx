@@ -5,7 +5,8 @@ import { PageHeader, NewProject, SamplePackCard, MomentCard, Loading, EmptyState
 import type { MomentData } from "../../src/components/MomentCard";
 import { fetchFeed } from "../../src/lib/feedApi";
 import { GENRES } from "../../src/lib/projectTemplates";
-import type { GenreTemplate, Mood } from "../../src/lib/projectTemplates";
+import type { GenreTemplate } from "../../src/lib/projectTemplates";
+import type { ProjectStarterResult } from "../../src/lib/projectStarter";
 import { LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive";
 import { SCREEN_BOTTOM_PADDING } from "../../src/lib/constants";
 import { useTranslation } from "react-i18next";
@@ -82,19 +83,11 @@ export default function Moments() {
   );
 
   const handleCreateProject = useCallback(
-    (config: {
-      name: string;
-      genre: GenreTemplate;
-      key: string;
-      bpm: number;
-      mood?: Mood;
-      numBars?: number;
-      timeSignature?: string;
-    }) => {
+    (config: ProjectStarterResult) => {
       const projectId = `proj-sample-${Date.now()}`;
       const params = new URLSearchParams({
         title: config.name,
-        genre: config.genre.id,
+        genre: config.genreId,
         key: config.key,
         bpm: String(config.bpm),
         numBars: String(config.numBars ?? 8),

@@ -18,7 +18,7 @@ import { LAYOUT_MAX_WIDTHS, useResponsive } from "../src/lib/responsive";
 import { saveProject } from "../src/lib/projectStore";
 import { setMasteringInput } from "../src/lib/masteringBridge";
 import type { TrackDef, TrackRegion } from "../src/lib/types";
-import type { GenreTemplate, Mood } from "../src/lib/projectTemplates";
+import type { ProjectStarterResult } from "../src/lib/projectStarter";
 import { useWebAudioPlayer } from "../src/hooks/useWebAudioPlayer";
 import { extractStems } from "../src/lib/stemExtractor";
 
@@ -300,15 +300,7 @@ export default function Extractor() {
   }, [router]);
 
   const handleCreateProject = useCallback(
-    (config: {
-      name: string;
-      genre: GenreTemplate;
-      key: string;
-      bpm: number;
-      mood?: Mood;
-      numBars?: number;
-      timeSignature?: string;
-    }) => {
+    (config: ProjectStarterResult) => {
       const stemDefaults: Record<
         StemType,
         { name: string; volume: number; pan: number }
@@ -351,7 +343,7 @@ export default function Extractor() {
 
       saveProject(projectId, {
         title: config.name || projectTitle,
-        genre: config.genre.id,
+        genre: config.genreId,
         key: config.key,
         bpm: config.bpm,
         tracks,

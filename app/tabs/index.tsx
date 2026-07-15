@@ -31,7 +31,7 @@ import { fetchFeed, toggleLike, createRemix } from "../../src/lib/feedApi";
 import { generatePreviewUrl, SCREEN_BOTTOM_PADDING } from "../../src/lib/constants";
 import { LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive";
 import { GENRES } from "../../src/lib/projectTemplates";
-import type { GenreTemplate, Mood } from "../../src/lib/projectTemplates";
+import type { ProjectStarterResult } from "../../src/lib/projectStarter";
 import { useResponsive } from "../../src/lib/responsive";
 import { listProjectIndex } from "../../src/lib/projectStore";
 import { audioSystem } from "../../src/lib/universalAudio";
@@ -281,21 +281,13 @@ export default function Feed() {
 
   const handleCreateProject = useCallback(
     (
-      config: {
-        name: string;
-        genre: GenreTemplate;
-        key: string;
-        bpm: number;
-        mood?: Mood;
-        numBars?: number;
-        timeSignature?: string;
-      },
+      config: ProjectStarterResult,
       fromOnboarding = false,
     ) => {
       const projectId = `proj-${Date.now()}`;
       const params = new URLSearchParams({
         title: config.name,
-        genre: config.genre.id,
+        genre: config.genreId,
         key: config.key,
         bpm: String(config.bpm),
         numBars: String(config.numBars ?? 8),
@@ -311,15 +303,7 @@ export default function Feed() {
   );
 
   const handleOnboardingCreate = useCallback(
-    (config: {
-      name: string;
-      genre: GenreTemplate;
-      key: string;
-      bpm: number;
-      mood?: Mood;
-      numBars?: number;
-      timeSignature?: string;
-    }) => {
+    (config: ProjectStarterResult) => {
       handleCreateProject(config, true);
     },
     [handleCreateProject],
