@@ -15,6 +15,7 @@ export interface FeedPost {
   plays: number;
   likes: number;
   userLiked: boolean;
+  userFavorited?: boolean;
   duration: number;
   color: string;
 }
@@ -29,6 +30,7 @@ interface FeedPostCardProps {
   onRemix: (post: FeedPost) => void;
   onShare: (post: FeedPost) => void;
   onPlayed: (postId: string) => void;
+  onFavorite?: (postId: string) => void;
   flex?: number;
 }
 
@@ -71,6 +73,7 @@ export const FeedPostCard = memo(function FeedPostCard({
   onRemix,
   onShare,
   onPlayed,
+  onFavorite,
   flex = 1,
 }: FeedPostCardProps) {
   return (
@@ -144,6 +147,19 @@ export const FeedPostCard = memo(function FeedPostCard({
             {formatCount(item.likes)}
           </Text>
         </Pressable>
+
+        {onFavorite && (
+          <Pressable
+            onPress={() => onFavorite(item.id)}
+            className="flex-row items-center gap-1.5 active:opacity-60"
+            accessibilityRole="button"
+            accessibilityLabel={item.userFavorited ? "Remover dos favoritos" : "Favoritar"}
+          >
+            <Text className={`text-base ${item.userFavorited ? "text-yellow-400" : "text-gray-500"}`}>
+              {item.userFavorited ? "★" : "☆"}
+            </Text>
+          </Pressable>
+        )}
 
         <Pressable
           onPress={() => onRemix(item)}

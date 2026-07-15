@@ -24,3 +24,19 @@ export function requireAuth(req: AuthenticatedRequest, res: Response, next: Next
     res.status(401).json({ error: "Sessão expirada ou Token inválido." })
   }
 }
+
+export function optionalAuth(req: AuthenticatedRequest, _res: Response, next: NextFunction): void {
+  const authHeader = req.headers.authorization
+
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    const token = authHeader.split(" ")[1]
+    try {
+      const decoded = jwt.verify(token, getJwtSecret()) as { userId: string; tier: string }
+      req.userTokenData = decoded
+    } catch {
+      req.userTokenData = undefined
+    }
+  }
+
+  next()
+}

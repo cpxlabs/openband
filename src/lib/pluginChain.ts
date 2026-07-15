@@ -214,6 +214,32 @@ function scheduleModulated(
   }
 }
 
+/**
+ * Modulates a single plugin AudioParam at the live transport clock. The target is
+ * derived from the plugin param id via `paramToTarget` and the value range from
+ * the plugin spec. When no route is active the param is left at its base value,
+ * so this is a drop-in for any param that can map to a mod target.
+ */
+function modulateParam(
+  param: AudioParam,
+  plugin: Plugin,
+  paramId: string,
+  base: number,
+  duration: number,
+  modTime: number,
+): void {
+  const [min, max] = paramRange(plugin, paramId);
+  scheduleModulated(
+    param,
+    base,
+    min,
+    max,
+    paramToTarget(paramId),
+    duration,
+    modTime,
+  );
+}
+
 export async function applyPluginChain(
   buffer: AudioBuffer,
   plugins: Plugin[],
@@ -236,7 +262,10 @@ export async function applyPluginChain(
   let current = buffer;
 
   if (masteringPlugins.length > 0) {
-    current = await applyMasteringChain(current, masteringPlugins, sampleRate);
+    current = await applyMasteringChain(current, masteringPlugins, sampleRate, {
+      modTime: opts.modTime ?? 0,
+      duration: opts.duration,
+    });
   }
 
   for (const plugin of otherPlugins) {
@@ -353,24 +382,13 @@ async function applySinglePlugin(
       }
       filter.type = filterType;
       const freq = (resolveParam(p, "freq", "frequency") ?? 1000) as number;
-      const [freqMin, freqMax] = paramRange(plugin, "freq");
-      scheduleModulated(
-        filter.frequency,
-        freq,
-        freqMin,
-        freqMax,
-        paramToTarget("freq"),
-        duration,
-        modTime,
-      );
+      modulateParam(filter.frequency, plugin, "freq", freq, duration, modTime);
       const res = (resolveParam(p, "resonance", "q") ?? 0) as number;
-      const [resMin, resMax] = paramRange(plugin, "resonance");
-      scheduleModulated(
+      modulateParam(
         filter.Q,
+        plugin,
+        "resonance",
         0.707 + (res / 100) * 10,
-        resMin,
-        resMax,
-        paramToTarget("resonance"),
         duration,
         modTime,
       );
@@ -434,26 +452,22 @@ async function applySinglePlugin(
         node = ws;
       }
       const gain = ctx.createGain();
-      const [gainMin, gainMax] = paramRange(plugin, "gain");
-      scheduleModulated(
+      modulateParam(
         gain.gain,
+        plugin,
+        "gain",
         Math.pow(10, gainDb / 20),
-        gainMin,
-        gainMax,
-        paramToTarget("gain"),
         duration,
         modTime,
       );
       node.connect(gain);
       if (numCh > 1 && ctx.createStereoPanner) {
         const panner = ctx.createStereoPanner();
-        const [panMin, panMax] = paramRange(plugin, "pan");
-        scheduleModulated(
+        modulateParam(
           panner.pan,
+          plugin,
+          "pan",
           Math.max(-1, Math.min(1, pan / 100)),
-          panMin,
-          panMax,
-          paramToTarget("pan"),
           duration,
           modTime,
         );
@@ -584,23 +598,20 @@ async function applySinglePlugin(
       const stereoize = (p.stereoize ?? 30) as number;
       const stereoizeFactor = 1 + (stereoize / 100) * 0.5;
       const sideL = ctx.createGain();
-      const [widthMin, widthMax] = paramRange(plugin, "width");
-      scheduleModulated(
+      modulateParam(
         sideL.gain,
+        plugin,
+        "width",
         widthScale * Math.pow(10, sideGainDb / 20) * stereoizeFactor,
-        widthMin,
-        widthMax,
-        paramToTarget("width"),
         duration,
         modTime,
       );
       const sideR = ctx.createGain();
-      scheduleModulated(
+      modulateParam(
         sideR.gain,
+        plugin,
+        "width",
         widthScale * Math.pow(10, sideGainDb / 20) * stereoizeFactor,
-        widthMin,
-        widthMax,
-        paramToTarget("width"),
         duration,
         modTime,
       );

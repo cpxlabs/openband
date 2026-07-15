@@ -327,7 +327,10 @@ class UniversalAudioSystem {
             const ab = await resp.arrayBuffer();
             let buf = await this.decodeAudio(ab);
             if (track.plugins && track.plugins.length > 0) {
-              buf = await applyPluginChain(buf, track.plugins, sampleRate, { duration });
+              buf = await applyPluginChain(buf, track.plugins, sampleRate, {
+                duration,
+                modTime: region.start,
+              });
             }
             const src = ctx.createBufferSource();
             src.buffer = buf;

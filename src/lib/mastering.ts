@@ -1,5 +1,10 @@
 import type { Plugin } from "./types";
-import { getDefaultParams, EQ_DEFAULT_BANDS } from "./types";
+import { getDefaultParams, EQ_DEFAULT_BANDS, PLUGIN_SPECS } from "./types";
+import {
+  paramToTarget,
+  getModulationState,
+  applyModulation,
+} from "./modulationMatrix";
 
 export interface MasteringChainPreset {
   name: string;
@@ -158,11 +163,12 @@ export async function applyMasteringChain(
   buffer: AudioBuffer,
   plugins: Plugin[],
   sampleRate: number,
+  opts: { modTime?: number; duration?: number } = {},
 ): Promise<AudioBuffer> {
   let current = buffer;
   for (const plugin of plugins) {
     if (!plugin.enabled) continue;
-    current = await applyMasteringPlugin(current, plugin, sampleRate);
+    current = await applyMasteringPlugin(current, plugin, sampleRate, opts);
   }
   return current;
 }
@@ -171,8 +177,10 @@ async function applyMasteringPlugin(
   buffer: AudioBuffer,
   plugin: Plugin,
   sampleRate: number,
+  opts: { modTime?: number; duration?: number } = {},
 ): Promise<AudioBuffer> {
-  const p = plugin.params;
+  const modTime = opts.modTime ?? 0;
+  const p = applyModulationToPluginParams(plugin, modTime);
   switch (plugin.type) {
     case "eq":
       return applyEq(buffer, p, sampleRate);
@@ -193,6 +201,38 @@ async function applyMasteringPlugin(
     default:
       return buffer;
   }
+}
+
+/**
+ * Returns a copy of the plugin params with every routed mod target replaced by
+ * its value at `modTime` (via the modulation matrix). Params without an active
+ * route keep their base value, so the mastering render path honours modulation
+ * assignments made in the PluginEditor at playback time.
+ */
+function applyModulationToPluginParams(
+  plugin: Plugin,
+  modTime: number,
+): Record<string, number> {
+  if (!plugin.params) return {};
+  const spec = PLUGIN_SPECS[plugin.type];
+  const out: Record<string, number> = { ...plugin.params };
+  if (!spec) return out;
+  for (const param of spec.params) {
+    const target = paramToTarget(param.id);
+    if (!target) continue;
+    const active = getModulationState().routes.some(
+      (r) => r.enabled && r.target === target,
+    );
+    if (!active) continue;
+    out[param.id] = applyModulation(
+      target,
+      plugin.params[param.id] ?? param.default,
+      param.min,
+      param.max,
+      { time: modTime },
+    );
+  }
+  return out;
 }
 
 function makeLimiterCurve(size: number, ceilingDb: number): Float32Array<ArrayBuffer> {

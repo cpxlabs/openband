@@ -382,6 +382,9 @@ CREATE TABLE IF NOT EXISTS post_likes (
   id TEXT PRIMARY KEY,
   post_id TEXT NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
   user_id TEXT REFERENCES profiles(id) ON DELETE CASCADE,
+  liked INTEGER NOT NULL DEFAULT 0,
+  remixed INTEGER NOT NULL DEFAULT 0,
+  favorited INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE(post_id, user_id)
 );
@@ -447,6 +450,7 @@ CREATE TABLE IF NOT EXISTS band_members (
 export function initializeSchema(): void {
   getDb().exec(SCHEMA_SQL)
   migratePostsColumns()
+  migratePostLikesColumns()
 }
 
 function migratePostsColumns(): void {
@@ -470,6 +474,22 @@ function migratePostsColumns(): void {
   for (const [col, def] of additions) {
     if (!existing.has(col)) {
       db.prepare(`ALTER TABLE posts ADD COLUMN ${col} ${def}`).run()
+    }
+  }
+}
+
+function migratePostLikesColumns(): void {
+  const db = getDb()
+  const columns = db.prepare("PRAGMA table_info(post_likes)").all() as { name: string }[]
+  const existing = new Set(columns.map((c) => c.name))
+  const additions: [string, string][] = [
+    ["liked", "INTEGER NOT NULL DEFAULT 0"],
+    ["remixed", "INTEGER NOT NULL DEFAULT 0"],
+    ["favorited", "INTEGER NOT NULL DEFAULT 0"],
+  ]
+  for (const [col, def] of additions) {
+    if (!existing.has(col)) {
+      db.prepare(`ALTER TABLE post_likes ADD COLUMN ${col} ${def}`).run()
     }
   }
 }

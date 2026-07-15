@@ -1,17 +1,42 @@
-### Title
-Apply modulation matrix (LFO / env / macro) to plugin params at playback
+# Proposal: Wire Modulation Matrix
 
-### Problem
-`src/lib/modulationMatrix.ts` implements `computeModulation()` (11 sources × 11 targets) and is imported by `PluginEditor.tsx` and `OneKnob.tsx`, but modulation is **not applied at playback time**. The math exists; the render path ignores it.
+## Context
 
-### Why
-Modulation is what makes a DAW feel alive (LFO on filter cutoff, envelope on gain, macro controlling multiple params). Without it, the matrix UI is decorative — a credibility gap for pro users.
+The OpenBand modulation matrix (`src/lib/modulationMatrix.ts`) defines 11 mod
+sources and 11 mod targets, plus `computeModulation`, `applyModulation`,
+`computeModulatedParams`, and `getModulatedValue`. The `PluginEditor` and
+`OneKnob` components already expose a "MOD" affordance that creates routes into
+the matrix.
 
-### Scope
-- Integrate `computeModulation()` into `renderMixdown()` so modulated params update `AudioParam`s over time.
-- Bind UI controls to register mod routes into the matrix.
-- **In scope:** playback-time application, UI binding.
-- **Out of scope:** new modulation sources, new DSP (depends on `real-plugin-dsp` param ids).
+However, **modulation is not actually applied at playback time**. Within the
+plugin render path (`src/lib/pluginChain.ts` → `applySinglePlugin`), only three
+params (`filter.frequency`, `filter.Q`, `utility.gain/pan`, and stereo widener
+`width`) call `applyModulation` via `modulateParam`. Every other plugin param
+that maps to a mod target (distortion `tone`, reverb `mix`/`size`/`damping`,
+delay, compressor, limiter, EQ bands, etc.) is rendered with its static base
+value. As a result a user can assign an LFO to e.g. reverb mix and see the
+route in the UI, but hear no change during playback.
 
-### Success metric
-A project with an LFO routed to a filter cutoff produces audible timbral motion; a macro knob moves $\geq 2$ plugin params simultaneously and audibly.
+## Objectives
+
+1. Guarantee `getModSources`/`getModTargets` each return exactly 11 entries
+   (already true, but assert in tests).
+2. Guarantee `computeModulation` returns a scaled + clamped `[-1, 1]` value and
+   `applyModulation` offsets a base value within `[min, max]` and clamps (already
+   true — add explicit tests).
+3. Wire `applyModulation` into the render path so **every** routed plugin param
+   is modulated using the live transport clock (`opts.modTime` / duration), not
+   just the hand-picked few.
+4. Provide a small helper that, given the current transport time, returns the
+   fully modulated param values for a plugin (already exists:
+   `computeModulatedParams`).
+5. Ensure `PluginEditor`'s "MOD" affordance lets a user assign a modulation
+   route per supported param (already implemented — keep it, add a thin
+   description block to make the route assignment explicit).
+
+## Out of scope
+
+- Changing the modulation engine animation loop / LFO generation math.
+- Changing `src/lib/types.ts`, `tsconfig.json`, `package.json`, tests setup.
+- Real-time per-block audio-rate modulation inside the offline render (the
+  existing ramp approach in `scheduleModulated` is retained and extended).

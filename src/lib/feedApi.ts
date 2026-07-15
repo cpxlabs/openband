@@ -62,9 +62,42 @@ export async function toggleLike(id: string): Promise<LikeResult> {
   return authedFetch(`/feed/${id}/like`, { method: "POST" })
 }
 
+export async function toggleFavorite(id: string): Promise<FavoriteResult> {
+  try {
+    return await authedFetch(`/feed/${id}/favorite`, { method: "POST" })
+  } catch {
+    const favorited = !localFavorites.has(id)
+    if (favorited) localFavorites.add(id)
+    else localFavorites.delete(id)
+    return { favorited, favorites: localFavorites.size }
+  }
+}
+
 export async function createRemix(id: string, newProjectId?: string): Promise<RemixResult> {
   return authedFetch(`/feed/${id}/remix`, {
     method: "POST",
     body: JSON.stringify({ newProjectId }),
   })
 }
+
+export async function toggleRemix(id: string, newProjectId?: string): Promise<RemixResult> {
+  return createRemix(id, newProjectId)
+}
+
+export async function getPosts(params: {
+  cursor?: string
+  limit?: number
+  genre?: string
+  sort?: string
+  type?: string
+} = {}): Promise<unknown[]> {
+  const page = await fetchFeed(params)
+  return page.posts
+}
+
+export interface FavoriteResult {
+  favorited: boolean
+  favorites: number
+}
+
+const localFavorites = new Set<string>()

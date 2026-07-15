@@ -9,10 +9,12 @@ vi.mock("../backend/src/lib/supabase", () => {
 
   class QB {
     table: string;
-    op: "select" | "insert" | "delete" = "select";
+    op: "select" | "insert" | "delete" | "upsert" = "select";
     filters: Array<{ op: "eq" | "neq" | "lt" | "gt"; col: string; val: any }> = [];
     orderBy: Array<{ col: string; asc: boolean }> = [];
     insertData: any = null;
+    upsertData: any = null;
+    onConflict: string | undefined = undefined;
     final: "all" | "single" | "maybe" = "all";
 
     constructor(table: string) {
@@ -24,6 +26,12 @@ vi.mock("../backend/src/lib/supabase", () => {
     insert(data: any) {
       this.op = "insert";
       this.insertData = data;
+      return this;
+    }
+    upsert(data: any, opts?: { onConflict?: string }) {
+      this.op = "upsert";
+      this.upsertData = data;
+      this.onConflict = opts?.onConflict;
       return this;
     }
     delete() {
@@ -77,6 +85,31 @@ vi.mock("../backend/src/lib/supabase", () => {
         } else if (this.op === "delete") {
           store[this.table] = rows.filter((r) => !this.matches(r));
           data = null;
+        } else if (this.op === "upsert") {
+          const arr = Array.isArray(this.upsertData) ? this.upsertData : [this.upsertData];
+          const conflictCols = this.onConflict ? this.onConflict.split(",").map((s) => s.trim()) : [];
+          const result: any[] = [];
+          for (const r of arr) {
+            let idx = -1;
+            if (conflictCols.length) {
+              idx = rows.findIndex((row) =>
+                conflictCols.every((c) => row[c] === r[c]),
+              );
+            }
+            if (idx >= 0) {
+              rows[idx] = { ...rows[idx], ...r, updated_at: new Date().toISOString() };
+              result.push(rows[idx]);
+            } else {
+              const inserted = {
+                id: r.id || `id-${Math.random().toString(36).slice(2)}`,
+                created_at: new Date().toISOString(),
+                ...r,
+              };
+              rows.push(inserted);
+              result.push(inserted);
+            }
+          }
+          data = this.final === "single" ? result[0] : result;
         } else {
           let result = rows.filter((r) => this.matches(r));
           for (const o of this.orderBy) {
@@ -307,5 +340,50 @@ describe("POST /api/feed/:id/remix", () => {
     expect(json.remixedProjectId).toBe("proj-remix-1");
     expect(json.remixUrl).toContain("/studio/proj-remix-1");
     expect(store.remixes.length).toBe(1);
+  });
+});
+
+describe("POST /api/feed/:id/favorite", () => {
+  it("toggles favorite on and off", async () => {
+    const f1 = await fetch(`${baseUrl}/api/feed/p1/favorite`, {
+      method: "POST",
+      headers: authHeader("u1"),
+    });
+    expect(f1.status).toBe(200);
+    const j1 = await f1.json();
+    expect(j1.favorited).toBe(true);
+    expect(j1.favorites).toBe(1);
+
+    const f2 = await fetch(`${baseUrl}/api/feed/p1/favorite`, {
+      method: "POST",
+      headers: authHeader("u1"),
+    });
+    const j2 = await f2.json();
+    expect(j2.favorited).toBe(false);
+    expect(j2.favorites).toBe(0);
+  });
+
+  it("returns 401 without auth", async () => {
+    const resp = await fetch(`${baseUrl}/api/feed/p1/favorite`, { method: "POST" });
+    expect(resp.status).toBe(401);
+  });
+
+  it("keeps like and favorite as independent flags", async () => {
+    await fetch(`${baseUrl}/api/feed/p1/like`, {
+      method: "POST",
+      headers: authHeader("u1"),
+    });
+    const f = await fetch(`${baseUrl}/api/feed/p1/favorite`, {
+      method: "POST",
+      headers: authHeader("u1"),
+    });
+    const j = await f.json();
+    expect(j.favorited).toBe(true);
+    expect(j.favorites).toBe(1);
+    const feed = await fetch(`${baseUrl}/api/feed`, { headers: authHeader("u1") });
+    const posts = (await feed.json()).posts as any[];
+    const p1 = posts.find((p: any) => p.id === "p1");
+    expect(p1.userLiked).toBe(true);
+    expect(p1.userFavorited).toBe(true);
   });
 });

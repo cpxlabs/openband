@@ -27,12 +27,13 @@ import {
   useToast,
 } from "../../src/components";
 import type { FeedPost } from "../../src/components/FeedPostCard";
-import { fetchFeed, toggleLike, createRemix } from "../../src/lib/feedApi";
+import { fetchFeed, toggleLike, toggleFavorite, createRemix } from "../../src/lib/feedApi";
 import { generatePreviewUrl, SCREEN_BOTTOM_PADDING } from "../../src/lib/constants";
 import { LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive";
 import { GENRES } from "../../src/lib/projectTemplates";
 import type { ProjectStarterResult } from "../../src/lib/projectStarter";
 import { useResponsive } from "../../src/lib/responsive";
+import { checkTierAccess } from "../../src/lib/tier";
 import { listProjectIndex } from "../../src/lib/projectStore";
 import { audioSystem } from "../../src/lib/universalAudio";
 import { useWebAudioPlayer } from "../../src/hooks/useWebAudioPlayer";
@@ -55,7 +56,7 @@ export default function Feed() {
   const { t } = useTranslation();
   const resp = useResponsive();
   const webAudio = useWebAudioPlayer({ trackTime: false });
-  const { tierLimits, hasOnboarded, completeOnboarding } = useAuth();
+  const { tier, hasOnboarded, completeOnboarding } = useAuth();
   const toast = useToast();
   const [showOnboarding, setShowOnboarding] = useState(!hasOnboarded);
   const expoPlayer = useAudioPlayer(null);
@@ -251,9 +252,27 @@ export default function Feed() {
       });
   }, []);
 
+  const handleFavorite = useCallback((postId: string) => {
+    setPosts((prev) =>
+      prev.map((p) =>
+        p.id === postId
+          ? { ...p, userFavorited: !p.userFavorited }
+          : p,
+      ),
+    );
+    toggleFavorite(postId).catch(() => {
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId ? { ...p, userFavorited: !p.userFavorited } : p,
+        ),
+      );
+      toast.show("Não foi possível favoritar", "error");
+    });
+  }, []);
+
   const handleRemix = useCallback(
     (post: FeedPost) => {
-      if (!tierLimits.canCreateRemixes) {
+      if (!checkTierAccess(tier, "canCreateRemixes")) {
         Alert.alert(
           t("feed.upgradeRequired", "Plano necessário"),
           t("feed.remixUpgrade", "Remix requer o plano Live ou Studio. Faça upgrade para continuar."),
@@ -268,7 +287,7 @@ export default function Feed() {
         `/studio/${projectId}?title=${encodeURIComponent(`Remix: ${post.title}`)}&genre=${post.genre}&key=${post.key}&bpm=${post.bpm}`,
       );
     },
-    [router, tierLimits.canCreateRemixes, t],
+    [router, tier, t],
   );
 
   const handleNewProject = useCallback(() => {
@@ -358,9 +377,10 @@ export default function Feed() {
         onRemix={handleRemix}
         onShare={handleShare}
         onPlayed={handlePlayed}
+        onFavorite={handleFavorite}
       />
     );
-  }, [playingId, loadingId, playing, webAudio.audioRef, handlePlay, handleLike, handleRemix, handleShare, handlePlayed]);
+  }, [playingId, loadingId, playing, webAudio.audioRef, handlePlay, handleLike, handleRemix, handleShare, handlePlayed, handleFavorite]);
 
   const maxWidthStyle: Record<string, string | number | undefined> = { width: "100%", maxWidth: LAYOUT_MAX_WIDTHS.feedWide, alignSelf: "center" as const };
 

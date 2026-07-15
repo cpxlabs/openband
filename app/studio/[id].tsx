@@ -363,6 +363,7 @@ export default function Studio() {
     pitchCorrected,
     playbackRate,
     pitchShiftSemitones,
+    masterPlugins,
     setCurrentBeat,
     setAutoplayBlocked,
     sendCursorRef,
@@ -572,7 +573,7 @@ export default function Studio() {
       try {
         await audioSystem.ensureContext();
         if (currentUrlRef.current) revokeTrackedBlob(currentUrlRef.current);
-        let url = await renderTracksCached(updatedTracks, initialBpm, projectMood, buses);
+        let url = await renderTracksCached(updatedTracks, initialBpm, projectMood, buses, masterPlugins);
         const totalSemitones =
           pitchShiftSemitones + (pitchCorrected ? -Math.log2(playbackRate) * 12 : 0);
         if (url && totalSemitones !== 0) {

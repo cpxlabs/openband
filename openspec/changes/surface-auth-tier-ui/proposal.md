@@ -10,6 +10,7 @@ The backend enforces subscription tiers through `backend/src/routes/tier.ts` and
 
 ## Objectives
 - Extend `AuthContextType` with `tier: PlanTier` and `tierLimits: TierLimits`, defaulting to `FREE` for visitors and authenticated users (until the real tier is fetched).
+- Add a shared frontend helper module `src/lib/tier.ts` with `getTierLimits(tier)` and `checkTierAccess(tier, feature)` (mirroring `backend/src/middleware/tierGuard.ts`) so UI gating can use the same single-source-of-truth logic.
 - Fetch the plan from `GET /api/tier` (`backend/src/routes/tier.ts`, endpoint `/user/tier`) on session load and store it in context.
 - Render a plan badge + key limits in `app/tabs/account.tsx` and `app/tabs/settings.tsx`.
 - Gate the remix action in `app/tabs/index.tsx` (the only current publish/remix surface) using `tierLimits.canCreateRemixes`, showing an upgrade prompt for FREE tier.

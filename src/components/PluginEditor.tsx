@@ -149,6 +149,10 @@ function ParamRow({
           <Text className="text-[9px] text-gray-500 mb-1">
             Mod source → {modTarget}
           </Text>
+          <Text className="text-[8px] text-gray-600 mb-1">
+            Atribui uma fonte de modulação (LFO, envelope, macro…) a este
+            parâmetro. O valor é aplicado em tempo de reprodução.
+          </Text>
           <View className="flex-row flex-wrap gap-1">
             {getModSources().map((src) => (
               <Pressable

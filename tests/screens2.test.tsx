@@ -72,6 +72,7 @@ vi.mock("../src/hooks/useWebAudioPlayer", () => ({
 vi.mock("../src/lib/feedApi", () => ({
   fetchFeed: vi.fn(() => Promise.resolve({ posts: [], hasMore: false })),
   toggleLike: vi.fn(() => Promise.resolve({ liked: true, likes: 1 })),
+  toggleFavorite: vi.fn(() => Promise.resolve({ favorited: true, favorites: 1 })),
   createRemix: vi.fn(() => Promise.resolve({ id: "x", remixUrl: "/studio/x" })),
 }));
 

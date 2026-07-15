@@ -1,32 +1,49 @@
-### Architecture decision: one context, one clock
-The root cause of drift and silence is context fragmentation. We enforce a **single `AudioContext`** owned by the `UniversalAudioSystem` singleton.
+# Design: web-player-studio-audio
 
-```ts
-// src/lib/universalAudio.ts (target shape)
-class UniversalAudioSystem {
-  private static _ctx: AudioContext | null = null;
-  private blobRegistry = new Map<string, string>(); // trackId -> url
-  static get ctx(): AudioContext { /* lazy, single instance */ }
-  ensureContext(): void { /* resume on gesture, synchronous path */ }
-  async renderMixdown(tracks, opts): Promise<string> { /* MIDI + url regions */ }
-}
+## Behavior mapping (existing, verified)
+
+| Requirement | Location |
+| --- | --- |
+| VuMeter per track on mixer tab | `app/studio/[id].tsx` mixer tab renders `<VuMeter>` per channel (l2128) |
+| Play → `startClock(25)` + `onClockTick` → `currentBeat` | `app/studio/hooks.ts` effect (l596-634) |
+| Stop → `stopClock()` + reset beat | `stopPlayback` (l709-726) + play effect (l602-605) |
+| Record flips `isRecording` + appends `TrackRegion` | `toggleRecording` (l432-559) |
+| Add clip appends valid `TrackRegion` | `handleAddTrack`/`handleImportAudio`/`handleAddSample` append valid regions |
+| Track plugin slot opens `PluginEditor` | `PluginRack.onEdit` → `setEditingPlugin` → `StudioModals` `<PluginEditor>` |
+| `AutomationLane` populates `track.automation.volume` | `updateAutomation(track.id,"volume",pts)` (l830-841, l1952) |
+| Group creation updates `groups`+`trackAssignments` | `TrackGroupManager.onCreateGroup` (l2497-2514) |
+| Resilience (crash/telemetry/latency) | `crashRecovery.ts`, `audioTelemetry.ts`, `latencyMonitor.ts` |
+
+## New: Master plugin chain in mixdown
+
+`renderTracksToUrl(tracks, bpm, mood?, buses?, masterPlugins?)`:
+
+- After `ctx.startRendering()` produces the mixed `AudioBuffer`, if `masterPlugins` is a
+  non-empty array, run `applyPluginChain(buffer, masterPlugins, sampleRate, { duration })`.
+- On failure, fall back to the dry mix (log + continue).
+- `applyPluginChain` already special-cases mastering plugin types (eq/compressor/limiter/…).
+
+Threading:
+
+```
+studio/[id].tsx  ──masterPlugins──▶  useStudioTransport({ masterPlugins })
+                                      └─ renderTracksCached(..., masterPlugins)
+                                           └─ renderTracksToUrl(..., masterPlugins)
+studio/[id].tsx  rerenderAfterMuteSolo ─▶ renderTracksCached(..., masterPlugins)
 ```
 
-### Render path
-- `renderMixdown(tracks, opts)` iterates tracks:
-  - **MIDI track** → `midiSynth.renderTracksToUrl()` (existing).
-  - **Audio-region track** → `fetch(url)` → `decodeAudioData` → `AudioBufferSourceNode`, with `timeStretch.ts`/`pitch` applied via a `playbackRate` + phase-vocoder node where set.
-- All sources summed into one offline/live graph → single output blob URL.
+`renderTracksCached` includes `masterPlugins` in its cache key signature so a master-chain
+edit invalidates the cached bounce URL.
 
-### Transport clock
-Transport position is derived **only** from `UniversalAudioSystem.ctx.currentTime`, never from a separate `<audio>` element. Define drift error:
-$$e(t) = \left|t_{\text{ctx}} - t_{\text{audio}}\right|$$
-With two independent clocks, $\frac{dt_{\text{ctx}}}{dt} \neq \frac{dt_{\text{audio}}}{dt}$, so $e(t)$ grows unbounded. With one shared context, $e(t) \to 0$ after start offset.
+## Tests (pure functions)
 
-### Blob lifecycle
-- On `renderMixdown`, register the produced URL in `blobRegistry` keyed by track/region id.
-- On `stop()`, `unmount`, or re-render of the same key: `URL.revokeObjectURL(old)` before assigning new.
-- A `useEffect` cleanup in `studio/[id].tsx` revokes all registered URLs on leave.
-
-### Gesture rule
-`togglePlay()` calls `ensureContext()` **synchronously** (no `await` before `ctx.resume()`) to satisfy browser autoplay policy.
+- `clockManager`: `onClockTick` subscribe/unsubscribe; `isClockRunning` boolean; `startClock`
+  is non-throwing on web.
+- `automationEngine`: `buildAutomationSchedule` beats→seconds; `interpolateAutomationValue`
+  linear midpoint + exponential midpoint; clamps at endpoints.
+- `audioTelemetry`: ring buffer cap (`getMetricsHistory` length ≤ `ringBufferSize`);
+  `getLatestMetrics` non-null; `getAverageMetrics` average + `peakCpu`; threshold callback
+  fires above threshold only; `getAverageMetrics` null when empty.
+- `crashRecovery`: `scheduleCrashSave` coalesces rapid calls (single flush, latest wins).
+- `latencyMonitor`: `measureInputLatency` formula; `createLatencyCompensationNode` null for
+  non-positive delay.

@@ -1,6 +1,6 @@
 import { Router, Response } from "express"
 import { supabase } from "../lib/supabase"
-import { requireAuth, AuthenticatedRequest } from "../middleware/authMiddleware"
+import { requireAuth, optionalAuth, AuthenticatedRequest } from "../middleware/authMiddleware"
 
 interface PostRow {
   id: string
@@ -43,6 +43,7 @@ interface FeedPostView {
   plays: number
   likes: number
   userLiked: boolean
+  userFavorited: boolean
   duration: number
   color: string
 }
@@ -59,6 +60,7 @@ interface MomentView {
   likes: number
   comments: number
   userLiked: boolean
+  userFavorited: boolean
   timeAgo: string
 }
 
@@ -82,20 +84,74 @@ async function getProfile(userId: string): Promise<ProfileRow | null> {
   return (data as ProfileRow | null) ?? null
 }
 
-async function getLikeCount(postId: string): Promise<number> {
-  const { data } = await supabase.from("post_likes").select("id").eq("post_id", postId)
+interface InteractionRow {
+  post_id: string
+  user_id: string
+  liked?: number | boolean
+  remixed?: number | boolean
+  favorited?: number | boolean
+  created_at?: string
+}
+
+async function getInteraction(
+  postId: string,
+  userId: string,
+): Promise<InteractionRow | null> {
+  const { data } = await supabase
+    .from("post_likes")
+    .select("*")
+    .eq("post_id", postId)
+    .eq("user_id", userId)
+    .maybeSingle()
+  return (data as InteractionRow | null) ?? null
+}
+
+async function upsertInteraction(
+  postId: string,
+  userId: string,
+  patch: Partial<InteractionRow>,
+): Promise<InteractionRow> {
+  const existing = await getInteraction(postId, userId)
+  const row: InteractionRow = {
+    post_id: postId,
+    user_id: userId,
+    liked: existing?.liked ?? 0,
+    remixed: existing?.remixed ?? 0,
+    favorited: existing?.favorited ?? 0,
+    created_at: existing?.created_at ?? new Date().toISOString(),
+    ...patch,
+  }
+  row.liked = Number(row.liked ?? 0)
+  row.remixed = Number(row.remixed ?? 0)
+  row.favorited = Number(row.favorited ?? 0)
+  const { data, error } = await supabase
+    .from("post_likes")
+    .upsert(row, { onConflict: "post_id,user_id" })
+    .select()
+    .single()
+  if (error) throw error
+  return data as InteractionRow
+}
+
+async function getFlagCount(postId: string, flag: "liked" | "remixed" | "favorited"): Promise<number> {
+  const { data } = await supabase
+    .from("post_likes")
+    .select("id")
+    .eq("post_id", postId)
+    .eq(flag, 1)
   return Array.isArray(data) ? data.length : 0
 }
 
 async function getUserLiked(postId: string, userId?: string): Promise<boolean> {
   if (!userId) return false
-  const { data } = await supabase
-    .from("post_likes")
-    .select("id")
-    .eq("post_id", postId)
-    .eq("user_id", userId)
-    .maybeSingle()
-  return !!data
+  const row = await getInteraction(postId, userId)
+  return !!row?.liked
+}
+
+async function getUserFavorited(postId: string, userId?: string): Promise<boolean> {
+  if (!userId) return false
+  const row = await getInteraction(postId, userId)
+  return !!row?.favorited
 }
 
 function mapPostToView(
@@ -104,6 +160,7 @@ function mapPostToView(
   authorHandle: string,
   likes: number,
   userLiked: boolean,
+  userFavorited: boolean,
 ): FeedPostView | MomentView {
   if (row.type === "moment") {
     return {
@@ -118,6 +175,7 @@ function mapPostToView(
       likes,
       comments: row.comments || 0,
       userLiked,
+      userFavorited,
       timeAgo: row.time_ago || "now",
     }
   }
@@ -132,12 +190,13 @@ function mapPostToView(
     plays: row.plays || 0,
     likes,
     userLiked,
+    userFavorited,
     duration: row.duration || 0,
     color: row.color || "bg-brand-primary",
   }
 }
 
-router.get("/feed", async (req: AuthenticatedRequest, res: Response) => {
+router.get("/feed", optionalAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const rawLimit = parseInt(String(req.query.limit ?? "20"), 10)
     const limit = Math.min(Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : 20, 50)
@@ -174,11 +233,12 @@ router.get("/feed", async (req: AuthenticatedRequest, res: Response) => {
       page.map(async (row) => {
         const profile = await getProfile(row.user_id)
         const { author, authorHandle } = deriveAuthor(profile)
-        const [likes, userLiked] = await Promise.all([
-          getLikeCount(row.id),
+        const [likes, userLiked, userFavorited] = await Promise.all([
+          getFlagCount(row.id, "liked"),
           getUserLiked(row.id, userId),
+          getUserFavorited(row.id, userId),
         ])
-        return mapPostToView(row, author, authorHandle, likes, userLiked)
+        return mapPostToView(row, author, authorHandle, likes, userLiked, userFavorited)
       }),
     )
 
@@ -225,7 +285,7 @@ router.post("/feed", requireAuth, async (req: AuthenticatedRequest, res: Respons
     const row = data as PostRow
     const profile = await getProfile(row.user_id)
     const { author, authorHandle } = deriveAuthor(profile)
-    const view = mapPostToView(row, author, authorHandle, 0, false)
+    const view = mapPostToView(row, author, authorHandle, 0, false, false)
 
     res.status(201).json(view)
   } catch (e) {
@@ -245,35 +305,42 @@ router.post(
       const userId = req.userTokenData!.userId
       const postId = req.params.id as string
 
-      const { data: existing } = await supabase
-        .from("post_likes")
-        .select("id")
-        .eq("post_id", postId)
-        .eq("user_id", userId)
-        .maybeSingle()
+      const existing = await getInteraction(postId, userId)
+      const nextLiked = existing?.liked ? 0 : 1
+      await upsertInteraction(postId, userId, { liked: Number(nextLiked) })
 
-      if (existing) {
-        await supabase
-          .from("post_likes")
-          .delete()
-          .eq("post_id", postId)
-          .eq("user_id", userId)
-      } else {
-        await supabase.from("post_likes").insert({
-          post_id: postId,
-          user_id: userId,
-          created_at: new Date().toISOString(),
-        })
-      }
-
-      const likes = await getLikeCount(postId)
-      res.json({ liked: !existing, likes })
+      const likes = await getFlagCount(postId, "liked")
+      res.json({ liked: !!nextLiked, likes })
     } catch (e) {
       console.error("Failed to toggle like:", e)
       const isProduction = process.env.NODE_ENV === "production"
       res
         .status(500)
         .json({ error: "Falha ao curtir post", ...(isProduction ? {} : { details: String(e) }) })
+    }
+  },
+)
+
+router.post(
+  "/feed/:id/favorite",
+  requireAuth,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const userId = req.userTokenData!.userId
+      const postId = req.params.id as string
+
+      const existing = await getInteraction(postId, userId)
+      const nextFavorited = existing?.favorited ? 0 : 1
+      await upsertInteraction(postId, userId, { favorited: Number(nextFavorited) })
+
+      const favorites = await getFlagCount(postId, "favorited")
+      res.json({ favorited: !!nextFavorited, favorites })
+    } catch (e) {
+      console.error("Failed to toggle favorite:", e)
+      const isProduction = process.env.NODE_ENV === "production"
+      res
+        .status(500)
+        .json({ error: "Falha ao favoritar post", ...(isProduction ? {} : { details: String(e) }) })
     }
   },
 )
@@ -305,6 +372,14 @@ router.post(
       }
 
       const remixUrl = `/studio/${remixedProjectId}?title=${encodeURIComponent("Remix")}`
+
+      try {
+        const existing = await getInteraction(postId, userId)
+        await upsertInteraction(postId, userId, { remixed: existing?.remixed ? 0 : 1 })
+      } catch (ie) {
+        console.error("Failed to flag remix interaction:", ie)
+      }
+
       res.status(201).json({ remixedProjectId, remixUrl })
     } catch (e) {
       console.error("Failed to create remix:", e)

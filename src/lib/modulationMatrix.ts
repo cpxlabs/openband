@@ -374,3 +374,62 @@ export function applyModulation(
   const offset = computeModulation(target, context) * range;
   return Math.max(min, Math.min(max, baseValue + offset));
 }
+
+export interface ModulatedParamInput {
+  paramId: string;
+  base: number;
+  min: number;
+  max: number;
+  target: ModTarget | null;
+}
+
+export interface ModulationContext {
+  time: number;
+  velocity?: number;
+  noteNumber?: number;
+  noteOnTime?: number;
+  gate?: boolean;
+}
+
+/**
+ * Given the current transport clock (seconds), returns the modulated value of
+ * each routed param. Params without a mod target fall back to their base value.
+ * This is the single entry point used by the plugin render path to apply the
+ * modulation matrix at a specific playhead position.
+ */
+export function computeModulatedParams(
+  inputs: ModulatedParamInput[],
+  time: number,
+  extra?: { velocity?: number; noteNumber?: number },
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const inp of inputs) {
+    out[inp.paramId] = inp.target
+      ? applyModulation(inp.target, inp.base, inp.min, inp.max, {
+          time,
+          velocity: extra?.velocity,
+          noteNumber: extra?.noteNumber,
+        })
+      : inp.base;
+  }
+  return out;
+}
+
+/**
+ * Convenience wrapper that applies the modulation matrix to a single param at a
+ * given transport clock position, clamped to [min, max].
+ */
+export function getModulatedValue(
+  target: ModTarget,
+  base: number,
+  min: number,
+  max: number,
+  time: number,
+  extra?: { velocity?: number; noteNumber?: number },
+): number {
+  return applyModulation(target, base, min, max, {
+    time,
+    velocity: extra?.velocity,
+    noteNumber: extra?.noteNumber,
+  });
+}

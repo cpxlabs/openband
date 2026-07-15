@@ -1,21 +1,38 @@
-### Title
-Fix web multi-track playback: silence, pitch, leaks, drift
+# Proposal: web-player-studio-audio
 
-### Problem
-On web, the Studio's multi-track playback is effectively broken:
-1. **Silent audio-region tracks** — `renderMixdown()` only renders MIDI notes; `url`-based audio regions produce no sound.
-2. **Pitch-shift UI has no effect** — `timeStretch.ts` output is not wired into the rendered graph.
-3. **Blob URL leak** — `URL.createObjectURL` is called per play with no `revokeObjectURL` on stop/unmount.
-4. **Beat drift** — the transport reads one `AudioContext.currentTime` while a separate `<audio>` element tracks its own timeline; two unsynchronized clocks.
+## Context
 
-### Why
-A DAW that plays silence is not a DAW. This is the highest-leverage defect in the repo: it blocks activation, undermines every downstream feature, and makes all other Studio work unverifiable by ear. It is P0 by definition.
+The Studio DAW screen (`app/studio/[id].tsx`) and its transport hook (`app/studio/hooks.ts`)
+contain most of the required Studio DAW + Studio Resilience behaviors, but the master
+`MasterRack` plugin chain is **not** applied during offline mixdown (`renderTracksToUrl` in
+`src/lib/midiSynth.ts`). The remaining items from `docs/pending-implementations.md`
+(Studio DAW + Studio Resilience sections) are already implemented and covered by existing
+tests; this change closes the one genuine gap and adds focused pure-function test coverage.
 
-### Scope
-- Unify Studio multi-track playback **and** feed/library preview through a single `UniversalAudioSystem` instance.
-- Fix the four bugs above.
-- **In scope:** web playback pipeline, blob lifecycle, transport clock.
-- **Out of scope:** Electron-native audio rewrite, mobile-native `expo-audio` path, DSP correctness (see `real-plugin-dsp`).
+## Problem
 
-### Success metric
-A new visitor on web loads a demo project containing both MIDI and audio-region tracks, presses play, **hears both**, moves the pitch slider and hears a detectable shift, plays 10 times without memory growth, and the playhead stays aligned with audio for the full timeline.
+When a user adds master bus plugins via `MasterRack` (EQ/compressor/limiter), those plugins
+are reflected in the FX UI but are silently dropped when the project is rendered to a bounce
+URL via `renderTracksToUrl`. The resulting mix is "dry" on the master bus.
+
+## Objectives
+
+- Thread `masterPlugins` through `renderTracksToUrl` → `renderTracksCached` →
+  `useStudioTransport` → `rerenderAfterMuteSolo` so the master chain is applied at mixdown.
+- Add/extend vitest coverage for the pure functions (clockManager subscription,
+  automationEngine interpolation, audioTelemetry ring buffer + averages, crash save
+  coalescing, latency helpers).
+
+## Out of scope
+
+The other Studio DAW / Resilience checklist items (VuMeter on mixer tab, Play clock wiring,
+Stop beat reset, Record region append, PluginEditor open, AutomationLane→volume, group
+creation, scheduleCrashSave coalescing, restoreCrashState soft-fail, ring buffer cap,
+getAverageMetrics, threshold report, sendTelemetryReport no-throw, measureInputLatency,
+createLatencyCompensationNode null-for-non-positive) are already implemented and tested;
+they are verified but not modified here.
+
+## Verification
+
+- `npx tsc --noEmit` passes.
+- `npx vitest run` passes (new + existing tests).

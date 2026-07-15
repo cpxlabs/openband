@@ -1,5 +1,5 @@
 import { Platform } from "react-native";
-import type { MIDINote, TrackDef, BusDef } from "./types";
+import type { MIDINote, TrackDef, BusDef, Plugin } from "./types";
 import type { Mood } from "./projectTemplates";
 import { MOODS } from "./projectTemplates";
 import { audioBufferToWavBlob } from "./audio";
@@ -9,6 +9,19 @@ import { applyAutomationToParam, buildAutomationSchedule } from "./automationEng
 import { crossfadeGain } from "./regionEdit";
 import { timeStretch } from "./timeStretch";
 import Soundfont from "soundfont-player";
+
+/**
+ * Transport-clock offset (seconds) where a track's rendered buffer begins in the
+ * song, derived from its earliest region start. This locks the modulation
+ * matrix LFO phase to the live playhead instead of resetting every region.
+ */
+function trackModTime(track: TrackDef, beatDuration: number): number {
+  const starts = (track.regions || [])
+    .map((r) => r.start)
+    .filter((s): s is number => typeof s === "number");
+  if (starts.length === 0) return 0;
+  return Math.min(...starts) * beatDuration;
+}
 
 async function maybeTimeStretchRegion(
   buffer: AudioBuffer,
@@ -747,6 +760,7 @@ export async function renderTracksToUrl(
   bpm: number,
   mood?: Mood,
   buses?: BusDef[],
+  masterPlugins?: Plugin[],
 ): Promise<string | null> {
   const safeBpm = Math.max(1, bpm);
   const beatDuration = 60 / safeBpm;
@@ -861,7 +875,10 @@ export async function renderTracksToUrl(
               trackBuf,
               track.plugins,
               sampleRate,
-              { duration },
+              {
+                duration,
+                modTime: trackModTime(track, beatDuration),
+              },
             );
             const out = ctx.createBufferSource();
             out.buffer = procBuf;
@@ -972,7 +989,16 @@ export async function renderTracksToUrl(
         masterGain.connect(ctx.destination);
       }
 
-      const buffer = await ctx.startRendering();
+      let buffer = await ctx.startRendering();
+      if (masterPlugins && masterPlugins.length > 0) {
+        try {
+          buffer = await applyPluginChain(buffer, masterPlugins, sampleRate, {
+            duration,
+          });
+        } catch (e) {
+          console.warn("Master plugin chain failed, using dry mix:", e);
+        }
+      }
       const blob = audioBufferToWavBlob(buffer);
       return createTrackedBlob(blob);
     } catch (e) {
@@ -1100,6 +1126,7 @@ export async function renderTrackStem(
       );
       const procBuf = await applyPluginChain(trackBuf, track.plugins, sampleRate, {
         duration,
+        modTime: trackModTime(track, beatDuration),
       });
       const out = ctx.createBufferSource();
       out.buffer = procBuf;

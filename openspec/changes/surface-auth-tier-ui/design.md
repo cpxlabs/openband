@@ -4,7 +4,8 @@
 
 | Change | File | Symbols |
 |---|---|---|
-| Add tier types + state | `src/context/AuthContext.tsx` | `AuthContextType` gains `tier`, `tierLimits`; new imports of `PlanTier`, `TierLimits` from `backend/src/middleware/tierGuard` |
+| Add tier helpers | `src/lib/tier.ts` | new file: `PlanTier`, `TierLimits`, `TIER_LIMITS`, `FREE_TIER_LIMITS`, `getTierLimits(tier)`, `checkTierAccess(tier, feature)` (mirrors `backend/src/middleware/tierGuard.ts`) |
+| Add tier types + state | `src/context/AuthContext.tsx` | `AuthContextType` gains `tier`, `tierLimits`; imports `PlanTier`, `TierLimits`, `FREE_TIER_LIMITS` from `../lib/tier` (re-exported for API compat) |
 | Fetch tier on load | `src/context/AuthContext.tsx` | new `fetchTier()` called inside the existing `useEffect` session-resolution path and after `convertVisitorToAccount` |
 | Render plan badge | `app/tabs/account.tsx` | uses `tier`/`tierLimits` from `useAuth()`; shows badge + maxProjects/maxTracks/export limits |
 | Render plan info | `app/tabs/settings.tsx` | new "Plano" divider with `tier` label + limits summary |
@@ -12,11 +13,11 @@
 | Spec update | `openspec/specs/auth/spec.md` | add "Tier Surfacing (UI)" requirement + test requirement |
 
 ## Shared Types
-The `PlanTier` and `TierLimits` shapes already live in `backend/src/middleware/tierGuard.ts` (`PlanTier = "FREE" | "TIER1_LIVE" | "TIER2_STUDIO"`, `TierLimits { maxTracks, maxProjects, maxStemExports, canUseTriton, canUseJuno, canExportVideo, canPublishToFeed, canCreateRemixes }`). Mirror these in `src/context/AuthContext.tsx` (or import via a shared types path) and default state to:
+The `PlanTier` and `TierLimits` shapes already live in `backend/src/middleware/tierGuard.ts` (`PlanTier = "FREE" | "TIER1_LIVE" | "TIER2_STUDIO"`, `TierLimits { maxTracks, maxProjects, maxStemExports, canUseTriton, canUseJuno, canExportVideo, canPublishToFeed, canCreateRemixes }`). Define these once in `src/lib/tier.ts` (single source of truth), export `getTierLimits(tier)` and `checkTierAccess(tier, feature)` (returning the boolean value of a `TierLimits` key, defaulting to `true` for numeric limits and `false` for unknown). `src/context/AuthContext.tsx` imports `PlanTier`, `TierLimits`, and `FREE_TIER_LIMITS` from `../lib/tier` (and re-exports `PlanTier`/`TierLimits` to preserve its public API) and default state to:
 
 ```
 tier: "FREE",
-tierLimits: { maxTracks: 4, maxProjects: 3, maxStemExports: 2, canUseTriton: false, canUseJuno: true, canExportVideo: false, canPublishToFeed: false, canCreateRemixes: false },
+tierLimits: FREE_TIER_LIMITS,
 ```
 
 ## Fetch Flow

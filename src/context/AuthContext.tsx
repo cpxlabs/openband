@@ -9,32 +9,15 @@ import {
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 import { getOnboardingState, setOnboardingCompleted } from "../lib/projectStore";
+import {
+  FREE_TIER_LIMITS,
+  type PlanTier,
+  type TierLimits,
+} from "../lib/tier";
+
+export type { PlanTier, TierLimits };
 
 const VISITOR_STORAGE_KEY = "openband_visitor_session";
-
-export type PlanTier = "FREE" | "TIER1_LIVE" | "TIER2_STUDIO";
-
-export interface TierLimits {
-  maxTracks: number;
-  maxProjects: number;
-  maxStemExports: number;
-  canUseTriton: boolean;
-  canUseJuno: boolean;
-  canExportVideo: boolean;
-  canPublishToFeed: boolean;
-  canCreateRemixes: boolean;
-}
-
-const FREE_TIER_LIMITS: TierLimits = {
-  maxTracks: 4,
-  maxProjects: 3,
-  maxStemExports: 2,
-  canUseTriton: false,
-  canUseJuno: true,
-  canExportVideo: false,
-  canPublishToFeed: false,
-  canCreateRemixes: false,
-};
 
 interface AuthContextType {
   session: Session | null;

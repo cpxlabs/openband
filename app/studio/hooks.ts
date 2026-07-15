@@ -54,6 +54,7 @@ export function renderTracksCached(
   bpm: number,
   mood: Mood | undefined,
   buses: BusDef[],
+  masterPlugins?: Plugin[],
 ): Promise<string | null> {
   const key = JSON.stringify({
     t: tracks.map((t) => ({
@@ -68,11 +69,12 @@ export function renderTracksCached(
     bpm,
     mood,
     buses,
+    mp: masterPlugins,
   });
   if (cachedRenderKey === key && cachedRenderUrl) {
     return Promise.resolve(cachedRenderUrl);
   }
-  return renderTracksToUrl(tracks, bpm, mood, buses).then((url) => {
+  return renderTracksToUrl(tracks, bpm, mood, buses, masterPlugins).then((url) => {
     if (url) {
       if (cachedRenderUrl && cachedRenderUrl !== url) {
         revokeTrackedBlob(cachedRenderUrl);
@@ -493,6 +495,7 @@ export function useStudioTransport(params: {
   pitchCorrected: boolean;
   playbackRate: number;
   pitchShiftSemitones: number;
+  masterPlugins?: Plugin[];
   setCurrentBeat: (b: number) => void;
   setAutoplayBlocked: (v: boolean) => void;
   sendCursorRef: MutableRefObject<
@@ -529,6 +532,7 @@ export function useStudioTransport(params: {
     pitchCorrected,
     playbackRate,
     pitchShiftSemitones,
+    masterPlugins,
     setCurrentBeat,
     setAutoplayBlocked,
     sendCursorRef,
@@ -669,7 +673,7 @@ export function useStudioTransport(params: {
       console.warn("PlaybackEngine unavailable, falling back to blob playback:", e);
     }
 
-    let url = await renderTracksCached(tracks, initialBpm, projectMood, buses);
+    let url = await renderTracksCached(tracks, initialBpm, projectMood, buses, masterPlugins);
     const totalSemitones =
       pitchShiftSemitones + (pitchCorrected ? -Math.log2(playbackRate) * 12 : 0);
     if (url && totalSemitones !== 0) {

@@ -78,14 +78,21 @@ alter table public.posts add column if not exists song_title text;
 alter table public.posts add column if not exists comments integer default 0;
 alter table public.posts add column if not exists time_ago text default 'now';
 
--- 5c. Per-user feed likes
+-- 5c. Per-user feed interactions (like / remix / favorite)
 create table if not exists public.post_likes (
   id uuid default gen_random_uuid() primary key,
   post_id uuid not null references public.posts(id) on delete cascade,
   user_id uuid references public.profiles(id) on delete cascade,
+  liked boolean not null default false,
+  remixed boolean not null default false,
+  favorited boolean not null default false,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   unique(post_id, user_id)
 );
+
+alter table public.post_likes add column if not exists liked boolean not null default false;
+alter table public.post_likes add column if not exists remixed boolean not null default false;
+alter table public.post_likes add column if not exists favorited boolean not null default false;
 
 -- ============================================================
 -- AUTH COLUMNS (email/password + Google OAuth)
