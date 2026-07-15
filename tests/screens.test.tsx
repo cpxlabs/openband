@@ -87,7 +87,11 @@ vi.mock("../src/lib/masteringSuite", () => ({
   formatBitDepth: (d: number) => `${d}-bit`,
 }));
 
-vi.mock("../src/lib/masteringBridge", () => ({ takeMasteringInput: () => null }));
+vi.mock("../src/lib/masteringBridge", () => ({
+  takeMasteringInput: () => null,
+  getMasteringInput: () => null,
+  setMasteringInput: () => {},
+}));
 
 beforeEach(() => {
   vi.clearAllMocks();

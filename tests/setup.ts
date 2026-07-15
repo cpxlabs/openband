@@ -55,6 +55,38 @@ vi.mock("expo-status-bar", () => ({
   StatusBar: () => null,
 }));
 
+vi.mock("react-native-safe-area-context", () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+  SafeAreaProvider: ({ children }: any) => children,
+  SafeAreaView: ({ children }: any) => children,
+  useSafeAreaFrame: () => ({ x: 0, y: 0, width: 1024, height: 768 }),
+}));
+
+vi.mock("expo-constants", () => {
+  const Constants = {
+    expoConfig: { version: "1.0.0", name: "OpenBand" },
+    manifest: {},
+    experienceUrl: "",
+    __unsafeNoWarnManifest2: {},
+    platform: { ios: false, android: false, web: true },
+  };
+  return { __esModule: true, default: Constants, Constants };
+});
+
+vi.mock("expo-modules-core", () => ({
+  EventEmitter: class {
+    addListener() {
+      return { remove() {} };
+    }
+    removeAllListeners() {}
+    emit() {}
+  },
+  NativeModule: class {},
+  requireNativeModule: () => ({}),
+  requireOptionalNativeModule: () => null,
+  Platform: { OS: "web", select: (o: any) => o?.web ?? o?.default },
+}));
+
 vi.mock("../src/context/AuthContext", () => ({
   useAuth: () => ({
     session: null,
