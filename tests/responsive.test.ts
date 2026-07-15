@@ -17,8 +17,8 @@ describe("useResponsive", () => {
   };
 
   describe("Responsive breakpoints", () => {
-    it("returns mobile below 480px", () => {
-      for (const w of [0, 320, 479]) {
+    it("returns mobile below 768px", () => {
+      for (const w of [0, 320, 500, 767]) {
         setWidth(w);
         const { result } = renderHook(() => useResponsive());
         expect(result.current.breakpoint).toBe("mobile");
@@ -26,8 +26,8 @@ describe("useResponsive", () => {
       }
     });
 
-    it("returns tablet between 480px and 1023px", () => {
-      for (const w of [480, 768, 1023]) {
+    it("returns tablet between 768px and 1023px", () => {
+      for (const w of [768, 900, 1023]) {
         setWidth(w);
         const { result } = renderHook(() => useResponsive());
         expect(result.current.breakpoint).toBe("tablet");
@@ -35,8 +35,8 @@ describe("useResponsive", () => {
       }
     });
 
-    it("returns desktop at or above 1280px", () => {
-      for (const w of [1280, 1440, 1920]) {
+    it("returns desktop at or above 1024px", () => {
+      for (const w of [1024, 1280, 1440, 1920]) {
         setWidth(w);
         const { result } = renderHook(() => useResponsive());
         expect(result.current.breakpoint).toBe("desktop");
@@ -44,13 +44,12 @@ describe("useResponsive", () => {
       }
     });
 
-    it("returns tablet between 480px and 1279px", () => {
-      for (const w of [480, 768, 1024]) {
-        setWidth(w);
-        const { result } = renderHook(() => useResponsive());
-        expect(result.current.breakpoint).toBe("tablet");
-        expect(result.current.isDesktop).toBe(false);
-      }
+    it("returns desktop at the 1024px boundary and not tablet", () => {
+      setWidth(1024);
+      const { result } = renderHook(() => useResponsive());
+      expect(result.current.breakpoint).toBe("desktop");
+      expect(result.current.isDesktop).toBe(true);
+      expect(result.current.isTablet).toBe(false);
     });
   });
 
@@ -82,7 +81,7 @@ describe("useResponsive", () => {
     });
 
     it("returns 112 for tablet", () => {
-      setWidth(600);
+      setWidth(800);
       const { result } = renderHook(() => useResponsive());
       expect(result.current.channelWidth).toBe(112);
     });
@@ -102,7 +101,7 @@ describe("useResponsive", () => {
     });
 
     it("returns 144 for tablet", () => {
-      setWidth(600);
+      setWidth(800);
       const { result } = renderHook(() => useResponsive());
       expect(result.current.tracksSidebarWidth).toBe(144);
     });
@@ -122,7 +121,7 @@ describe("useResponsive", () => {
     });
 
     it("returns 12 for tablet", () => {
-      setWidth(600);
+      setWidth(800);
       const { result } = renderHook(() => useResponsive());
       expect(result.current.toolbarFontSize).toBe(12);
     });

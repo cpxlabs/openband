@@ -140,6 +140,9 @@ export function OneKnob({
         accessibilityLabel={label}
         accessibilityValue={{ now: value, min, max }}
         accessibilityHint={hint}
+        aria-valuenow={value}
+        aria-valuemin={min}
+        aria-valuemax={max}
         {...keyboardProps}
         className="w-12 h-12 rounded-full items-center justify-center border-2 active:opacity-80 focus-ring"
         style={{

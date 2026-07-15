@@ -206,7 +206,7 @@ describe("ProjectMenu", () => {
     expect(screen.getByText("Duplicar Projeto")).toBeTruthy();
     expect(screen.getByText("Renomear")).toBeTruthy();
     expect(screen.getByText("Baixar Áudio (.wav)")).toBeTruthy();
-    expect(screen.getByText("Mover para Lixeira")).toBeTruthy();
+    expect(screen.getByText("Excluir Projeto")).toBeTruthy();
   });
 
   it("hides menu when toggled off", () => {

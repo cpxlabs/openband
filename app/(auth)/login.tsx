@@ -40,6 +40,9 @@ export default function Login() {
         ? e.message
         : typeof e === "string"
         ? e
+        : (e as { message?: unknown })?.message &&
+          typeof (e as { message?: unknown }).message === "string"
+        ? ((e as { message?: unknown }).message as string)
         : "";
     const lower = message.toLowerCase();
     if (

@@ -3,6 +3,10 @@ import { vi } from "vitest";
 
 (global as any).__DEV__ = true;
 
+if (typeof localStorage !== "undefined") {
+  localStorage.setItem("openband_language", "pt-BR");
+}
+
 vi.mock("react-native-reanimated", () => {
   const View = require("react-native").View;
   return {
@@ -53,6 +57,11 @@ vi.mock("expo-audio", () => ({
 
 vi.mock("expo-status-bar", () => ({
   StatusBar: () => null,
+}));
+
+vi.mock("expo-localization", () => ({
+  getLocales: () => [{ languageCode: "pt", languageTag: "pt-BR", countryCode: "BR", textDirection: "ltr" }],
+  getCalendars: () => [{ calendar: "gregorian" }],
 }));
 
 vi.mock("react-native-safe-area-context", () => ({

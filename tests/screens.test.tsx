@@ -24,6 +24,41 @@ const {
   mockSaveProject: vi.fn(),
 }));
 
+const TIER_LIMITS = {
+  canCreateRemixes: false,
+  canPublishToFeed: false,
+  canExportVideo: false,
+  maxProjects: 3,
+  maxTracks: 24,
+  maxStems: 4,
+};
+
+const loggedInUser = {
+  session: null,
+  user: { email: "test@openband.app", user_metadata: { name: "Test User" } },
+  loading: false,
+  isVisitor: false,
+  visitorId: null,
+  tier: "FREE",
+  tierLimits: TIER_LIMITS,
+  signOut: mockSignOut,
+  signInAsVisitor: vi.fn(),
+  convertVisitorToAccount: vi.fn(),
+};
+
+const settingsUser = {
+  session: null,
+  user: { email: "joao@openband.app", user_metadata: { name: "João Produtor" } },
+  loading: false,
+  isVisitor: false,
+  visitorId: null,
+  tier: "FREE",
+  tierLimits: TIER_LIMITS,
+  signOut: mockSignOut,
+  signInAsVisitor: vi.fn(),
+  convertVisitorToAccount: vi.fn(),
+};
+
 vi.mock("../src/lib/responsive", () => ({
   useResponsive: mockResponsiveFn,
   LAYOUT_MAX_WIDTHS: {
@@ -33,6 +68,26 @@ vi.mock("../src/lib/responsive", () => ({
 }));
 
 vi.mock("../src/lib/projectStore", () => ({ saveProject: mockSaveProject }));
+
+vi.mock("../src/lib/stemExtractor", () => ({
+  extractStems: vi.fn((_file: File, onProgress?: (pct: number, label: string) => void) => {
+    onProgress?.(5, "Analisando espectro de frequências...");
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        onProgress?.(100, "Finalizando...");
+        resolve({
+          stems: [
+            { type: "drums", url: "blob:drums", duration: 10 },
+            { type: "bass", url: "blob:bass", duration: 10 },
+            { type: "vocals", url: "blob:vocals", duration: 10 },
+            { type: "other", url: "blob:other", duration: 10 },
+          ],
+          sourceDuration: 10,
+        });
+      }, 1000);
+    });
+  }),
+}));
 
 vi.mock("../src/context/ThemeContext", () => ({
   useTheme: mockThemeFn,
@@ -95,6 +150,13 @@ vi.mock("../src/lib/masteringBridge", () => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({
+      ok: true,
+      blob: async () => new Blob(["x"], { type: "audio/mpeg" }),
+    }),
+  );
   mockResponsiveFn.mockReturnValue({
     isMobile: true, isDesktop: false, isTablet: false,
     width: 375, height: 812, breakpoint: "mobile",
@@ -124,20 +186,28 @@ describe("Extractor Screen", () => {
     expect(screen.getByText("Produtor Anônimo")).toBeTruthy();
   });
 
-  it("moves to processing phase when a demo track is selected", () => {
+  it("moves to processing phase when a demo track is selected", async () => {
     vi.useFakeTimers();
     render(<Extractor />);
-    fireEvent.click(screen.getByText("Rock Alternativo"));
-    act(() => { vi.advanceTimersByTime(600); });
+    await act(async () => {
+      fireEvent.click(screen.getByText("Rock Alternativo"));
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(600);
+    });
     expect(screen.getByText("Analisando espectro de frequências...")).toBeTruthy();
     vi.useRealTimers();
   });
 
-  it("shows done state with all four stems after processing completes", () => {
+  it("shows done state with all four stems after processing completes", async () => {
     vi.useFakeTimers();
     render(<Extractor />);
-    fireEvent.click(screen.getByText("Rock Alternativo"));
-    act(() => { vi.advanceTimersByTime(5000); });
+    await act(async () => {
+      fireEvent.click(screen.getByText("Rock Alternativo"));
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(5000);
+    });
     expect(screen.getByText("Extração concluída")).toBeTruthy();
     expect(screen.getByText("Bateria")).toBeTruthy();
     expect(screen.getByText("Baixo")).toBeTruthy();
@@ -146,45 +216,65 @@ describe("Extractor Screen", () => {
     vi.useRealTimers();
   });
 
-  it("shows action buttons in done phase", () => {
+  it("shows action buttons in done phase", async () => {
     vi.useFakeTimers();
     render(<Extractor />);
-    fireEvent.click(screen.getByText("Rock Alternativo"));
-    act(() => { vi.advanceTimersByTime(5000); });
+    await act(async () => {
+      fireEvent.click(screen.getByText("Rock Alternativo"));
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(5000);
+    });
     expect(screen.getByText("Adicionar todos ao estúdio")).toBeTruthy();
     expect(screen.getByText("Exportar stems")).toBeTruthy();
     expect(screen.getByText("Nova extração")).toBeTruthy();
     vi.useRealTimers();
   });
 
-  it("resets to select phase when Nova extração is pressed", () => {
+  it("resets to select phase when Nova extração is pressed", async () => {
     vi.useFakeTimers();
     render(<Extractor />);
-    fireEvent.click(screen.getByText("Rock Alternativo"));
-    act(() => { vi.advanceTimersByTime(5000); });
-    fireEvent.click(screen.getByText("Nova extração"));
+    await act(async () => {
+      fireEvent.click(screen.getByText("Rock Alternativo"));
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(5000);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText("Nova extração"));
+    });
     expect(screen.getByText("Selecionar arquivo de áudio")).toBeTruthy();
     expect(screen.getByText("Rock Alternativo")).toBeTruthy();
     vi.useRealTimers();
   });
 
-  it("renders play buttons for each stem in done phase", () => {
+  it("renders play buttons for each stem in done phase", async () => {
     vi.useFakeTimers();
     render(<Extractor />);
-    fireEvent.click(screen.getByText("Rock Alternativo"));
-    act(() => { vi.advanceTimersByTime(5000); });
+    await act(async () => {
+      fireEvent.click(screen.getByText("Rock Alternativo"));
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(5000);
+    });
     const playButtons = screen.getAllByText("▶");
     expect(playButtons.length).toBe(4);
     vi.useRealTimers();
   });
 
-  it("invokes saveProject when add to project is pressed", () => {
+  it("invokes saveProject when add to project is pressed", async () => {
     vi.useFakeTimers();
     render(<Extractor />);
-    fireEvent.click(screen.getByText("Rock Alternativo"));
-    act(() => { vi.advanceTimersByTime(5000); });
+    await act(async () => {
+      fireEvent.click(screen.getByText("Rock Alternativo"));
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(5000);
+    });
     const addButtons = screen.getAllByText("+");
-    fireEvent.click(addButtons[0]);
+    await act(async () => {
+      fireEvent.click(addButtons[0]);
+    });
     expect(mockSaveProject).toHaveBeenCalled();
     vi.useRealTimers();
   });
@@ -198,6 +288,7 @@ describe("Settings Screen", () => {
   });
 
   it("displays profile information", () => {
+    mockAuthFn.mockReturnValue(settingsUser);
     render(<Settings />);
     expect(screen.getByText("João Produtor")).toBeTruthy();
     expect(screen.getByText("joao@openband.app")).toBeTruthy();
@@ -243,6 +334,7 @@ describe("Settings Screen", () => {
   });
 
   it("renders Avatar with user initial", () => {
+    mockAuthFn.mockReturnValue(settingsUser);
     render(<Settings />);
     expect(screen.getByText("J")).toBeTruthy();
   });
@@ -255,22 +347,14 @@ describe("Account Screen", () => {
   });
 
   it("shows user name and email when logged in", () => {
-    mockAuthFn.mockReturnValue({
-      session: null, user: { email: "test@openband.app", user_metadata: { name: "Test User" } },
-      loading: false, isVisitor: false, visitorId: null,
-      signOut: mockSignOut, signInAsVisitor: vi.fn(), convertVisitorToAccount: vi.fn(),
-    });
+    mockAuthFn.mockReturnValue(loggedInUser);
     render(<Account />);
     expect(screen.getByText("test@openband.app")).toBeTruthy();
     expect(screen.getByText("Test User")).toBeTruthy();
   });
 
   it("shows save button for name editing", () => {
-    mockAuthFn.mockReturnValue({
-      session: null, user: { email: "test@openband.app", user_metadata: { name: "Test User" } },
-      loading: false, isVisitor: false, visitorId: null,
-      signOut: mockSignOut, signInAsVisitor: vi.fn(), convertVisitorToAccount: vi.fn(),
-    });
+    mockAuthFn.mockReturnValue(loggedInUser);
     render(<Account />);
     expect(screen.getByText("Salvar")).toBeTruthy();
   });
@@ -281,6 +365,7 @@ describe("Account Screen", () => {
   });
 
   it("shows connected status", () => {
+    mockAuthFn.mockReturnValue(loggedInUser);
     render(<Account />);
     expect(screen.getByText("Conectado")).toBeTruthy();
   });
@@ -289,6 +374,7 @@ describe("Account Screen", () => {
     mockAuthFn.mockReturnValue({
       session: null, user: { email: "test@openband.app", user_metadata: { name: "Old Name" } },
       loading: false, isVisitor: false, visitorId: null,
+      tier: "FREE", tierLimits: TIER_LIMITS,
       signOut: mockSignOut, signInAsVisitor: vi.fn(), convertVisitorToAccount: vi.fn(),
     });
     render(<Account />);
@@ -303,6 +389,7 @@ describe("Account Screen", () => {
     mockAuthFn.mockReturnValue({
       session: null, user: { email: "test@openband.app", user_metadata: { name: "Same Name" } },
       loading: false, isVisitor: false, visitorId: null,
+      tier: "FREE", tierLimits: TIER_LIMITS,
       signOut: mockSignOut, signInAsVisitor: vi.fn(), convertVisitorToAccount: vi.fn(),
     });
     render(<Account />);

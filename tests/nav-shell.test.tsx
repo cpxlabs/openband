@@ -64,6 +64,7 @@ vi.mock("../src/bridge", () => ({
 vi.mock("../src/lib/masteringBridge", () => ({
   takeMasteringInput: () => null,
   setMasteringInput: vi.fn(),
+  getMasteringInput: () => null,
 }));
 
 vi.mock("../src/lib/masteringSuite", () => ({

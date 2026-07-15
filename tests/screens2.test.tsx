@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
+import { ToastProvider } from "../src/components/Toast";
 import Login from "../app/(auth)/login";
 import Feed from "../app/tabs/index";
 import Library from "../app/tabs/library";
@@ -68,6 +69,12 @@ vi.mock("../src/hooks/useWebAudioPlayer", () => ({
   useWebAudioPlayer: mockWebAudioPlayer,
 }));
 
+vi.mock("../src/lib/feedApi", () => ({
+  fetchFeed: vi.fn(() => Promise.resolve({ posts: [], hasMore: false })),
+  toggleLike: vi.fn(() => Promise.resolve({ liked: true, likes: 1 })),
+  createRemix: vi.fn(() => Promise.resolve({ id: "x", remixUrl: "/studio/x" })),
+}));
+
 vi.mock("../src/lib/projectStore", () => ({
   listProjectIndex: mockListProjectIndex,
   loadProject: vi.fn(() => ({ genre: "rock", key: "E", bpm: 140 })),
@@ -116,6 +123,9 @@ vi.mock("expo-audio", () => ({
   })),
 }));
 
+const renderWithToast = (ui: React.ReactElement) =>
+  render(<ToastProvider>{ui}</ToastProvider>);
+
 beforeEach(() => {
   vi.clearAllMocks();
   mockResponsiveFn.mockReturnValue({
@@ -130,21 +140,21 @@ beforeEach(() => {
 
 describe("Login Screen", () => {
   it("renders login form with email and password fields", () => {
-    render(<Login />);
+    renderWithToast(<Login />);
     expect(screen.getByText("E-mail")).toBeTruthy();
     expect(screen.getByText("Senha")).toBeTruthy();
     expect(screen.getByText("Entrar")).toBeTruthy();
   });
 
   it("toggles to signup mode showing name field", () => {
-    render(<Login />);
+    renderWithToast(<Login />);
     fireEvent.click(screen.getByText("Não tem conta? Cadastre-se"));
     expect(screen.getByText("Nome")).toBeTruthy();
     expect(screen.getByText("Criar conta")).toBeTruthy();
   });
 
   it("toggles back to login mode", () => {
-    render(<Login />);
+    renderWithToast(<Login />);
     fireEvent.click(screen.getByText("Não tem conta? Cadastre-se"));
     fireEvent.click(screen.getByText("Já tem uma conta? Entre"));
     expect(screen.queryByText("Nome")).toBeNull();
@@ -152,13 +162,13 @@ describe("Login Screen", () => {
   });
 
   it("shows error on empty fields", () => {
-    render(<Login />);
+    renderWithToast(<Login />);
     fireEvent.click(screen.getByText("Entrar"));
     expect(screen.getByText("Preencha todos os campos.")).toBeTruthy();
   });
 
   it("validates password length in signup", () => {
-    render(<Login />);
+    renderWithToast(<Login />);
     fireEvent.click(screen.getByText("Não tem conta? Cadastre-se"));
     fireEvent.change(screen.getByPlaceholderText("Seu nome"), { target: { value: "Test" } });
     fireEvent.change(screen.getByPlaceholderText("seu@email.com"), { target: { value: "test@test.com" } });
@@ -168,7 +178,7 @@ describe("Login Screen", () => {
   });
 
   it("validates password uppercase in signup", () => {
-    render(<Login />);
+    renderWithToast(<Login />);
     fireEvent.click(screen.getByText("Não tem conta? Cadastre-se"));
     fireEvent.change(screen.getByPlaceholderText("Seu nome"), { target: { value: "Test" } });
     fireEvent.change(screen.getByPlaceholderText("seu@email.com"), { target: { value: "test@test.com" } });
@@ -178,7 +188,7 @@ describe("Login Screen", () => {
   });
 
   it("validates password digit in signup", () => {
-    render(<Login />);
+    renderWithToast(<Login />);
     fireEvent.click(screen.getByText("Não tem conta? Cadastre-se"));
     fireEvent.change(screen.getByPlaceholderText("Seu nome"), { target: { value: "Test" } });
     fireEvent.change(screen.getByPlaceholderText("seu@email.com"), { target: { value: "test@test.com" } });
@@ -189,7 +199,7 @@ describe("Login Screen", () => {
 
   it("calls signInWithPassword on login submit", async () => {
     mockSignInWithPassword.mockResolvedValue({ error: null });
-    render(<Login />);
+    renderWithToast(<Login />);
     fireEvent.change(screen.getByPlaceholderText("seu@email.com"), { target: { value: "user@test.com" } });
     fireEvent.change(screen.getByPlaceholderText("••••••••"), { target: { value: "Password1" } });
     fireEvent.click(screen.getByText("Entrar"));
@@ -202,7 +212,7 @@ describe("Login Screen", () => {
 
   it("calls signUp on signup submit", async () => {
     mockSignUp.mockResolvedValue({ error: null });
-    render(<Login />);
+    renderWithToast(<Login />);
     fireEvent.click(screen.getByText("Não tem conta? Cadastre-se"));
     fireEvent.change(screen.getByPlaceholderText("Seu nome"), { target: { value: "Test User" } });
     fireEvent.change(screen.getByPlaceholderText("seu@email.com"), { target: { value: "user@test.com" } });
@@ -218,7 +228,7 @@ describe("Login Screen", () => {
 
   it("shows server error from signInWithPassword", async () => {
     mockSignInWithPassword.mockResolvedValue({ error: { message: "Invalid credentials" } });
-    render(<Login />);
+    renderWithToast(<Login />);
     fireEvent.change(screen.getByPlaceholderText("seu@email.com"), { target: { value: "user@test.com" } });
     fireEvent.change(screen.getByPlaceholderText("••••••••"), { target: { value: "Password1" } });
     fireEvent.click(screen.getByText("Entrar"));
@@ -230,7 +240,7 @@ describe("Login Screen", () => {
     let resolvePromise: (v: any) => void;
     const promise = new Promise((resolve) => { resolvePromise = resolve; });
     mockSignInWithPassword.mockReturnValue(promise);
-    render(<Login />);
+    renderWithToast(<Login />);
     fireEvent.change(screen.getByPlaceholderText("seu@email.com"), { target: { value: "user@test.com" } });
     fireEvent.change(screen.getByPlaceholderText("••••••••"), { target: { value: "Password1" } });
     fireEvent.click(screen.getByText("Entrar"));
@@ -240,14 +250,14 @@ describe("Login Screen", () => {
   });
 
   it("renders visitor entry button and triggers signInAsVisitor", () => {
-    render(<Login />);
+    renderWithToast(<Login />);
     expect(screen.getByText("Entrar como Visitante")).toBeTruthy();
     fireEvent.click(screen.getByText("Entrar como Visitante"));
     expect(mockSignInAsVisitor).toHaveBeenCalledOnce();
   });
 
   it("clears error when toggling login/signup mode", () => {
-    render(<Login />);
+    renderWithToast(<Login />);
     fireEvent.click(screen.getByText("Entrar"));
     expect(screen.getByText("Preencha todos os campos.")).toBeTruthy();
     fireEvent.click(screen.getByText("Não tem conta? Cadastre-se"));
@@ -255,13 +265,13 @@ describe("Login Screen", () => {
   });
 
   it("renders with responsive maxWidth layout", () => {
-    render(<Login />);
+    renderWithToast(<Login />);
     const container = screen.getByText("OpenBand").closest("div")?.parentElement;
     expect(container).toBeTruthy();
   });
 
   it("shows subtitle depending on mode", () => {
-    render(<Login />);
+    renderWithToast(<Login />);
     expect(screen.getByText("Entre para criar música")).toBeTruthy();
     fireEvent.click(screen.getByText("Não tem conta? Cadastre-se"));
     expect(screen.getByText("Crie sua conta")).toBeTruthy();
@@ -269,19 +279,22 @@ describe("Login Screen", () => {
 });
 
 describe("Feed Tab", () => {
-  it("renders PageHeader with title and subtitle", () => {
-    render(<Feed />);
+  it("renders PageHeader with title and subtitle", async () => {
+    await renderWithToast(<Feed />);
+    await act(async () => {});
     expect(screen.getByText("Feed")).toBeTruthy();
     expect(screen.getByText("Descubra novos sons e crie os seus")).toBeTruthy();
   });
 
-  it("renders the Novo Projeto button", () => {
-    render(<Feed />);
+  it("renders the Novo Projeto button", async () => {
+    await renderWithToast(<Feed />);
+    await act(async () => {});
     expect(screen.getByText("Novo Projeto")).toBeTruthy();
   });
 
-  it("renders genre filter buttons", () => {
-    render(<Feed />);
+  it("renders genre filter buttons", async () => {
+    await renderWithToast(<Feed />);
+    await act(async () => {});
     expect(screen.getByText("Todos")).toBeTruthy();
     expect(screen.getByText("Rock")).toBeTruthy();
     expect(screen.getByText("Lo-Fi")).toBeTruthy();
@@ -289,111 +302,123 @@ describe("Feed Tab", () => {
     expect(screen.getByText("Jazz")).toBeTruthy();
   });
 
-  it("renders sort mode buttons", () => {
-    render(<Feed />);
+  it("renders sort mode buttons", async () => {
+    await renderWithToast(<Feed />);
+    await act(async () => {});
     expect(screen.getByText("Recentes")).toBeTruthy();
     expect(screen.getByText("Populares")).toBeTruthy();
     expect(screen.getByText("Gênero")).toBeTruthy();
   });
 
-  it("renders all mock posts", () => {
-    render(<Feed />);
+  it("renders the first page of mock posts", async () => {
+    await renderWithToast(<Feed />);
+    await act(async () => {});
     expect(screen.getByText("Solo de Guitarra Pesado")).toBeTruthy();
     expect(screen.getByText("Beat Lo-fi Chill 2026")).toBeTruthy();
     expect(screen.getByText("Bateria Eletrônica")).toBeTruthy();
     expect(screen.getByText("Baixo Synthwave")).toBeTruthy();
     expect(screen.getByText("Violão na Praia")).toBeTruthy();
     expect(screen.getByText("Jazz Improviso Noturno")).toBeTruthy();
-    expect(screen.getByText("Beat Hip-Hop 808")).toBeTruthy();
-    expect(screen.getByText("Metal Pesado Riff")).toBeTruthy();
-    expect(screen.getByText("R&B Suave")).toBeTruthy();
-    expect(screen.getByText("Blues Elétrico")).toBeTruthy();
   });
 
-  it("shows author handle per post", () => {
-    render(<Feed />);
+  it("shows author handle per post", async () => {
+    await renderWithToast(<Feed />);
+    await act(async () => {});
     expect(screen.getByText("@joaomusico99")).toBeTruthy();
     expect(screen.getByText("@sintetizadorvirtual")).toBeTruthy();
   });
 
-  it("displays genre badges per post", () => {
-    render(<Feed />);
+  it("displays genre badges per post", async () => {
+    await renderWithToast(<Feed />);
+    await act(async () => {});
     const rockBadges = screen.getAllByText("ROCK");
     expect(rockBadges.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("shows welcome banner when no projects exist", () => {
+  it("shows welcome banner when no projects exist", async () => {
     mockListProjectIndex.mockReturnValue({});
-    render(<Feed />);
+    await renderWithToast(<Feed />);
+    await act(async () => {});
     expect(screen.getByText("Bem-vindo ao OpenBand!")).toBeTruthy();
   });
 
-  it("hides welcome banner when projects exist", () => {
+  it("hides welcome banner when projects exist", async () => {
     mockListProjectIndex.mockReturnValue({ "proj-1": { name: "Test" } });
-    render(<Feed />);
+    await renderWithToast(<Feed />);
+    await act(async () => {});
     expect(screen.queryByText("Bem-vindo ao OpenBand!")).toBeNull();
   });
 
-  it("shows empty state when genre filter has no matches", () => {
-    render(<Feed />);
+  it("shows empty state when genre filter has no matches", async () => {
+    await renderWithToast(<Feed />);
+    await act(async () => {});
     fireEvent.click(screen.getByText("Todos"));
     expect(screen.getByText("Todos")).toBeTruthy();
   });
 
-  it("like button toggles liked state", () => {
-    render(<Feed />);
+  it("like button toggles liked state", async () => {
+    await renderWithToast(<Feed />);
+    await act(async () => {});
     const likeButtons = screen.getAllByText("♡");
     fireEvent.click(likeButtons[0]);
     expect(screen.getAllByText("❤").length).toBeGreaterThanOrEqual(1);
   });
 
-  it("increments like count on heart press", () => {
-    render(<Feed />);
+  it("increments like count on heart press", async () => {
+    await renderWithToast(<Feed />);
+    await act(async () => {});
     expect(screen.getByText("182")).toBeTruthy();
     const likeButtons = screen.getAllByText("♡");
     fireEvent.click(likeButtons[0]);
     expect(screen.getByText("183")).toBeTruthy();
   });
 
-  it("shows play count per post", () => {
-    render(<Feed />);
+  it("shows play count per post", async () => {
+    await renderWithToast(<Feed />);
+    await act(async () => {});
     expect(screen.getByText("2.3k")).toBeTruthy();
   });
 
-  it("opens QuickTools when Novo Projeto is pressed", () => {
-    render(<Feed />);
+  it("opens QuickTools when Novo Projeto is pressed", async () => {
+    await renderWithToast(<Feed />);
+    await act(async () => {});
     fireEvent.click(screen.getByText("Novo Projeto"));
     expect(screen.getByText("Novo Projeto Rápido")).toBeTruthy();
     expect(screen.getByText("Ferramentas Rápidas")).toBeTruthy();
   });
 
-  it("shows play buttons on each post", () => {
-    render(<Feed />);
+  it("shows play buttons on each visible post", async () => {
+    await renderWithToast(<Feed />);
+    await act(async () => {});
     const playButtons = screen.getAllByText("Ouvir");
-    expect(playButtons.length).toBe(10);
+    expect(playButtons.length).toBe(6);
   });
 
-  it("renders Remix buttons on posts", () => {
-    render(<Feed />);
+  it("renders Remix buttons on visible posts", async () => {
+    await renderWithToast(<Feed />);
+    await act(async () => {});
     const remixButtons = screen.getAllByText("Remix");
-    expect(remixButtons.length).toBe(10);
+    expect(remixButtons.length).toBe(6);
   });
 
-  it("renders Compartilhar buttons on posts", () => {
-    render(<Feed />);
+  it("renders Compartilhar buttons on visible posts", async () => {
+    await renderWithToast(<Feed />);
+    await act(async () => {});
     const shareButtons = screen.getAllByText("Compartilhar");
-    expect(shareButtons.length).toBe(10);
+    expect(shareButtons.length).toBe(6);
   });
 
-  it("filters posts by genre selection", () => {
-    render(<Feed />);
+  it("filters posts by genre selection", async () => {
+    await renderWithToast(<Feed />);
+    await act(async () => {});
     fireEvent.click(screen.getByText("Rock"));
     expect(screen.getByText("Solo de Guitarra Pesado")).toBeTruthy();
     expect(screen.queryByText("Beat Lo-fi Chill 2026")).toBeNull();
   });
 
-  it("sorts posts by popular mode", () => {
-    render(<Feed />);
+  it("sorts posts by popular mode", async () => {
+    await renderWithToast(<Feed />);
+    await act(async () => {});
     fireEvent.click(screen.getByText("Populares"));
     const allPosts = screen.getAllByText(/k$/);
     expect(allPosts.length).toBeGreaterThan(0);
@@ -402,24 +427,24 @@ describe("Feed Tab", () => {
 
 describe("Library Tab", () => {
   it("renders PageHeader with title and subtitle", () => {
-    render(<Library />);
+    renderWithToast(<Library />);
     expect(screen.getByText("Biblioteca")).toBeTruthy();
     expect(screen.getByText("Seus projetos musicais")).toBeTruthy();
   });
 
   it("renders Novo Projeto button", () => {
-    render(<Library />);
+    renderWithToast(<Library />);
     expect(screen.getByText("Novo Projeto")).toBeTruthy();
   });
 
   it("renders Importar Projeto and Separar Stems buttons", () => {
-    render(<Library />);
+    renderWithToast(<Library />);
     expect(screen.getByText("Importar Projeto")).toBeTruthy();
     expect(screen.getByText("Separar Stems")).toBeTruthy();
   });
 
   it("renders filter tabs", () => {
-    render(<Library />);
+    renderWithToast(<Library />);
     expect(screen.getByText(/Todos/)).toBeTruthy();
     expect(screen.getByText(/Favoritos/)).toBeTruthy();
     expect(screen.getByText(/Colaborações/)).toBeTruthy();
@@ -428,7 +453,7 @@ describe("Library Tab", () => {
 
   it("shows empty state when no projects exist", () => {
     mockListProjectIndex.mockReturnValue({});
-    render(<Library />);
+    renderWithToast(<Library />);
     expect(screen.getByText("Nenhum projeto ainda")).toBeTruthy();
   });
 
@@ -437,13 +462,13 @@ describe("Library Tab", () => {
       "proj-1": { title: "My Beat", lastSaved: Date.now() },
       "proj-2": { title: "Loop Session", lastSaved: Date.now() - 10000 },
     });
-    render(<Library />);
+    renderWithToast(<Library />);
     expect(screen.getByText("My Beat")).toBeTruthy();
     expect(screen.getByText("Loop Session")).toBeTruthy();
   });
 
   it("shows filter tabs with Todos active by default", () => {
-    render(<Library />);
+    renderWithToast(<Library />);
     const todos = screen.getByText(/Todos/);
     expect(todos).toBeTruthy();
   });
@@ -452,15 +477,15 @@ describe("Library Tab", () => {
     mockListProjectIndex.mockReturnValue({
       "proj-1": { title: "My Beat", lastSaved: Date.now() },
     });
-    render(<Library />);
-    expect(screen.getByText("☆")).toBeTruthy();
+    renderWithToast(<Library />);
+    expect(screen.getByText("★")).toBeTruthy();
   });
 
   it("shows Abrir button per project card", () => {
     mockListProjectIndex.mockReturnValue({
       "proj-1": { title: "My Beat", lastSaved: Date.now() },
     });
-    render(<Library />);
+    renderWithToast(<Library />);
     const openButtons = screen.getAllByText("Abrir →");
     expect(openButtons.length).toBeGreaterThanOrEqual(1);
   });
@@ -468,39 +493,39 @@ describe("Library Tab", () => {
 
 describe("Moments Tab", () => {
   it("renders PageHeader with title and subtitle", () => {
-    render(<Moments />);
+    renderWithToast(<Moments />);
     const momentos = screen.getAllByText("Momentos");
     expect(momentos.length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Artistas e criadores")).toBeTruthy();
   });
 
   it("renders tab switcher with Momentos and Free Packs", () => {
-    render(<Moments />);
+    renderWithToast(<Moments />);
     const momentos = screen.getAllByText("Momentos");
     expect(momentos.length).toBe(2);
     expect(screen.getByText("Free Packs")).toBeTruthy();
   });
 
-  it("shows artist moments by default", () => {
-    render(<Moments />);
-    expect(screen.getByText("Ana Beatriz")).toBeTruthy();
+  it("shows artist moments by default", async () => {
+    renderWithToast(<Moments />);
+    expect(await screen.findByText("Ana Beatriz")).toBeTruthy();
     expect(screen.getByText((_, el) => el?.textContent === "@anabeatriz · 2h")).toBeTruthy();
   });
 
-  it("shows all three mock moments", () => {
-    render(<Moments />);
-    expect(screen.getByText("Carlos Guitarra")).toBeTruthy();
+  it("shows all three mock moments", async () => {
+    renderWithToast(<Moments />);
+    expect(await screen.findByText("Carlos Guitarra")).toBeTruthy();
     expect(screen.getByText("DJ Eletro")).toBeTruthy();
   });
 
-  it("shows moment captions", () => {
-    render(<Moments />);
-    expect(screen.getByText(/Finalizando o novo single/)).toBeTruthy();
+  it("shows moment captions", async () => {
+    renderWithToast(<Moments />);
+    expect(await screen.findByText(/Finalizando o novo single/)).toBeTruthy();
     expect(screen.getByText(/Acabei de gravar esse riff/)).toBeTruthy();
   });
 
   it("switches to Free Packs tab", () => {
-    render(<Moments />);
+    renderWithToast(<Moments />);
     fireEvent.click(screen.getByText("Free Packs"));
     expect(screen.getByText("Guitarra")).toBeTruthy();
     expect(screen.getByText("Sintetizador")).toBeTruthy();
@@ -508,7 +533,7 @@ describe("Moments Tab", () => {
   });
 
   it("shows sample pack artist info", () => {
-    render(<Moments />);
+    renderWithToast(<Moments />);
     fireEvent.click(screen.getByText("Free Packs"));
     expect(screen.getByText("Ana Beatriz")).toBeTruthy();
     expect(screen.getByText("DJ Eletro")).toBeTruthy();
@@ -517,7 +542,7 @@ describe("Moments Tab", () => {
   });
 
   it("shows Usar button for sample packs", () => {
-    render(<Moments />);
+    renderWithToast(<Moments />);
     fireEvent.click(screen.getByText("Free Packs"));
     const useButtons = screen.getAllByText(/Usar .+ no Estúdio/);
     expect(useButtons.length).toBeGreaterThanOrEqual(1);

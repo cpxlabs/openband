@@ -48,7 +48,7 @@ describe("Accessibility — Button", () => {
 describe("Accessibility — OneKnob", () => {
   it("exposes adjustable role, label and value", () => {
     render(<OneKnob label="Warmth" value={50} onChange={() => {}} />);
-    const knob = screen.getByRole("adjustable");
+    const knob = screen.getByRole("slider", { name: "Warmth" });
     expect(knob).toHaveAttribute("aria-label", "Warmth");
     expect(knob).toHaveAttribute("aria-valuenow", "50");
     expect(knob).toHaveAttribute("aria-valuemin", "0");
@@ -58,23 +58,23 @@ describe("Accessibility — OneKnob", () => {
   it("supports keyboard increment via ArrowUp", () => {
     const onChange = vi.fn();
     render(<OneKnob label="Drive" value={50} onChange={onChange} step={5} />);
-    fireEvent.keyDown(screen.getByRole("adjustable"), { key: "ArrowUp" });
+    fireEvent.keyDown(screen.getByRole("slider", { name: "Drive" }), { key: "ArrowUp" });
     expect(onChange).toHaveBeenCalledWith(55);
   });
 
   it("supports keyboard decrement via ArrowDown", () => {
     const onChange = vi.fn();
     render(<OneKnob label="Drive" value={50} onChange={onChange} step={5} />);
-    fireEvent.keyDown(screen.getByRole("adjustable"), { key: "ArrowDown" });
+    fireEvent.keyDown(screen.getByRole("slider", { name: "Drive" }), { key: "ArrowDown" });
     expect(onChange).toHaveBeenCalledWith(45);
   });
 
   it("jumps to min with Home and max with End", () => {
     const onChange = vi.fn();
     render(<OneKnob label="Drive" value={50} onChange={onChange} />);
-    fireEvent.keyDown(screen.getByRole("adjustable"), { key: "Home" });
+    fireEvent.keyDown(screen.getByRole("slider", { name: "Drive" }), { key: "Home" });
     expect(onChange).toHaveBeenCalledWith(0);
-    fireEvent.keyDown(screen.getByRole("adjustable"), { key: "End" });
+    fireEvent.keyDown(screen.getByRole("slider", { name: "Drive" }), { key: "End" });
     expect(onChange).toHaveBeenCalledWith(100);
   });
 });
@@ -91,7 +91,7 @@ describe("Accessibility — ProgressBar", () => {
 describe("Accessibility — Loading", () => {
   it("exposes progressbar role and aria-busy", () => {
     render(<Loading message="Carregando" />);
-    const el = screen.getByRole("progressbar");
+    const el = screen.getByRole("progressbar", { name: "Carregando" });
     expect(el).toHaveAttribute("aria-busy", "true");
     expect(el).toHaveAttribute("aria-label", "Carregando");
   });

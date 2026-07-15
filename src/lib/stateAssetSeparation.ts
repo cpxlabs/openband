@@ -88,7 +88,9 @@ async function sha256(data: string): Promise<string> {
 
 async function sha256Buffer(data: ArrayBuffer): Promise<string> {
   if (typeof crypto !== "undefined" && crypto.subtle) {
-    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    const view = new Uint8Array(data);
+    const copy = new Uint8Array(view);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", copy);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
   }
