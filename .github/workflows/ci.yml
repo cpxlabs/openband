@@ -16,7 +16,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
@@ -43,13 +43,13 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
-          cache-dependency-path: backend/package.json
+          cache-dependency-path: backend/package-lock.json
 
       - name: Install dependencies
         working-directory: backend
-        run: npm install
+        run: npm ci
 
       - name: Type check (backend)
         working-directory: backend

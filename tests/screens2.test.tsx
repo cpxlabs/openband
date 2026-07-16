@@ -96,6 +96,8 @@ vi.mock("../src/bridge", () => ({
 
 vi.mock("../src/lib/constants", () => ({
   generatePreviewUrl: mockGeneratePreviewUrl,
+  getCachedPreview: () => undefined,
+  preloadPreview: () => Promise.resolve("blob:mock"),
   SCREEN_BOTTOM_PADDING: 100,
 }));
 
