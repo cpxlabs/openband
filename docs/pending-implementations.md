@@ -65,12 +65,12 @@ implemented + verified; `[ ]` are genuinely outstanding.
 - [x] Console renders a master section with a `MASTER` label and master fader(s)
 - [x] When `loadThree` rejects, `loadError` is set and the fallback overlay renders without throwing
 
-## Studio DAW (`studio-daw/spec.md`) — DONE (minor partial)
+## Studio DAW (`studio-daw/spec.md`) — DONE
 - [x] VuMeter per track on "mixer" tab
 - [x] Play → `startClock(25)` + `onClockTick` updates playhead (now `playheadStore`, no full-screen re-render)
 - [x] Stop → `stopClock()` + reset beat
 - [x] Record flips `isRecording` + appends `TrackRegion`
-- [ ] Standalone "Add clip" action (regions are only appended via the record flow) — PARTIAL
+- [x] Standalone "Add clip" action appends a `TrackRegion` to the selected track (or creates a track if none selected) (`studio-add-clip` change)
 - [x] Track plugin slot opens `PluginEditor`
 - [x] Draw `AutomationLane` populates `track.automation.volume`
 - [x] Group creation updates `groups`+`trackAssignments`

@@ -402,6 +402,52 @@ describe("Studio", () => {
       expect(importIcons.length).toBeGreaterThanOrEqual(1);
     });
 
+    it("renders Clip button", () => {
+      render(<Studio />);
+      const clipBtns = screen.getAllByText("Clip");
+      expect(clipBtns.length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  describe("clip controls", () => {
+    it("adds one region to the selected track at the end", async () => {
+      const setTracks = vi.fn();
+      const initialTracks = [{ id: "track-1", name: "Guitar", color: "bg-blue-500", muted: false, solo: false, volume: 70, pan: 0, sends: {}, sidechainSource: null, regions: [{ id: "region-a", start: 0, duration: 10 }], plugins: [], automation: {} }];
+      mockHistory.mockReturnValue({ state: initialTracks, setState: setTracks, undo: vi.fn(), redo: vi.fn(), canUndo: false, canRedo: false });
+
+      render(<Studio />);
+      await act(async () => {
+        fireEvent.click(screen.getAllByText("Guitar")[0]);
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByText("Clip"));
+      });
+      await new Promise((r) => setTimeout(r, 50));
+
+      const lastCall = setTracks.mock.calls[setTracks.mock.calls.length - 1][0];
+      const target = lastCall.find((t: any) => t.id === "track-1");
+      expect(target.regions.length).toBe(2);
+      expect(target.regions[1].start).toBe(10);
+      expect(typeof target.regions[1].duration).toBe("number");
+    });
+
+    it("creates a new track with one region when no track is selected", async () => {
+      const setTracks = vi.fn();
+      const initialTracks = [{ id: "track-1", name: "Guitar", color: "bg-blue-500", muted: false, solo: false, volume: 70, pan: 0, sends: {}, sidechainSource: null, regions: [], plugins: [], automation: {} }];
+      mockHistory.mockReturnValue({ state: initialTracks, setState: setTracks, undo: vi.fn(), redo: vi.fn(), canUndo: false, canRedo: false });
+
+      render(<Studio />);
+      await act(async () => {
+        fireEvent.click(screen.getByText("Clip"));
+      });
+      await new Promise((r) => setTimeout(r, 50));
+
+      const lastCall = setTracks.mock.calls[setTracks.mock.calls.length - 1][0];
+      expect(lastCall.length).toBe(2);
+      const created = lastCall.find((t: any) => t.id !== "track-1");
+      expect(created.regions.length).toBe(1);
+    });
+
     it("renders track color picker trigger", () => {
       render(<Studio />);
       const vButtons = screen.getAllByText("V").filter(el => el.tagName !== "path");

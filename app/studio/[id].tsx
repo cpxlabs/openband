@@ -1005,6 +1005,50 @@ export default function Studio() {
     input.click();
   }, [tracks, setTracks]);
 
+  const handleAddClip = useCallback(() => {
+    const defaultDuration = initialNumBars && initialBpm ? (60 / initialBpm) * initialNumBars : 4;
+    const target = tracks.find((t) => t.id === selectedTrackId) ?? null;
+
+    if (target) {
+      const lastEnd = target.regions.reduce(
+        (max, r) => Math.max(max, (r.start || 0) + (r.duration || 0)),
+        0,
+      );
+      const newRegion: TrackRegion = {
+        id: "region-" + Date.now(),
+        start: lastEnd,
+        duration: defaultDuration,
+      };
+      setTracks(
+        tracks.map((t) =>
+          t.id === target.id ? { ...t, regions: [...t.regions, newRegion] } : t,
+        ),
+      );
+      return;
+    }
+
+    const trackId = "track-" + Date.now();
+    const name = "Clip " + (tracks.length + 1);
+    const busId = assignTrackToBus(name);
+    const newTrack: TrackDef = {
+      id: trackId,
+      name,
+      color: TRACK_COLORS[tracks.length % TRACK_COLORS.length],
+      muted: false,
+      solo: false,
+      volume: 75,
+      pan: 0,
+      sends: {},
+      sidechainSource: null,
+      outputId: busId,
+      regions: [{ id: "region-" + Date.now(), start: 0, duration: defaultDuration }],
+      plugins: [],
+      automation: {},
+    };
+    setTracks([...tracks, newTrack]);
+    setSelectedTrackId(trackId);
+  }, [tracks, setTracks, selectedTrackId, initialBpm, initialNumBars]);
+
   const handleCodeRender = useCallback(
     (
       patterns: { name: string; tokens: string[]; unit: string; bpm: number }[],
@@ -1259,6 +1303,7 @@ export default function Studio() {
     registerCommand("edit.redo", "Redo", "Redo last action", "Edit", redoHistory, "Ctrl+Shift+Z");
     registerCommand("edit.delete", "Delete", "Delete selected track", "Edit", () => selectedTrack && deleteTrack(selectedTrack.id), "Delete", "Backspace");
     registerCommand("track.add", "Add Track", "Add a new track to the project", "Track", handleAddTrack, "Ctrl+T");
+    registerCommand("clip.add", "Add Clip", "Add a clip region to the selected track", "Clip", handleAddClip, "Ctrl+Shift+C");
     registerCommand("track.mute", "Mute Track", "Toggle mute on selected track", "Track", () => selectedTrack && toggleMute(selectedTrack.id));
     registerCommand("track.solo", "Solo Track", "Toggle solo on selected track", "Track", () => selectedTrack && toggleSolo(selectedTrack.id));
     registerCommand("mixer.open", "Open Mixer", "Switch to mixer view", "View", () => setBottomTab("mixer"), "Ctrl+M");
@@ -1272,7 +1317,7 @@ export default function Studio() {
     return () => {
       disposeKeyBindings();
     };
-  }, [togglePlay, toggleRecording, undoHistory, redoHistory, handleManualSave, selectedTrack, toggleMute, toggleSolo, deleteTrack, handleAddTrack, setBottomTab, openModal, toggleModal, closeModal]);
+  }, [togglePlay, toggleRecording, undoHistory, redoHistory, handleManualSave, selectedTrack, toggleMute, toggleSolo, deleteTrack, handleAddTrack, handleAddClip, setBottomTab, openModal, toggleModal, closeModal]);
 
   const getEffectiveVolume = useCallback((trackId: string): number => {
     const gv = getGroupVolume(groups, trackId);
@@ -1895,6 +1940,13 @@ export default function Studio() {
             >
               <Text className="text-gray-300 text-xs">📂</Text>
               <Text className="text-gray-300 text-[10px] font-semibold">Import</Text>
+            </Pressable>
+            <Pressable
+              onPress={handleAddClip}
+              className="h-8 rounded-lg bg-dark-muted/30 items-center justify-center flex-row gap-1.5 active:opacity-70 border border-dark-border/30"
+            >
+              <Text className="text-gray-300 text-xs">▦</Text>
+              <Text className="text-gray-300 text-[10px] font-semibold">Clip</Text>
             </Pressable>
           </View>
         </View>

@@ -98,6 +98,8 @@ The studio MUST present a master section with `MasterRack` (`:2546`, `:2560`) sh
 - [ ] Tapping stop invokes `stopClock()` and resets `currentBeat` to 0
 - [ ] Record button flips `isRecording` and appends a `TrackRegion` to the armed track
 - [ ] Adding a clip appends a valid `TrackRegion { id, start, duration }` to `track.regions`
+- [x] "Add clip" appends a valid `TrackRegion` to the selected track at the end of existing regions.
+- [x] "Add clip" with no selected track creates a new track containing one region and selects it.
 - [ ] Tapping a track plugin slot opens `PluginEditor` bound to `track.plugins[i]`
 - [ ] Drawing an `AutomationLane` populates `track.automation.volume` and `automatedVolume` interpolates per frame
 - [ ] Creating a group updates `groups` + `trackAssignments` and `getGroupVolume` reflects on members
