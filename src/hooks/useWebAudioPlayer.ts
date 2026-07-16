@@ -114,11 +114,7 @@ export function useWebAudioPlayer(options?: { trackTime?: boolean }) {
   const play = useCallback(async () => {
     const audio = audioRef.current;
     if (!audio) return;
-    try {
-      await audio.play();
-    } catch (e) {
-      console.warn("WebAudio play failed:", e);
-    }
+    await audio.play();
   }, []);
 
   const pause = useCallback(() => {

@@ -85,6 +85,13 @@ import {
 } from "./parts";
 import { StudioModals } from "./StudioModals";
 import { useProjectParams, useStudioPersistence, useMixSnapshots, useStudioModals, useStudioTransport, usePluginChains, useMixerState, applyPitchShift, renderTracksCached, type BottomTab } from "./hooks";
+import { getPlayheadBeat, setPlayheadBeat, subscribePlayhead } from "../../src/lib/playheadStore";
+
+function PlayheadBeatDisplay() {
+  const [b, setB] = useState(getPlayheadBeat());
+  useEffect(() => subscribePlayhead(setB), []);
+  return <Text className="text-gray-500 text-[9px] font-mono ml-1">♩{Math.floor(b) + 1}</Text>;
+}
 
 export default function Studio() {
   const {
@@ -217,7 +224,6 @@ export default function Studio() {
     countInBars: 2,
   });
 
-  const [currentBeat, setCurrentBeat] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(1.0);
   const [pitchShiftSemitones, setPitchShiftSemitones] = useState(0);
   const [pitchCorrected, setPitchCorrected] = useState(false);
@@ -364,7 +370,7 @@ export default function Studio() {
     playbackRate,
     pitchShiftSemitones,
     masterPlugins,
-    setCurrentBeat,
+    setPlayheadBeat,
     setAutoplayBlocked,
     sendCursorRef,
     selectedTrackIdRef,
@@ -463,7 +469,7 @@ export default function Studio() {
           if (armedTrack) {
             const newRegion: TrackRegion = {
               id: `region-${Date.now()}`,
-              start: currentBeat / (initialBpm / 60) || 0,
+              start: getPlayheadBeat() / (initialBpm / 60) || 0,
               duration: Math.max(finalDuration, 1),
               url: uri,
             };
@@ -487,7 +493,7 @@ export default function Studio() {
               regions: [
                 {
                   id: `region-${Date.now()}`,
-                  start: currentBeat / (initialBpm / 60) || 0,
+                  start: getPlayheadBeat() / (initialBpm / 60) || 0,
                   duration: Math.max(finalDuration, 1),
                   url: uri,
                 },
@@ -1558,7 +1564,7 @@ export default function Studio() {
           <TimeDisplay seconds={duration} />
           {isPlaying && (
             <Text className="text-gray-500 text-[9px] font-mono ml-1">
-              ♩{Math.floor(currentBeat) + 1}
+            <PlayheadBeatDisplay />
             </Text>
           )}
         </View>
@@ -1935,7 +1941,7 @@ export default function Studio() {
                       {isRecording && track.isArmed && (
                         <View
                           style={{
-                            left: currentBeat * pxPerSec, // rough sync with beat width, but usually recording starts at current position
+                            left: getPlayheadBeat() * pxPerSec, // rough sync with beat width, but usually recording starts at current position
                             width: ((Date.now() - (webRecordingStart || Date.now())) / 1000 + recordingTick * 0) * (initialBpm / 60) * pxPerSec,
                             minWidth: 100, // so we can see it growing
                             position: "absolute",

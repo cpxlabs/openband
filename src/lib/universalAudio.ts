@@ -281,6 +281,18 @@ class UniversalAudioSystem {
     return this._audioCtx;
   }
 
+  resumeForGesture(): AudioContext | null {
+    if (Platform.OS !== "web" || typeof window === "undefined") return null;
+    if (!this._audioCtx) {
+      void this.initialize();
+      return null;
+    }
+    if (this._audioCtx.state === "suspended") {
+      void this._audioCtx.resume();
+    }
+    return this._audioCtx;
+  }
+
   async decodeAudio(
     arrayBuffer: ArrayBuffer,
     ctx?: AudioContext,

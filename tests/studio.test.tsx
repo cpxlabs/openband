@@ -66,30 +66,64 @@ function realUseHistory<T>(initialValue: T) {
 }
 
 
-const { mockUseResponsive, mockPlay, mockPause, mockSeekTo, mockReplace, mockUseWebAudioPlayer, mockHistory, mockCloudSync, mockSaveProject, mockLoadProject, mockGenerateTracksForGenre, mockStartRecording, mockStopRecording, mockCreateTrackedBlob, mockMarkBlobActive, mockRevokeTrackedBlob, historyMode } = vi.hoisted(() => ({
-  mockUseResponsive: vi.fn(() => ({ isMobile: true, isDesktop: false, isTablet: false, width: 390, height: 844, tracksSidebarWidth: 100, channelWidth: 96 })),
-  mockPlay: vi.fn(),
-  mockPause: vi.fn(),
-  mockSeekTo: vi.fn(),
-  mockReplace: vi.fn(),
-  mockUseWebAudioPlayer: vi.fn(() => ({ isPlaying: false, currentTime: 0, duration: 240, play: mockPlay, pause: mockPause, seekTo: mockSeekTo, replace: mockReplace, stop: vi.fn(), setVolume: vi.fn(), setPlaybackRate: vi.fn(), unlock: vi.fn(), audioRef: { current: null } })),
-  mockAddTrack: vi.fn(),
-  mockClockManager: vi.fn(),
-  mockKeyBindings: vi.fn(),
-  mockHistory: vi.fn((): any => ({ state: [], setState: vi.fn(), undo: vi.fn(), redo: vi.fn(), canUndo: false, canRedo: false })),
-  historyMode: { real: false },
-  mockCloudSync: vi.fn(() => ({ syncState: "idle", pushProject: vi.fn(), pullProject: vi.fn() })),
-  mockSaveProject: vi.fn(),
-  mockLoadProject: vi.fn(() => null),
-  mockGenerateTracksForGenre: vi.fn((): any => [{
-    id: "track-1", name: "Guitar", color: "bg-blue-500", muted: false, solo: false, volume: 70, pan: 0, sends: {}, sidechainSource: null, regions: [], plugins: [], automation: {},
-  }]),
-  mockStartRecording: vi.fn(() => Promise.resolve()),
-  mockStopRecording: vi.fn((): Promise<Blob | null> => Promise.resolve(null)),
-  mockCreateTrackedBlob: vi.fn((_b: Blob) => "blob:tracked-" + Math.random().toString(36)),
-  mockMarkBlobActive: vi.fn(),
-  mockRevokeTrackedBlob: vi.fn(),
-}));
+const { mockUseResponsive, mockPlay, mockPause, mockSeekTo, mockReplace, mockUseWebAudioPlayer, mockHistory, mockCloudSync, mockSaveProject, mockLoadProject, mockGenerateTracksForGenre, mockStartRecording, mockStopRecording, mockCreateTrackedBlob, mockMarkBlobActive, mockRevokeTrackedBlob, historyMode, mockEnginePrepare, mockEnginePlay, mockEnginePause, mockEngineInstance, mockEnsureContext, mockFakeAudioContext } = vi.hoisted(() => {
+  const mockEnginePrepare = vi.fn(() => Promise.resolve());
+  const mockEnginePlay = vi.fn();
+  const mockEnginePause = vi.fn();
+  const mockEngineInstance = {
+    prepare: mockEnginePrepare,
+    play: mockEnginePlay,
+    pause: mockEnginePause,
+    stop: vi.fn(),
+    getCurrentTime: vi.fn(() => 0),
+    dispose: vi.fn(),
+    isPlaying: false,
+    duration: 0,
+  };
+  const mockEnsureContext = vi.fn(() => Promise.resolve(mockFakeAudioContext));
+  const mockFakeAudioContext = {
+    state: "running",
+    currentTime: 0,
+    destination: {},
+    resume: vi.fn(() => Promise.resolve()),
+    suspend: vi.fn(() => Promise.resolve()),
+    createGain: vi.fn(() => ({ connect: vi.fn(), gain: { value: 1, setTargetAtTime: vi.fn() } })),
+    createBufferSource: vi.fn(() => ({ connect: vi.fn(), start: vi.fn(), stop: vi.fn(), buffer: null })),
+    createStereoPanner: vi.fn(() => ({ connect: vi.fn(), pan: { value: 0, setTargetAtTime: vi.fn() } })),
+    createBuffer: vi.fn(() => ({ getChannelData: vi.fn(() => new Float32Array(1)) })),
+    decodeAudioData: vi.fn(() => Promise.resolve({})),
+  };
+  return {
+    mockUseResponsive: vi.fn(() => ({ isMobile: true, isDesktop: false, isTablet: false, width: 390, height: 844, tracksSidebarWidth: 100, channelWidth: 96 })),
+    mockPlay: vi.fn(),
+    mockPause: vi.fn(),
+    mockSeekTo: vi.fn(),
+    mockReplace: vi.fn(),
+    mockUseWebAudioPlayer: vi.fn(() => ({ isPlaying: false, currentTime: 0, duration: 240, play: mockPlay, pause: mockPause, seekTo: mockSeekTo, replace: mockReplace, stop: vi.fn(), setVolume: vi.fn(), setPlaybackRate: vi.fn(), unlock: vi.fn(), audioRef: { current: null } })),
+    mockAddTrack: vi.fn(),
+    mockClockManager: vi.fn(),
+    mockKeyBindings: vi.fn(),
+    mockHistory: vi.fn((): any => ({ state: [], setState: vi.fn(), undo: vi.fn(), redo: vi.fn(), canUndo: false, canRedo: false })),
+    historyMode: { real: false },
+    mockCloudSync: vi.fn(() => ({ syncState: "idle", pushProject: vi.fn(), pullProject: vi.fn() })),
+    mockSaveProject: vi.fn(),
+    mockLoadProject: vi.fn(() => null),
+    mockGenerateTracksForGenre: vi.fn((): any => [{
+      id: "track-1", name: "Guitar", color: "bg-blue-500", muted: false, solo: false, volume: 70, pan: 0, sends: {}, sidechainSource: null, regions: [], plugins: [], automation: {},
+    }]),
+    mockStartRecording: vi.fn(() => Promise.resolve()),
+    mockStopRecording: vi.fn((): Promise<Blob | null> => Promise.resolve(null)),
+    mockCreateTrackedBlob: vi.fn((_b: Blob) => "blob:tracked-" + Math.random().toString(36)),
+    mockMarkBlobActive: vi.fn(),
+    mockRevokeTrackedBlob: vi.fn(),
+    mockEnginePrepare,
+    mockEnginePlay,
+    mockEnginePause,
+    mockEngineInstance,
+    mockEnsureContext,
+    mockFakeAudioContext,
+  };
+});
 
 vi.mock("expo-audio", () => ({
   useAudioPlayer: () => ({ play: vi.fn(), pause: vi.fn(), replace: vi.fn(), seekTo: vi.fn(), volume: 1 }),
@@ -115,10 +149,11 @@ vi.mock("../src/lib/keyboard", () => ({ useKeyboardShortcuts: vi.fn() }));
 vi.mock("../src/lib/projectStore", () => ({ saveProject: mockSaveProject, loadProject: mockLoadProject }));
 vi.mock("../src/lib/cloudSync", () => ({ useCloudSync: mockCloudSync }));
 vi.mock("../src/lib/projectTemplates", () => ({ generateTracksForGenre: mockGenerateTracksForGenre }));
-vi.mock("../src/lib/midiSynth", () => ({ renderTracksToUrl: vi.fn(() => Promise.resolve("blob:test")), disposeAudioContext: vi.fn() }));
+vi.mock("../src/lib/midiSynth", () => ({ renderTracksToUrl: vi.fn(() => Promise.resolve("blob:test")), getProjectDurationSeconds: vi.fn(() => 240), disposeAudioContext: vi.fn() }));
 vi.mock("../src/lib/universalAudio", () => ({
   audioSystem: {
-    ensureContext: vi.fn(() => Promise.resolve(null)),
+    ensureContext: () => mockEnsureContext(),
+    resumeForGesture: vi.fn(() => mockFakeAudioContext),
     initialize: vi.fn(),
     dispose: vi.fn(),
     startRecording: mockStartRecording,
@@ -130,6 +165,7 @@ vi.mock("../src/lib/universalAudio", () => ({
   revokeTrackedBlob: mockRevokeTrackedBlob,
   disposeAllAudio: vi.fn(),
 }));
+vi.mock("../src/lib/playbackEngine", () => ({ PlaybackEngine: class { prepare = mockEnginePrepare; play = mockEnginePlay; pause = mockEnginePause; stop = vi.fn(); getCurrentTime = vi.fn(() => 0); dispose = vi.fn(); isPlaying = false; duration = 0; onEnded: (() => void) | null = null; } }));
 vi.mock("../src/lib/apiUrl", () => ({ API_BASE_URL: "http://localhost:3001" }));
 vi.mock("../src/lib/mastering", () => ({ MASTERING_CHAIN_PRESETS: [{ name: "Clean", chain: [] }], buildMasteringChain: vi.fn(() => []) }));
 vi.mock("../src/lib/automix", () => ({ autoMix: vi.fn(), AUTOMIX_GENRES: ["pop", "rock", "edm"] }));
@@ -273,22 +309,25 @@ describe("Studio", () => {
       expect(screen.queryByText("⏸")).toBeNull();
     });
 
-    it("calls replace and play on play button press", async () => {
-      const mockReplace = vi.fn();
-      const mockPlay = vi.fn();
-      mockUseWebAudioPlayer.mockReturnValue({ isPlaying: false, currentTime: 0, duration: 240, play: mockPlay, pause: vi.fn(), seekTo: vi.fn(), replace: mockReplace, stop: vi.fn(), setVolume: vi.fn(), setPlaybackRate: vi.fn(), unlock: vi.fn(), audioRef: { current: null } });
+    it("initiates playback through the PlaybackEngine on play press", async () => {
+      mockEngineInstance.isPlaying = false;
+      mockUseWebAudioPlayer.mockReturnValue({ isPlaying: false, currentTime: 0, duration: 240, play: vi.fn(), pause: vi.fn(), seekTo: vi.fn(), replace: vi.fn(), stop: vi.fn(), setVolume: vi.fn(), setPlaybackRate: vi.fn(), unlock: vi.fn(), audioRef: { current: null } });
       render(<Studio />);
       const playBtns = screen.getAllByText("▶");
-      fireEvent.click(playBtns[0]);
-      await new Promise(r => setTimeout(r, 50));
-      expect(mockReplace).toHaveBeenCalled();
+      await act(async () => {
+        fireEvent.click(playBtns[0]);
+      });
+      expect(mockEnginePrepare).toHaveBeenCalled();
+      expect(mockEnginePlay).toHaveBeenCalled();
     });
 
-    it("calls pause on pause button press", () => {
+    it("calls pause on pause button press", async () => {
       const mockPauseFn = vi.fn();
       mockUseWebAudioPlayer.mockReturnValue({ isPlaying: true, currentTime: 30, duration: 240, play: vi.fn(), pause: mockPauseFn, seekTo: vi.fn(), replace: vi.fn(), stop: vi.fn(), setVolume: vi.fn(), setPlaybackRate: vi.fn(), unlock: vi.fn(), audioRef: { current: null } });
       render(<Studio />);
-      fireEvent.click(screen.getByText("⏸"));
+      await act(async () => {
+        fireEvent.click(screen.getByText("⏸"));
+      });
       expect(mockPauseFn).toHaveBeenCalled();
     });
 

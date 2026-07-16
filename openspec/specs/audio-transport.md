@@ -27,13 +27,24 @@ The transport bar coordinates four primary states:
 
 ### 3.1. Toggle Play (`togglePlay`)
 - **Action**: Alternates between playing and paused states.
-- **Web Pipeline**:
-  - Synchronously call `audioSystem.ensureContext()` to bypass browser autoplay restrictions.
-  - Dynamically render active tracks to a temporary blob URL (if needed/dirty).
-  - Execute `webAudio.replace(url)` and await `webAudio.play()`.
+- **Web Pipeline (autoplay-policy compliant)**:
+  - Synchronously call `audioSystem.resumeForGesture()` **inside the user gesture** to resume the `AudioContext` without awaiting (never throws, never consumes the gesture window).
+  - Dynamically render active tracks to a temporary blob URL (if needed/dirty). Heavy per-track `OfflineAudioContext` stem rendering MUST NOT run synchronously on the main thread during `togglePlay`; reuse cached renders and/or delegate to an off-main-thread worker.
+  - Execute `webAudio.replace(url)` and await `webAudio.play()` (rejections propagate to the caller so a tap-to-retry UI can be shown — `useWebAudioPlayer.play()` must not swallow them).
 - **Native Pipeline**:
   - Load the rendered URL onto the `expo-audio` player.
   - Execute `player.replace(url)` and await `player.play()`.
+
+### 3.1.1. Web Playback Autoplay Compliance (Test Requirements)
+- [x] `audioSystem.resumeForGesture()` resumes a `suspended` `AudioContext` without throwing and without requiring an `await` for the resume to be issued — it must be callable synchronously from within a click/keydown handler.
+- [x] Feed `handlePlay` (web) invokes `resumeForGesture()` (or `webAudio.unlock()`/`play()`) **before** any awaited preview/blob generation (`generatePreviewUrl`) completes, preserving the user-activation window.
+- [x] `useWebAudioPlayer.play()` rejects when called without user activation (does NOT silently swallow the autoplay rejection), enabling a tap-to-retry affordance.
+- [x] Studio `togglePlay` (web) calls `resumeForGesture()` as the first action after `unlock()`, before any awaited `ensureContext()` / `engine.prepare()`.
+
+### 3.1.2. Web Playback Freeze Avoidance (Test Requirements)
+- [x] `togglePlay` does not synchronously construct a per-track `OfflineAudioContext` on the main thread during the call (rendering is delegated/cached/off-thread).
+- [x] The 40 Hz clock tick updates the playhead via an isolated external store (`playheadStore`) and does NOT call `setCurrentBeat` for the per-tick update, so the entire Studio screen is not re-rendered each tick (only the subscribed playhead display re-renders).
+- [x] A heavy child of the Studio screen (e.g. `AutomationLane` / transport bar) renders exactly once across multiple clock ticks while playing.
 
 ### 3.2. Stop Playback (`stopPlayback`)
 - **Action**: Pauses audio immediately and resets playhead to start.

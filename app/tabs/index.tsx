@@ -28,7 +28,7 @@ import {
 } from "../../src/components";
 import type { FeedPost } from "../../src/components/FeedPostCard";
 import { fetchFeed, toggleLike, toggleFavorite, createRemix } from "../../src/lib/feedApi";
-import { generatePreviewUrl, SCREEN_BOTTOM_PADDING } from "../../src/lib/constants";
+import { generatePreviewUrl, getCachedPreview, preloadPreview, SCREEN_BOTTOM_PADDING } from "../../src/lib/constants";
 import { LAYOUT_MAX_WIDTHS } from "../../src/lib/responsive";
 import { GENRES } from "../../src/lib/projectTemplates";
 import type { ProjectStarterResult } from "../../src/lib/projectStarter";
@@ -130,6 +130,16 @@ export default function Feed() {
     loadFeed();
   }, [loadFeed]);
 
+  useEffect(() => {
+    if (!isWeb) return;
+    const page = posts.slice(0, FEED_PAGE_SIZE);
+    for (const p of page) {
+      if (!getCachedPreview(p.id)) {
+        preloadPreview(p.id, p.duration).catch(() => {});
+      }
+    }
+  }, [posts, isWeb]);
+
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     loadFeed().finally(() => setRefreshing(false));
@@ -171,6 +181,7 @@ export default function Feed() {
   const handlePlay = useCallback(
     async (post: FeedPost) => {
       if (isWeb) webAudioRef.current.unlock();
+      if (isWeb) audioSystem.resumeForGesture();
       if (loadingIdRef.current) return;
       if (playingIdRef.current === post.id && playingRef.current) {
         if (isWeb) webAudioRef.current.pause(); else expoPlayerRef.current.pause();
@@ -181,7 +192,8 @@ export default function Feed() {
       if (isMountedRef.current) setLoadingId(post.id);
       loadingIdRef.current = post.id;
       try {
-        const url = await generatePreviewUrl(post.id, post.duration);
+        const cached = isWeb ? getCachedPreview(post.id) : undefined;
+        const url = cached ?? (await generatePreviewUrl(post.id, post.duration));
         if (isWeb) {
           await audioSystem.ensureContext();
           await webAudioRef.current.replace(url);

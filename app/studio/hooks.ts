@@ -496,7 +496,7 @@ export function useStudioTransport(params: {
   playbackRate: number;
   pitchShiftSemitones: number;
   masterPlugins?: Plugin[];
-  setCurrentBeat: (b: number) => void;
+  setPlayheadBeat: (b: number) => void;
   setAutoplayBlocked: (v: boolean) => void;
   sendCursorRef: MutableRefObject<
     (x: number, trackId: string | null, time: number) => void
@@ -533,7 +533,7 @@ export function useStudioTransport(params: {
     playbackRate,
     pitchShiftSemitones,
     masterPlugins,
-    setCurrentBeat,
+    setPlayheadBeat,
     setAutoplayBlocked,
     sendCursorRef,
     selectedTrackIdRef,
@@ -606,7 +606,7 @@ export function useStudioTransport(params: {
     } else {
       stopClock();
       stopTelemetry();
-      setCurrentBeat(0);
+      setPlayheadBeat(0);
     }
     return () => {
       if (!isPlaying) stopClock();
@@ -625,7 +625,7 @@ export function useStudioTransport(params: {
       const beat = ((timeSource * metronomeBpm) / 60) % (beatsPerMeasure * 4);
       recordFrame();
       recordCpuLoad(Math.min(100, Math.max(0, (timeSource % 1) * 100)));
-      setCurrentBeat(beat);
+      setPlayheadBeat(beat);
       if (isConnected) {
         sendCursorRef.current(
           timeSource / Math.max(1, durationRef.current),
@@ -639,6 +639,7 @@ export function useStudioTransport(params: {
 
   const togglePlay = useCallback(async () => {
     if (isWeb) webAudio.unlock();
+    if (isWeb) audioSystem.resumeForGesture();
     const playing = isWeb
       ? engineActive
         ? (engineRef.current?.isPlaying ?? false)
@@ -715,7 +716,7 @@ export function useStudioTransport(params: {
       engineRef.current.stop();
       currentSeekRef.current = 0;
       setEngineActive(false);
-      setCurrentBeat(0);
+      setPlayheadBeat(0);
       return;
     }
     if (isWeb) {
@@ -726,7 +727,7 @@ export function useStudioTransport(params: {
       player.seekTo(0);
     }
     stopClock();
-    setCurrentBeat(0);
+    setPlayheadBeat(0);
   }, [isWeb, webAudio, player, engineActive]);
 
   useEffect(() => () => {

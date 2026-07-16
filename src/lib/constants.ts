@@ -86,3 +86,11 @@ export async function generatePreviewUrl(
   previewUrlCache.set(key, url);
   return url;
 }
+
+export function getCachedPreview(key: string): string | undefined {
+  return previewUrlCache.get(key);
+}
+
+export async function preloadPreview(key: string, duration: number = 4): Promise<string> {
+  return generatePreviewUrl(key, duration);
+}
