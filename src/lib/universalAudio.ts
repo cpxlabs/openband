@@ -2,6 +2,7 @@ import { Platform } from "react-native";
 import { OpenBandNative } from "../bridge";
 import type { Plugin } from "../lib/types";
 import { applyPluginChain } from "../lib/pluginChain";
+import { resolveAssetUrl } from "../lib/assetStore";
 
 /**
  * Central blob URL registry with leak protection.
@@ -334,8 +335,8 @@ class UniversalAudioSystem {
       for (const region of track.regions) {
         if (region.url) {
           try {
-            // Recorded takes are stored as tracked blob URLs (createTrackedBlob); fetch + decode them here.
-            const resp = await fetch(region.url, { credentials: "omit" });
+            // Recorded takes are stored as asset:// pointers; resolve to a live blob URL before fetch + decode.
+            const resp = await fetch(await resolveAssetUrl(region.url), { credentials: "omit" });
             const ab = await resp.arrayBuffer();
             let buf = await this.decodeAudio(ab);
             if (track.plugins && track.plugins.length > 0) {
@@ -402,7 +403,7 @@ class UniversalAudioSystem {
           continue;
         }
         try {
-          const resp = await fetch(region.url, { credentials: "omit" });
+          const resp = await fetch(await resolveAssetUrl(region.url), { credentials: "omit" });
           const ab = await resp.arrayBuffer();
           const decoded = await this.decodeAudioPureJS(ab, sampleRate);
           const startSample = Math.floor(region.start * sampleRate);

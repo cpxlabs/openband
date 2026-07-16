@@ -129,5 +129,5 @@ implemented + verified; `[ ]` are genuinely outstanding.
 - [x] `first-run-onboarding`: `OnboardingFlow.tsx` + `projectStore.setOnboardingCompleted()` persistence done (flow gating minimal).
 - [x] PluginEditor/OneKnob modulation applied in offline render path (`pluginChain.ts`).
 - [x] `ci-pipeline`: `.github/workflows/ci.yml` created + modernized — runs frontend (tsc, vitest, legacy tests, build, Node 22) + backend (tsc, `npm ci`) on push/PR to master.
-- [ ] `audio-system.md`: recorded `url`s not persisted across reloads (follow-up spec needed).
+- [x] Recorded `url`s persist across reloads via durable `asset://` pointers (`recorded-url-persistence` change): asset store (IndexedDB web / bridge fs native), load hydration, engine resolves `asset://` before fetch.
 - [x] Web playback no-sound + freeze fixed (`web-playback-fix` change): `resumeForGesture`, cached preview, gesture-safe play, isolated playhead store.

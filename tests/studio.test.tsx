@@ -66,7 +66,7 @@ function realUseHistory<T>(initialValue: T) {
 }
 
 
-const { mockUseResponsive, mockPlay, mockPause, mockSeekTo, mockReplace, mockUseWebAudioPlayer, mockHistory, mockCloudSync, mockSaveProject, mockLoadProject, mockGenerateTracksForGenre, mockStartRecording, mockStopRecording, mockCreateTrackedBlob, mockMarkBlobActive, mockRevokeTrackedBlob, historyMode, mockEnginePrepare, mockEnginePlay, mockEnginePause, mockEngineInstance, mockEnsureContext, mockFakeAudioContext } = vi.hoisted(() => {
+const { mockUseResponsive, mockPlay, mockPause, mockSeekTo, mockReplace, mockUseWebAudioPlayer, mockHistory, mockCloudSync, mockSaveProject, mockLoadProject, mockGenerateTracksForGenre, mockStartRecording, mockStopRecording,     mockCreateTrackedBlob, mockMarkBlobActive, mockRevokeTrackedBlob, mockSaveAsset, historyMode, mockEnginePrepare, mockEnginePlay, mockEnginePause, mockEngineInstance, mockEnsureContext, mockFakeAudioContext } = vi.hoisted(() => {
   const mockEnginePrepare = vi.fn(() => Promise.resolve());
   const mockEnginePlay = vi.fn();
   const mockEnginePause = vi.fn();
@@ -115,6 +115,7 @@ const { mockUseResponsive, mockPlay, mockPause, mockSeekTo, mockReplace, mockUse
     mockStopRecording: vi.fn((): Promise<Blob | null> => Promise.resolve(null)),
     mockCreateTrackedBlob: vi.fn((_b: Blob) => "blob:tracked-" + Math.random().toString(36)),
     mockMarkBlobActive: vi.fn(),
+    mockSaveAsset: vi.fn((_b: Blob) => Promise.resolve("asset://rec-test-" + Math.random().toString(36))),
     mockRevokeTrackedBlob: vi.fn(),
     mockEnginePrepare,
     mockEnginePlay,
@@ -164,6 +165,13 @@ vi.mock("../src/lib/universalAudio", () => ({
   markBlobActive: mockMarkBlobActive,
   revokeTrackedBlob: mockRevokeTrackedBlob,
   disposeAllAudio: vi.fn(),
+}));
+vi.mock("../src/lib/assetStore", () => ({
+  saveAsset: mockSaveAsset,
+  resolveAssetUrl: vi.fn((u: string) => Promise.resolve(u)),
+  resolveAssetUrlSync: vi.fn((u: string) => u),
+  revokeAssetCache: vi.fn(),
+  deleteAssetUrl: vi.fn(),
 }));
 vi.mock("../src/lib/playbackEngine", () => ({ PlaybackEngine: class { prepare = mockEnginePrepare; play = mockEnginePlay; pause = mockEnginePause; stop = vi.fn(); getCurrentTime = vi.fn(() => 0); dispose = vi.fn(); isPlaying = false; duration = 0; onEnded: (() => void) | null = null; } }));
 vi.mock("../src/lib/apiUrl", () => ({ API_BASE_URL: "http://localhost:3001" }));
@@ -571,14 +579,13 @@ describe("Studio", () => {
 
       expect(mockStartRecording).toHaveBeenCalled();
       expect(mockStopRecording).toHaveBeenCalled();
-      expect(mockCreateTrackedBlob).toHaveBeenCalledWith(recordedBlob);
+      expect(mockSaveAsset).toHaveBeenCalledWith(recordedBlob);
 
       const lastCall = setTracks.mock.calls[setTracks.mock.calls.length - 1][0];
       const trackWithRegion = lastCall.find(
-        (t: any) => t.regions && t.regions.some((r: any) => typeof r.url === "string" && r.url.startsWith("blob:tracked")),
+        (t: any) => t.regions && t.regions.some((r: any) => typeof r.url === "string" && r.url.startsWith("asset://")),
       );
       expect(trackWithRegion).toBeTruthy();
-      expect(mockMarkBlobActive).toHaveBeenCalled();
     });
 
     it("permission denial sets isRecording false without creating a region", async () => {

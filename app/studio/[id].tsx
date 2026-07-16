@@ -18,7 +18,8 @@ import {
   RecordingPresets,
 } from "expo-audio";
 import { getProjectDurationSeconds } from "../../src/lib/midiSynth";
-import { audioSystem, createTrackedBlob, markBlobActive, revokeTrackedBlob } from "../../src/lib/universalAudio";
+import { audioSystem, markBlobActive, revokeTrackedBlob } from "../../src/lib/universalAudio";
+import { saveAsset, resolveAssetUrl, revokeAssetCache, deleteAssetUrl } from "../../src/lib/assetStore";
 import { API_BASE_URL } from "../../src/lib/apiUrl";
 import { assignTrackToBus } from "../../src/lib/busRouter";
 import { buildAutomationSchedule, interpolateAutomationValue, type ScheduledAutomationPoint } from "../../src/lib/automationEngine";
@@ -324,10 +325,27 @@ export default function Studio() {
       }
     }
     for (const url of prevRegionUrlsRef.current) {
-      if (!current.has(url)) revokeTrackedBlob(url);
+      if (!current.has(url)) {
+        revokeTrackedBlob(url);
+        deleteAssetUrl(url);
+      }
     }
     prevRegionUrlsRef.current = current;
   }, [tracks]);
+
+  useEffect(() => {
+    for (const t of tracks) {
+      for (const r of t.regions) {
+        if (r.url && r.url.startsWith("asset://")) {
+          resolveAssetUrl(r.url).catch(() => {});
+        }
+      }
+    }
+  }, [tracks]);
+
+  useEffect(() => {
+    return () => revokeAssetCache();
+  }, []);
 
   const anySolo = useMemo(() => tracks.some((t) => t.solo), [tracks]);
 
@@ -455,7 +473,7 @@ export default function Studio() {
             liveRecordingDataRef.current = [];
             return;
           }
-          uri = createTrackedBlob(blob);
+          uri = await saveAsset(blob);
           finalDuration = (Date.now() - (webRecordingStart || Date.now())) / 1000;
         } else {
           await audioRecorder.stop();
@@ -505,7 +523,6 @@ export default function Studio() {
             setSelectedTrackId(trackId);
           }
           setTracks(updatedTracks);
-          markBlobActive(uri);
           if (isWeb) {
             rerenderAfterMuteSolo(updatedTracks).catch((e) =>
               console.warn("rerender after record failed:", e)

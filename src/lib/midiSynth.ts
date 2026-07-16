@@ -9,6 +9,7 @@ import { applyAutomationToParam, buildAutomationSchedule } from "./automationEng
 import { crossfadeGain } from "./regionEdit";
 import { timeStretch } from "./timeStretch";
 import Soundfont from "soundfont-player";
+import { resolveAssetUrl } from "./assetStore";
 
 /**
  * Transport-clock offset (seconds) where a track's rendered buffer begins in the
@@ -822,7 +823,7 @@ export async function renderTracksToUrl(
         for (const region of trackRegionsRaw) {
           if (!region.url) continue;
           try {
-            const r = await fetch(region.url, { credentials: "omit" });
+            const r = await fetch(await resolveAssetUrl(region.url), { credentials: "omit" });
             const ab = await r.arrayBuffer();
             const decodeCtx = getSharedAudioContext() || ctx;
             const buffer = await decodeCtx.decodeAudioData(ab);
@@ -1096,7 +1097,7 @@ export async function renderTrackStem(
     for (const region of track.regions || []) {
       if (!region.url) continue;
       try {
-        const r = await fetch(region.url, { credentials: "omit" });
+        const r = await fetch(await resolveAssetUrl(region.url), { credentials: "omit" });
         const ab = await r.arrayBuffer();
         const decodeCtx = getSharedAudioContext() || ctx;
         const buffer = await decodeCtx.decodeAudioData(ab);

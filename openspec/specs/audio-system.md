@@ -49,3 +49,26 @@ Web capture is performed entirely in the browser via `getUserMedia` + an `AudioW
   - After the take, `markBlobActive(uri)` is called and `rerenderAfterMuteSolo(updatedTracks)` refreshes the transport render so the take is audible on next play.
   - `webRecordingStart` and `liveRecordingDataRef` are reset after a successful take.
 - **Known limitation**: recorded `url`s are object URLs valid only within the session; they are not yet persisted to `OpenBandNative`/storage across reloads. After undo/delete the URL is revoked but the project JSON still references the (now-revoked) string — a follow-up spec will persist recorded audio.
+
+---
+
+## 4. Recorded URL Persistence
+
+Recorded regions store a durable `asset://<id>` pointer instead of an ephemeral `blob:` URL so takes survive a page reload.
+
+- **`src/lib/assetStore.ts`**:
+  - `saveAsset(blob)` → `asset://<id>` pointer; persists bytes (IndexedDB web / bridge fs native) and caches a live `blob:` URL.
+  - `resolveAssetUrl(url)` → passthrough for non-`asset://` urls; otherwise returns the cached or re-hydrated `blob:` URL.
+  - `resolveAssetUrlSync(url)` → synchronous lookup of the cached `blob:` URL (pointer passthrough if not cached).
+  - `revokeAssetCache()` → revokes + clears all cached URLs.
+- **Web recording** (`app/studio/[id].tsx`, `toggleRecording` web branch): `uri = await saveAsset(blob)`; the `asset://` pointer is stored on the region and the asset store owns the blob lifecycle (no `markBlobActive` for the recorded take).
+- **Hydration**: on project load, `asset://` region urls are eagerly warmed via `resolveAssetUrl`; on studio unmount `revokeAssetCache()` clears the cache.
+- **Engine resolution**: `midiSynth.ts` and `universalAudio.ts` fetch via `resolveAssetUrl(region.url)` before `fetch`.
+
+### Test Requirements
+
+- [x] `saveAsset` returns an `asset://` pointer and `resolveAssetUrl` returns a fetchable `blob:` URL for it
+- [x] `resolveAssetUrl` passes through `http`/`blob`/data urls unchanged
+- [x] a recorded region stored as `asset://<id>` resolves to a live blob URL after reload (cache warm)
+- [x] `revokeAssetCache` clears cached URLs without throwing
+- [x] `deleteAssetUrl` removes a freed `asset://` pointer and its cached blob URL
