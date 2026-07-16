@@ -18,6 +18,12 @@ const EQ_LOW = 0x3b82f6;
 const EQ_MID = 0x22c55e;
 const EQ_HIGH = 0xf97316;
 const MONITOR_BEZEL = 0x111111;
+const VU_GROUP_DEFS = [
+  { label: "DRUMS", color: 0xff6482 },
+  { label: "BASS", color: 0x5ac8fa },
+  { label: "KEYS", color: 0xffcc00 },
+  { label: "VOICE", color: 0x00e5ff },
+];
 const CHANNEL_WIDTH = 0.55;
 const CHANNEL_GAP = 0.05;
 const CHANNEL_COUNT = 16;
@@ -288,6 +294,45 @@ function createVUMeter(THREE: ThreeAny, x: number, y: number, z: number): ThreeA
   return group;
 }
 
+function createVUMeterGroup(
+  THREE: ThreeAny,
+  x: number,
+  y: number,
+  z: number,
+  label: string,
+  color: number,
+): ThreeAny {
+  const group = new THREE.Group();
+
+  const meter = createVUMeter(THREE, x, y, z);
+  group.add(meter);
+
+  const baseBar = new THREE.Mesh(
+    new THREE.BoxGeometry(0.36, 0.04, 0.08),
+    new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.6 }),
+  );
+  baseBar.position.set(x, y + 0.02, z);
+  group.add(baseBar);
+
+  const labelCanvas = document.createElement("canvas");
+  labelCanvas.width = 128;
+  labelCanvas.height = 32;
+  const lctx = labelCanvas.getContext("2d")!;
+  lctx.fillStyle = "#" + color.toString(16).padStart(6, "0");
+  lctx.font = "bold 20px sans-serif";
+  lctx.textAlign = "center";
+  lctx.fillText(label, 64, 24);
+  const labelTex = new THREE.CanvasTexture(labelCanvas);
+  const labelSprite = new THREE.Sprite(
+    new THREE.SpriteMaterial({ map: labelTex, transparent: true, depthWrite: false }),
+  );
+  labelSprite.position.set(x, y + 1.05, z + 0.05);
+  labelSprite.scale.set(0.6, 0.15, 1);
+  group.add(labelSprite);
+
+  return group;
+}
+
 export default function MixingConsole() {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -448,14 +493,15 @@ export default function MixingConsole() {
       masterSection.rotation.x = slopeAngle;
       deskGroup.add(masterSection);
 
-      // ====== VU METERS (above desk, centered) ======
+      // ====== VU METER GROUPS (above desk, centered, bus-colored) ======
       const vuY = 1.6;
       const vuZ = -1.4;
-      for (let v = 0; v < 4; v++) {
-        const vx = -0.8 + v * 0.55;
-        const vu = createVUMeter(THREE, vx, vuY, vuZ);
+      const vuStartX = -((VU_GROUP_DEFS.length - 1) * 0.9) / 2;
+      VU_GROUP_DEFS.forEach((def, v) => {
+        const vx = vuStartX + v * 0.9;
+        const vu = createVUMeterGroup(THREE, vx, vuY, vuZ, def.label, def.color);
         deskGroup.add(vu);
-      }
+      });
 
       // ====== DAW MONITORS ======
       const monitorY = 0.7;

@@ -62,11 +62,11 @@ If Three.js fails to load from all CDN sources (`loadThree`, `:308-319`), the co
 - **And** the app does not throw an unhandled error
 
 ## Test Requirements (Vitest)
-- [ ] `VuMeter` renders a fill height proportional to `level` and clamps to [0,1]
-- [ ] `VuMeter` color is green below `0.94`, yellow at `0.94-0.99`, red at ≥ `1.0`
-- [ ] `VuMeter` shows a peak-hold indicator only when `peakLevel > 0.01`
-- [ ] Mixing console header shows "MIXING CONSOLE" and a back button via `router.back()`
-- [ ] Console schedules `CHANNEL_COUNT` (16) channel strips in `createChannelStrip`
-- [ ] Console renders 4 VU meter groups via `createVUMeter`
-- [ ] Console renders a master section with a `MASTER` label and master fader(s)
-- [ ] When `loadThree` rejects, `loadError` is set and the fallback overlay renders without throwing
+- [x] `VuMeter` renders a fill height proportional to `level` and clamps to [0,1]
+- [x] `VuMeter` color is green below `0.94`, yellow at `0.94-0.99`, red at ≥ `1.0`
+- [x] `VuMeter` shows a peak-hold indicator only when `peakLevel > 0.01`
+- [x] Mixing console header shows "MIXING CONSOLE" and a back button via `router.back()`
+- [x] Console schedules `CHANNEL_COUNT` (16) channel strips in `createChannelStrip`
+- [x] Console renders 4 VU meter groups (labeled DRUMS/BASS/KEYS/VOICE, bus-palette colors) via `createVUMeterGroup`
+- [x] Console renders a master section with a `MASTER` label and master fader(s)
+- [x] When `loadThree` rejects, `loadError` is set and the fallback overlay renders without throwing

@@ -55,15 +55,15 @@ implemented + verified; `[ ]` are genuinely outstanding.
 - [x] `usePresence` SSE subscribe + POST cursors + receive remote
 - [x] `mergeRemoteCursor` keys by userId, excludes local
 
-## Mixer Console (`mixer-console/spec.md`) — DONE (one partial)
+## Mixer Console (`mixer-console/spec.md`) — DONE
 - [x] `VuMeter` fill proportional to level, clamped [0,1]
 - [x] `VuMeter` color thresholds (green<0.94, yellow 0.94-0.99, red>=1.0)
 - [x] `VuMeter` peak-hold indicator only when `peakLevel>0.01`
 - [x] Header "MIXING CONSOLE" + back button
 - [x] `createChannelStrip` schedules CHANNEL_COUNT (16) strips
+- [x] Console renders 4 VU meter **groups** (labeled DRUMS/BASS/KEYS/VOICE with bus-palette colors) above the desk (`mixer-console-vu-groups` change)
 - [x] Console renders a master section with a `MASTER` label and master fader(s)
 - [x] When `loadThree` rejects, `loadError` is set and the fallback overlay renders without throwing
-- [ ] Console renders 4 VU meter **groups** (current 3D scene renders 16 per-channel strips + master, but not the 4-bus-group VU layout specified) — PARTIAL
 
 ## Studio DAW (`studio-daw/spec.md`) — DONE (minor partial)
 - [x] VuMeter per track on "mixer" tab
