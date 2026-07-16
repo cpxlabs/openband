@@ -75,9 +75,10 @@ The heavy inference MUST run exclusively through `OpenBandNative.runVoiceCleaner
 The cleaner MUST expose pure, deterministic helper functions that measure processing quality: `measureSNR(cleanRef, processed)` and `measureRMS(buffer)`. These functions take only numeric arrays and MUST run identically on web and desktop with no native dependency.
 
 #### Scenario: SNR improves after cleaning
-- **Given** a noisy reference and a cleaned output of the same length
-- **When** `measureSNR(noisy, cleaned)` is compared to `measureSNR(noisy, noisy)`
+- **Given** a clean reference `clean`, a noisy signal `noisy = clean + noise`, and a cleaned output `cleaned = clean + noise * 0.3` (same length)
+- **When** `measureSNR(clean, cleaned)` is compared to `measureSNR(clean, noisy)`
 - **Then** the cleaned SNR is greater than or equal to the unprocessed SNR
+- **And** `measureSNR(cleanRef, processed)` returns `Infinity` when `processed` equals `cleanRef` (no error), and `0` when `cleanRef` has no energy
 
 #### Scenario: RMS is within unit range
 - **Given** a normalized buffer in [-1, 1]
@@ -102,8 +103,8 @@ The `voiceCleaner` type MUST integrate into the existing chain builder so it par
 ## Test Requirements (Vitest)
 - [ ] `PLUGIN_SPECS["voiceCleaner"]` declares all required params with clamped ranges
 - [ ] `buildPluginGraph()` includes an enabled `voiceCleaner`; excludes a disabled one
-- [ ] `measureSNR` increases (or holds) after a denoise-only pass on synthetic noisy data — **runs on web**
-- [ ] `measureRMS` returns a value in [0, 1] for a normalized buffer — **runs on web**
+- [x] `measureSNR` increases (or holds) after a denoise-only pass on synthetic noisy data — **runs on web**
+- [x] `measureRMS` returns a value in [0, 1] for a normalized buffer — **runs on web**
 - [ ] `getChainLatency` sums `latencySamples["voiceCleaner"]` for enabled plugins only — **runs on web**
 - [ ] `serializePlugin` / `deserializePlugin` round-trip deep-equals for `voiceCleaner` — **runs on web**
 - [ ] `applyPluginChain` with `voiceCleaner` on web returns the buffer unchanged (pass-through) — **runs on web**

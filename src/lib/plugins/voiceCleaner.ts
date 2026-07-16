@@ -86,3 +86,34 @@ export function applyVoiceCleanerGraph(
     gate.connect(ctx.destination);
   }
 }
+
+export type SampleArray = Float32Array | number[];
+
+export function measureRMS(samples: SampleArray): number {
+  const n = samples.length;
+  if (n === 0) return 0;
+  let sumSq = 0;
+  for (let i = 0; i < n; i++) {
+    const s = samples[i];
+    sumSq += s * s;
+  }
+  const rms = Math.sqrt(sumSq / n);
+  return Math.max(0, Math.min(1, rms));
+}
+
+export function measureSNR(cleanRef: SampleArray, processed: SampleArray): number {
+  const n = Math.min(cleanRef.length, processed.length);
+  if (n === 0) return 0;
+  let signalPower = 0;
+  let noisePower = 0;
+  for (let i = 0; i < n; i++) {
+    const c = cleanRef[i];
+    const p = processed[i];
+    signalPower += c * c;
+    const diff = c - p;
+    noisePower += diff * diff;
+  }
+  if (signalPower <= 1e-12) return 0;
+  if (noisePower <= 1e-12) return Infinity;
+  return 10 * Math.log10(signalPower / noisePower);
+}

@@ -84,11 +84,11 @@ implemented + verified; `[ ]` are genuinely outstanding.
 - [x] `AUTOMIX_GENRES` includes `rock`
 - [x] `suggestNextChords([])`, `chordsToMIDINotes`, `PROGRESSION_PRESETS.length===10`, `resolveProgression`
 
-## AI Voice Cleaner (`ai-voice-cleaner/spec.md`) — PARTIAL (2 missing)
+## AI Voice Cleaner (`ai-voice-cleaner/spec.md`) — DONE
 - [x] `PLUGIN_SPECS["voiceCleaner"]` declares all params w/ clamped ranges
 - [x] `buildPluginGraph()` includes enabled (excludes disabled) voiceCleaner
-- [ ] `measureSNR` increases/holds after denoise pass (web) — MISSING (`src/lib/voiceCleanerMetrics.ts` to add)
-- [ ] `measureRMS` in [0,1] for normalized buffer (web) — MISSING
+- [x] `measureSNR` increases/holds after denoise pass (web) (`src/lib/plugins/voiceCleaner.ts`)
+- [x] `measureRMS` in [0,1] for normalized buffer (web) (`src/lib/plugins/voiceCleaner.ts`)
 
 ## Backend API (`backend-api/spec.md`) — DONE
 - [x] `addJob` returns id; `getJobStatus` reflects pending/processing
