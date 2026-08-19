@@ -75,6 +75,14 @@ export function createPromotionGate() {
   const minted = new Set<string>();
   let counter = 0;
   return {
+    peek(token: string): boolean {
+      return minted.has(token);
+    },
+    mint(token: string): string {
+      minted.add(token);
+      counter += 1;
+      return `project-${token}-${counter}`;
+    },
     promote(snapshot: ApprovedStarterSnapshot): PromoteResult {
       if (!snapshot.approved) return { promoted: false };
       if (minted.has(snapshot.approvalToken)) return { promoted: false };
@@ -82,8 +90,57 @@ export function createPromotionGate() {
       counter += 1;
       return {
         promoted: true,
-        projectId: `project-${snapshot.approvalToken}-${counter}`,
+        projectId: `project-${snapshot.approvalToken}`,
       };
+    },
+  };
+}
+
+export interface PromoteOptions {
+  persist: (
+    projectId: string,
+    recipe: Recipe,
+    previewUri: string | null,
+  ) => void | Promise<void>;
+  durablePreview?: boolean;
+}
+
+export type PromotionOutcome =
+  | { promoted: true; projectId: string }
+  | {
+      promoted: false;
+      reason: "unapproved" | "duplicate" | "persist-failed";
+      error?: unknown;
+    };
+
+export function createPromotionSession() {
+  const gate = createPromotionGate();
+  let lastError: unknown = undefined;
+  return {
+    get lastError() {
+      return lastError;
+    },
+    async promote(
+      snapshot: ApprovedStarterSnapshot,
+      opts: PromoteOptions,
+    ): Promise<PromotionOutcome> {
+      if (!snapshot.approved) return { promoted: false, reason: "unapproved" };
+      if (gate.peek(snapshot.approvalToken)) {
+        return { promoted: false, reason: "duplicate" };
+      }
+      const projectId = `project-${snapshot.approvalToken}`;
+      try {
+        await opts.persist(
+          projectId,
+          normalizedRecipe(snapshot.recipe) as Recipe,
+          opts.durablePreview ? (snapshot.uri ?? null) : null,
+        );
+        gate.mint(snapshot.approvalToken);
+        return { promoted: true, projectId };
+      } catch (err) {
+        lastError = err;
+        return { promoted: false, reason: "persist-failed", error: err };
+      }
     },
   };
 }

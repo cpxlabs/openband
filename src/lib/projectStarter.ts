@@ -2,6 +2,13 @@ import {
   TrackDef,
 } from "./types";
 import {
+  ApprovedStarterSnapshot,
+  Recipe,
+  contentHash,
+  createPromotionGate,
+  createPromotionSession,
+} from "./snapshotPromotion";
+import {
   GENRES,
   Mood,
   TIME_SIGNATURES,
@@ -87,13 +94,60 @@ export function setupProjectStarter(
   };
 }
 
+export function buildApprovedSnapshot(
+  result: ProjectStarterResult,
+  options?: { seed?: string; version?: string; uri?: string | null },
+): ApprovedStarterSnapshot {
+  const seed = options?.seed ?? result.id ?? "seed";
+  const version = options?.version ?? "1";
+  const uri = options?.uri ?? null;
+
+  const recipe: Recipe = {
+    genreId: result.genreId,
+    mood: result.mood ?? "",
+    bpm: result.bpm,
+    key: result.key,
+    timeSignature: result.timeSignature,
+    numBars: result.numBars,
+    seed,
+    id: result.id,
+    name: result.name,
+  };
+
+  const approvalToken = contentHash({
+    revision: 1,
+    recipe: { ...recipe, seed: "" },
+    seed: "",
+    version,
+    uri: null,
+    approved: true,
+  });
+
+  return {
+    revision: 1,
+    recipe,
+    seed: recipe.seed,
+    version,
+    uri,
+    approved: true,
+    approvalToken,
+    approvedAt: Date.now(),
+  };
+}
+
+export type PromotionGate = ReturnType<typeof createPromotionGate>;
+export type PromotionSession = ReturnType<typeof createPromotionSession>;
+
 export {
   contentHash,
   computeStale,
   createPromotionGate,
+  createPromotionSession,
   normalizedRecipe,
   type ApprovedStarterSnapshot,
   type GeneratedStarterSnapshot,
+  type PromoteOptions,
   type PromoteResult,
+  type PromotionOutcome,
   type Recipe,
 } from "./snapshotPromotion";

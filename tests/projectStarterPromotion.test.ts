@@ -1,8 +1,9 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
   contentHash,
   computeStale,
   createPromotionGate,
+  createPromotionSession,
   normalizedRecipe,
 } from "../src/lib/snapshotPromotion";
 import type {
@@ -120,5 +121,105 @@ describe("createPromotionGate (R5 / acceptance 2)", () => {
     expect(gate.promote(a).promoted).toBe(true);
     expect(gate.promote(b).promoted).toBe(true);
     expect(gate.promote(a).promoted).toBe(false);
+  });
+});
+
+describe("createPromotionSession — A6 idempotent double promote", () => {
+  it("second promote with same token is a duplicate and does not re-invoke persist", async () => {
+    const session = createPromotionSession();
+    const persist = vi.fn(async () => {});
+    const snap: ApprovedStarterSnapshot = {
+      ...snapshot(),
+      approvalToken: "token-8",
+      approvedAt: 1000,
+    };
+
+    const first = await session.promote(snap, { persist });
+    const second = await session.promote(snap, { persist });
+
+    expect(first).toEqual({ promoted: true, projectId: "project-token-8" });
+    expect(second).toEqual({ promoted: false, reason: "duplicate" });
+    expect(persist).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("createPromotionSession — A3 reuse approved snapshot, no regeneration", () => {
+  it("persists the normalized recipe and null preview by default", async () => {
+    const session = createPromotionSession();
+    const calls: Array<{ projectId: string; recipe: Recipe; previewUri: string | null }> = [];
+    const persist = vi.fn(async (projectId: string, recipe: Recipe, previewUri: string | null) => {
+      calls.push({ projectId, recipe, previewUri });
+    });
+    const snap: ApprovedStarterSnapshot = {
+      ...snapshot(),
+      approvalToken: "token-8",
+      approvedAt: 1000,
+    };
+
+    await session.promote(snap, { persist });
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0].recipe).toEqual(normalizedRecipe(snap.recipe));
+    expect(calls[0].previewUri).toBeNull();
+  });
+});
+
+describe("createPromotionSession — A9 failure recoverable / deferred mint", () => {
+  it("a failed persist is retryable and mints exactly one project", async () => {
+    const session = createPromotionSession();
+    const persist = vi.fn();
+    persist.mockRejectedValueOnce(new Error("boom"));
+    const snap: ApprovedStarterSnapshot = {
+      ...snapshot(),
+      approvalToken: "token-8",
+      approvedAt: 1000,
+    };
+
+    const first = await session.promote(snap, { persist });
+    expect(first.promoted).toBe(false);
+    if (!first.promoted) expect(first.reason).toBe("persist-failed");
+    expect(session.lastError).toBeInstanceOf(Error);
+
+    persist.mockImplementationOnce(async () => {});
+    const second = await session.promote(snap, { persist });
+
+    expect(second).toEqual({ promoted: true, projectId: "project-token-8" });
+    expect(persist).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("createPromotionSession — A10 preview isolation", () => {
+  it("default durablePreview passes null previewUri", async () => {
+    const session = createPromotionSession();
+    const calls: Array<{ previewUri: string | null }> = [];
+    const persist = vi.fn(async (_projectId: string, _recipe: Recipe, previewUri: string | null) => {
+      calls.push({ previewUri });
+    });
+    const snap: ApprovedStarterSnapshot = {
+      ...snapshot(),
+      approvalToken: "token-8",
+      approvedAt: 1000,
+    };
+
+    await session.promote(snap, { persist });
+
+    expect(calls[0].previewUri).toBeNull();
+  });
+
+  it("durablePreview:true passes the snapshot uri", async () => {
+    const session = createPromotionSession();
+    const calls: Array<{ previewUri: string | null }> = [];
+    const persist = vi.fn(async (_projectId: string, _recipe: Recipe, previewUri: string | null) => {
+      calls.push({ previewUri });
+    });
+    const snap: ApprovedStarterSnapshot = {
+      ...snapshot(),
+      approvalToken: "token-8",
+      approvedAt: 1000,
+    };
+
+    await session.promote(snap, { persist, durablePreview: true });
+
+    expect(calls[0].previewUri).toBe(snap.uri);
   });
 });

@@ -1,9 +1,10 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { View, Text, Pressable, ScrollView, TextInput } from "react-native";
 import { useTranslation } from "react-i18next";
 import { GENRES, MUSICAL_KEYS, keyLabel, MOODS, TIME_SIGNATURES } from "../lib/projectTemplates";
 import type { GenreTemplate, Mood } from "../lib/projectTemplates";
-import { setupProjectStarter, type ProjectStarterResult } from "../lib/projectStarter";
+import { setupProjectStarter, buildApprovedSnapshot, type ProjectStarterResult, type PromotionGate, type ApprovedStarterSnapshot } from "../lib/projectStarter";
+import { createPromotionGate } from "../lib/snapshotPromotion";
 
 interface NewProjectProps {
   visible: boolean;
@@ -34,6 +35,10 @@ export function NewProject({
 }: NewProjectProps) {
   const { t } = useTranslation();
 
+  const gateRef = useRef<PromotionGate | null>(null);
+  const resultRef = useRef<ProjectStarterResult | null>(null);
+  const snapshotRef = useRef<ApprovedStarterSnapshot | null>(null);
+
   useEffect(() => {
     if (!visible) return;
     setName(initialTitle ?? "");
@@ -44,6 +49,9 @@ export function NewProject({
     setNumBars(8);
     setTimeSignature(initialTimeSignature ?? "4/4");
     setStep(initialMood ? "details" : initialGenre ? "mood" : "genre");
+    resultRef.current = null;
+    snapshotRef.current = null;
+    gateRef.current = createPromotionGate();
   }, [visible]);
 
   const [name, setName] = useState(initialTitle ?? "");
@@ -84,24 +92,34 @@ export function NewProject({
 
   const handleCreate = useCallback(() => {
     const finalName = name.trim() || `${selectedGenre.name} - ${t("newProject.defaultName", "Novo Projeto")}`;
-    const result = setupProjectStarter({
-      name: finalName,
-      genreId: selectedGenre.id,
-      mood: selectedMood,
-      bpm,
-      numBars,
-      timeSignature,
-      key: selectedKey,
-    });
-    setName("");
-    setSelectedGenre(GENRES[0]);
-    setBpm(GENRES[0].defaultBpm);
-    setSelectedKey(GENRES[0].defaultKey);
-    setSelectedMood(undefined);
-    setNumBars(8);
-    setTimeSignature("4/4");
-    setStep("genre");
-    onCreate(result);
+    if (!resultRef.current) {
+      resultRef.current = setupProjectStarter({
+        name: finalName,
+        genreId: selectedGenre.id,
+        mood: selectedMood,
+        bpm,
+        numBars,
+        timeSignature,
+        key: selectedKey,
+      });
+    }
+    if (!snapshotRef.current) {
+      snapshotRef.current = buildApprovedSnapshot(resultRef.current);
+    }
+    const outcome = gateRef.current!.promote(snapshotRef.current);
+    if (outcome.promoted) {
+      onCreate(resultRef.current);
+      setName("");
+      setSelectedGenre(GENRES[0]);
+      setBpm(GENRES[0].defaultBpm);
+      setSelectedKey(GENRES[0].defaultKey);
+      setSelectedMood(undefined);
+      setNumBars(8);
+      setTimeSignature("4/4");
+      setStep("genre");
+      resultRef.current = null;
+      snapshotRef.current = null;
+    }
   }, [name, selectedGenre, selectedKey, bpm, selectedMood, numBars, timeSignature, onCreate]);
 
   const handleClose = useCallback(() => {
@@ -113,31 +131,43 @@ export function NewProject({
     setNumBars(8);
     setTimeSignature("4/4");
     setStep("genre");
+    resultRef.current = null;
+    snapshotRef.current = null;
     onClose();
   }, [onClose]);
 
   const handleScratch = useCallback(() => {
     const finalName = name.trim() || `${selectedGenre.name} - ${t("newProject.defaultName", "Novo Projeto")}`;
-    const result = setupProjectStarter({
-      name: finalName,
-      genreId: selectedGenre.id,
-      mood: selectedMood,
-      bpm,
-      numBars,
-      timeSignature,
-      key: selectedKey,
-      startFromScratch: true,
-    });
-    setName("");
-    setSelectedGenre(GENRES[0]);
-    setBpm(GENRES[0].defaultBpm);
-    setSelectedKey(GENRES[0].defaultKey);
-    setSelectedMood(undefined);
-    setNumBars(8);
-    setTimeSignature("4/4");
-    setStep("genre");
-    onStartFromScratch?.(result);
-    onClose();
+    if (!resultRef.current) {
+      resultRef.current = setupProjectStarter({
+        name: finalName,
+        genreId: selectedGenre.id,
+        mood: selectedMood,
+        bpm,
+        numBars,
+        timeSignature,
+        key: selectedKey,
+        startFromScratch: true,
+      });
+    }
+    if (!snapshotRef.current) {
+      snapshotRef.current = buildApprovedSnapshot(resultRef.current);
+    }
+    const outcome = gateRef.current!.promote(snapshotRef.current);
+    if (outcome.promoted) {
+      setName("");
+      setSelectedGenre(GENRES[0]);
+      setBpm(GENRES[0].defaultBpm);
+      setSelectedKey(GENRES[0].defaultKey);
+      setSelectedMood(undefined);
+      setNumBars(8);
+      setTimeSignature("4/4");
+      setStep("genre");
+      onStartFromScratch?.(resultRef.current);
+      onClose();
+      resultRef.current = null;
+      snapshotRef.current = null;
+    }
   }, [name, selectedGenre, selectedKey, bpm, selectedMood, numBars, timeSignature, onStartFromScratch, onClose]);
 
   if (!visible) return null;
