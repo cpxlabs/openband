@@ -454,7 +454,7 @@ export function generateTracksForGenre(
 
 type TrackType = 'drums' | 'percussion' | 'bass' | 'guitar' | 'keys' | 'synth_lead' | 'pad' | 'sample' | 'vocal' | 'fx' | 'other'
 
-function getTrackType(trackName: string, trackType?: string): TrackType {
+export function getTrackType(trackName: string, trackType?: string): TrackType {
   if (trackType === 'drums' || trackType === 'percussion' || trackType === 'bass' || trackType === 'guitar' || trackType === 'keys' || trackType === 'synth_lead' || trackType === 'pad' || trackType === 'sample' || trackType === 'vocal' || trackType === 'fx') return trackType
   const l = trackName.toLowerCase()
   if (l.includes('bateria') || l.includes('drums') || l.includes('bumbo') || l.includes('kick')) return 'drums'
