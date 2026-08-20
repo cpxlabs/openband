@@ -134,6 +134,7 @@ export function createLookaheadScheduler(): LookaheadScheduler {
   let startBeat = 0;
   let scheduledUpTo = 0;
   let perfStart = 0;
+  let scheduledIndices = new Set<number>();
 
   const SCHEDULE_AHEAD = 0.15;
   const CHECK_INTERVAL = 25;
@@ -148,11 +149,17 @@ export function createLookaheadScheduler(): LookaheadScheduler {
     if (!ctx) return;
     const now = ctx.currentTime;
 
-    for (const note of notes) {
+    for (let i = 0; i < notes.length; i++) {
+      if (scheduledIndices.has(i)) continue;
+      const note = notes[i];
       const noteStart = note.startBeat;
       const noteEnd = note.startBeat + note.durationBeats;
 
-      if (noteEnd < fromBeat || noteStart > toBeat) continue;
+      if (noteEnd < fromBeat) {
+        scheduledIndices.add(i);
+        continue;
+      }
+      if (noteStart > toBeat) continue;
 
       const beatDur = getBeatDuration();
       const when = now + (noteStart - currentBeat) * beatDur;
@@ -161,6 +168,7 @@ export function createLookaheadScheduler(): LookaheadScheduler {
       if (when < now - 0.01) continue;
 
       noteOn(note.pitch, note.velocity, when, durationSec, waveform);
+      scheduledIndices.add(i);
     }
   }
 
@@ -194,6 +202,7 @@ export function createLookaheadScheduler(): LookaheadScheduler {
       waveform = newWaveform;
       currentBeat = newStartBeat;
       scheduledUpTo = newStartBeat;
+      scheduledIndices = new Set<number>();
       perfStart = performance.now();
       isPlaying = true;
 
@@ -215,6 +224,7 @@ export function createLookaheadScheduler(): LookaheadScheduler {
       startBeat = beat;
       currentBeat = beat;
       scheduledUpTo = beat;
+      scheduledIndices = new Set<number>();
       perfStart = performance.now();
       stopAll();
     },
