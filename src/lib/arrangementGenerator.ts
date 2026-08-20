@@ -105,4 +105,78 @@ export function getTotalBars(subgenreId: string): number {
   return sections[sections.length - 1]?.endBar ?? 32
 }
 
+export interface PreviewWindow {
+  sectionIndex: number
+  startBar: number
+  endBar: number
+  bars: number
+}
+
+export function pickHighEnergy(sections: EnergySection[], n = 1): EnergySection[] {
+  return [...sections].sort((a, b) => b.energy - a.energy).slice(0, n)
+}
+
+export function pickContrast(sections: EnergySection[], n = 1): EnergySection[] {
+  if (sections.length < 2) return sections.slice(0, n)
+  const deltas: { idx: number; delta: number }[] = []
+  for (let i = 1; i < sections.length; i++) {
+    deltas.push({ idx: i, delta: Math.abs(sections[i].energy - sections[i - 1].energy) })
+  }
+  deltas.sort((a, b) => b.delta - a.delta)
+  return deltas.slice(0, n).map((d) => sections[d.idx])
+}
+
+export function clampWindowToContent(win: PreviewWindow, totalBars: number): PreviewWindow {
+  const start = Math.max(0, Math.min(win.startBar, totalBars))
+  const end = Math.max(start, Math.min(win.endBar, totalBars))
+  return { sectionIndex: win.sectionIndex, startBar: start, endBar: end, bars: end - start }
+}
+
+export function selectRepresentativeWindows(
+  arrangement: EnergySection[],
+  opts: { maxWindows: number; previewBudgetBars: number },
+): PreviewWindow[] {
+  if (arrangement.length === 0) {
+    const bars = Math.min(8, opts.previewBudgetBars)
+    return [{ sectionIndex: -1, startBar: 0, endBar: bars, bars }]
+  }
+  const high = pickHighEnergy(arrangement, Math.min(opts.maxWindows, arrangement.length))
+  const contrast = pickContrast(arrangement, Math.min(opts.maxWindows, arrangement.length))
+  const chosen = new Map<number, EnergySection>()
+  ;[...high, ...contrast].forEach((s) => {
+    const idx = arrangement.indexOf(s)
+    if (idx >= 0) chosen.set(idx, s)
+  })
+  const ordered = Array.from(chosen.keys()).sort((a, b) => a - b)
+  const windows: PreviewWindow[] = []
+  let used = 0
+  for (const idx of ordered) {
+    if (windows.length >= opts.maxWindows) break
+    if (used >= opts.previewBudgetBars) break
+    const s = arrangement[idx]
+    const bars = s.endBar - s.startBar
+    if (used + bars > opts.previewBudgetBars && windows.length > 0) continue
+    windows.push({ sectionIndex: idx, startBar: s.startBar, endBar: s.endBar, bars })
+    used += bars
+  }
+  return windows
+}
+
+export function arrangementCacheKey(genre: string, bpm: number, key: string): string {
+  return JSON.stringify({ genre, bpm, key })
+}
+
+export function isRenderCacheValid(cacheKey: string, current: { bpm: number; key: string }): boolean {
+  try {
+    const parsed = JSON.parse(cacheKey) as { genre: string; bpm: number; key: string }
+    return parsed.bpm === current.bpm && parsed.key === current.key
+  } catch {
+    return false
+  }
+}
+
+export function shouldRenderFullArrangement(bars: number): boolean {
+  return bars <= 16
+}
+
 export { SUBGENRE_STRUCTURES }
