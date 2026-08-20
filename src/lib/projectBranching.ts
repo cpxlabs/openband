@@ -309,6 +309,7 @@ export function mergeBranch(
   }
 
   for (const modTrack of diff.modifiedTracks) {
+    if (hasSelection && !acceptedTracks.has(modTrack.trackId)) continue;
     applyTrackChanges(modTrack.trackId);
   }
 
@@ -326,6 +327,7 @@ export function mergeBranch(
   };
 
   for (const modBus of diff.modifiedBuses) {
+    if (hasSelection && !acceptedBuses.has(modBus.busId)) continue;
     applyBusChanges(modBus.busId);
   }
 
