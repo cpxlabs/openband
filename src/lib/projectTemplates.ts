@@ -404,6 +404,7 @@ export function generateTracksForGenre(
   mood?: Mood,
   numBars: number = 8,
   timeSignature: string = "4/4",
+  rng: () => number = Math.random,
 ): TrackDef[] {
   const genre = GENRES.find((g) => g.id === genreId);
   const suggested = genre?.suggestedTracks;
@@ -425,7 +426,7 @@ export function generateTracksForGenre(
   const now = Date.now();
 
   return suggested.map((track, trackIdx) => {
-    const midiNotes = generateMidiForTrack(track.name, genreId, rootNote, bpmVal, mood, numBars, track.trackType);
+    const midiNotes = generateMidiForTrack(track.name, genreId, rootNote, bpmVal, mood, numBars, track.trackType, rng);
     return {
       id: `track-${now}-${trackIdx}`,
       name: track.name,
@@ -454,7 +455,7 @@ export function generateTracksForGenre(
 
 type TrackType = 'drums' | 'percussion' | 'bass' | 'guitar' | 'keys' | 'synth_lead' | 'pad' | 'sample' | 'vocal' | 'fx' | 'other'
 
-function getTrackType(trackName: string, trackType?: string): TrackType {
+export function getTrackType(trackName: string, trackType?: string): TrackType {
   if (trackType === 'drums' || trackType === 'percussion' || trackType === 'bass' || trackType === 'guitar' || trackType === 'keys' || trackType === 'synth_lead' || trackType === 'pad' || trackType === 'sample' || trackType === 'vocal' || trackType === 'fx') return trackType
   const l = trackName.toLowerCase()
   if (l.includes('bateria') || l.includes('drums') || l.includes('bumbo') || l.includes('kick')) return 'drums'
@@ -752,6 +753,7 @@ function generateMidiForTrack(
   mood?: Mood,
   numBars: number = 8,
   overrideTrackType?: string,
+  rng: () => number = Math.random,
 ): MIDINote[] {
   const trackType = getTrackType(trackName, overrideTrackType)
   const genre = GENRES.find(g => g.id === genreId)
@@ -928,14 +930,14 @@ function generateMidiForTrack(
   if (moodPreset && result.length > 0) {
     let processed = result.map((n) => ({ ...n }));
     if (moodPreset.density < 1.0) {
-      processed = processed.filter(() => Math.random() < moodPreset.density);
+      processed = processed.filter(() => rng() < moodPreset.density);
     } else if (moodPreset.density > 1.0) {
       const extra = processed.length * (moodPreset.density - 1.0);
       for (let i = 0; i < Math.round(extra); i++) {
-        const ref = processed[Math.floor(Math.random() * processed.length)];
+        const ref = processed[Math.floor(rng() * processed.length)];
         processed.push({
           pitch: ref.pitch,
-          start: ref.start + (Math.random() - 0.5) * secPerBeat,
+          start: ref.start + (rng() - 0.5) * secPerBeat,
           duration: ref.duration,
           velocity: ref.velocity,
         });
