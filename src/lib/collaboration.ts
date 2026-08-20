@@ -224,7 +224,6 @@ export function useCollaboration({
               operationsRef.current,
               incoming,
             );
-            for (const op of incoming) appliedOpIdsRef.current.add(op.id);
             if (operationsRef.current.length > 2000) {
               operationsRef.current = compactOperations(operationsRef.current, 2000);
             }
@@ -245,7 +244,6 @@ export function useCollaboration({
                 operationsRef.current,
                 decoded.operations,
               );
-              for (const op of decoded.operations) appliedOpIdsRef.current.add(op.id);
               if (operationsRef.current.length > 2000) {
                 operationsRef.current = compactOperations(operationsRef.current, 2000);
               }
