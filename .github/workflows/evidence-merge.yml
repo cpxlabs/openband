@@ -263,8 +263,11 @@ jobs:
 
             const androidTouched = changed.some((name) => name.startsWith('android/'));
             const electronTouched = changed.some((name) => name.startsWith('electron/'));
-            if (labels.has('native-build') || androidTouched) requiredJobs.add('android-build');
-            if (labels.has('native-build') || electronTouched) requiredJobs.add('electron-build');
+            const allNativeRequested = labels.has('native-build');
+            const androidRequested = allNativeRequested || labels.has('native-build-android') || androidTouched;
+            const electronRequested = allNativeRequested || labels.has('native-build-electron') || electronTouched;
+            if (androidRequested) requiredJobs.add('android-build');
+            if (electronRequested) requiredJobs.add('electron-build');
 
             core.setOutput('required_jobs', JSON.stringify([...requiredJobs].sort()));
             core.setOutput('eligible', 'true');
@@ -322,6 +325,8 @@ jobs:
               'derivedRiskTriggers',
               'openband.json missing derived risk trigger',
               'requiredChecks',
+              'native-build-android',
+              'native-build-electron',
               'contents: write',
               'pull-requests: write',
             ]) {

@@ -125,8 +125,10 @@ jobs:
 
   android-build:
     needs: [graph-check, frontend-typecheck, backend-typecheck, vitest, legacy-tests, web-build, security-policy]
-    if: github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'native-build')
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'native-build') || contains(github.event.pull_request.labels.*.name, 'native-build-android')
     runs-on: ubuntu-latest
+    env:
+      OPENBAND_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 17
@@ -138,30 +140,95 @@ jobs:
         with:
           node-version: 22.x
           cache: 'npm'
-      - run: npm ci
-      - name: Build Android Release APK
+      - name: Initialize Android evidence
+        if: always()
+        run: node scripts/native-build-evidence.mjs init --target android --manifest .artifacts/native-build/android.json
+      - name: Android preflight
+        id: android-preflight
+        if: always()
+        run: node scripts/native-build-evidence.mjs preflight --target android --manifest .artifacts/native-build/android.json
+      - name: Build Android verification APK
+        id: android-build-command
+        if: always() && steps.android-preflight.outcome == 'success'
         run: |
+          npm ci
           cd android
           ./gradlew assembleRelease
+      - name: Collect Android evidence
+        if: always()
+        run: node scripts/native-build-evidence.mjs collect --target android --manifest .artifacts/native-build/android.json --build-outcome "${{ steps.android-build-command.outcome }}"
+      - name: Upload Android evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-build-android-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .artifacts/native-build/android.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload Android APK
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-build-android-output-${{ github.run_id }}-${{ github.run_attempt }}
+          path: android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Enforce Android evidence
+        if: always()
+        run: node scripts/native-build-evidence.mjs enforce --manifest .artifacts/native-build/android.json
 
   electron-build:
     needs: [graph-check, frontend-typecheck, backend-typecheck, vitest, legacy-tests, web-build, security-policy]
-    if: github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'native-build')
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'native-build') || contains(github.event.pull_request.labels.*.name, 'native-build-electron')
     runs-on: ubuntu-latest
+    env:
+      OPENBAND_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22.x
           cache: 'npm'
-      - run: npm ci
-      - run: npm run build
-      - name: Build Electron Linux Distributable
+      - name: Initialize Electron evidence
+        if: always()
+        run: node scripts/native-build-evidence.mjs init --target electron --manifest .artifacts/native-build/electron.json
+      - name: Electron preflight
+        id: electron-preflight
+        if: always()
+        run: node scripts/native-build-evidence.mjs preflight --target electron --manifest .artifacts/native-build/electron.json
+      - name: Build Electron Linux verification artifacts
+        id: electron-build-command
+        if: always() && steps.electron-preflight.outcome == 'success'
         run: |
+          npm ci
+          npm run build
           cd electron
           npm ci
           npm run build:linux
-
+      - name: Collect Electron evidence
+        if: always()
+        run: node scripts/native-build-evidence.mjs collect --target electron --manifest .artifacts/native-build/electron.json --build-outcome "${{ steps.electron-build-command.outcome }}"
+      - name: Upload Electron evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-build-electron-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .artifacts/native-build/electron.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload Electron Linux distributables
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-build-electron-output-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            electron/out/*.AppImage
+            electron/out/*.deb
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Enforce Electron evidence
+        if: always()
+        run: node scripts/native-build-evidence.mjs enforce --manifest .artifacts/native-build/electron.json
   merge-gate:
     needs: [graph-check, security-policy, frontend-typecheck, backend-typecheck, vitest, legacy-tests, web-build, web-launch-e2e]
     if: always()

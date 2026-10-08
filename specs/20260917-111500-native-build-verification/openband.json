@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 2,
+  "tier": "T4",
+  "issue": 43,
+  "riskTriggers": [
+    "native-build-ci",
+    "cross-runtime-packaging",
+    "artifact-evidence",
+    "security-sensitive-privileged-workflow"
+  ],
+  "dependsOn": [],
+  "requiredChecks": [
+    "graph-check",
+    "security-policy",
+    "frontend-typecheck",
+    "backend-typecheck",
+    "vitest",
+    "legacy-tests",
+    "web-build",
+    "web-launch-e2e",
+    "android-build",
+    "electron-build",
+    "merge-gate"
+  ]
+}

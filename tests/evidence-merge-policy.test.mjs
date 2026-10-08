@@ -100,6 +100,14 @@ describe("privileged evidence merge trust boundary", () => {
     }
   });
 
+  it("keeps native scheduling target-specific without weakening full native verification", () => {
+    const workflow = read(".github/workflows/evidence-merge.yml");
+    assert.equal(workflow.includes("native-build-android"), true);
+    assert.equal(workflow.includes("native-build-electron"), true);
+    assert.equal(workflow.includes("allNativeRequested = labels.has('native-build')"), true);
+    assert.equal(workflow.includes("if (androidRequested) requiredJobs.add('android-build')"), true);
+    assert.equal(workflow.includes("if (electronRequested) requiredJobs.add('electron-build')"), true);
+  });
   it("keeps an actionable kill-switch and recovery path", () => {
     const recovery = read("docs/operations/merge-automation-recovery.md").toLowerCase();
     for (const required of ["disable", "revert", "audit", "re-enable"]) {
